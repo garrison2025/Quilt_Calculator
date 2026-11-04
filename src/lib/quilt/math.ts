@@ -139,9 +139,20 @@ export function layoutRectangles(usableWofIn: number, requests: PieceRequest[]):
   }
   return finish(F, cutPieces, offset);
 }
+/** Minimum whole strips/panels whose physically joined span covers the target.
+ * Unlike a fixed EPS subtraction from the count ratio, a final coverage check
+ * cannot undercount by one at a seam / WOF threshold.
+ */
 function minimumCount(span: number, wof: number, seamTakeup: number): number {
   if (seamTakeup >= wof) throw Error('Join loss must be smaller than usable WOF.');
-  return Math.max(1, Math.ceil((span - seamTakeup) / (wof - seamTakeup) - EPS));
+  const effective = wof - seamTakeup;
+  const joined = (count: number) => wof + (count - 1) * effective;
+  let count = Math.max(1, Math.ceil((span - seamTakeup) / effective));
+  // Correct any floating-point rounding without tolerating an actual shortage.
+  if (count > 1 && joined(count - 1) >= span) count--;
+  if (joined(count) < span) count++;
+  if (!Number.isSafeInteger(count) || joined(count) < span) throw Error('Cannot determine a safe whole-panel count.');
+  return count;
 }
 export function calculateBacking(input: { widthIn: number; heightIn: number; overageIn: number; wofIn: number; joinTakeupIn: number; oneWayPrint?: boolean; step?: number; shrinkageLengthPct?: number }): { targetWidthIn: number; targetHeightIn: number; options: BackingOption[]; recommended: BackingOption } {
   const W = valid(input.widthIn, 'Quilt width'), H = valid(input.heightIn, 'Quilt height');

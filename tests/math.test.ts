@@ -3,6 +3,23 @@ import { calculateBacking, calculateStraightBinding, calculateYardage, calculate
  calculateBorders, calculateSashing, parseMeasure, purchase, roundToStep, verifyLayout, layoutRectangles, calculateWofArea } from '../src/lib/quilt/math';
 import { sampleProject, validateProject } from '../src/lib/quilt/project';
 describe('V2 independent arithmetic fixtures', () => {
+ it('never undercounts backing panels just above one full WOF at a threshold', () => {
+  const delta=1e-9;
+  const b=calculateBacking({widthIn:43+delta,heightIn:70,overageIn:0,wofIn:43,joinTakeupIn:0,step:.125});
+  const vertical=b.options.find(o=>o.direction==='vertical')!;
+  expect(vertical.panelCount).toBe(2);
+  expect(vertical.finishedJoinedSpanIn).toBeGreaterThanOrEqual(b.targetWidthIn);
+  const exact=calculateBacking({widthIn:43,heightIn:70,overageIn:0,wofIn:43,joinTakeupIn:0,step:.125});
+  expect(exact.options.find(o=>o.direction==='vertical')?.panelCount).toBe(1);
+ });
+ it('never undercounts straight-grain binding strips by fixed EPS near a joint threshold', () => {
+  const b=calculateStraightBinding({widthIn:10,heightIn:11.5,tailAllowanceIn:1e-9,wofIn:43,stripWidthIn:2.5,joinLossIn:0,step:.125});
+  expect(b.requiredLengthIn).toBeGreaterThan(43);
+  expect(b.stripCount).toBe(2);
+  expect(b.effectiveJoinedLengthIn).toBeGreaterThanOrEqual(b.requiredLengthIn);
+  const exact=calculateStraightBinding({widthIn:10,heightIn:11.5,tailAllowanceIn:0,wofIn:43,stripWidthIn:2.5,joinLossIn:0});
+  expect(exact.stripCount).toBe(1);
+ });
  it('never underbuys when raw yardage sits just above a purchase increment',()=>{
   const over=0.25+1e-9;
   expect(roundToStep(over,0.25)).toBe(0.5);

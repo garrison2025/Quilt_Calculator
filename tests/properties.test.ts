@@ -6,6 +6,23 @@ import {
 } from '../src/lib/quilt/math';
 
 describe('V2 deterministic geometry property checks', () => {
+ it('backing and binding satisfy sewn coverage at panel-count boundaries',()=>{
+  for(const wof of [12,43,108]){
+   for(const join of [0,.5,2.5]){
+    if(join>=wof)continue;
+    for(const panels of [1,2,3,7]){
+     const boundary=wof+(panels-1)*(wof-join);
+     const below=boundary-1e-7,above=boundary+1e-7;
+     const lower=calculateBacking({widthIn:below,heightIn:12,overageIn:0,wofIn:wof,joinTakeupIn:join,oneWayPrint:true});
+     const upper=calculateBacking({widthIn:above,heightIn:12,overageIn:0,wofIn:wof,joinTakeupIn:join,oneWayPrint:true});
+     expect(lower.recommended.finishedJoinedSpanIn).toBeGreaterThanOrEqual(below);
+     expect(upper.recommended.finishedJoinedSpanIn).toBeGreaterThanOrEqual(above);
+     expect(upper.recommended.panelCount).toBeGreaterThanOrEqual(lower.recommended.panelCount);
+     expect(upper.recommended.panelCount).toBe(panels+1);
+    }
+   }
+  }
+ });
  it('upward purchasing cannot round a real fractional overage down',()=>{
   for(const step of [.0625,.125,.25,.5,1]){
    for(const n of [1,2,5,10,50,100]){
