@@ -29,3 +29,5 @@ Updated: 2026-11-04. Public preview: https://quilt-calculator-566.pages.dev/ (no
 Only **straight binding, butted borders, one-piece batting and explicitly feasible fabric cutting** are supported. Bias binding, diagonal backing, mitered borders, rag quilt and square-in-a-square remain HOLD. The PDF is a schematic guide, never an actual-size sewing pattern.
 
 **Status: working noindex engineering preview, not yet a finished production release.**
+
+- UI enhancement: screen-only system dark color scheme with auditable label/body contrast checks, short 180ms reveal animations disabled by `prefers-reduced-motion`, and separate light PDF print stylesheet. GitHub Actions captures dark-mode evidence and checks reduced-motion behavior.

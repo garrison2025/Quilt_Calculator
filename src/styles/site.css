@@ -48,3 +48,56 @@
 .shopping-metrics .shopping-cost{font-weight:800;color:#32644c}
 @media(max-width:490px){.shopping-toolbar{flex-direction:column;align-items:flex-start}.shopping-toolbar button{width:100%}.shopping-item{align-items:flex-start}.shopping-item .shopping-amount{font-size:21px}}
 @media print{.shopping-toolbar button{display:none!important}.shopping-toolbar p{font-size:10px;color:#333}.shopping-metrics span{color:#333}}
+
+/* Quiet transitions only; accessibility preferences always take priority. */
+@media screen and (prefers-reduced-motion:no-preference){
+ @keyframes quilt-result-enter{from{opacity:.84;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+ [data-results]>.result-hero,[data-results]>.stat-grid,[data-results]>.diagram-wrap{animation:quilt-result-enter 180ms ease-out both}
+ .action-primary,.action-secondary,.header-cta,.related-card,.sku-plan-summary{transition:background-color 160ms ease,border-color 160ms ease,transform 160ms ease}
+ .action-primary:active,.action-secondary:active{transform:translateY(1px)}
+}
+/* Screen-only automatic dark mode. Printed cut plans always retain a white background. */
+@media screen and (prefers-color-scheme:dark){
+ :root{color-scheme:dark;background:#121c17;color:#e5eee7;--green:#8dc9b1;--ink:#e8f1ea;--muted:#a9bcb0;--stroke:#394d41}
+ body{color:#e5eee7;background:#121c17}
+ .site-header{background:#16231b;border-bottom-color:#334b3b}
+ .brand-icon{background:#396f5b;color:#fff}
+ .desktop-nav a,.footer-bottom,.footer-links,.footer-inner p{color:#aac3b4}
+ .desktop-nav a:hover,.desktop-nav a.active,.brand-em{color:#8dc9b1}
+ .header-cta,.input-card,.result-card,.story-panel,.related-card,.fraction-grid div{background:#1d3025;color:#e5eee7;border-color:#40594a}
+ .page-heading>p,.editorial-head p,.sample-block p,.story-panel p,.faq-list p,.card-heading p,
+ .footer-note,.result-sub,.diagram-note,.hint,.trust-line,.sample-pill,.input-card .local-controls p{color:#b4c5b8}
+ .feature-pills span,.sample-block,.mini-feature{background:#274535;border-color:#3c6048;color:#c7e4d0}
+ .mini-feature img{mix-blend-mode:normal;opacity:.9}
+ .mini-top,.mini-bottom,.mini-bottom b,.mini-top span,.mini-bottom span{color:#c2dbca}
+ .workspace-preamble,.local-controls,.results-topline,.results-footer,.result-hero,.faq-list details{border-color:#405548}
+ .card-heading h2,.editorial-head h2,.sample-block h2,.faq-block h2,.related-card strong,.story-panel h3{color:#edf5ee}
+ .group-title,.eyebrow-with-line,.eyebrow-with-dot,.result-kicker,.story-number,.related-ornament{color:#a7dbc2}
+ .field-wrap label,.units-select,.shopping-item b,.shopping-list,.sku-plan-label{color:#e3eee4}
+ .field-control,.units-select select{background:#182b20;color:#eef5ef;border-color:#4a6855}
+ .field-control:focus{border-color:#a1d3b4;box-shadow:0 0 0 3px #395344}
+ .field-wrap .hint,.field-wrap .field-error{color:#b9d1be}
+ .field-wrap .field-error{color:#f4ada6}
+ .stat,.shopping-item,.sku-plan,.dynamic-entry,.related-card:hover{background:#20382a;border-color:#3e5a48}
+ .stat span,.shopping-item small,.shopping-metrics,.results-section-title span{color:#b0c3b4}
+ .stat strong,.result-big,.shopping-item .shopping-amount,.shopping-metrics .shopping-cost,
+ .sku-plan-summary,.sku-plan-summary strong,.fraction-grid b,.sample-icon{color:#a7dec1}
+ .results-section-title h3,.local-controls h3,.dynamic-head strong{color:#e9f2ea}
+ .diagram-wrap{background:#1e3326;border-color:#45634e}
+ .table-scroll{border-color:#41594a}
+ .breakdown-table th{background:#294333;color:#c0d8c6}
+ .breakdown-table td{border-color:#405647}
+ .warning-banner{background:#483d26;color:#f1d79d;border-color:#d0ad5e}
+ .error-banner{background:#4c2a29;color:#ffc5ba;border-color:#e18378}
+ .action-secondary,.option-buttons button,.dynamic-add,.mobile-tools summary{background:#294232;color:#c3e4ce;border-color:#52705b}
+ .action-secondary:hover,.option-buttons button:hover,.dynamic-add:hover{background:#365440}
+ .option-buttons button[aria-pressed=true]{background:#3a7a62;color:#fff}
+ .shopping-toolbar p,.calculation-context,.sample-pill{color:#bad0bd}
+ .calculation-context{background:#203729;border-color:#415a47}
+ .sku-plan[open]>.sku-plan-summary,.group-title{border-color:#405947}
+ .site-footer{background:#0e1913}
+ .mobile-tools nav{background:#1b2e22;border-color:#3c5443}
+ .mobile-tools nav a{color:#cfebd4}
+ .mobile-tools nav a:hover,.mobile-tools nav a:focus-visible{background:#294a35}
+ .skip-link{background:#243f2e;color:#edf8ef}
+}

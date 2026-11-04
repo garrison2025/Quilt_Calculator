@@ -185,6 +185,39 @@ try{
   const missing=await small.goto(ROOT+'/this-route-definitely-does-not-exist/',{waitUntil:'domcontentloaded'});
   assert.equal(missing.status(),404,'Unknown routes must return HTTP 404.');
   check(await small.locator('h1').innerText()==='Lost a stitch?','Custom 404 page is missing.');
+  const dark=await browser.newContext({viewport:{width:1280,height:800},colorScheme:'dark'});
+  const darkPage=await dark.newPage();
+  darkPage.on('pageerror',err=>problems.push('Dark UI JS exception: '+err.message));
+  await hydrated(darkPage,'/quilt-backing-calculator/');
+  const darkColors=await darkPage.evaluate(()=>{
+    const rgb=value=>value.match(/\\d+/g).slice(0,3).map(Number);
+    const light=v=>{const a=v/255;return a<=.04045?a/12.92:Math.pow((a+.055)/1.055,2.4);};
+    const luminance=v=>v[0]*.2126*1+v[1]*.7152*1+v[2]*.0722*1;
+    const makeLum=v=>{const [r,g,b]=rgb(v).map(light);return r*.2126+g*.7152+b*.0722;};
+    const ratio=(a,b)=>{const aL=makeLum(a),bL=makeLum(b);return (Math.max(aL,bL)+.05)/(Math.min(aL,bL)+.05);};
+    const surface=document.querySelector('.input-card');
+    const label=document.querySelector('.field-wrap label');
+    return {
+      page:getComputedStyle(document.documentElement).backgroundColor,
+      card:getComputedStyle(surface).backgroundColor,
+      textRatio:ratio(getComputedStyle(surface).color,getComputedStyle(surface).backgroundColor),
+      labelRatio:ratio(getComputedStyle(label).color,getComputedStyle(surface).backgroundColor)
+    };
+  });
+  check(darkColors.page!=='rgb(248, 246, 241)','System dark color scheme was not applied.');
+  check(darkColors.textRatio>=4.5&&darkColors.labelRatio>=4.5,'Dark mode body/label text contrast is insufficient: '+JSON.stringify(darkColors));
+  await darkPage.screenshot({path:'artifacts/qa/backing-dark-mode.png',fullPage:true,animations:'disabled'});
+  await darkPage.emulateMedia({media:'print'});
+  check(await darkPage.locator('body').evaluate(el=>getComputedStyle(el).backgroundColor)==='rgb(255, 255, 255)','Dark mode must never force dark print paper.');
+  console.log('PASS dark color scheme, basic text contrast, and white print output.');
+  await dark.close();
+  const reduced=await browser.newContext({viewport:{width:1280,height:800},reducedMotion:'reduce'});
+  const reducedPage=await reduced.newPage();
+  await hydrated(reducedPage,'/quilt-backing-calculator/');
+  const motion=await reducedPage.locator('[data-results] .result-hero').evaluate(el=>getComputedStyle(el).animationName);
+  check(motion==='none','Reduced motion preference must disable result animation.');
+  console.log('PASS reduced-motion accessibility preference.');
+  await reduced.close();
   assert.deepEqual(problems,[],'Unexpected JavaScript errors in browsers.');
   console.log('PASS 404, mobile navigation, no uncaught JavaScript errors.');
   console.log('BROWSER SMOKE TESTS PASS: '+routes.length+' calculators, unit conversion, real edits, import-state guard, downloads, mobile, print.');
