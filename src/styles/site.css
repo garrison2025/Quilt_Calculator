@@ -226,3 +226,22 @@
  .print-scale-label strong{display:block}
  .print-scale-label small{display:block}
 }
+
+/* WCAG 2.2 A/AA automated contrast hardening, verified with axe-core.
+ * Respect the existing dark palette; these replacements only apply when the
+ * browser is actually using the light theme. No cosmetic opacity shortcuts.
+ */
+@media screen and (prefers-color-scheme:light){
+  .brand small{color:#465e50}
+  .page-heading>p,.square-lab-heading>p{color:#50675a}
+  .mini-top,.mini-top span,.mini-bottom span{color:#3b5747}
+  .editorial-head>p{color:#455c4d}
+  .card-heading>p{color:#4c6254}
+  .field-wrap .hint,.hint{color:#496050}
+  .fields>.footer-note,.footer-note{color:#4a6152}
+  .local-controls p,.local-controls>p{color:#495e50}
+  .result-version,.result-kicker,.result-sub,.result-status{color:#46604d}
+  .stat span,.results-section-title>span{color:#486050}
+  .shopping-item small,.fraction-grid small,.trust-line{color:#4a6151}
+  .story-panel p{color:#4d6153}
+}
