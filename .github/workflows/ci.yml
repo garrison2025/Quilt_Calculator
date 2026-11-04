@@ -29,6 +29,7 @@ jobs:
       - name: Install Chromium and Linux browser libraries
         run: npx playwright install --with-deps chromium
       - name: Test real calculator interactions, downloads, mobile and print
+        timeout-minutes: 6
         run: node scripts/browser-smoke.mjs
       - name: Archive desktop, mobile and print smoke-test evidence
         if: always()
