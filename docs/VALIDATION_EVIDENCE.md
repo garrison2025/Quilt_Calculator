@@ -1,5 +1,5 @@
 # Quilt Studio — verification evidence and release blockers
-Last verified: 2026-11-05 · WCAG audits, original V2 source replay, geometry, privacy and print evidence through CI `41933804432` · `noindex` engineering preview.
+Last verified: 2026-11-05 · keyboard error-focus, 320px reflow proxy, WCAG, original V2 geometry/privacy/print evidence through CI `41934908400` · `noindex` engineering preview.
 
 ## What is actually verified
 | Check | Status | Evidence / reproducible action |
@@ -16,7 +16,9 @@ Last verified: 2026-11-05 · WCAG audits, original V2 source replay, geometry, p
 | Print physical-unit ruler aids (P24, digital scope only) | PASS · browser CSS / PDF | Print-only 1 in × 1 in square and 100 mm line verified for CSS physical dimensions; **actual ruler measurement on paper is NOT_RUN** |
 | Print layouts and responsive widths | PASS (automated scope) | Same CI, screenshot/PDF artifacts: https://github.com/garrison2025/Quilt_Calculator/actions/runs/41931472782/artifacts/13371074036 |
 | Automated WCAG 2.0/2.1/2.2 A/AA (axe-core) | PASS · automated scope only | 15 Chromium scans: 11 desktop routes including the noindex Square lab, three 375px mobile views and one dark-mode view; **zero reported rule violations** in [CI 41933804432](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41933804432). JSON report in workflow artifacts. |
-| Manual screen-reader, zoom and real-device accessibility | PARTIAL / NOT_RUN | Automated scans can have incomplete or untestable findings; at least one item per tested page still requires human review. VoiceOver/NVDA, keyboard-only full journeys, 200–400% zoom and actual touch interaction not independently signed off. |
+| Input error focus and field help (automated) | PASS · focused journey | Recalculate with an invalid measurement returns focus to the error field; role=alert error is associated by aria-describedby along with field-specific help; correcting error restores valid exports. [CI 41934908400](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41934908400). |
+| 320 CSS-pixel reflow proxy | PASS · five routes | Homepage, project hub, backing, fabric and yards conversion have no whole-document horizontal overflow at 320 CSS px; mobile Update also focuses the results landmark. **A true 400% browser zoom check remains unverified.** |
+| Manual screen-reader, real browser zoom and real-device accessibility | PARTIAL / NOT_RUN | Automated scans can have incomplete or untestable findings; at least one item per tested page still requires human review. VoiceOver/NVDA, keyboard-only full journeys, true 200–400% zoom and real touch interaction not independently signed off. |
 | Physical fabric cutting / complete sewing construction | NOT_RUN | Requires independent real-fabric comparison and grain/measurement review |
 | Production domain, canonical and indexing | NOT_CONFIGURED | Requires an approved domain and explicit release decision |
 | AdSense, Search Console and revenue | NOT_CONFIGURED | Account/production evidence required |
@@ -68,3 +70,8 @@ Only these are calculated with checked physical layouts: joined rectangular back
 - Added free open-source `axe-core` to the **CI-only** Chromium dependency install. This package does not ship in production. The 15 WCAG 2.0, 2.1 and 2.2 A/AA scans cover the 10 approved routes and 1 experimental Square page in default light desktop presentation, plus three 375px mobile views and one dark calculator view.
 - Initial scans correctly identified low contrast on small muted text in the header, project forms, shopping metrics, table headings, educational content and dark CTA/button labels. The original brand link also violated accessible-name matching. After actual CSS/ARIA improvements, all 15 included scans reported **zero axe rule violations** at [run 41933804432](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41933804432).
 - The automated report is attached as `axe-wcag2a-aa-audit.json` to GitHub browser QA artifacts; check `incomplete` items before any final WCAG claim. Automated checks cannot certify assistive-technology usability, keyboard workflows under all modal/error states, 200%/400% zoom, actual phone touch targets or real sewing/print calibration. Keep the original manual gate **PARTIAL**.
+
+## Follow-up: error focus and narrow reflow (2026-11-05)
+- [Source commit 72ad7f0](https://github.com/garrison2025/Quilt_Calculator/commit/72ad7f06b7120685626e13326a32262005267392), [CI 41934908400](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41934908400) passed the 167 core checks and the updated Chromium suite. An invalid edit plus Update now focuses the affected input, exposes an associated live field error and inline help, keeps old exports disabled, and re-enables exports only after the value is committed and valid.
+- Reflow assertions at **320 CSS px** passed on five representative pages without document-level horizontal overflow; mobile Update focuses the `#results` landmark on successful recalculation. These are browser-automated acceptance cases and do not prove native OS/browser 400% zoom, touch hardware use or NVDA/VoiceOver behavior.
+- Previous 15 axe-core WCAG A/AA scans remained passing. Original 47-gate current status group counts have **not** been upgraded; manual accessibility signoff remains PARTIAL.
