@@ -28,3 +28,5 @@ Do not create a separate doorway page for each fraction. The 107 related convers
 - Static checks: `npm run build && node scripts/check-build.mjs`; mathematical checks: `npm test`; Chromium smoke checks through GitHub Actions.
 - Production domain and Google indexing remain unapproved. The `.pages.dev` deployment must stay `noindex,follow`, without production canonical/sitemap.
 - Further work: real-world cutting certification, original 39 golden CSV/24-property/47-gate source files, live SERP audits and full keyboard/screen-reader review.
+
+- All nine tool page H1 headings now state their primary distinct calculator intent, rather than relying on generic promotional slogans. This is a clarity improvement; it is not proof of any SERP position.

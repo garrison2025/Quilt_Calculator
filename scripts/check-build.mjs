@@ -86,5 +86,24 @@ for(const slug of [...slugs,'privacy']){
 }
 console.log('PASS: 11 uniquely titled static pages, one H1 each, internal link destinations verified.');
 
+const primaryHeadings=new Map([
+ ['calculators','Quilt calculator'],
+ ['quilt-backing-calculator','Quilt backing calculator'],
+ ['quilt-binding-calculator','Quilt binding calculator'],
+ ['quilt-border-calculator','Quilt border calculator'],
+ ['fabric-yardage-calculator','Fabric yardage calculator'],
+ ['quilt-fabric-calculator','Quilt fabric calculator'],
+ ['fabric-yards-to-inches','Fabric yards to inches'],
+ ['quilt-batting-calculator','Quilt batting calculator'],
+ ['quilt-sashing-calculator','Quilt sashing calculator']
+]);
+for(const [slug,keyword] of primaryHeadings){
+ const html=fs.readFileSync('dist/'+slug+'/index.html','utf8');
+ const h1=html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/)?.[1]||'';
+ if(!h1.toLowerCase().includes(keyword.toLowerCase()))throw Error('Page H1 must clearly answer original primary intent '+slug+': '+keyword);
+}
+console.log('PASS: all 9 unique tool H1 headings state their respective primary calculator intent.');
+
+
 
 console.log('PASS: '+slugs.length+' approved routes, SEO metadata, '+(production?'production canonical/sitemap':'preview noindex')+', original preview images and HOLD exclusions.');
