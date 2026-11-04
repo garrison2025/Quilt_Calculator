@@ -36,6 +36,14 @@ describe('V2 independent arithmetic fixtures', () => {
  it('limits the total cuts for large sashing grids before trying to pack them',()=>{
   expect(()=>calculateSashing({rows:40,columns:40,blockWidthIn:10,blockHeightIn:10,finishedSashIn:2,seamIn:.25,wofIn:43})).toThrow(/more than 2,000/);
  });
+ it('rejects inconsistent join losses and oversized grids before project import',()=>{
+  const backing=structuredClone(sampleProject);backing.options.joinTakeup=backing.options.usableWof;
+  expect(()=>validateProject(backing)).toThrow(/Backing join take-up/);
+  const binding=structuredClone(sampleProject);binding.options.stripJoinLoss=binding.options.usableWof;
+  expect(()=>validateProject(binding)).toThrow(/Binding strip join loss/);
+  const grid=structuredClone(sampleProject);grid.sashing.rows=40;grid.sashing.columns=40;
+  expect(()=>validateProject(grid)).toThrow(/Sashing block grid exceeds 2,000/);
+ });
  it('one-panel backing has no fabricated seam positions', () => {
   const r=calculateBacking({widthIn:32,heightIn:32,overageIn:2,wofIn:43,joinTakeupIn:1,oneWayPrint:true});
   expect(r.options[0].panelCount).toBe(1);
