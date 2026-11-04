@@ -117,7 +117,7 @@ try{
       await page.getByRole('button',{name:'Download cut list CSV'}).click();
       const safeCut=await safeCutPromise;
       const safeCutContent=await fs.readFile(await safeCut.path(),'utf8');
-      check(safeCutContent.includes(""'=SUM(1,2)""),'Cut-list export must escape a formula-bearing material label.');
+      check(safeCutContent.includes("'=SUM(1,2)"),'Cut-list export must escape a formula-bearing material label.');
       await page.locator('details.sku-plan').nth(1).locator('summary').click();
       check(await page.locator('details.sku-plan').nth(1).locator('svg[role="img"]').isVisible(),'Second fabric SKU diagram is not visible.');
     }
