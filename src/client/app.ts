@@ -1,0 +1,348 @@
+import { VERSION, calculateBacking, calculateStraightBinding, calculateYardage, calculateQuiltFabric, calculateBatting, calculateBorders, calculateSashing, layoutRectangles, verifyLayout, parseMeasure, fromInches, toInches, yardsToInches, purchase, hashProject, type Layout, type PieceRequest } from '../lib/quilt/math';
+import { sampleProject, validateProject, type Project } from '../lib/quilt/project';
+import type { ToolId } from './types';
+type Kind = 'length' | 'whole' | 'number' | 'pct' | 'check' | 'text';
+type Field = { label: string; path: string; kind?: Kind; note?: string };
+const num = (n: number, digits = 3): string => Number(n.toFixed(digits)).toLocaleString('en-US', {maximumFractionDigits: digits});
+const money = (n: number) => '$' + Number(n.toFixed(2)).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const frac = ['','⅛','¼','⅜','½','⅝','¾','⅞'];
+function yd(n:number):string {
+ const eighths = Math.round(n * 8), rounded = eighths / 8;
+ if (Math.abs(n - rounded) > 0.000001) return num(n,3);
+ const whole = Math.floor(eighths / 8), remainder = eighths % 8;
+ return (whole > 0 ? String(whole) : '') + (remainder ? (whole ? ' ' : '') + frac[remainder] : whole ? '' : '0');
+}
+function node<K extends keyof HTMLElementTagNameMap>(tag:K, cls='', content=''):HTMLElementTagNameMap[K] {
+ const n=document.createElement(tag); if(cls)n.className=cls;if(content)n.textContent=content;return n;
+}
+function append(parent:Element,...kids:(Node|undefined)[]){for(const child of kids)if(child)parent.appendChild(child);}
+function text(t:string):Text{return document.createTextNode(t);}
+const fieldsBase:Field[]=[
+ {label:'Finished quilt width',path:'quilt.finishedWidth',kind:'length'},
+ {label:'Finished quilt height',path:'quilt.finishedHeight',kind:'length'}
+];
+const groups: Record<ToolId, {title:string;fields:Field[]}[]> = {
+ hub:[
+  {title:'Your quilt',fields:fieldsBase},
+  {title:'Backing & fabric roll',fields:[{label:'Backing extra per side',path:'options.overage',kind:'length'},{label:'Usable width of fabric (WOF)',path:'options.usableWof',kind:'length'},{label:'Seam join total take-up',path:'options.joinTakeup',kind:'length'},{label:'One-way fabric print',path:'options.oneWayPrint',kind:'check'}]},
+  {title:'Binding & batting',fields:[{label:'Binding strip cut width',path:'options.stripWidth',kind:'length'},{label:'Batting roll width',path:'options.battingWof',kind:'length'}]},
+  {title:'Buying settings',fields:[{label:'Purchase step (yd)',path:'options.step',kind:'number'},{label:'Length shrinkage (%)',path:'options.lengthShrinkage',kind:'pct'}]}
+ ],
+ backing:[
+  {title:'Quilt top',fields:fieldsBase},
+  {title:'Backing construction',fields:[{label:'Backing extra per edge',path:'options.overage',kind:'length'},{label:'Usable fabric WOF',path:'options.usableWof',kind:'length'},{label:'Total loss at one panel join',path:'options.joinTakeup',kind:'length'},{label:'Directional / one-way print',path:'options.oneWayPrint',kind:'check',note:'If checked, rotated assembly is excluded.'}]},
+  {title:'Shopping',fields:[{label:'Purchase step (yd)',path:'options.step',kind:'number'},{label:'Prewash length shrinkage (%)',path:'options.lengthShrinkage',kind:'pct'}]}
+ ],
+ binding:[
+  {title:'Quilt top',fields:fieldsBase},
+  {title:'Straight-grain strips',fields:[{label:'Cut strip width',path:'options.stripWidth',kind:'length'},{label:'Usable fabric WOF',path:'options.usableWof',kind:'length'},{label:'Extra tail / corners (total)',path:'options.tailAllowance',kind:'length'},{label:'Effective length lost per strip join',path:'options.stripJoinLoss',kind:'length'}]},
+  {title:'Shopping',fields:[{label:'Purchase step (yd)',path:'options.step',kind:'number'},{label:'Length shrinkage (%)',path:'options.lengthShrinkage',kind:'pct'}]}
+ ],
+ borders:[
+  {title:'Quilt top',fields:[...fieldsBase,{label:'Seam allowance per edge',path:'options.seam',kind:'length'}]},
+  {title:'Buying',fields:[{label:'Purchase step (yd)',path:'options.step',kind:'number'}]}
+ ],
+ yardage:[
+  {title:'Fabric pieces',fields:[{label:'Piece cut width',path:'yardage.pieceWidth',kind:'length'},{label:'Piece cut height',path:'yardage.pieceHeight',kind:'length'},{label:'Piece quantity',path:'yardage.count',kind:'whole'},{label:'Usable fabric WOF',path:'options.usableWof',kind:'length'}]},
+  {title:'Fabric constraints',fields:[{label:'Allow 90° grain rotation',path:'options.allowRotate',kind:'check'},{label:'Prewash length shrinkage (%)',path:'options.lengthShrinkage',kind:'pct'},{label:'Purchase step (yd)',path:'options.step',kind:'number'}]}
+ ],
+ fabric:[
+  {title:'Quilt top (shared)',fields:fieldsBase},
+  {title:'Shopping',fields:[{label:'Purchase step (yd)',path:'options.step',kind:'number'}]}
+ ],
+ inches:[],
+ batting:[
+  {title:'Quilt top',fields:fieldsBase},
+  {title:'One-piece batting',fields:[{label:'Batting extra per edge',path:'options.battingOverage',kind:'length'},{label:'Actual roll width',path:'options.battingWof',kind:'length'},{label:'May rotate 90°',path:'options.allowRotate',kind:'check'},{label:'Purchase step (yd)',path:'options.step',kind:'number'}]}
+ ],
+ sashing:[
+  {title:'Block grid',fields:[{label:'Rows',path:'sashing.rows',kind:'whole'},{label:'Columns',path:'sashing.columns',kind:'whole'},{label:'Finished block width',path:'sashing.blockWidth',kind:'length'},{label:'Finished block height',path:'sashing.blockHeight',kind:'length'}]},
+  {title:'Joining settings',fields:[{label:'Finished sashing width',path:'sashing.width',kind:'length'},{label:'Seam allowance per side',path:'options.seam',kind:'length'},{label:'Usable WOF',path:'options.usableWof',kind:'length'},{label:'Purchase step (yd)',path:'options.step',kind:'number'}]}
+ ]
+};
+function get(obj:unknown,path:string):unknown{return path.split('.').reduce<unknown>((value,key)=>value && typeof value==='object' ? (value as Record<string,unknown>)[key] : undefined,obj);}
+function set(obj:unknown,path:string,val:unknown):void{
+ const parts=path.split('.');let o=obj as Record<string,unknown>;
+ for(const part of parts.slice(0,-1))o=o[part] as Record<string,unknown>;
+ o[parts[parts.length-1]]=val;
+}
+function download(filename:string,payload:unknown):void{
+ const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+ const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);
+}
+function section(parent:Element,heading:string,helper=''):HTMLElement{
+ const h=node('div','results-section-title');
+ append(h,node('h3','',heading),node('span','',helper));
+ parent.appendChild(h);return h;
+}
+function stats(parent:Element,values:[string,string][]):void{
+ const grid=node('div','stat-grid');
+ for(const [label,value] of values){const card=node('div','stat');append(card,node('span','',label),node('strong','',value));grid.appendChild(card);}
+ parent.appendChild(grid);
+}
+function hero(parent:Element,value:string,label:string,description:string):void{
+ const h=node('div','result-hero');append(h,node('div','result-kicker',label),node('div','result-big',value+' yd'),node('p','result-sub',description));parent.appendChild(h);
+}
+function warning(parent:Element,message:string,error=false):void{parent.appendChild(node('div',error?'warning-banner error-banner':'warning-banner',message));}
+function table(parent:Element,headers:string[],rows:string[][]):void{
+ const shell=node('div','table-scroll'),t=node('table','breakdown-table'),head=node('thead'),tr=node('tr');
+ for(const x of headers)tr.appendChild(node('th','',x));head.appendChild(tr);t.appendChild(head);
+ const body=node('tbody');
+ for(const row of rows){const r=node('tr');for(const cell of row)r.appendChild(node('td','',cell));body.appendChild(r);}
+ t.appendChild(body);shell.appendChild(t);parent.appendChild(shell);
+}
+function diagram(parent:Element,layout:Layout,title:string):void{
+ section(parent,title,'Roll coordinates');
+ if(!layout.isCutFeasible){warning(parent,layout.error||'FIT_IMPOSSIBLE',true);return;}
+ const wrapper=node('div','diagram-wrap');
+ const ns='http://www.w3.org/2000/svg',svg=document.createElementNS(ns,'svg');
+ svg.setAttribute('viewBox','0 0 780 320');svg.setAttribute('role','img');
+ svg.setAttribute('aria-label','Schematic fabric roll layout with '+layout.cutPieces.length+' nonoverlapping rectangles. Numeric coordinates are below.');
+ const make=(tag:string,attrs:Record<string,string>,parentNode:SVGElement)=>{
+  const e=document.createElementNS(ns,tag);Object.entries(attrs).forEach(([k,v])=>e.setAttribute(k,v));parentNode.appendChild(e);return e;
+ };
+ make('rect',{x:'38',y:'30',width:'713',height:'244',rx:'8',fill:'#fffdf6',stroke:'#b9d0c2'},svg);
+ const usable=Math.max(layout.usableWofIn,0.00001),len=Math.max(layout.exactFabricRunLengthIn,0.00001);
+ const colors=['#8ec1b0','#c8d9bb','#dbbd88','#aabbb3','#d1b1b0','#b8d3c5'];
+ layout.cutPieces.slice(0,180).forEach((p,i)=>{
+  const x=40+(p.yIn/len)*709,y=32+(p.xIn/usable)*240,w=Math.max(.5,p.heightIn/len*709-1),h=Math.max(.5,p.widthIn/usable*240-1);
+  const rect=make('rect',{x:String(x),y:String(y),width:String(w),height:String(h),rx:'2',fill:colors[i%colors.length],stroke:'#426f5e','stroke-width':'.7'},svg);
+  const tooltip=make('title',{},rect as SVGElement);tooltip.textContent=p.label+': roll (x '+num(p.xIn)+', y '+num(p.yIn)+') cut '+num(p.widthIn)+' × '+num(p.heightIn)+' in';
+  if(w>38&&h>19){const txt=make('text',{x:String(x+6),y:String(y+Math.min(18,h-3)),'font-size':'12',fill:'#264a3c'},svg);txt.textContent=String(i+1);}
+ });
+ const tx=make('text',{x:'40',y:'300','font-size':'12',fill:'#47695a'},svg);
+ tx.textContent='Fabric roll length: '+num(layout.exactFabricRunLengthIn)+' in  →';
+ const ty=make('text',{x:'44',y:'20','font-size':'11',fill:'#47695a'},svg);ty.textContent='Usable WOF: '+num(layout.usableWofIn)+' in';
+ wrapper.appendChild(svg);wrapper.appendChild(node('p','diagram-note','Schematic, not to scale or a 1:1 pattern. Coordinates and dimensions are actual INCHES on the fabric roll. '+(layout.cutPieces.length>180?'First 180 shown; export JSON for all.':'')));
+ parent.appendChild(wrapper);
+ section(parent,'Cut coordinates','First '+Math.min(layout.cutPieces.length,45)+' of '+layout.cutPieces.length);
+ table(parent,['# / piece','x in','y in','width × height in','grain'],layout.cutPieces.slice(0,45).map((p,i)=>[String(i+1)+' · '+p.label,num(p.xIn),num(p.yIn),num(p.widthIn)+' × '+num(p.heightIn),String(p.grainRotationDeg)+'°']));
+}
+function details(parent:Element,items:[string,string][]):void{stats(parent,items);}
+function shopping(parent:Element,lines:{label:string;hint:string;amount?:number}[]):void{
+ section(parent,'Material shopping list','Rounded purchase quantities');
+ const list=node('div','shopping-list');
+ for(const line of lines){const item=node('div','shopping-item'),left=node('div');
+ append(left,node('b','',line.label),node('small','',line.hint));append(item,left,node('strong','',line.amount===undefined?'Not planned':yd(line.amount)+' yd'));list.appendChild(item);}
+ parent.appendChild(list);
+}
+const root=document.querySelector<HTMLElement>('[data-tool]');
+if(root){
+ const tool=root.dataset.tool as ToolId;
+ const fieldsRoot=root.querySelector<HTMLElement>('[data-fields]')!;
+ const resultRoot=root.querySelector<HTMLElement>('[data-results]')!;
+ const status=root.querySelector<HTMLElement>('[data-status]')!;
+ const stateLabel=root.querySelector<HTMLElement>('[data-project-state]')!;
+ const unitsSelect=root.querySelector<HTMLSelectElement>('[data-units]')!;
+ let project:Project=structuredClone(sampleProject);
+ let sample=true,conv='1/4',selectedDirection:'vertical'|'horizontal'='vertical';
+ let cutExport:unknown=null;
+ try{const raw=localStorage.getItem('quilt-studio-v2');if(raw){project=validateProject(JSON.parse(raw));sample=false;}}catch{ /* corrupt local project is ignored */ }
+ function note(msg:string,err=false){status.textContent=msg;status.classList.toggle('status-error',err);}
+ function persist(){sample=false;stateLabel.textContent='● My local project';try{localStorage.setItem('quilt-studio-v2',JSON.stringify(project));}catch{/* file export remains available */}}
+ function read(field:Field,value:string|boolean):unknown{
+  if(field.kind==='check')return Boolean(value);
+  if(field.kind==='text')return String(value);
+  const n=parseMeasure(String(value));
+  if(field.kind==='whole' && (!Number.isInteger(n)||n>2000))throw Error(field.label+' must be a whole number between 0 and 2000.');
+  if(field.kind==='pct'&&n>=100)throw Error('Shrinkage must be less than 100%.');
+  return field.kind==='length'?toInches(n,project.units):n;
+ }
+ function inputField(field:Field,current:unknown,onValue:(v:unknown)=>void):HTMLElement{
+  const wrap=node('div','field-wrap'),id='field-'+Math.random().toString(36).slice(2);
+  const label=node('label','',field.label+(field.kind==='length'?' ('+project.units+')':''));label.htmlFor=id;
+  const input=node('input','field-control');
+  input.id=id;input.type=field.kind==='check'?'checkbox':'text';
+  if(field.kind==='check'){input.checked=Boolean(current);wrap.classList.add('check-field');append(wrap,input,label);}
+  else{
+   input.inputMode=field.kind==='text'?'text':'decimal';
+   input.value=field.kind==='length'?num(fromInches(Number(current)||0,project.units),4):String(current??'');
+   append(wrap,label,input);
+  }
+  if(field.note)wrap.appendChild(node('span','hint',field.note));
+  input.addEventListener('change',()=>{
+   try{const value=read(field,input.type==='checkbox'?input.checked:input.value);onValue(value);input.setAttribute('aria-invalid','false');persist();update();}
+   catch(e){input.setAttribute('aria-invalid','true');note((e as Error).message,true);}
+  });
+  return wrap;
+ }
+ function makeGroup(title:string,fields:Field[],source:unknown=project,onChange?:(field:Field,value:unknown)=>void):HTMLElement{
+  const frag=node('div');frag.appendChild(node('h3','group-title',title));
+  const grp=node('div','field-group');
+  for(const f of fields){
+   const current=get(source,f.path);grp.appendChild(inputField(f,current,v=>{if(onChange)onChange(f,v);else set(project,f.path,v);}));
+  }frag.appendChild(grp);return frag;
+ }
+ function renderFabricEditor():void{
+  const shell=node('div');shell.appendChild(node('h3','group-title','Fabric colors / SKUs'));
+  project.fabrics.forEach((fabric,i)=>{
+   const card=node('div','dynamic-entry'),head=node('div','dynamic-head');
+   const del=node('button','','Remove SKU');del.type='button';del.addEventListener('click',()=>{project.fabrics.splice(i,1);persist();renderEditor();update();});
+   append(head,node('strong','',fabric.label||'Fabric '+(i+1)),del);card.appendChild(head);
+   card.appendChild(makeGroup('Fabric roll',[
+    {label:'SKU (unique)',path:'id',kind:'text'},{label:'Fabric / color label',path:'label',kind:'text'},
+    {label:'Usable WOF',path:'usableWidth',kind:'length'},{label:'Length shrinkage (%)',path:'shrinkageLengthPct',kind:'pct'},
+    {label:'Price per yard (optional)',path:'pricePerYard',kind:'number'},
+    {label:'One-way print',path:'oneWayPrint',kind:'check'}
+   ],fabric,(f,v)=>{if(f.path==='id'&&project.fabrics.some((g,j)=>j!==i&&g.id===v))throw Error('SKU IDs must be unique.');(fabric as unknown as Record<string,unknown>)[f.path]=v;}));
+   fabric.pieces.forEach((piece,j)=>{
+    const group=node('div','dynamic-entry'),h=node('div','dynamic-head');
+    const remove=node('button','','Remove cut group');remove.type='button';remove.addEventListener('click',()=>{fabric.pieces.splice(j,1);persist();renderEditor();update();});
+    append(h,node('strong','','Cut group '+(j+1)),remove);group.appendChild(h);
+    group.appendChild(makeGroup('Rectangle CUT sizes',[
+     {label:'Piece label',path:'label',kind:'text'},{label:'Cut width',path:'widthIn',kind:'length'},
+     {label:'Cut height',path:'heightIn',kind:'length'},{label:'Count',path:'count',kind:'whole'},
+     {label:'Allow 90° rotation',path:'allowRotate',kind:'check'}
+    ],piece,(f,v)=>{(piece as unknown as Record<string,unknown>)[f.path]=v;}));
+    card.appendChild(group);
+   });
+   const addPiece=node('button','dynamic-add','+ Add rectangle cut group');addPiece.type='button';addPiece.addEventListener('click',()=>{
+    if(fabric.pieces.length>=100){note('Maximum 100 piece groups per SKU.',true);return;}
+    fabric.pieces.push({widthIn:5,heightIn:5,count:4,label:'New cut',allowRotate:false});persist();renderEditor();update();
+   });card.appendChild(addPiece);shell.appendChild(card);
+  });
+  const add=node('button','dynamic-add','+ Add fabric SKU');add.type='button';add.addEventListener('click',()=>{
+   if(project.fabrics.length>=30){note('Maximum 30 fabric SKUs.',true);return;}
+   const id='fabric-'+(project.fabrics.length+1)+'-'+Date.now().toString(36);
+   project.fabrics.push({id,label:'New fabric',usableWidth:43,oneWayPrint:false,shrinkageLengthPct:0,pieces:[{widthIn:5,heightIn:5,count:4,label:'Cut square'}]});persist();renderEditor();update();
+  });shell.appendChild(add);fieldsRoot.appendChild(shell);
+ }
+ function renderBorderEditor():void{
+  const shell=node('div');shell.appendChild(node('h3','group-title','Butted border layers (maximum 5)'));
+  project.borders.forEach((layer,i)=>{
+   const card=node('div','dynamic-entry'),h=node('div','dynamic-head'),remove=node('button','','Remove layer');
+   remove.type='button';remove.addEventListener('click',()=>{project.borders.splice(i,1);persist();renderEditor();update();});
+   append(h,node('strong','','Layer '+(i+1)),remove);card.appendChild(h);
+   card.appendChild(makeGroup('Border fabric',[
+    {label:'SKU',path:'sku',kind:'text'},{label:'Label / color',path:'label',kind:'text'},
+    {label:'Finished border width',path:'widthIn',kind:'length'},{label:'Usable WOF',path:'wofIn',kind:'length'},
+    {label:'Length shrinkage (%)',path:'shrinkageLengthPct',kind:'pct'},{label:'Price per yard (optional)',path:'pricePerYard',kind:'number'}
+   ],layer,(f,v)=>{(layer as unknown as Record<string,unknown>)[f.path]=v;}));shell.appendChild(card);
+  });
+  const add=node('button','dynamic-add','+ Add border layer');add.type='button';add.addEventListener('click',()=>{
+   if(project.borders.length>=5){note('Maximum 5 border layers.',true);return;}
+   project.borders.push({sku:'border-'+Date.now().toString(36),label:'New border',widthIn:2,wofIn:43,shrinkageLengthPct:0});persist();renderEditor();update();
+  });shell.appendChild(add);fieldsRoot.appendChild(shell);
+ }
+ function renderEditor():void{
+  fieldsRoot.replaceChildren();
+  unitsSelect.value=project.units;
+  for(const group of groups[tool])fieldsRoot.appendChild(makeGroup(group.title,group.fields));
+  if(tool==='fabric')renderFabricEditor();
+  if(tool==='borders')renderBorderEditor();
+  if(tool==='inches'){
+   const group=node('div');group.appendChild(node('h3','group-title','Exact conversion'));
+   const wrap=node('div','field-wrap'),lbl=node('label','','Fabric yards (decimals or fractions)'),inp=node('input','field-control');
+   lbl.htmlFor='yard-input';inp.id='yard-input';inp.value=conv;inp.addEventListener('input',()=>{conv=inp.value;update();});
+   append(wrap,lbl,inp);group.appendChild(wrap);fieldsRoot.appendChild(group);
+  }
+  if(tool==='hub')fieldsRoot.appendChild(node('p','footer-note','Need fabric colors or additional borders? Edit them on the dedicated Quilt Fabric and Borders pages; your local project is shared across all tools.'));
+ }
+ function purchasesTitle(result:HTMLElement,buy:{rawPurchaseYards:number;roundedPurchaseYards:number;purchaseRoundingExtraLengthIn:number},name:string){
+  hero(result,yd(buy.roundedPurchaseYards),'ROUNDED PURCHASE · '+name,'Exact raw requirement: '+num(buy.rawPurchaseYards,4)+' yd. Purchase rounded upward to the chosen shop increment.');
+ }
+ function layoutSummary(result:HTMLElement,layout:Layout){
+  if(!layout.isCutFeasible){warning(result,layout.error||'FIT_IMPOSSIBLE',true);return;}
+  if(!verifyLayout(layout))throw Error('Internal geometry check failed. No purchase result can be shown.');
+  stats(result,[['Cut run',num(layout.exactFabricRunLengthIn)+' in'],['Pieces',String(layout.cutPieces.length)],['True roll offcut',num(layout.physicalOffcutAreaSqIn,1)+' in²']]);
+ }
+ function update():void{
+  resultRoot.replaceChildren();cutExport=null;
+  try{
+   const p=project,o=p.options,w=p.quilt.finishedWidth,h=p.quilt.finishedHeight;
+   const buyArgs={step:o.step,shrinkageLengthPct:o.lengthShrinkage};
+   let plan:unknown={};
+   let layout:Layout|undefined;
+   if(tool==='backing'){
+    const b=calculateBacking({widthIn:w,heightIn:h,overageIn:o.overage,wofIn:o.usableWof,joinTakeupIn:o.joinTakeup,oneWayPrint:o.oneWayPrint,...buyArgs});
+    const selected=b.options.find(v=>v.direction===selectedDirection)||b.recommended;
+    purchasesTitle(resultRoot,selected.purchase,'BACKING');
+    stats(resultRoot,[['Backing size',num(b.targetWidthIn)+' × '+num(b.targetHeightIn)+' in'],['Panels',String(selected.panelCount)],['Joined width',num(selected.finishedJoinedSpanIn)+' in']]);
+    section(resultRoot,'Compare seam orientations');
+    const options=node('div','option-buttons');
+    for(const direction of b.options){const button=node('button','',direction.direction+' · '+yd(direction.purchase.roundedPurchaseYards)+' yd');button.type='button';button.setAttribute('aria-pressed',String(selected.direction===direction.direction));button.addEventListener('click',()=>{selectedDirection=direction.direction;update();});options.appendChild(button);}
+    resultRoot.appendChild(options);layout=selected.layout;
+    warning(resultRoot,'The fabric-roll offcut shown does not include trimming the panel assembly after sewing. Assembly trim: '+num(selected.postAssemblyTrimAreaSqIn)+' in². Do not add it to roll offcuts.');
+    plan={options:b.options,selected:selected.direction};
+   }else if(tool==='binding'){
+    const b=calculateStraightBinding({widthIn:w,heightIn:h,wofIn:o.usableWof,stripWidthIn:o.stripWidth,tailAllowanceIn:o.tailAllowance,joinLossIn:o.stripJoinLoss,...buyArgs});
+    purchasesTitle(resultRoot,b.purchase,'STRAIGHT BINDING');
+    stats(resultRoot,[['Required binding',num(b.requiredLengthIn)+' in'],['Strips',String(b.stripCount)],['Length after joins',num(b.effectiveJoinedLengthIn)+' in']]);
+    warning(resultRoot,'Straight-grain binding only. Bias binding is NOT calculated.');layout=b.layout;plan=b;
+   }else if(tool==='yardage'){
+    const y=p.yardage;
+    const r=calculateYardage({pieceWidthIn:y.pieceWidth,pieceHeightIn:y.pieceHeight,count:y.count,wofIn:o.usableWof,allowRotate:o.allowRotate,...buyArgs});
+    if(!r.purchase){warning(resultRoot,r.layout.error||'FIT_IMPOSSIBLE',true);}
+    else{purchasesTitle(resultRoot,r.purchase,'RECTANGLE FABRIC');stats(resultRoot,[['Across fabric',String(r.across)],['Rows',String(r.rows)],['Pieces',String(y.count)]]);}
+    layout=r.layout;plan=r;
+   }else if(tool==='batting'){
+    const b=calculateBatting({widthIn:w,heightIn:h,overageIn:o.battingOverage,rollWidthIn:o.battingWof,rotate:o.allowRotate,step:o.step});
+    if(b.purchase){purchasesTitle(resultRoot,b.purchase,'ONE-PIECE BATTING');stats(resultRoot,[['Required width',num(w+2*o.battingOverage)+' in'],['Required height',num(h+2*o.battingOverage)+' in'],['Roll WOF',num(o.battingWof)+' in']]);}
+    else warning(resultRoot,b.message,true);
+    layout=b.layout;plan=b;
+   }else if(tool==='sashing'){
+    const s=p.sashing,r=calculateSashing({rows:s.rows,columns:s.columns,blockWidthIn:s.blockWidth,blockHeightIn:s.blockHeight,finishedSashIn:s.width,seamIn:o.seam,wofIn:o.usableWof,step:o.step});
+    if(r.purchase)purchasesTitle(resultRoot,r.purchase,'SASHING FABRIC');else warning(resultRoot,r.layout.error||'FIT_IMPOSSIBLE',true);
+    stats(resultRoot,[['Vertical strips',String(r.vertical)],['Horizontal strips',String(r.horizontal)],['Cornerstones',String(r.cornerstones)],['Finished grid',num(r.finishedWidthIn)+' × '+num(r.finishedHeightIn)+' in']]);layout=r.layout;plan=r;
+   }else if(tool==='borders'){
+    const b=calculateBorders({widthIn:w,heightIn:h,seamIn:o.seam,layers:p.borders,step:o.step});
+    hero(resultRoot,String(b.layers.length),'BUTTED BORDER LAYERS','Final quilt '+num(b.finishedWidthIn)+' × '+num(b.finishedHeightIn)+' in. Side strips are attached before top and bottom strips.');
+    shopping(resultRoot,b.layers.map(x=>({label:x.label+' · '+x.sku,hint:'Sides '+num(x.sideCutLengthIn)+' in; top/bottom '+num(x.topCutLengthIn)+' in',amount:x.purchase?.roundedPurchaseYards})));
+    if(b.layers.some(x=>!x.purchase))warning(resultRoot,'At least one layer is FIT_IMPOSSIBLE at its specified WOF. No yardage is offered for that layer.',true);
+    if(b.layers[0])layout=b.layers[0].layout;plan=b;
+    warning(resultRoot,'Continuous, lengthwise-grain butted strips only. Do not use this result for mitered or separately pieced borders.');
+   }else if(tool==='fabric'){
+    const f=calculateQuiltFabric(p.fabrics,o.step);
+    if(!f.length){warning(resultRoot,'No fabric SKUs planned. Add a fabric and its cut pieces before purchasing.');}
+    else{
+     hero(resultRoot,String(f.length),'SEPARATE FABRIC SKUS','Each fabric color has independent usable WOF, shrinkage, layout and purchase quantity.');
+     shopping(resultRoot,f.map(x=>({label:x.label+' · '+x.fabricSku,hint:x.layout.cutPieces.length+' cut pieces · '+(x.priceEstimate===undefined?'No price entered':'Est. '+money(x.priceEstimate)),amount:x.purchase?.roundedPurchaseYards})));
+     if(f.some(x=>!x.purchase))warning(resultRoot,'One or more fabric SKUs contain a piece that cannot fit in the specified WOF.',true);
+     layout=f.find(x=>x.layout.isCutFeasible)?.layout;plan=f;
+    }
+   }else if(tool==='hub'){
+    const backing=calculateBacking({widthIn:w,heightIn:h,overageIn:o.overage,wofIn:o.usableWof,joinTakeupIn:o.joinTakeup,oneWayPrint:o.oneWayPrint,...buyArgs});
+    const binding=calculateStraightBinding({widthIn:w,heightIn:h,wofIn:o.usableWof,stripWidthIn:o.stripWidth,tailAllowanceIn:o.tailAllowance,joinLossIn:o.stripJoinLoss,...buyArgs});
+    const batting=calculateBatting({widthIn:w,heightIn:h,overageIn:o.battingOverage,rollWidthIn:o.battingWof,step:o.step});
+    const border=calculateBorders({widthIn:w,heightIn:h,seamIn:o.seam,layers:p.borders,step:o.step});
+    const fabric=calculateQuiltFabric(p.fabrics,o.step);
+    hero(resultRoot,yd(backing.recommended.purchase.roundedPurchaseYards),'BACKING FABRIC (RECOMMENDED)','One quilt top: '+num(w)+' × '+num(h)+' in. See all materials below; each remains its own cutting plan.');
+    shopping(resultRoot,[
+     {label:'Backing · '+backing.recommended.direction+' seams',hint:backing.recommended.panelCount+' full WOF panels',amount:backing.recommended.purchase.roundedPurchaseYards},
+     {label:'Batting · single piece only',hint:batting.message,amount:batting.purchase?.roundedPurchaseYards},
+     {label:'Straight-grain binding',hint:binding.stripCount+' full WOF strips',amount:binding.purchase.roundedPurchaseYards},
+     ...border.layers.map(x=>({label:x.label+' · '+x.sku,hint:'Butted borders',amount:x.purchase?.roundedPurchaseYards})),
+     ...fabric.map(x=>({label:x.label+' · '+x.fabricSku,hint:x.layout.cutPieces.length+' pieces (different fabric SKU)',amount:x.purchase?.roundedPurchaseYards}))
+    ]);
+    layout=backing.recommended.layout;plan={backing,binding,batting,border,fabric};
+    warning(resultRoot,'Fabric and border sample colors are part of the example project until you edit them. Purchase totals are separate by material; different rolls are never silently merged.');
+   }else if(tool==='inches'){
+    const value=parseMeasure(conv),inches=yardsToInches(value),cm=inches*2.54;
+    const h1=node('div','result-hero');append(h1,node('span','result-kicker','EXACT LENGTH CONVERSION'),node('div','result-big',num(inches)+' in'),node('p','result-sub',num(value)+' yards = '+num(inches)+' inches = '+num(cm,4)+' centimeters'));resultRoot.appendChild(h1);
+    section(resultRoot,'Fabric fraction quick chart','Exact conversion');
+    const grid=node('div','fraction-grid');
+    for(let e=1;e<=8;e++){const c=node('div');append(c,node('b','',e===8?'1':frac[e]),node('small','',num(e*36/8)+' in'),node('small','',num(e*36/8*2.54)+' cm'));grid.appendChild(c);}
+    resultRoot.appendChild(grid);warning(resultRoot,'Fabric yards describe length along a bolt. They do not specify usable fabric width.');plan={yards:value,inches,centimeters:cm};
+   }
+   if(layout){layoutSummary(resultRoot,layout);diagram(resultRoot,layout,'Cut plan / fabric roll');}
+   const record={tool,sourceProjectHash:hashProject(project),calculationVersion:VERSION,calculatedAt:new Date().toISOString(),projectUnits:project.units,result:plan};
+   cutExport=record;
+   resultRoot.appendChild(node('p','footer-note','Cut lengths and coordinates are calculated in inches. Purchase rounding applied once. Source project hash '+record.sourceProjectHash+'. Export JSON to review complete values. Print is a schematic, not an actual-size template.'));
+   note('✓ Updated from the current project · '+new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}));
+  }catch(err){cutExport=null;warning(resultRoot,(err instanceof Error ? err.message : 'Unknown calculation error'),true);note('Cannot prove this cut is feasible. Review your measurements.',true);}
+ }
+ unitsSelect.addEventListener('change',()=>{project.units=unitsSelect.value==='cm'?'cm':'in';persist();renderEditor();update();});
+ root.querySelector('[data-action="recalculate"]')?.addEventListener('click',()=>update());
+ root.querySelector('[data-action="reset"]')?.addEventListener('click',()=>{project=structuredClone(sampleProject);sample=true;selectedDirection='vertical';conv='1/4';localStorage.removeItem('quilt-studio-v2');stateLabel.textContent='● Sample project';renderEditor();update();});
+ root.querySelector('[data-action="save"]')?.addEventListener('click',()=>download('quilt-studio-project-v2.json',project));
+ root.querySelector('[data-action="export-cut"]')?.addEventListener('click',()=>{if(cutExport)download('quilt-studio-cut-plan-v2.json',cutExport);});
+ root.querySelector('[data-action="print"]')?.addEventListener('click',()=>window.print());
+ const picker=root.querySelector<HTMLInputElement>('[data-file]')!;
+ root.querySelector('[data-action="import"]')?.addEventListener('click',()=>picker.click());
+ picker.addEventListener('change',async()=>{const file=picker.files?.[0];if(!file)return;try{
+  if(file.size>1024*1024)throw Error('Project JSON must be below 1 MB.');
+  project=validateProject(JSON.parse(await file.text()));persist();renderEditor();update();
+ }catch(e){note('Could not import project: '+(e as Error).message,true);}picker.value='';});
+ stateLabel.textContent=sample?'● Sample project':'● My local project';
+ renderEditor();update();
+}
