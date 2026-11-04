@@ -84,6 +84,10 @@ export const guides:Record<ToolId,Guide>={
     'On 43-inch usable WOF, eight 5-inch-wide rectangles fit across a row. Twenty pieces therefore need three rows, each 10 inches long: 30 inches of total run, or 0.8333 yards raw, rounded to ⅞ yard with eighth-yard purchasing.',
     'If the print and grain permit a 90° turn, four 10-inch-wide pieces fit across each row, requiring five rows of 5 inches each. That is 25 inches of run, rounded to ¾ yard. Rotating is optional, never an assumption for one-way prints.'
    ]},
+   {heading:'Compare 43-inch and 50-inch usable fabric widths',paragraphs:[
+    'Use the comparison-width field to recalculate the same exact cut pieces on a second physical roll width. Twenty 5 × 10 inch rectangles without rotation need three 10-inch rows at 43-inch usable WOF (30 inches of roll, rounded to ⅞ yard). At 50-inch usable WOF, ten rectangles fit per row: two 10-inch rows (20 inches of roll, rounded to ⅝ yard). That is a ¼-yard difference at the same shop increment.',
+    'The comparison only changes measured usable fabric width. It never merges the two rolls, and the alternate is not a shopping instruction or included in the current cut-list CSV. Set the main usable WOF to the width you are actually buying before exporting. A physically impossible comparison shows no purchase estimate.'
+   ]},
    {heading:'How to enter finished-size versus cut-size measurements',paragraphs:[
     'Enter the real sizes of the rectangles you intend to cut. If a finished patch is 4 × 4 inches and your construction uses ¼-inch seams on every side, the cut patch is typically 4½ × 4½ inches. A finished block size cannot be fed in unchanged as the cutting dimension.',
     'Total square inches alone do not prove a cut is feasible. Two rectangles with the same area can have very different widths and grain restrictions. The visual plan and CSV show the exact proposed placements.'

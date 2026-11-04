@@ -1,8 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import { calculateBacking, calculateStraightBinding, calculateYardage, calculateBatting, calculateQuiltFabric,
- calculateBorders, calculateSashing, parseMeasure, purchase, roundToStep, verifyLayout, layoutRectangles, calculateWofArea } from '../src/lib/quilt/math';
+ calculateBorders, calculateSashing, compareYardageWidths, parseMeasure, purchase, roundToStep, verifyLayout, layoutRectangles, calculateWofArea } from '../src/lib/quilt/math';
 import { sampleProject, validateProject } from '../src/lib/quilt/project';
 describe('V2 independent arithmetic fixtures', () => {
+ it('compares two fabric widths by verified cutting runs instead of area-only ratios',()=>{
+  const c=compareYardageWidths({pieceWidthIn:5,pieceHeightIn:10,count:20,wofIn:43,step:.125,allowRotate:false},50);
+  expect([c.current.across,c.current.rows,c.current.layout.exactFabricRunLengthIn,c.current.purchase?.roundedPurchaseYards]).toEqual([8,3,30,.875]);
+  expect([c.alternate.across,c.alternate.rows,c.alternate.layout.exactFabricRunLengthIn,c.alternate.purchase?.roundedPurchaseYards]).toEqual([10,2,20,.625]);
+  expect(c.roundedPurchaseDifferenceYards).toBe(.25);
+  expect(verifyLayout(c.current.layout)&&verifyLayout(c.alternate.layout)).toBe(true);
+  const impossible=compareYardageWidths({pieceWidthIn:5,pieceHeightIn:10,count:20,wofIn:43},4);
+  expect(impossible.current.purchase).toBeDefined();
+  expect(impossible.alternate.layout.isCutFeasible).toBe(false);
+  expect(impossible.alternate.purchase).toBeUndefined();
+  expect(impossible.roundedPurchaseDifferenceYards).toBeUndefined();
+ });
  it('keeps 90-degree rotation available for nearly square pieces at a WOF boundary',()=>{
   const piece=43+5e-9;
   const locked=calculateYardage({pieceWidthIn:piece,pieceHeightIn:43,count:2,wofIn:43,allowRotate:false});

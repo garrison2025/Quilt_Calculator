@@ -1,7 +1,7 @@
 import { MAX_PIECES, type FabricSku, type BorderLayer } from './math';
 export type Project = { schemaVersion: 2; units: 'in' | 'cm'; quilt: { finishedWidth: number; finishedHeight: number };
   options: { overage: number; usableWof: number; battingWof: number; joinTakeup: number; stripWidth: number; tailAllowance: number; stripJoinLoss: number; step: number; lengthShrinkage: number; oneWayPrint: boolean; seam: number; battingOverage: number; allowRotate: boolean };
-  yardage: { pieceWidth: number; pieceHeight: number; count: number };
+  yardage: { pieceWidth: number; pieceHeight: number; count: number; alternateWof?: number };
   sashing: { rows: number; columns: number; blockWidth: number; blockHeight: number; width: number };
   borders: BorderLayer[]; fabrics: FabricSku[] };
 export const sampleProject: Project = {
@@ -9,7 +9,7 @@ export const sampleProject: Project = {
   options: { overage: 4, usableWof: 43, battingWof: 96, joinTakeup: 1, stripWidth: 2.5,
     tailAllowance: 12, stripJoinLoss: 2.5, step: .125, lengthShrinkage: 0, oneWayPrint: false,
     seam: .25, battingOverage: 4, allowRotate: false },
-  yardage: { pieceWidth: 5, pieceHeight: 10, count: 20 },
+  yardage: { pieceWidth: 5, pieceHeight: 10, count: 20, alternateWof: 50 },
   sashing: { rows: 4, columns: 5, blockWidth: 10, blockHeight: 10, width: 2 },
   borders: [{ sku: 'border-indigo', label: 'Indigo border', widthIn: 3, wofIn: 43, shrinkageLengthPct: 0 }],
   fabrics: [{ id: 'sky-blue', label: 'Sky blue', usableWidth: 43, oneWayPrint: false, shrinkageLengthPct: 0,
@@ -71,10 +71,11 @@ export function validateProject(data: unknown): Project {
  if((opts.stripJoinLoss as number)>=(opts.usableWof as number))throw Error('Binding strip join loss must be smaller than usable WOF.');
  bool(opts,'oneWayPrint','options');bool(opts,'allowRotate','options');
  const yardage = object(root.yardage, 'yardage');
- onlyKeys(yardage,'yardage',['pieceWidth','pieceHeight','count']);
+ onlyKeys(yardage,'yardage',['pieceWidth','pieceHeight','count','alternateWof']);
  numeric(yardage,'pieceWidth','yardage',0,100000,false,true);
  numeric(yardage,'pieceHeight','yardage',0,100000,false,true);
  numeric(yardage,'count','yardage',0,2000,true);
+ if(yardage.alternateWof!==undefined)numeric(yardage,'alternateWof','yardage',0,100000,false,true);
  const sash = object(root.sashing, 'sashing');
  onlyKeys(sash,'sashing',['rows','columns','blockWidth','blockHeight','width']);
  for (const name of ['rows','columns']) numeric(sash,name,'sashing',1,100,true);

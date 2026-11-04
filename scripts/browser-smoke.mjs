@@ -160,6 +160,26 @@ try{
       await page.locator('details.sku-plan').nth(1).locator('summary').click();
       check(await page.locator('details.sku-plan').nth(1).locator('svg[role="img"]').isVisible(),'Second fabric SKU diagram is not visible.');
     }
+    if(path==='/fabric-yardage-calculator/'){
+      const panel=page.locator('[data-width-comparison]');
+      check(await panel.count()===1,'Fabric width comparison panel must be visible.');
+      const summary=await panel.innerText();
+      for(const fragment of ['43 in','30 in','0.875 yd','50 in','20 in','0.625 yd','0.25 yd'])
+       check(summary.includes(fragment),'Physical width comparison missing '+fragment);
+      check(await page.locator('[data-results] svg[role="img"]').count()===2,'Both measured widths need independent cutting diagrams.');
+      const csvPending=page.waitForEvent('download');
+      await page.getByRole('button',{name:'Download cut list CSV'}).click();
+      const csvFile=await csvPending;
+      const csv=await fs.readFile(await csvFile.path(),'utf8');
+      check(csv.includes('"43","30"'),'Cut CSV must contain only the currently selected 43-inch fabric roll.');
+      check(!csv.includes('"50","20"'),'Alternate 50-inch comparison must not be exported as a real purchase.');
+      const altWof=page.getByLabel('Alternate usable WOF (in)',{exact:true});
+      await altWof.fill('4');await altWof.press('Tab');
+      check((await panel.innerText()).includes('Cannot fit'),'Impossible alternate WOF must show a blocked fit, not fake yardage.');
+      check(await page.locator('[data-action="export-cut-csv"]').isEnabled(),'Infeasible alternate must not block a valid current cut list.');
+      await altWof.fill('50');await altWof.press('Tab');
+      console.log('PASS physical dual-WOF comparison and CURRENT-only cutting export.');
+    }
     if(path==='/quilt-batting-calculator/'){
       const rollWidth=page.getByLabel('Actual roll width (in)',{exact:true});
       await rollWidth.fill('40');await rollWidth.press('Tab');

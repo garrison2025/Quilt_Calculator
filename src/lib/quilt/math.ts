@@ -227,6 +227,17 @@ export function calculateYardage(input: { pieceWidthIn: number; pieceHeightIn: n
   return { layout, purchase: purchase(layout.exactFabricRunLengthIn, input.step, input.shrinkageLengthPct),
     across, rows: first ? Math.ceil(input.count / across) : 0 };
 }
+/** Compare two real usable widths using the exact same physical cutting algorithm.
+ * The alternate roll is a hypothetical independent scenario: it must not be
+ * combined with the current roll or appended to a purchase cut-list.
+ */
+export function compareYardageWidths(input: Parameters<typeof calculateYardage>[0], alternateWofIn: number) {
+  const current=calculateYardage(input);
+  const alternate=calculateYardage({...input,wofIn:valid(alternateWofIn,'Alternate usable WOF')});
+  return {currentWofIn:input.wofIn,alternateWofIn,current,alternate,
+    roundedPurchaseDifferenceYards:current.purchase && alternate.purchase
+      ? current.purchase.roundedPurchaseYards-alternate.purchase.roundedPurchaseYards : undefined};
+}
 export type FabricSku = { id: string; label: string; usableWidth: number; oneWayPrint: boolean; shrinkageLengthPct: number; pricePerYard?: number; pieces: PieceRequest[] };
 export function calculateQuiltFabric(fabrics: FabricSku[], step = .125) {
   const seen = new Set<string>();

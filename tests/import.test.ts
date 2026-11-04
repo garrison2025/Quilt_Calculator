@@ -2,6 +2,18 @@ import { describe,expect,it } from 'vitest';
 import { sampleProject,validateProject } from '../src/lib/quilt/project';
 const fresh=()=>JSON.parse(JSON.stringify(sampleProject)) as Record<string,any>;
 describe('Version 2 project import security and data invariants',()=>{
+ it('keeps legacy V2 project exports valid without an alternate WOF',()=>{
+  const p=fresh();delete p.yardage.alternateWof;
+  expect(validateProject(p).yardage.alternateWof).toBeUndefined();
+ });
+ it('validates an optional alternate WOF for physical-cut comparison',()=>{
+  const p=fresh();p.yardage.alternateWof=50;
+  expect(validateProject(p).yardage.alternateWof).toBe(50);
+  for(const invalid of [0,-1,'forty',null,100001]){
+   const bad=fresh();bad.yardage.alternateWof=invalid;
+   expect(()=>validateProject(bad),'Reject alternate WOF '+String(invalid)).toThrow();
+  }
+ });
  it('rejects unknown V2 keys at every nested object level',()=>{
   const mutations: Array<[string,(p:Record<string,any>)=>void]>=[
    ['root',p=>{p.schemaVersion2=2;}],

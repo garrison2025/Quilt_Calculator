@@ -1,4 +1,4 @@
-import { VERSION, calculateBacking, calculateStraightBinding, calculateYardage, calculateQuiltFabric, calculateBatting, calculateBorders, calculateSashing, layoutRectangles, verifyLayout, parseMeasure, fromInches, toInches, yardsToInches, purchase, hashProject, type Layout, type PieceRequest } from '../lib/quilt/math';
+import { VERSION, calculateBacking, calculateStraightBinding, calculateYardage, compareYardageWidths, calculateQuiltFabric, calculateBatting, calculateBorders, calculateSashing, layoutRectangles, verifyLayout, parseMeasure, fromInches, toInches, yardsToInches, purchase, hashProject, type Layout, type PieceRequest } from '../lib/quilt/math';
 import { sampleProject, validateProject, type Project } from '../lib/quilt/project';
 import { csvDocument, cutListCsv, type MaterialCutPlan } from '../lib/quilt/cutlist';
 import type { ToolId } from './types';
@@ -45,6 +45,7 @@ const groups: Record<ToolId, {title:string;fields:Field[]}[]> = {
  ],
  yardage:[
   {title:'Fabric pieces',fields:[{label:'Piece cut width',path:'yardage.pieceWidth',kind:'length'},{label:'Piece cut height',path:'yardage.pieceHeight',kind:'length'},{label:'Piece quantity',path:'yardage.count',kind:'whole'},{label:'Usable fabric WOF',path:'options.usableWof',kind:'length'}]},
+  {title:'Compare a second fabric width',fields:[{label:'Alternate usable WOF',path:'yardage.alternateWof',kind:'length',note:'Optional comparison scenario; current WOF alone determines your cut-list and shopping purchase.'}]},
   {title:'Fabric constraints',fields:[{label:'Allow 90° grain rotation',path:'options.allowRotate',kind:'check'},{label:'Prewash length shrinkage (%)',path:'options.lengthShrinkage',kind:'pct'},{label:'Purchase step (yd)',path:'options.step',kind:'number'}]}
  ],
  fabric:[
@@ -294,7 +295,7 @@ if(root){
   const frag=node('div');frag.appendChild(node('h3','group-title',title));
   const grp=node('div','field-group');
   for(const f of fields){
-   const current=get(source,f.path);grp.appendChild(inputField(f,current,v=>{if(onChange)onChange(f,v);else set(project,f.path,v);}));
+   const current=f.path==='yardage.alternateWof'?(get(source,f.path)??project.options.usableWof):get(source,f.path);grp.appendChild(inputField(f,current,v=>{if(onChange)onChange(f,v);else set(project,f.path,v);}));
   }frag.appendChild(grp);return frag;
  }
  function renderFabricEditor():void{
@@ -410,7 +411,7 @@ if(root){
    const p=project,o=p.options,w=p.quilt.finishedWidth,h=p.quilt.finishedHeight;
    const buyArgs={step:o.step,shrinkageLengthPct:o.lengthShrinkage};
    let plan:unknown={};
-   let layout:Layout|undefined;
+   let layout:Layout|undefined,alternateLayout:Layout|undefined;
    if(tool==='backing'){
     const b=calculateBacking({widthIn:w,heightIn:h,overageIn:o.overage,wofIn:o.usableWof,joinTakeupIn:o.joinTakeup,oneWayPrint:o.oneWayPrint,...buyArgs});
     const selected=b.options.find(v=>v.direction===selectedDirection)||b.recommended;
@@ -435,10 +436,31 @@ if(root){
     warning(resultRoot,'Straight-grain binding only. Bias binding is NOT calculated.');layout=b.layout;materialCuts=[{material:'Straight-grain binding',sku:'binding',layout:b.layout}];plan=b;
    }else if(tool==='yardage'){
     const y=p.yardage;
-    const r=calculateYardage({pieceWidthIn:y.pieceWidth,pieceHeightIn:y.pieceHeight,count:y.count,wofIn:o.usableWof,allowRotate:o.allowRotate,...buyArgs});
+    const comparison=compareYardageWidths({
+      pieceWidthIn:y.pieceWidth,pieceHeightIn:y.pieceHeight,count:y.count,
+      wofIn:o.usableWof,allowRotate:o.allowRotate,...buyArgs
+    },y.alternateWof??o.usableWof);
+    const r=comparison.current,alternative=comparison.alternate;
     if(!r.purchase){warning(resultRoot,r.layout.error||'FIT_IMPOSSIBLE',true);}
     else{purchasesTitle(resultRoot,r.purchase,'RECTANGLE FABRIC');stats(resultRoot,[['Across fabric',String(r.across)],['Rows',String(r.rows)],['Pieces',String(y.count)]]);}
-    layout=r.layout;materialCuts=[{material:'Rectangle fabric',sku:'yardage',layout:r.layout}];plan=r;
+    const panel=node('section','width-comparison');panel.dataset.widthComparison='';
+    section(panel,'Compare usable widths with actual cut layouts','Side-by-side purchase scenarios');
+    stats(panel,[
+      ['Current WOF',num(comparison.currentWofIn)+' in'],
+      ['Current cut run',r.purchase?num(r.layout.exactFabricRunLengthIn)+' in':'Cannot fit'],
+      ['Current purchase',r.purchase?num(r.purchase.roundedPurchaseYards)+' yd':'Cannot fit'],
+      ['Alternate WOF',num(comparison.alternateWofIn)+' in'],
+      ['Alternate cut run',alternative.purchase?num(alternative.layout.exactFabricRunLengthIn)+' in':'Cannot fit'],
+      ['Alternate purchase',alternative.purchase?num(alternative.purchase.roundedPurchaseYards)+' yd':'Cannot fit']
+    ]);
+    if(comparison.roundedPurchaseDifferenceYards!==undefined)panel.appendChild(node('p','footer-note',
+      'Rounded purchase difference (current minus alternate): '+num(comparison.roundedPurchaseDifferenceYards,4)+' yd. Positive means the alternate WOF requires fewer purchased yards; negative means it requires more.'));
+    else warning(panel,'At least one WOF is not physically feasible. No purchase difference is claimed.',true);
+    panel.appendChild(node('p','footer-note','Both widths use the same cut dimensions, piece count, rotation permission and prewash length shrinkage. The alternate is a comparison only: change Current usable WOF before exporting or buying that roll. An area-equivalent fabric conversion is not a cutting guarantee.'));
+    resultRoot.appendChild(panel);
+    alternateLayout=alternative.layout;
+    layout=r.layout;materialCuts=[{material:'Rectangle fabric — CURRENT WOF only',sku:'yardage',layout:r.layout}];
+    plan={...r,comparison};
    }else if(tool==='batting'){
     const b=calculateBatting({widthIn:w,heightIn:h,overageIn:o.battingOverage,rollWidthIn:o.battingWof,rotate:o.allowRotate,step:o.step});
     if(b.purchase){purchasesTitle(resultRoot,b.purchase,'ONE-PIECE BATTING');stats(resultRoot,[['Required width',num(w+2*o.battingOverage)+' in'],['Required height',num(h+2*o.battingOverage)+' in'],['Roll WOF',num(o.battingWof)+' in']]);}
@@ -532,7 +554,8 @@ if(root){
     for(let e=1;e<=8;e++){const c=node('div');append(c,node('b','',e===8?'1':frac[e]),node('small','',num(e*36/8)+' in'),node('small','',num(e*36/8*2.54)+' cm'));grid.appendChild(c);}
     resultRoot.appendChild(grid);warning(resultRoot,'Fabric yards describe length along a bolt. They do not specify usable fabric width.');plan={yards:value,inches,centimeters:cm};
    }
-   if(layout){layoutSummary(resultRoot,layout);diagram(resultRoot,layout,'Cut plan / fabric roll');}
+   if(layout){layoutSummary(resultRoot,layout);diagram(resultRoot,layout,'Cut plan / CURRENT fabric roll');}
+   if(alternateLayout){section(resultRoot,'Alternate WOF cutting schematic','Comparison only · not in current cut-list CSV');layoutSummary(resultRoot,alternateLayout);diagram(resultRoot,alternateLayout,'Alternate roll / not the selected purchase');}
    const record={tool,sourceProjectHash:hashProject(project),calculationVersion:VERSION,calculatedAt:new Date().toISOString(),projectUnits:project.units,result:plan};
    cutExport=record;
    exportButton.disabled=false;printButton.disabled=false;

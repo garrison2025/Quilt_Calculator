@@ -132,6 +132,12 @@
           "type": "integer",
           "minimum": 0,
           "maximum": 2000
+        },
+        "alternateWof": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 100000,
+          "description": "Optional measured usable fabric width for a hypothetical physical-cut comparison. Not included in the current roll purchase."
         }
       },
       "required": [

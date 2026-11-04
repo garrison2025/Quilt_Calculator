@@ -75,3 +75,5 @@ Only **straight binding, butted borders, one-piece batting and explicitly feasib
 - Allowed grain rotation now also considers near-square rectangular cut dimensions (rather than suppressing rotations solely due to a fixed epsilon). Tests demonstrate a borderline piece is rejected when rotation is forbidden but accepted when its rotated width actually fits.
 
 - Conversion usability: the yard input now accepts full-string Unicode fabric fractions such as `¼`, `¾`, `⅓` and mixed `1½`, in addition to `1/4` / `1 1/2`. Invalid fragments (e.g. `1,2½`) still fail safely. New math and Chromium checks confirm these exact values.
+
+- Physical dual-WOF comparison now appears within the original Fabric Yardage Calculator, with two independently verified rectangle layouts, per-width cut-run and rounded purchase values, and an explicit no-buy warning for the hypothetical alternate. Only the CURRENT fabric WOF feeds the cut-list CSV. The optional V2 project field `yardage.alternateWof` is backwards-compatible with earlier saved project JSON. **The separate conditional WOF SEO route remains HOLD.**
