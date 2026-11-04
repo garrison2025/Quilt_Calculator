@@ -184,3 +184,24 @@
  .square-lab-alert{display:block!important}
  .square-lab-result{border:0;box-shadow:none}
 }
+
+/* User-entered test-block dimensions (never automatically certified). */
+.square-test-audit{border:1px solid var(--stroke);border-radius:16px;margin:36px 0;padding:28px;background:#fcfdfa}
+.square-audit-guideline{padding:16px 20px;background:#edf4eb;border-radius:11px;margin:16px 0 22px}
+.square-audit-guideline p{font-size:13px;color:#52695c;margin:7px 0 0;line-height:1.8}
+.square-audit-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:17px}
+.square-audit-form .input-actions{flex-wrap:wrap;align-items:stretch}
+.square-audit-form .action-secondary{padding:12px}
+.square-audit-results .square-audit-selfpass{background:#e6f4e8;border:1px solid #a8ccb0;border-radius:10px;color:#21593c;font-size:13px;padding:14px;font-weight:700;line-height:1.7}
+.square-audit-table{width:100%;border-collapse:collapse}
+.square-audit-table caption{font-size:12px;text-align:left;font-weight:750;padding:10px}
+.square-audit-results p{line-height:1.8}
+@media(max-width:820px){.square-audit-fields{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:500px){.square-test-audit{padding:18px}.square-audit-fields{grid-template-columns:1fr}}
+@media screen and (prefers-color-scheme:dark){
+ .square-test-audit{background:#1d3025;border-color:#405947}
+ .square-audit-guideline{background:#284132}
+ .square-audit-guideline p{color:#c3d7c9}
+ .square-audit-results .square-audit-selfpass{background:#284d36;border-color:#517d5a;color:#d6f3e0}
+}
+@media print{.square-audit-form{display:none!important}.square-test-audit{break-inside:avoid}}

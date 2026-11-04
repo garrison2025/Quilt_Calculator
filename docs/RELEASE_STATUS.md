@@ -85,3 +85,9 @@ Only **straight binding, butted borders, one-piece batting and explicitly feasib
 - Trial calculator at /lab/square-in-square/ using fixed 1/4-in seam, 1/8-in ruler grid, optional oversized corner parents and two independent, physically verified rectangular parent-square roll plans. Cut two background squares diagonally once per block; the exported parent-square CSV does not certify the sewn HST triangles.
 - The original /square-in-a-square-calculator/ route stays HOLD and out of production sitemap; even in a production build the lab page is noindex, without canonical or app JSON-LD.
 - Trial mathematical reference checks are not independent real piecing proof: sewn point clearance, bias handling and the actual trimmed outside dimensions still require a physical sample. Original four Square keywords remain HOLD_NO_INDEX.
+
+
+## Practice block: user-reported measurement audit (not independent certification)
+- The noindex Square-in-a-Square trial now has a separate measured-test section: enter actual unfinished width/height and all four corner-point distances to the raw cut edge, or leave it unevaluated. It **does not** autofill measured values.
+- Screening compares to finished target + 1/2 inch and four 1/4-inch point margins with a clearly identified, non-normative ±1/16-inch worksheet tolerance. Reported passes and failures are *USER-REPORTED ONLY*, not a certified source fixture or physical test performed by this project.
+- CSV report includes a prominent non-certification warning. Changing any trial-cut input or measured value invalidates the previous report. Chromium smoke now checks required values, Unicode fractions, report labeling and a clipped-point failure.

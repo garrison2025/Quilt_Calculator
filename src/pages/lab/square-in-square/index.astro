@@ -1,5 +1,6 @@
 ---
 import Base from '../../../layouts/Base.astro';
+import SquareAudit from '../../../components/SquareAudit.astro';
 ---
 <Base noIndex title="Square-in-a-Square Cutting Lab — Unverified Preview | Quilt Studio" description="Non-indexed one-round square-in-a-square quilt block prototype: calculate center and corner parent squares, trim allowances and two independent fabric roll layouts. Physical sewing validation pending.">
 <div class="page-shell square-lab" data-square-lab>
@@ -31,6 +32,7 @@ import Base from '../../../layouts/Base.astro';
     <div class="results-footer"><button type="button" class="action-secondary" data-square-download disabled>Download trial parent-square cut list CSV</button></div>
   </section>
  </div>
+ <SquareAudit />
  <section class="content-block square-lab-method">
   <div class="editorial-head"><span class="eyebrow-with-line">— CHECK BEFORE CUTTING</span><h2>A single round of corner triangles.</h2><p>Construction sequence and the difference between cutting fit and sewn fit.</p></div>
   <div class="story-grid">

@@ -245,6 +245,45 @@ try{
     'Restoring usable width must restore a geometrically verifiable trial plan.');
   await page.screenshot({path:'artifacts/qa/square-in-square-unindexed-lab.png',fullPage:true,animations:'disabled'});
   console.log('PASS square laboratory noindex, reference cuts, separate 12-piece parent CSV and impossible-fit guard.');
+  // A trial block cannot self-certify from computed cut sizes. The user must
+  // enter six actual measured values to receive a labeled self-reported result.
+  const auditForm=page.locator('[data-square-audit-form]');
+  check(await auditForm.count()===1,'Missing sewn-block measurement worksheet.');
+  check(!(await page.locator('[data-square-audit-download]').isEnabled()),
+   'Do not pre-approve a block before actual sewn measurements are entered.');
+  await auditForm.locator('button[type="submit"]').click();
+  check((await page.locator('[data-square-audit-results]').innerText()).includes('Enter all six'),
+   'Blank actual measurements must never be silently approved.');
+  const values=[
+   ['measuredUnfinishedWidthIn','12 1/2'],
+   ['measuredUnfinishedHeightIn','12.5'],
+   ['topPointClearanceIn','1/4'],
+   ['rightPointClearanceIn','¼'],
+   ['bottomPointClearanceIn','.25'],
+   ['leftPointClearanceIn','0.25']
+  ];
+  for(const [id,value] of values)await auditForm.locator('[data-square-audit-field="'+id+'"]').fill(value);
+  await auditForm.locator('button[type="submit"]').click();
+  const resultText=await page.locator('[data-square-audit-results]').innerText();
+  check(resultText.includes('NOT independent verification')&&resultText.includes('Within tolerance'),
+   'A self-reported pass must carry an explicit no-certification warning.');
+  const auditDownloadEvent=page.waitForEvent('download');
+  await page.locator('[data-square-audit-download]').click();
+  const auditFile=await auditDownloadEvent;
+  const auditCsv=await fs.readFile(await auditFile.path(),'utf8');
+  check(auditCsv.includes('USER-REPORTED')&&auditCsv.includes('NOT INDEPENDENTLY CERTIFIED'),
+   'Audit CSV must never misrepresent reported measurements as independently verified.');
+  await auditForm.locator('[data-square-audit-field="topPointClearanceIn"]').fill('0.1');
+  check(!(await page.locator('[data-square-audit-download]').isEnabled()),
+   'Editing a recorded measurement must invalidate the old audit CSV.');
+  await auditForm.locator('button[type="submit"]').click();
+  check((await page.locator('[data-square-audit-results]').innerText()).includes('outside the chosen tolerance'),
+   'Clipped point must fail user-reported screening.');
+  await page.locator('[data-square-input="finishedOuterIn"]').fill('8');
+  check(!(await page.locator('[data-square-audit-download]').isEnabled()),
+   'Changing the calculation design must invalidate the previous trial audit.');
+  await page.screenshot({path:'artifacts/qa/square-test-user-reported-audit.png',fullPage:true,animations:'disabled'});
+  console.log('PASS practice-block audit: six required measurements, labeled self-report CSV, point failure and stale-input invalidation.');
   // Keyboard accessibility gate: the bypass link, FAQ disclosure and editable
   // converter must work with focus/Enter instead of requiring pointer input.
   await hydrated(page,'/fabric-yards-to-inches/');
