@@ -3,6 +3,22 @@ import { calculateBacking, calculateStraightBinding, calculateYardage, calculate
  calculateBorders, calculateSashing, parseMeasure, purchase, roundToStep, verifyLayout, layoutRectangles, calculateWofArea } from '../src/lib/quilt/math';
 import { sampleProject, validateProject } from '../src/lib/quilt/project';
 describe('V2 independent arithmetic fixtures', () => {
+ it('rejects a cut slightly wider than the real WOF rather than applying a fixed 1e-8 inch waiver',()=>{
+  const r=calculateYardage({pieceWidthIn:43+5e-9,pieceHeightIn:9,count:2,wofIn:43,allowRotate:false});
+  expect(r.layout.isCutFeasible).toBe(false);
+  expect(r.purchase).toBeUndefined();
+  const permitted=calculateYardage({pieceWidthIn:43+5e-9,pieceHeightIn:9,count:2,wofIn:43,allowRotate:true});
+  expect(permitted.layout.isCutFeasible).toBe(true);
+  expect(permitted.layout.cutPieces.every(p=>p.grainRotationDeg===90)).toBe(true);
+ });
+ it('does not fit four almost-quarter-WOF rectangles into only three available slots',()=>{
+  const r=calculateYardage({pieceWidthIn:10.750000002,pieceHeightIn:5,count:4,wofIn:43,allowRotate:false});
+  expect(r.layout.isCutFeasible).toBe(true);
+  expect(r.across).toBe(3);
+  expect(r.rows).toBe(2);
+  expect(r.layout.exactFabricRunLengthIn).toBe(10);
+  expect(verifyLayout(r.layout)).toBe(true);
+ });
  it('never undercounts backing panels just above one full WOF at a threshold', () => {
   const delta=1e-9;
   const b=calculateBacking({widthIn:43+delta,heightIn:70,overageIn:0,wofIn:43,joinTakeupIn:0,step:.125});

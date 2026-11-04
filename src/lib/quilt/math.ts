@@ -3,6 +3,13 @@ export const VERSION = 'v2.0';
 export const LIMIT = 100000;
 export const MAX_PIECES = 2000;
 const EPS = 1e-8;
+/** Slack for floating-point coordinate operations only, not physical cutting.
+ * A fixed 1e-8 inch tolerance accepted genuinely oversized strips and tiny
+ * overlaps. Eight ULPs at the measurement scale tolerates IEEE-754 noise
+ * without treating a measurable positive shortage as a fit.
+ */
+const coordSlack = (...values: number[]): number =>
+  8 * Number.EPSILON * Math.max(1,...values.map(value => Math.abs(value)));
 export type Rect = { xIn: number; yIn: number; widthIn: number; heightIn: number; grainRotationDeg: 0 | 90; label: string };
 export type PieceRequest = { widthIn: number; heightIn: number; count: number; label?: string; allowRotate?: boolean };
 export type Layout = { isCutFeasible: boolean; error?: string; usableWofIn: number; exactFabricRunLengthIn: number; cutPieces: Rect[]; physicalOffcutAreaSqIn: number; globallyOptimal: false };
@@ -77,9 +84,10 @@ export function verifyLayout(layout: Layout): boolean {
   for (const r of pieces) {
     if (![r.xIn, r.yIn, r.widthIn, r.heightIn].every(Number.isFinite) ||
       (r.grainRotationDeg !== 0 && r.grainRotationDeg !== 90) ||
-      r.xIn < -EPS || r.yIn < -EPS || r.widthIn <= 0 || r.heightIn <= 0 ||
-      r.xIn + r.widthIn > layout.usableWofIn + EPS ||
-      r.yIn + r.heightIn > layout.exactFabricRunLengthIn + EPS) return false;
+      r.xIn < -coordSlack(r.xIn) || r.yIn < -coordSlack(r.yIn) ||
+      r.widthIn <= 0 || r.heightIn <= 0 ||
+      r.xIn + r.widthIn > layout.usableWofIn + coordSlack(r.xIn + r.widthIn, layout.usableWofIn) ||
+      r.yIn + r.heightIn > layout.exactFabricRunLengthIn + coordSlack(r.yIn + r.heightIn, layout.exactFabricRunLengthIn)) return false;
   }
   // Independently reconcile the reported roll offcut with the exact pieces.
   // A non-overlapping layout with fabricated scrap numbers is not verified.
@@ -98,9 +106,11 @@ export function verifyLayout(layout: Layout): boolean {
       const b = ordered[j];
       // Every later startY is >= the current startY, so remaining pieces
       // cannot overlap this piece once the first disjoint row is reached.
-      if (b.yIn >= endY - EPS) break;
-      if (Math.min(a.xIn + a.widthIn, b.xIn + b.widthIn) - Math.max(a.xIn, b.xIn) > EPS &&
-          Math.min(endY, b.yIn + b.heightIn) - Math.max(a.yIn, b.yIn) > EPS) return false;
+      if (b.yIn >= endY - coordSlack(b.yIn, endY)) break;
+      const overlapX = Math.min(a.xIn + a.widthIn, b.xIn + b.widthIn) - Math.max(a.xIn, b.xIn);
+      const overlapY = Math.min(endY, b.yIn + b.heightIn) - Math.max(a.yIn, b.yIn);
+      if (overlapX > coordSlack(a.xIn + a.widthIn, b.xIn + b.widthIn) &&
+          overlapY > coordSlack(endY, b.yIn + b.heightIn)) return false;
     }
   }
   return true;
@@ -127,7 +137,7 @@ export function layoutRectangles(usableWofIn: number, requests: PieceRequest[]):
     if (count === 0) continue;
     const options: { w: number; h: number; rotation: 0 | 90; across: number; rows: number; run: number }[] = [];
     const add = (width: number, height: number, rotation: 0 | 90) => {
-      const across = Math.floor((F + EPS) / width);
+      const across = Math.floor((F + coordSlack(F, width)) / width);
       if (across >= 1) {
         const rows = Math.ceil(count / across);
         options.push({ w: width, h: height, rotation, across, rows, run: rows * height });
@@ -203,7 +213,7 @@ export function calculateYardage(input: { pieceWidthIn: number; pieceHeightIn: n
   const layout = layoutRectangles(input.wofIn, [{ widthIn: input.pieceWidthIn, heightIn: input.pieceHeightIn, count: input.count, allowRotate: input.allowRotate, label: 'Rectangle' }]);
   if (!layout.isCutFeasible) return { layout, across: 0, rows: 0 };
   const first = layout.cutPieces[0];
-  const across = first ? Math.floor((input.wofIn + EPS) / first.widthIn) : 0;
+  const across = first ? Math.floor((input.wofIn + coordSlack(input.wofIn, first.widthIn)) / first.widthIn) : 0;
   return { layout, purchase: purchase(layout.exactFabricRunLengthIn, input.step, input.shrinkageLengthPct),
     across, rows: first ? Math.ceil(input.count / across) : 0 };
 }

@@ -32,3 +32,6 @@ Only these are calculated with checked physical layouts: joined rectangular back
 - Keep preview `noindex,follow` until a custom domain and authorization are available. Do not enable `PUBLIC_INDEXABLE=1` on `.pages.dev`.
 - Do not claim Search Console clicks, search rankings or AdSense approval based on automated tests or keyword mappings.
 - Use `npm ci && npm run lint && npm test && npm run build && node scripts/check-build.mjs` before any production release.
+
+## Numerical edge-fit gate (2026-11-04)
+- WOF placement and overlap checks use scale-specific IEEE-754 slack instead of a fixed physical `1e-8` inch allowance. New tests check one oversize piece, rows that would barely exceed roll width, sub-`1e-8` physical overlaps, and exact decimal boundaries. This improves mathematical fit classification only; independent real cutting is still not certified.

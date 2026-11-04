@@ -6,6 +6,18 @@ import {
 } from '../src/lib/quilt/math';
 
 describe('V2 deterministic geometry property checks', () => {
+ it('rejects real sub-1e-8 inch overlaps instead of treating them as edge-touching',()=>{
+  const r=layoutRectangles(43,[{widthIn:10,heightIn:6,count:2}]);
+  expect(verifyLayout(r)).toBe(true);
+  r.cutPieces[1].xIn=10-5e-9;
+  expect(verifyLayout(r)).toBe(false);
+ });
+ it('allows exact decimal edge-touching within ordinary IEEE-754 roundoff',()=>{
+  const r=layoutRectangles(.3,[{widthIn:.1,heightIn:1,count:3}]);
+  expect(r.isCutFeasible).toBe(true);
+  expect(r.cutPieces).toHaveLength(3);
+  expect(verifyLayout(r)).toBe(true);
+ });
  it('verifies fabric-roll area conservation instead of trusting scrap metadata',()=>{
   const original=layoutRectangles(43,[{widthIn:5,heightIn:7,count:57}]);
   const used=original.cutPieces.reduce((sum,p)=>sum+p.widthIn*p.heightIn,0);
