@@ -245,3 +245,17 @@
   .shopping-item small,.fraction-grid small,.trust-line{color:#4a6151}
   .story-panel p{color:#4d6153}
 }
+
+/* Second real-browser WCAG pass: support text in cutting tables, diagrams,
+ * shopping measurements and educational content also needs >= 4.5:1. */
+@media screen and (prefers-color-scheme:light){
+  .shopping-metrics,.shopping-metrics span{color:#4a6150}
+  .breakdown-table th{color:#405a49}
+  .diagram-note{color:#465e50}
+  .sample-block p{color:#3e5949}
+  .intent-guide-section p,.fraction-guide p,.intent-next p{color:#475d4f}
+  .related-card>span:not(.related-ornament){color:#496050}
+  .faq-list p{color:#486052}
+  .fraction-grid small,.fraction-reference-table caption{color:#46604f}
+  .results-section-title>span,.shopping-item small{color:#465f4e}
+}
