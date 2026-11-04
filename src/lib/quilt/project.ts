@@ -58,6 +58,8 @@ export function validateProject(data: unknown): Project {
  for (const name of ['usableWof','battingWof','stripWidth','step'])
   numeric(opts,name,'options',0,100000,false,true);
  shrink(opts,'lengthShrinkage','options');
+ if((opts.joinTakeup as number)>=(opts.usableWof as number))throw Error('Backing join take-up must be smaller than usable WOF.');
+ if((opts.stripJoinLoss as number)>=(opts.usableWof as number))throw Error('Binding strip join loss must be smaller than usable WOF.');
  bool(opts,'oneWayPrint','options');bool(opts,'allowRotate','options');
  const yardage = object(root.yardage, 'yardage');
  numeric(yardage,'pieceWidth','yardage',0,100000,false,true);
@@ -66,6 +68,8 @@ export function validateProject(data: unknown): Project {
  const sash = object(root.sashing, 'sashing');
  for (const name of ['rows','columns']) numeric(sash,name,'sashing',1,100,true);
  for (const name of ['blockWidth','blockHeight','width']) numeric(sash,name,'sashing',0,100000,false,true);
+ const rows=sash.rows as number,columns=sash.columns as number;
+ if((columns-1)*rows+(rows-1)*columns+(rows-1)*(columns-1)>MAX_PIECES)throw Error('Sashing block grid exceeds 2,000 physical pieces. Reduce rows or columns.');
  const borders = array(root.borders,'borders',5);
  const borderIds = new Set<string>();
  for (const [i,v] of borders.entries()){
