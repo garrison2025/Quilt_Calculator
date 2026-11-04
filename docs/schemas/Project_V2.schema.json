@@ -1,0 +1,321 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Quilt Studio local project import schema V2",
+  "description": "Browser-only project file contract. Structural validation does not prove cutting geometry; the engine validates that separately.",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "const": 2
+    },
+    "units": {
+      "enum": [
+        "in",
+        "cm"
+      ]
+    },
+    "quilt": {
+      "type": "object",
+      "properties": {
+        "finishedWidth": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 100000
+        },
+        "finishedHeight": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 100000
+        }
+      },
+      "required": [
+        "finishedWidth",
+        "finishedHeight"
+      ],
+      "additionalProperties": false
+    },
+    "options": {
+      "type": "object",
+      "properties": {
+        "overage": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "usableWof": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 100000
+        },
+        "battingWof": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 100000
+        },
+        "joinTakeup": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "stripWidth": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 100000
+        },
+        "tailAllowance": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "stripJoinLoss": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "step": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 100000
+        },
+        "lengthShrinkage": {
+          "type": "number",
+          "minimum": 0,
+          "exclusiveMaximum": 100
+        },
+        "oneWayPrint": {
+          "type": "boolean"
+        },
+        "seam": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "battingOverage": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "allowRotate": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "overage",
+        "usableWof",
+        "battingWof",
+        "joinTakeup",
+        "stripWidth",
+        "tailAllowance",
+        "stripJoinLoss",
+        "step",
+        "lengthShrinkage",
+        "oneWayPrint",
+        "seam",
+        "battingOverage",
+        "allowRotate"
+      ],
+      "additionalProperties": false
+    },
+    "yardage": {
+      "type": "object",
+      "properties": {
+        "pieceWidth": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 100000
+        },
+        "pieceHeight": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 100000
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2000
+        }
+      },
+      "required": [
+        "pieceWidth",
+        "pieceHeight",
+        "count"
+      ],
+      "additionalProperties": false
+    },
+    "sashing": {
+      "type": "object",
+      "properties": {
+        "rows": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "columns": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "blockWidth": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 100000
+        },
+        "blockHeight": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 100000
+        },
+        "width": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 100000
+        }
+      },
+      "required": [
+        "rows",
+        "columns",
+        "blockWidth",
+        "blockHeight",
+        "width"
+      ],
+      "additionalProperties": false
+    },
+    "borders": {
+      "type": "array",
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "properties": {
+          "sku": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "widthIn": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 100000
+          },
+          "wofIn": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 100000
+          },
+          "shrinkageLengthPct": {
+            "type": "number",
+            "minimum": 0,
+            "exclusiveMaximum": 100
+          },
+          "pricePerYard": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100000
+          }
+        },
+        "required": [
+          "sku",
+          "widthIn",
+          "wofIn"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "fabrics": {
+      "type": "array",
+      "maxItems": 30,
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "usableWidth": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 100000
+          },
+          "oneWayPrint": {
+            "type": "boolean"
+          },
+          "shrinkageLengthPct": {
+            "type": "number",
+            "minimum": 0,
+            "exclusiveMaximum": 100
+          },
+          "pricePerYard": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "pieces": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "type": "object",
+              "properties": {
+                "widthIn": {
+                  "type": "number",
+                  "exclusiveMinimum": 0,
+                  "maximum": 100000
+                },
+                "heightIn": {
+                  "type": "number",
+                  "exclusiveMinimum": 0,
+                  "maximum": 100000
+                },
+                "count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 2000
+                },
+                "label": {
+                  "type": "string",
+                  "maxLength": 160
+                },
+                "allowRotate": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "widthIn",
+                "heightIn",
+                "count"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "usableWidth",
+          "oneWayPrint",
+          "shrinkageLengthPct",
+          "pieces"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "units",
+    "quilt",
+    "options",
+    "yardage",
+    "sashing",
+    "borders",
+    "fabrics"
+  ],
+  "additionalProperties": false
+}
