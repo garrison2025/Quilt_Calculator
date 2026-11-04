@@ -226,6 +226,60 @@ try{
   await page.waitForFunction(()=>document.querySelector('[data-status]')?.textContent?.includes('Backing join take-up'));
   assert.equal(await page.getByLabel('Finished quilt width (in)',{exact:true}).inputValue(),'74','Invalid join input must preserve current project.');
   console.log('PASS valid JSON import and rejections of schema, quantity and join-width errors.');
+  // Independent tabs must not silently overwrite each other's saved projects.
+  const tabA=await desktop.newPage(),tabB=await desktop.newPage();
+  tabA.on('pageerror',e=>problems.push('Multi-tab A: '+e.message));
+  tabB.on('pageerror',e=>problems.push('Multi-tab B: '+e.message));
+  await hydrated(tabA,'/quilt-backing-calculator/');
+  await hydrated(tabB,'/quilt-backing-calculator/');
+  const aWidth=tabA.getByLabel('Finished quilt width (in)',{exact:true});
+  const bWidth=tabB.getByLabel('Finished quilt width (in)',{exact:true});
+  await aWidth.fill('72');await aWidth.press('Tab');
+  await tabB.locator('[data-sync-warning]').waitFor({state:'visible'});
+  await bWidth.fill('76');await bWidth.press('Tab');
+  assert.equal(await tabB.evaluate(()=>JSON.parse(localStorage.getItem('quilt-studio-v2')).quilt.finishedWidth),72,
+   'Outdated browser tab silently overwrote another tab\'s latest project.');
+  check((await tabB.locator('[data-project-state]').innerText()).includes('Unsaved'),
+   'Overwriting conflict must be clearly labeled unsaved.');
+  const backupDownload=tabB.waitForEvent('download');
+  await tabB.locator('[data-action="save"]').click();
+  const backup=await backupDownload;
+  assert.equal(JSON.parse(await fs.readFile(await backup.path(),'utf8')).quilt.finishedWidth,76,
+   'The current tab must still allow downloading its unsaved edits as JSON.');
+  await tabB.locator('[data-action="load-latest"]').click();
+  assert.equal(await tabB.getByLabel('Finished quilt width (in)',{exact:true}).inputValue(),'72',
+   'Load latest must retrieve the other tab\'s saved measurements.');
+  await tabB.getByLabel('Finished quilt width (in)',{exact:true}).fill('75');
+  await tabB.getByLabel('Finished quilt width (in)',{exact:true}).press('Tab');
+  await tabA.locator('[data-sync-warning]').waitFor({state:'visible'});
+  await tabA.locator('[data-action="reset"]').click();
+  assert.equal(await tabA.evaluate(()=>JSON.parse(localStorage.getItem('quilt-studio-v2')).quilt.finishedWidth),75,
+   'Reset from stale tab must not delete newer saved data.');
+  await tabA.locator('[data-action="load-latest"]').click();
+  assert.equal(await tabA.getByLabel('Finished quilt width (in)',{exact:true}).inputValue(),'75',
+   'Stale tab failed to recover the saved project after reset.');
+  await tabA.close();await tabB.close();
+  console.log('PASS two-tab conflict warning, safe JSON backup, reload and reset protection.');
+
+  // Browser privacy settings and quota failures must never masquerade as autosave.
+  const noStorage=await browser.newContext({viewport:{width:1180,height:800},acceptDownloads:true});
+  await noStorage.addInitScript(()=>{
+   Storage.prototype.setItem=function(){throw new DOMException('Storage blocked','QuotaExceededError');};
+  });
+  const privatePage=await noStorage.newPage();
+  privatePage.on('pageerror',e=>problems.push('Storage blocked: '+e.message));
+  await hydrated(privatePage,'/quilt-backing-calculator/');
+  const unsavedWidth=privatePage.getByLabel('Finished quilt width (in)',{exact:true});
+  await unsavedWidth.fill('69');await unsavedWidth.press('Tab');
+  check((await privatePage.locator('[data-persist-state]').innerText()).includes('unavailable'),
+   'Unavailable localStorage must show an explicit unsaved warning.');
+  const unsavedDownload=privatePage.waitForEvent('download');
+  await privatePage.locator('[data-action="save"]').click();
+  const unsavedFile=await unsavedDownload;
+  assert.equal(JSON.parse(await fs.readFile(await unsavedFile.path(),'utf8')).quilt.finishedWidth,69,
+   'Local JSON backup must work even when browser autosave is blocked.');
+  await noStorage.close();
+  console.log('PASS localStorage failure warning and offline JSON backup.');
   const mobile=await browser.newContext({viewport:{width:375,height:812},isMobile:true,hasTouch:true});
   const small=await mobile.newPage();
   small.on('pageerror',err=>problems.push('Mobile JS exception: '+err.message));

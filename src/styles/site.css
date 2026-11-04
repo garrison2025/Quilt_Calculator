@@ -49,6 +49,18 @@
 @media(max-width:490px){.shopping-toolbar{flex-direction:column;align-items:flex-start}.shopping-toolbar button{width:100%}.shopping-item{align-items:flex-start}.shopping-item .shopping-amount{font-size:21px}}
 @media print{.shopping-toolbar button{display:none!important}.shopping-toolbar p{font-size:10px;color:#333}.shopping-metrics span{color:#333}}
 
+/* Local-only project integrity and visible recovery when browser storage cannot be used. */
+.local-controls .project-storage-state{color:#3f765f;font-size:11px;line-height:1.55;margin:8px 0 12px}
+.project-sync-warning{border:1px solid #c7a868;border-radius:10px;padding:11px 12px;margin:10px 0 14px;background:#fff7e5}
+.project-sync-warning[hidden]{display:none!important}
+.local-controls .project-sync-warning p{color:#72511b;margin:0 0 10px;font-size:11px;line-height:1.55}
+.project-sync-warning .action-secondary{max-width:100%;white-space:normal}
+@media screen and (prefers-color-scheme:dark){
+ .local-controls .project-storage-state{color:#a9dbc5}
+ .project-sync-warning{background:#3b3322;border-color:#a88750}
+ .local-controls .project-sync-warning p{color:#f1d8a3}
+}
+@media print{.project-sync-warning,.project-storage-state{display:none!important}}
 /* Quiet transitions only; accessibility preferences always take priority. */
 @media screen and (prefers-reduced-motion:no-preference){
  @keyframes quilt-result-enter{from{opacity:.84;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}

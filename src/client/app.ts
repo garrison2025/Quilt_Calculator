@@ -168,6 +168,8 @@ if(root){
  const resultRoot=root.querySelector<HTMLElement>('[data-results]')!;
  const status=root.querySelector<HTMLElement>('[data-status]')!;
  const stateLabel=root.querySelector<HTMLElement>('[data-project-state]')!;
+ const storageState=root.querySelector<HTMLElement>('[data-persist-state]')!;
+ const syncWarning=root.querySelector<HTMLElement>('[data-sync-warning]')!;
  const unitsSelect=root.querySelector<HTMLSelectElement>('[data-units]')!;
  const exportButton=root.querySelector<HTMLButtonElement>('[data-action="export-cut"]')!;
  const cutCsvButton=root.querySelector<HTMLButtonElement>('[data-action="export-cut-csv"]')!;
@@ -176,9 +178,53 @@ if(root){
  let sample=true,conv='1/4',selectedDirection:'vertical'|'horizontal'|null=null;
  let cutExport:unknown=null;
  let materialCuts:MaterialCutPlan[]=[];
- try{const raw=localStorage.getItem('quilt-studio-v2');if(raw){project=validateProject(JSON.parse(raw));sample=false;}}catch{ /* corrupt local project is ignored */ }
+ const STORAGE_KEY='quilt-studio-v2';
+ let lastStoredJson:string|null=null;
+ let startupStorageError=false;
+ try{
+  lastStoredJson=localStorage.getItem(STORAGE_KEY);
+  if(lastStoredJson){try{project=validateProject(JSON.parse(lastStoredJson));sample=false;}
+   catch{startupStorageError=true;}}
+ }catch{startupStorageError=true;}
  function note(msg:string,err=false){status.textContent=msg;status.classList.toggle('status-error',err);}
- function persist(){sample=false;stateLabel.textContent='● My local project';try{localStorage.setItem('quilt-studio-v2',JSON.stringify(project));}catch{/* file export remains available */}}
+ function storageUnavailable():void{
+  storageState.textContent='Browser storage unavailable. Use Save project to download a JSON backup.';
+  stateLabel.textContent='● Unsaved in browser';
+ }
+ function showStorageConflict():void{
+  syncWarning.hidden=false;
+  storageState.textContent='Newer saved data exists in another tab. Changes here will not overwrite it.';
+  stateLabel.textContent='● Unsaved · another tab changed';
+ }
+ function persist():void{
+  sample=false;
+  try{
+   const actual=localStorage.getItem(STORAGE_KEY);
+   if(actual!==lastStoredJson){showStorageConflict();return;}
+   const next=JSON.stringify(project);
+   localStorage.setItem(STORAGE_KEY,next);
+   lastStoredJson=next;
+   syncWarning.hidden=true;
+   storageState.textContent='Autosaved in this browser. Save project downloads a separate JSON backup.';
+   stateLabel.textContent='● My local project';
+  }catch{storageUnavailable();}
+ }
+ window.addEventListener('storage',event=>{
+  if(event.key===STORAGE_KEY && event.newValue!==lastStoredJson)showStorageConflict();
+ });
+ root.querySelector('[data-action="load-latest"]')?.addEventListener('click',()=>{
+  try{
+   const latest=localStorage.getItem(STORAGE_KEY);
+   const loaded=latest?validateProject(JSON.parse(latest)):structuredClone(sampleProject);
+   project=loaded;sample=!latest;lastStoredJson=latest;selectedDirection=null;conv='1/4';
+   syncWarning.hidden=true;
+   storageState.textContent=latest?'Loaded the newest saved project from this browser.':'The saved project was reset in another tab; sample restored.';
+   stateLabel.textContent=latest?'● My local project':'● Sample project';
+   renderEditor();update();
+  }catch(e){note('Cannot load another tab\'s project: '+(e instanceof Error?e.message:'Invalid stored data'),true);}
+ });
+ if(startupStorageError)storageState.textContent='The previously saved project could not be read. A sample is loaded; save a JSON backup before editing.';
+ else storageState.textContent=sample?'Showing the example project. Edits are autosaved locally.':'Loaded your saved project from this browser.';
  function read(field:Field,value:string|boolean):unknown{
   if(field.kind==='check')return Boolean(value);
   if(field.path==='pricePerYard' && String(value).trim()==='')return undefined;
@@ -477,7 +523,19 @@ if(root){
    });
   }
  });
- root.querySelector('[data-action="reset"]')?.addEventListener('click',()=>{project=structuredClone(sampleProject);sample=true;selectedDirection=null;conv='1/4';localStorage.removeItem('quilt-studio-v2');stateLabel.textContent='● Sample project';renderEditor();update();});
+ root.querySelector('[data-action="reset"]')?.addEventListener('click',()=>{
+  project=structuredClone(sampleProject);sample=true;selectedDirection=null;conv='1/4';
+  try{
+   const actual=localStorage.getItem(STORAGE_KEY);
+   if(actual!==lastStoredJson)showStorageConflict();
+   else{
+    localStorage.removeItem(STORAGE_KEY);lastStoredJson=null;syncWarning.hidden=true;
+    stateLabel.textContent='● Sample project';
+    storageState.textContent='Sample restored and saved browser project cleared.';
+   }
+  }catch{storageUnavailable();}
+  renderEditor();update();
+ });
  root.querySelector('[data-action="save"]')?.addEventListener('click',()=>download('quilt-studio-project-v2.json',project));
  exportButton.addEventListener('click',()=>{if(cutExport)download('quilt-studio-cut-plan-v2.json',cutExport);});
  cutCsvButton.addEventListener('click',()=>{

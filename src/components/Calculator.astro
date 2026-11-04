@@ -11,6 +11,8 @@ const {tool,sample}=Astro.props;
 <div class="fields" data-fields><p>Preparing your calculator…</p></div>
 <div class="input-actions"><button class="action-primary" type="button" data-action="recalculate">Update cutting plan ↗</button><button class="action-link" type="button" data-action="reset">Reset</button></div>
 <div class="local-controls"><h3>Your project, your device</h3><p>Measurements stay in this browser. Save a JSON file and open it again whenever you like.</p>
+<p class="project-storage-state" data-persist-state role="status" aria-live="polite">Checking local project storage…</p>
+<div class="project-sync-warning" data-sync-warning role="alert" hidden><p>Another tab changed the saved project. Your current tab has not overwritten it. Download a JSON backup of your changes before loading the other tab's version.</p><button class="action-secondary" data-action="load-latest" type="button">Load latest saved project</button></div>
 <div class="control-line"><button class="action-secondary" data-action="save" type="button">Save project</button><button class="action-secondary" data-action="import" type="button">Import JSON</button><input type="file" accept=".json,application/json" data-file hidden aria-label="Import a JSON project"/></div></div>
 </aside>
 <section class="result-card" id="results" aria-label="Cutting and shopping results">
