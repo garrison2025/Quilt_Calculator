@@ -190,9 +190,8 @@ try{
   darkPage.on('pageerror',err=>problems.push('Dark UI JS exception: '+err.message));
   await hydrated(darkPage,'/quilt-backing-calculator/');
   const darkColors=await darkPage.evaluate(()=>{
-    const rgb=value=>value.match(/\\d+/g).slice(0,3).map(Number);
+    const rgb=value=>value.match(/\d+/g).slice(0,3).map(Number);
     const light=v=>{const a=v/255;return a<=.04045?a/12.92:Math.pow((a+.055)/1.055,2.4);};
-    const luminance=v=>v[0]*.2126*1+v[1]*.7152*1+v[2]*.0722*1;
     const makeLum=v=>{const [r,g,b]=rgb(v).map(light);return r*.2126+g*.7152+b*.0722;};
     const ratio=(a,b)=>{const aL=makeLum(a),bL=makeLum(b);return (Math.max(aL,bL)+.05)/(Math.min(aL,bL)+.05);};
     const surface=document.querySelector('.input-card');
