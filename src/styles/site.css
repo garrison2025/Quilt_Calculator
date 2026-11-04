@@ -101,3 +101,6 @@
  .mobile-tools nav a:hover,.mobile-tools nav a:focus-visible{background:#294a35}
  .skip-link{background:#243f2e;color:#edf8ef}
 }
+
+.results-footer{flex-wrap:wrap;gap:9px}.results-footer button{min-width:0;flex:1 1 170px;text-align:center}
+@media(max-width:490px){.results-footer button{flex:1 1 100%}}
