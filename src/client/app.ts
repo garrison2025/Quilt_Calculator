@@ -343,8 +343,21 @@ if(root){
   if(tool==='inches'){
    const group=node('div');group.appendChild(node('h3','group-title','Exact conversion'));
    const wrap=node('div','field-wrap'),lbl=node('label','','Fabric yards (decimals or fractions)'),inp=node('input','field-control');
-   lbl.htmlFor='yard-input';inp.id='yard-input';inp.value=conv;inp.addEventListener('input',()=>{conv=inp.value;update();});
-   append(wrap,lbl,inp);group.appendChild(wrap);fieldsRoot.appendChild(group);
+   lbl.htmlFor='yard-input';inp.id='yard-input';inp.value=conv;inp.inputMode='decimal';
+   const hint=node('small','hint','Use a decimal point (1.5), fraction (3/8), mixed fraction (1 1/2), or correctly grouped thousands (1,000).');
+   hint.id='yard-input-hint';
+   const fieldError=node('span','field-error');fieldError.id='yard-input-error';fieldError.hidden=true;
+   inp.setAttribute('aria-describedby',hint.id+' '+fieldError.id);
+   inp.setAttribute('aria-invalid','false');
+   inp.addEventListener('input',()=>{
+    conv=inp.value;
+    let message='';
+    try{parseMeasure(conv);}catch(e){message=e instanceof Error?e.message:'Enter a valid number of yards.';}
+    inp.setAttribute('aria-invalid',String(Boolean(message)));
+    fieldError.textContent=message;fieldError.hidden=!message;
+    update();
+   });
+   append(wrap,lbl,inp,hint,fieldError);group.appendChild(wrap);fieldsRoot.appendChild(group);
   }
   if(tool==='hub')fieldsRoot.appendChild(node('p','footer-note','Need fabric colors or additional borders? Edit them on the dedicated Quilt Fabric and Borders pages; your local project is shared across all tools.'));
  }

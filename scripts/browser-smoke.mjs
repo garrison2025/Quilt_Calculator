@@ -66,6 +66,18 @@ try{
       check((await page.locator('[data-content-guide="inches"] h3',{hasText:'How big is a yard of fabric?'}).count())===1,'Missing yard size explanation.');
       await page.screenshot({path:'artifacts/qa/yards-conversion-guide-desktop.png',fullPage:true,animations:'disabled'});
       console.log('PASS static 14-row fraction chart, yard-size intent, exact thirds and contextual links.');
+      const converter=page.getByLabel('Fabric yards (decimals or fractions)');
+      await converter.fill('1,2');
+      check(await converter.getAttribute('aria-invalid')==='true','Ambiguous comma number must be rejected on screen.');
+      check(await page.locator('#yard-input-error').isVisible(),'Converter invalid input needs inline accessible error.');
+      check(!(await page.locator('[data-action="export-cut"]').isEnabled()),'Cannot export invalid ambiguous yardage.');
+      await converter.fill('1,000');
+      check(await converter.getAttribute('aria-invalid')==='false','Valid US thousand grouping must restore the converter.');
+      check((await page.locator('[data-results] .result-big').innerText()).includes('36,000'),'1,000 yards must convert to 36,000 inches.');
+      await converter.fill('1 1/2');
+      check((await page.locator('[data-results] .result-big').innerText()).includes('54'),'Mixed fractions must still work.');
+      check(await page.locator('[data-action="export-cut"]').isEnabled(),'Corrected converter must re-enable valid export.');
+      console.log('PASS strict US numeric syntax, inline errors, recovery and exact yard conversions.');
     }
     if(path!=='/fabric-yards-to-inches/'){
       check(await page.locator('[data-results] svg[role="img"]').count()>0,'Missing schematic SVG: '+path);

@@ -51,3 +51,5 @@ Only **straight binding, butted borders, one-piece batting and explicitly feasib
 - **Not yet independently validated**: Google SERP intent alignment, original golden fixture source workbook, original release gates, actual production rankings/indexing or physical fabric cutting. Publication remains `noindex` until an approved custom domain is configured.
 
 - Extra SEO release checks: static per-page unique title/H1, known internal navigation destinations, labeled 14-row fraction reference, 1/3 and 2/3 exact outputs, responsive screenshots on converter at desktop and phone viewports, and guide links with no self-link or duplicate destinations.
+
+- Input safety: strictly rejects malformed comma-separated measurements (e.g. `1,2` cannot silently become `12`), while accepting `1,000` and mixed fractions. Converter offers an inline accessible error and disables stale exports until corrected; covered by Vitest and Chromium tests.

@@ -14,13 +14,18 @@ const valid = (x: number, label: string, zero = false) => {
 };
 export function parseMeasure(value: string | number): number {
   if (typeof value === 'number') return valid(value, 'Measurement', true);
-  const s = value.trim().replace(/,/g, '');
+  // The UI uses US English. Reject malformed comma groups: treating "1,2"
+  // as 12 can produce dangerously misleading fabric purchase amounts.
+  const s = value.trim();
+  const plain = /^\d+(?:\.\d+)?$/;
+  const grouped = /^\d{1,3}(?:,\d{3})+(?:\.\d+)?$/;
+  const parseError = 'Enter a measurement as 12, 12.5, 1/4, 1 3/8, or 1,000. Use a period for decimals.';
   let v: number;
-  if (/^\d+(?:\.\d+)?$/.test(s)) v = Number(s);
+  if (plain.test(s) || grouped.test(s)) v = Number(s.replace(/,/g, ''));
   else {
-    const m = s.match(/^(?:(\d+)\s+)?(\d+)\/(\d+)$/);
-    if (!m || Number(m[3]) === 0) throw Error('Use inches as 12, 12.5, 1/4 or 1 3/8.');
-    v = Number(m[1] || 0) + Number(m[2]) / Number(m[3]);
+    const m = s.match(/^(?:(\d+|\d{1,3}(?:,\d{3})+)\s+)?(\d+)\/(\d+)$/);
+    if (!m || !Number.isFinite(Number(m[3])) || Number(m[3]) === 0) throw Error(parseError);
+    v = Number((m[1] || '0').replace(/,/g, '')) + Number(m[2]) / Number(m[3]);
   }
   return valid(v, 'Measurement', true);
 }

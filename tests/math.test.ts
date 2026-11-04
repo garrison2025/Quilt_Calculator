@@ -3,6 +3,16 @@ import { calculateBacking, calculateStraightBinding, calculateYardage, calculate
  calculateBorders, calculateSashing, parseMeasure, purchase, roundToStep, verifyLayout, layoutRectangles, calculateWofArea } from '../src/lib/quilt/math';
 import { sampleProject, validateProject } from '../src/lib/quilt/project';
 describe('V2 independent arithmetic fixtures', () => {
+ it('parses only valid US comma grouping to prevent mistaken fabric amounts', () => {
+  expect(parseMeasure('1000')).toBe(1000);
+  expect(parseMeasure('1,000')).toBe(1000);
+  expect(parseMeasure('1,000.5')).toBe(1000.5);
+  expect(parseMeasure('1,000 1/2')).toBe(1000.5);
+  expect(parseMeasure('1 3/8')).toBe(1.375);
+  for (const invalid of ['1,2','1,23','1,,000','12,34,567','1,000,','1,000/2','1.2,3','1 1/0']) {
+   expect(()=>parseMeasure(invalid),'Reject ambiguous number: '+invalid).toThrow();
+  }
+ });
  it('backing longitudinal and crosswise cut plan', () => {
   const v = calculateBacking({ widthIn: 60, heightIn: 80, overageIn: 4, wofIn: 43, joinTakeupIn: 1 });
   expect(v.options.map(o => o.panelCount)).toEqual([2, 3]);
