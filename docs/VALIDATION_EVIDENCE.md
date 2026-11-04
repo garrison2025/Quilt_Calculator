@@ -1,5 +1,5 @@
 # Quilt Studio — verification evidence and release blockers
-Last verified: 2026-11-05 · keyboard error-focus, 320px reflow proxy, WCAG, original V2 geometry/privacy/print evidence through CI `41934908400` · `noindex` engineering preview.
+Last verified: 2026-11-05 · reversible reset and cross-tab preservation verified through CI `41936960193` · `noindex` engineering preview.
 
 ## What is actually verified
 | Check | Status | Evidence / reproducible action |
@@ -70,6 +70,12 @@ Only these are calculated with checked physical layouts: joined rectangular back
 - Added free open-source `axe-core` to the **CI-only** Chromium dependency install. This package does not ship in production. The 15 WCAG 2.0, 2.1 and 2.2 A/AA scans cover the 10 approved routes and 1 experimental Square page in default light desktop presentation, plus three 375px mobile views and one dark calculator view.
 - Initial scans correctly identified low contrast on small muted text in the header, project forms, shopping metrics, table headings, educational content and dark CTA/button labels. The original brand link also violated accessible-name matching. After actual CSS/ARIA improvements, all 15 included scans reported **zero axe rule violations** at [run 41933804432](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41933804432).
 - The automated report is attached as `axe-wcag2a-aa-audit.json` to GitHub browser QA artifacts; check `incomplete` items before any final WCAG claim. Automated checks cannot certify assistive-technology usability, keyboard workflows under all modal/error states, 200%/400% zoom, actual phone touch targets or real sewing/print calibration. Keep the original manual gate **PARTIAL**.
+
+## Reversible reset and cross-tab data safety (2026-11-05)
+- The **Reset** control now checks the latest localStorage revision before discarding the in-memory project. If another tab has saved a different revision, Reset is canceled and the current tab keeps its accepted input. The user can export the local JSON or deliberately load the latest saved version.
+- After a successful Reset, the **Undo reset** button restores the prior accepted V2 project and local browser backup. Undo is available only until the next accepted edit/import/units change and is deliberately single-use; this is not a persistent version history, and uncommitted typing drafts are not covered.
+- [CI 41936960193](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41936960193) passed **167/167** unit/property checks and real Chromium tests verifying stale-tab data retention, Undo restoration, JSON storage consistency and invalidation after new edits. The first implementation also surfaced a real WCAG 2.5.3 label/content mismatch on the new Undo button; this was corrected and all **15 axe scans** passed on rerun.
+- Preview remains noindex; neither the nine approved tools nor the 202 mapped / 16 HOLD keyword allocation changed.
 
 ## Follow-up: error focus and narrow reflow (2026-11-05)
 - [Source commit 72ad7f0](https://github.com/garrison2025/Quilt_Calculator/commit/72ad7f06b7120685626e13326a32262005267392), [CI 41934908400](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41934908400) passed the 167 core checks and the updated Chromium suite. An invalid edit plus Update now focuses the affected input, exposes an associated live field error and inline help, keeps old exports disabled, and re-enables exports only after the value is committed and valid.
