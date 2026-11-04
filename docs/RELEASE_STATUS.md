@@ -65,3 +65,5 @@ Only **straight binding, butted borders, one-piece batting and explicitly feasib
 - Minimum stitched-span coverage now uses a post-count physical coverage guard rather than fixed `-EPS` in the count ratio. Boundary tests exercise WOF 12/43/108 in, multiple join losses, exact thresholds and values just above thresholds; protects against underbuying one backing panel or one straight-binding strip.
 
 - Import contract parity: the V2 project parser now rejects unsupported or misspelled keys at all eight object boundaries, as required by the published JSON Schema's `additionalProperties:false`. Optional text labels no longer silently accept JSON `null`. Tests cover root, quilt, options, yardage, sashing, border, fabric and piece objects.
+
+- Physical roll area reconciliation is now part of `verifyLayout`: every feasible plan must report offcut equal to roll area minus the individual cut-piece areas within floating-point precision. Tests reject forged scrap amounts and inconsistent roll-run lengths, including a 2,000-piece stress case.

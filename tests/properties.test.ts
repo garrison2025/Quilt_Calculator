@@ -6,6 +6,25 @@ import {
 } from '../src/lib/quilt/math';
 
 describe('V2 deterministic geometry property checks', () => {
+ it('verifies fabric-roll area conservation instead of trusting scrap metadata',()=>{
+  const original=layoutRectangles(43,[{widthIn:5,heightIn:7,count:57}]);
+  const used=original.cutPieces.reduce((sum,p)=>sum+p.widthIn*p.heightIn,0);
+  expect(original.usableWofIn*original.exactFabricRunLengthIn)
+    .toBeCloseTo(used+original.physicalOffcutAreaSqIn,8);
+  const corrupted=structuredClone(original);
+  corrupted.physicalOffcutAreaSqIn+=1;
+  expect(verifyLayout(corrupted)).toBe(false);
+  const lostArea=structuredClone(original);
+  lostArea.exactFabricRunLengthIn+=10;
+  expect(verifyLayout(lostArea)).toBe(false);
+  expect(verifyLayout(original)).toBe(true);
+ });
+ it('reconciles offcuts in the upper 2,000-piece cutting plan',()=>{
+  const large=layoutRectangles(43,[{widthIn:5,heightIn:6,count:2000}]);
+  expect(verifyLayout(large)).toBe(true);
+  const area=large.cutPieces.reduce((sum,p)=>sum+p.widthIn*p.heightIn,0);
+  expect(area+large.physicalOffcutAreaSqIn).toBeCloseTo(large.usableWofIn*large.exactFabricRunLengthIn,6);
+ });
  it('backing and binding satisfy sewn coverage at panel-count boundaries',()=>{
   for(const wof of [12,43,108]){
    for(const join of [0,.5,2.5]){

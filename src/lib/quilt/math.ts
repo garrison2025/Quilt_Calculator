@@ -81,6 +81,14 @@ export function verifyLayout(layout: Layout): boolean {
       r.xIn + r.widthIn > layout.usableWofIn + EPS ||
       r.yIn + r.heightIn > layout.exactFabricRunLengthIn + EPS) return false;
   }
+  // Independently reconcile the reported roll offcut with the exact pieces.
+  // A non-overlapping layout with fabricated scrap numbers is not verified.
+  const rollArea = layout.usableWofIn * layout.exactFabricRunLengthIn;
+  const cutArea = pieces.reduce((sum, p) => sum + p.widthIn * p.heightIn, 0);
+  if (!Number.isFinite(rollArea) || !Number.isFinite(cutArea)) return false;
+  const roundoff = 16 * Number.EPSILON * Math.max(1, rollArea, cutArea) * (pieces.length + 1);
+  if (rollArea - cutArea < -roundoff ||
+      Math.abs(layout.physicalOffcutAreaSqIn - Math.max(0, rollArea - cutArea)) > roundoff) return false;
   // Never reorder the cutting plan itself; deterministic export coordinates stay intact.
   const ordered = [...pieces].sort((a, b) => a.yIn - b.yIn || a.xIn - b.xIn);
   for (let i = 0; i < ordered.length; i++) {
