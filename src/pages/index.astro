@@ -1,6 +1,29 @@
 ---
 import Base from '../layouts/Base.astro';
-import ToolPage from '../components/ToolPage.astro';
-import {byId} from '../data/routes';
+import Calculator from '../components/Calculator.astro';
+import {routes,byId} from '../data/routes';
+const featured=routes.filter(r=>['backing','binding','borders','yardage'].includes(r.id));
 ---
-<Base home title="Quilt Studio — Quilt & Fabric Calculators with Cutting Plans" description="Free quilting project planner and fabric calculators. Calculate physical cut layouts, backing yardage, binding, borders, batting and fabric quantities."><ToolPage route={byId('hub')}/></Base>
+<Base home title="Quilt Studio — Better Quilt & Fabric Calculators with Cut Plans" description="Plan a quilt in one place. Calculate backing, straight binding, batting and materials from real cutting diagrams, with printable shopping lists and free local project files.">
+<div class="page-shell">
+<section class="page-intro">
+ <div class="page-heading">
+  <span class="eyebrow-with-line">— THE MAKER'S TOOLKIT</span>
+  <h1>Less guessing.<br/>More making.</h1>
+  <p>Every quilting project begins with a little math. Bring together your fabric, finished dimensions, overage and seam requirements in one thoughtful, free planning workspace.</p>
+  <div class="feature-pills"><span>✓ Physical cutting plans</span><span>✓ No account</span><span>✓ Local project files</span></div>
+  <p><a class="header-cta" href="/calculators/">See the complete project planner ↗</a></p>
+ </div>
+ <div class="mini-feature"><div class="mini-top"><span>MEASURE TWICE, CUT ONCE</span><span>QUILT STUDIO / 2026</span></div><img src="/images/hub.webp" width="640" height="420" alt="Original illustration of patterned fabric squares arranged in a quilting cutting workspace" loading="eager"/><div class="mini-bottom"><b>Make room for the joy.</b><span>✳ Made to measure</span></div></div>
+</section>
+<section class="content-block" style="margin-top:22px">
+ <div class="editorial-head"><span class="eyebrow-with-line">— START RIGHT HERE</span><h2>Your next quilt, in one place.</h2><p>Try the 60 × 80 inch sample project below. Adjust the dimensions and get a physically checked fabric plan, not an area-only estimate.</p></div>
+ <Calculator tool="hub" sample={byId('hub').sample}/>
+</section>
+<section class="content-block">
+ <div class="editorial-head"><span class="eyebrow-with-line">— YOUR NEXT STEP</span><h2>Four tools makers come back to.</h2><p>Each calculator answers a different cutting question, with its own inputs, assumptions and worked example.</p></div>
+ <div class="related-grid">{featured.map(r=><a class="related-card" href={'/'+r.slug+'/'}><span class="related-ornament">✳</span><span>{r.nav.toUpperCase()}</span><strong>{r.h1}</strong><small>Explore the calculator ↗</small></a>)}</div>
+</section>
+<section class="sample-block"><div><span class="eyebrow-with-line">— WHY WE MADE THIS</span><h2>Calculations that respect the fabric.</h2><p>A square-inch area estimate can hide impossible cuts. Quilt Studio checks usable width, grain direction and actual rectangular placement before giving you a purchase quantity. Where sewing geometry is unverified, the tool tells you clearly instead of guessing.</p><a href="/calculators/">View all planning tools ↗</a></div><span class="sample-icon" aria-hidden="true">✳</span></section>
+</div>
+</Base>

@@ -142,6 +142,7 @@ if(root){
  function persist(){sample=false;stateLabel.textContent='● My local project';try{localStorage.setItem('quilt-studio-v2',JSON.stringify(project));}catch{/* file export remains available */}}
  function read(field:Field,value:string|boolean):unknown{
   if(field.kind==='check')return Boolean(value);
+  if(field.path==='pricePerYard' && String(value).trim()==='')return undefined;
   if(field.kind==='text')return String(value);
   const n=parseMeasure(String(value));
   if(field.kind==='whole' && (!Number.isInteger(n)||n>2000))throw Error(field.label+' must be a whole number between 0 and 2000.');
