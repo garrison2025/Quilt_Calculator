@@ -24,7 +24,7 @@ export function parseMeasure(value: string | number): number {
   // The UI uses US English. Reject malformed comma groups: treating "1,2"
   // as 12 can produce dangerously misleading fabric purchase amounts.
   const s = value.trim();
-  const plain = /^\d+(?:\.\d+)?$/;
+  const plain = /^(?:\d+(?:\.\d+)?|\.\d+)$/;
   const grouped = /^\d{1,3}(?:,\d{3})+(?:\.\d+)?$/;
   const parseError = 'Use 12, 12.5, 1/4, 1 3/8, 1½, ¼, or 1,000. Use a period for decimals.';
   // Support the fraction glyphs shown on fabric labels and on this site's chart.
