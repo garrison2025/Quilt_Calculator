@@ -64,3 +64,6 @@ A passing build does not replace a browser, accessibility, physical print or rea
 
 ## Non-indexed experiment: Square-in-a-Square
 The cutting laboratory is at /lab/square-in-square/. It is intentionally not part of the published tool directory, keywords or production sitemap. It calculates conservative 1/8-in-ruler cuts for one center and two background parent squares per block, per-roll cutting layouts and separate purchase estimates. It is not cleared for real sewing until a physical sewn/trimmed test block confirms corner seams and dimensions.
+
+## Original V2 source-workbook acceptance
+The source XLSX's 39 Golden examples, 24 property requirements and 47 release gates have been recovered and committed to [`docs/data/reference/`](docs/data/reference/ORIGINAL_SOURCE.md). Current-engine reference replay is in [`tests/original-v2-golden.test.ts`](tests/original-v2-golden.test.ts), dedicated 20-ID property coverage in [`tests/original-v2-properties.test.ts`](tests/original-v2-properties.test.ts), and the 47-gate review is at [`docs/qa/ORIGINAL_V2_RELEASE_GATES_47_CURRENT.md`](docs/qa/ORIGINAL_V2_RELEASE_GATES_47_CURRENT.md). No original NOT_RUN source value was rewritten to imply independent physical testing.

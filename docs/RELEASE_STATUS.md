@@ -68,7 +68,7 @@ Only **straight binding, butted borders, one-piece batting and explicitly feasib
 
 - Physical roll area reconciliation is now part of `verifyLayout`: every feasible plan must report offcut equal to roll area minus the individual cut-piece areas within floating-point precision. Tests reject forged scrap amounts and inconsistent roll-run lengths, including a 2,000-piece stress case.
 
-- The source V2 plan describes external `V2_Golden_Fixtures.csv` (39 cases), `V2_Property_Test_Plan.csv` (24 requirements) and `V2_Release_Gates.csv` (47 gates), but these exact original worksheets were not present in the deployed repository and were not separately available with the supplied plan during this review. Their original row-by-row gates remain NOT_RUN/PARTIAL as shown above, regardless of the separate 81 passing current tests.
+- The source V2 plan describes external `V2_Golden_Fixtures.csv` (39 cases), `V2_Property_Test_Plan.csv` (24 requirements) and `V2_Release_Gates.csv` (47 gates), and the full three original worksheets have **now been recovered from the user's original XLSX** and committed to `docs/data/reference/`. The original source statuses are preserved as historical NOT_RUN. Current independent results: 39/39 original Golden fixture cases, 20/24 original property IDs with dedicated automated tests, and a separate 47-row G0–G4 evidence/remaining-blocker register. See `docs/VALIDATION_EVIDENCE.md`.
 
 - Removed a fixed `1e-8` coordinate tolerance that could accept a physically oversized WOF row or ignore a small true overlap. Geometry uses bounded floating-point-scale slack; regression tests cover sub-1e-8 violations and decimal exact-touching layouts.
 
@@ -91,3 +91,10 @@ Only **straight binding, butted borders, one-piece batting and explicitly feasib
 - The noindex Square-in-a-Square trial now has a separate measured-test section: enter actual unfinished width/height and all four corner-point distances to the raw cut edge, or leave it unevaluated. It **does not** autofill measured values.
 - Screening compares to finished target + 1/2 inch and four 1/4-inch point margins with a clearly identified, non-normative ±1/16-inch worksheet tolerance. Reported passes and failures are *USER-REPORTED ONLY*, not a certified source fixture or physical test performed by this project.
 - CSV report includes a prominent non-certification warning. Changing any trial-cut input or measured value invalidates the previous report. Chromium smoke now checks required values, Unicode fractions, report labeling and a clipped-point failure.
+
+
+## Original V2 workbook recovery and exact-reference QA (2026-11-04)
+- Recovered the original 39 Golden records, 24 property requirements and 47 release gates from `Quilt_V2_Research_and_Build.xlsx` and committed the unaltered content (excluding spreadsheet-added row indices) to `docs/data/reference/`.
+- **39/39 reference cases now match the engine**, and 20 original property IDs have explicit executable tests. The source data's original `NOT_RUN` statuses remain unchanged; current CI results are documented separately. Full suite: **167/167** at https://github.com/garrison2025/Quilt_Calculator/actions/runs/41813177924 .
+- Corrected a real `YARD-04` difference: count 0 retains theoretically measurable row capacity without buying any fabric.
+- All 47 original G0–G4 gates have independent current evidence/blocked statuses in `docs/qa/ORIGINAL_V2_RELEASE_GATES_47_CURRENT.md`. Do not treat having automated evidence as release sign-off, especially for actual print scale, physical sewing, domain, consent or GSC.
