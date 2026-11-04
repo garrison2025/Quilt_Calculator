@@ -555,7 +555,14 @@ if(root){
     resultRoot.appendChild(grid);warning(resultRoot,'Fabric yards describe length along a bolt. They do not specify usable fabric width.');plan={yards:value,inches,centimeters:cm};
    }
    if(layout){layoutSummary(resultRoot,layout);diagram(resultRoot,layout,'Cut plan / CURRENT fabric roll');}
-   if(alternateLayout){section(resultRoot,'Alternate WOF cutting schematic','Comparison only · not in current cut-list CSV');layoutSummary(resultRoot,alternateLayout);diagram(resultRoot,alternateLayout,'Alternate roll / not the selected purchase');}
+   if(alternateLayout){
+    const alternatePanel=node('section','alternate-compare-plan');
+    alternatePanel.dataset.alternateComparePlan='';
+    section(alternatePanel,'Alternate WOF cutting schematic','Comparison only · not in current cut-list CSV or printed cut plan');
+    layoutSummary(alternatePanel,alternateLayout);
+    diagram(alternatePanel,alternateLayout,'Alternate roll / not the selected purchase');
+    resultRoot.appendChild(alternatePanel);
+   }
    const record={tool,sourceProjectHash:hashProject(project),calculationVersion:VERSION,calculatedAt:new Date().toISOString(),projectUnits:project.units,result:plan};
    cutExport=record;
    exportButton.disabled=false;printButton.disabled=false;

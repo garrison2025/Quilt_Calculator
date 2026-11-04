@@ -77,3 +77,5 @@ Only **straight binding, butted borders, one-piece batting and explicitly feasib
 - Conversion usability: the yard input now accepts full-string Unicode fabric fractions such as `¼`, `¾`, `⅓` and mixed `1½`, in addition to `1/4` / `1 1/2`. Invalid fragments (e.g. `1,2½`) still fail safely. New math and Chromium checks confirm these exact values.
 
 - Physical dual-WOF comparison now appears within the original Fabric Yardage Calculator, with two independently verified rectangle layouts, per-width cut-run and rounded purchase values, and an explicit no-buy warning for the hypothetical alternate. Only the CURRENT fabric WOF feeds the cut-list CSV. The optional V2 project field `yardage.alternateWof` is backwards-compatible with earlier saved project JSON. **The separate conditional WOF SEO route remains HOLD.**
+
+- Print safety for dual-WOF comparison: the hypothetical comparison numbers and second-roll diagram are omitted from the real cut-plan PDF/print stylesheet. Browser QA checks screen visibility, print hiding, retained current-roll SVG and produces a current-width-only PDF artifact.

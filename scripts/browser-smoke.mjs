@@ -178,7 +178,15 @@ try{
       check((await panel.innerText()).includes('Cannot fit'),'Impossible alternate WOF must show a blocked fit, not fake yardage.');
       check(await page.locator('[data-action="export-cut-csv"]').isEnabled(),'Infeasible alternate must not block a valid current cut list.');
       await altWof.fill('50');await altWof.press('Tab');
-      console.log('PASS physical dual-WOF comparison and CURRENT-only cutting export.');
+      check(await page.locator('[data-width-comparison]').isVisible(),'Comparison must remain visible on screen.');
+      check(await page.locator('[data-alternate-compare-plan] svg[role="img"]').count()===1,'Comparison needs an independent screen-only diagram.');
+      await page.emulateMedia({media:'print'});
+      check(await panel.evaluate(el=>getComputedStyle(el).display)==='none','Hypothetical width comparison must not appear in the real cutting printout.');
+      check(await page.locator('[data-alternate-compare-plan]').evaluate(el=>getComputedStyle(el).display)==='none','Do not print alternate physical cutting diagram in the current-roll cutting plan.');
+      check(await page.locator('[data-results] svg[role="img"]').first().isVisible(),'Current fabric cut plan must remain in the print layout.');
+      await page.pdf({path:'artifacts/qa/yardage-current-width-only-print.pdf',printBackground:true,format:'A4'});
+      await page.emulateMedia({media:'screen'});
+      console.log('PASS physical dual-WOF comparison, CURRENT-only CSV and print/PDF exports.');
     }
     if(path==='/quilt-batting-calculator/'){
       const rollWidth=page.getByLabel('Actual roll width (in)',{exact:true});
