@@ -208,6 +208,43 @@ try{
       await page.screenshot({path:'artifacts/qa/backing-desktop.png',fullPage:true,animations:'disabled'});
     }
   }
+  // Isolated Square-in-a-Square lab must stay off approved SEO routes.
+  const labReply=await page.goto(ROOT+'/lab/square-in-square/',{waitUntil:'domcontentloaded'});
+  assert.equal(labReply.status(),200,'Square laboratory route missing.');
+  check(await page.locator('meta[name="robots"]').getAttribute('content')==='noindex,follow',
+    'Square trial must remain noindex.');
+  check(await page.locator('link[rel="canonical"]').count()===0,
+    'Trial calculator must not publish a production canonical.');
+  await page.waitForFunction(()=>document.querySelector('[data-square-status]')?.textContent?.includes('Calculated preview'));
+  const labResults=await page.locator('[data-square-output]').innerText();
+  for(const expected of ['9 in','7.125 in','16','0.25 yd','0.5 yd']){
+   check(labResults.includes(expected),'Square trial calculation missing '+expected);
+  }
+  assert.equal(await page.locator('.square-lab-roll svg[role="img"]').count(),2,
+    'Square lab must show physically separate center and corner roll diagrams.');
+  const sqExportPromise=page.waitForEvent('download');
+  await page.locator('[data-square-download]').click();
+  const sqExport=await sqExportPromise;
+  const sqCsv=await fs.readFile(await sqExport.path(),'utf8');
+  check(sqCsv.includes('center-trial')&&sqCsv.includes('corner-trial'),
+    'Cut CSV must preserve center and corner as separate fabric SKUs.');
+  assert.equal(sqCsv.trim().split(/\r?\n/).length,13,
+    'Trial CSV must contain exactly twelve parent-square cuts plus one header row.');
+  const sqCornerWof=page.getByLabel('Corner fabric usable WOF (in)');
+  await sqCornerWof.fill('5');
+  check(!(await page.locator('[data-square-download]').isEnabled()),
+    'Editing a trial field must immediately disable exporting stale cutting results.');
+  await page.locator('[data-square-form] button[type="submit"]').click();
+  check((await page.locator('[data-square-status]').innerText()).includes('a fabric width is impossible'),
+    'An impossible background WOF must not generate fictitious purchase yardage.');
+  check(!(await page.locator('[data-square-download]').isEnabled()),
+    'Cannot export parent-square CSV with an impossible background roll.');
+  await sqCornerWof.fill('43');
+  await page.locator('[data-square-form] button[type="submit"]').click();
+  check(await page.locator('[data-square-download]').isEnabled(),
+    'Restoring usable width must restore a geometrically verifiable trial plan.');
+  await page.screenshot({path:'artifacts/qa/square-in-square-unindexed-lab.png',fullPage:true,animations:'disabled'});
+  console.log('PASS square laboratory noindex, reference cuts, separate 12-piece parent CSV and impossible-fit guard.');
   // Keyboard accessibility gate: the bypass link, FAQ disclosure and editable
   // converter must work with focus/Enter instead of requiring pointer input.
   await hydrated(page,'/fabric-yards-to-inches/');
