@@ -26,7 +26,15 @@ export function parseMeasure(value: string | number): number {
   const s = value.trim();
   const plain = /^\d+(?:\.\d+)?$/;
   const grouped = /^\d{1,3}(?:,\d{3})+(?:\.\d+)?$/;
-  const parseError = 'Enter a measurement as 12, 12.5, 1/4, 1 3/8, or 1,000. Use a period for decimals.';
+  const parseError = 'Use 12, 12.5, 1/4, 1 3/8, 1½, ¼, or 1,000. Use a period for decimals.';
+  // Support the fraction glyphs shown on fabric labels and on this site's chart.
+  // A full-string match is mandatory: "1,2½" is ambiguous and must be rejected.
+  const glyphFractions: Record<string, number> = {
+    '⅛': 1/8, '¼': 1/4, '⅓': 1/3, '⅜': 3/8, '½': 1/2,
+    '⅝': 5/8, '⅔': 2/3, '¾': 3/4, '⅞': 7/8
+  };
+  const glyph = s.match(/^(?:(\d+|\d{1,3}(?:,\d{3})+)\s*)?([⅛¼⅓⅜½⅝⅔¾⅞])$/u);
+  if (glyph) return valid(Number((glyph[1] || '0').replace(/,/g, '')) + glyphFractions[glyph[2]], 'Measurement', true);
   let v: number;
   if (plain.test(s) || grouped.test(s)) v = Number(s.replace(/,/g, ''));
   else {

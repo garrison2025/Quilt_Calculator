@@ -76,6 +76,14 @@ try{
       check((await page.locator('[data-results] .result-big').innerText()).includes('36,000'),'1,000 yards must convert to 36,000 inches.');
       await converter.fill('1 1/2');
       check((await page.locator('[data-results] .result-big').innerText()).includes('54'),'Mixed fractions must still work.');
+      await converter.fill('1½');
+      check((await page.locator('[data-results] .result-big').innerText()).includes('54'),'Pasted Unicode mixed fractions must work.');
+      await converter.fill('¾');
+      check((await page.locator('[data-results] .result-big').innerText()).includes('27'),'Pasted Unicode fraction must convert to 27 inches.');
+      await converter.fill('1,2½');
+      check(await converter.getAttribute('aria-invalid')==='true','Malformed Unicode fraction must not evade numeric validation.');
+      await converter.fill('⅔');
+      check((await page.locator('[data-results] .result-big').innerText()).includes('24'),'Pasted two-thirds must convert to 24 inches.');
       check(await page.locator('[data-action="export-cut"]').isEnabled(),'Corrected converter must re-enable valid export.');
       console.log('PASS strict US numeric syntax, inline errors, recovery and exact yard conversions.');
     }

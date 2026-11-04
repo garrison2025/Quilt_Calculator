@@ -73,3 +73,5 @@ Only **straight binding, butted borders, one-piece batting and explicitly feasib
 - Removed a fixed `1e-8` coordinate tolerance that could accept a physically oversized WOF row or ignore a small true overlap. Geometry uses bounded floating-point-scale slack; regression tests cover sub-1e-8 violations and decimal exact-touching layouts.
 
 - Allowed grain rotation now also considers near-square rectangular cut dimensions (rather than suppressing rotations solely due to a fixed epsilon). Tests demonstrate a borderline piece is rejected when rotation is forbidden but accepted when its rotated width actually fits.
+
+- Conversion usability: the yard input now accepts full-string Unicode fabric fractions such as `¼`, `¾`, `⅓` and mixed `1½`, in addition to `1/4` / `1 1/2`. Invalid fragments (e.g. `1,2½`) still fail safely. New math and Chromium checks confirm these exact values.

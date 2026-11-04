@@ -54,6 +54,18 @@ describe('V2 independent arithmetic fixtures', () => {
   expect(roundToStep(0.3,0.1)).toBeCloseTo(0.3,12);
   expect(roundToStep(0,0.125)).toBe(0);
  });
+ it('accepts displayed Unicode fabric fractions without accepting malformed mixed text',()=>{
+  expect(parseMeasure('¼')).toBe(.25);
+  expect(parseMeasure('1½')).toBe(1.5);
+  expect(parseMeasure('1 ½')).toBe(1.5);
+  expect(parseMeasure('⅜')).toBe(.375);
+  expect(parseMeasure('⅓')*36).toBe(12);
+  expect(parseMeasure('⅔')*36).toBe(24);
+  expect(parseMeasure('1,000¼')).toBe(1000.25);
+  for(const invalid of ['1,2½','1½3','½½','1,00¼','¾ yard','1 ½ ½']){
+    expect(()=>parseMeasure(invalid),'Reject malformed glyph fraction: '+invalid).toThrow();
+  }
+ });
  it('parses only valid US comma grouping to prevent mistaken fabric amounts', () => {
   expect(parseMeasure('1000')).toBe(1000);
   expect(parseMeasure('1,000')).toBe(1000);
