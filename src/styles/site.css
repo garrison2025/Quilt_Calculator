@@ -36,3 +36,15 @@
 @media print{.sku-plan{border:1px solid #bbb;margin:18px 0;break-inside:auto}.sku-plan-summary{color:#222}.sku-plan-summary:before{display:none!important}.sku-plan[open]>summary{border-bottom:1px solid #bbb}}
 
 #results{scroll-margin-top:15px}
+
+/* Audit-ready, SKU-separated shopping breakdown and portable CSV control. */
+.shopping-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:4px 0 12px}
+.shopping-toolbar p{margin:0;max-width:440px}
+.shopping-toolbar button{flex-shrink:0}
+.shopping-item .shopping-info{flex:1;min-width:0}
+.shopping-item .shopping-amount{white-space:nowrap;text-align:right}
+.shopping-metrics{display:flex;gap:4px 12px;flex-wrap:wrap;margin-top:9px;color:#748276}
+.shopping-metrics span{font-size:10px;line-height:1.4;white-space:normal}
+.shopping-metrics .shopping-cost{font-weight:800;color:#32644c}
+@media(max-width:490px){.shopping-toolbar{flex-direction:column;align-items:flex-start}.shopping-toolbar button{width:100%}.shopping-item{align-items:flex-start}.shopping-item .shopping-amount{font-size:21px}}
+@media print{.shopping-toolbar button{display:none!important}.shopping-toolbar p{font-size:10px;color:#333}.shopping-metrics span{color:#333}}

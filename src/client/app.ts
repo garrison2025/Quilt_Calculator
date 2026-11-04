@@ -119,11 +119,51 @@ function diagram(parent:Element,layout:Layout,title:string):void{
  table(parent,['# / piece','x in','y in','width × height in','grain'],layout.cutPieces.slice(0,45).map((p,i)=>[String(i+1)+' · '+p.label,num(p.xIn),num(p.yIn),num(p.widthIn)+' × '+num(p.heightIn),String(p.grainRotationDeg)+'°']));
 }
 function details(parent:Element,items:[string,string][]):void{stats(parent,items);}
-function shopping(parent:Element,lines:{label:string;hint:string;amount?:number}[]):void{
- section(parent,'Material shopping list','Rounded purchase quantities');
+type ShoppingLine={
+ label:string;hint:string;amount?:number;rawYards?:number;offcutSqIn?:number;
+ roundingExtraIn?:number;unitPrice?:number;assemblyTrimSqIn?:number;
+};
+function csvCell(value:string|number|undefined):string{
+ const str=value===undefined?'':String(value);
+ // Excel/Sheets may interpret imported labels beginning with =, +, -, or @ as formulas.
+ const safe=/^[\\s]*[=+@-]/.test(str)?"'"+str:str;
+ return '"'+safe.replace(/"/g,'""')+'"';
+}
+function downloadShoppingCsv(lines:ShoppingLine[]):void{
+ const headers=['Material / SKU','Notes','Exact raw yards','Rounded purchase yards','Roll offcut sq in','Purchase rounding excess in','Post-assembly trim sq in','User entered price USD per yd','Estimated cost USD'];
+ const rows=lines.map(line=>{
+  const estimated=line.amount!==undefined&&line.unitPrice!==undefined ? line.amount*line.unitPrice:undefined;
+  return [line.label,line.hint,line.rawYards,line.amount,line.offcutSqIn,line.roundingExtraIn,line.assemblyTrimSqIn,line.unitPrice,estimated];
+ });
+ const payload='\\uFEFF'+[headers,...rows].map(row=>row.map(csvCell).join(',')).join('\\r\\n')+'\\r\\n';
+ const blob=new Blob([payload],{type:'text/csv;charset=utf-8'});
+ const url=URL.createObjectURL(blob),a=document.createElement('a');
+ a.href=url;a.download='quilt-studio-shopping-list.csv';document.body.appendChild(a);a.click();a.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),2000);
+}
+function shopping(parent:Element,lines:ShoppingLine[]):void{
+ section(parent,'Material shopping list','Each material is purchased independently');
+ const tools=node('div','shopping-toolbar'),button=node('button','action-secondary','Download shopping CSV');
+ button.type='button';button.dataset.action='export-shopping';
+ button.addEventListener('click',()=>downloadShoppingCsv(lines));
+ append(tools,node('p','footer-note','Exact raw amount, rounded purchase, fabric-roll offcut and shop rounding are different measurements.'),button);
+ parent.appendChild(tools);
  const list=node('div','shopping-list');
- for(const line of lines){const item=node('div','shopping-item'),left=node('div');
- append(left,node('b','',line.label),node('small','',line.hint));append(item,left,node('strong','',line.amount===undefined?'Not planned':yd(line.amount)+' yd'));list.appendChild(item);}
+ for(const line of lines){
+  const item=node('div','shopping-item'),left=node('div','shopping-info'),metrics=node('div','shopping-metrics');
+  append(left,node('b','',line.label),node('small','',line.hint));
+  if(line.rawYards!==undefined)metrics.appendChild(node('span','','Raw: '+num(line.rawYards,4)+' yd'));
+  if(line.offcutSqIn!==undefined)metrics.appendChild(node('span','','Roll offcut: '+num(line.offcutSqIn,1)+' in²'));
+  if(line.roundingExtraIn!==undefined)metrics.appendChild(node('span','','Purchase rounding excess: '+num(line.roundingExtraIn,2)+' in'));
+  if(line.assemblyTrimSqIn!==undefined)metrics.appendChild(node('span','','Post-join trim: '+num(line.assemblyTrimSqIn,1)+' in² (separate)'));
+  if(line.unitPrice!==undefined&&line.amount!==undefined){
+   metrics.appendChild(node('span','','Your unit price: '+money(line.unitPrice)+'/yd'));
+   metrics.appendChild(node('span','shopping-cost','Est. '+money(line.amount*line.unitPrice)));
+  }
+  left.appendChild(metrics);
+  append(item,left,node('strong','shopping-amount',line.amount===undefined?'Not planned':yd(line.amount)+' yd'));
+  list.appendChild(item);
+ }
  parent.appendChild(list);
 }
 const root=document.querySelector<HTMLElement>('[data-tool]');
@@ -179,6 +219,7 @@ if(root){
     const message=e instanceof Error?e.message:'This input is not valid.';
     input.setAttribute('aria-invalid','true');fieldError.hidden=false;fieldError.textContent=message;
     cutExport=null;exportButton.disabled=true;printButton.disabled=true;
+    resultRoot.querySelectorAll<HTMLButtonElement>('[data-action="export-shopping"]').forEach(button=>button.disabled=true);
     resultRoot.querySelector('[data-stale-warning]')?.remove();
     const stale=node('div','warning-banner error-banner','The value was not saved. Results below are from the last valid measurements. Correct the highlighted field to recalculate.');
     stale.setAttribute('data-stale-warning','');resultRoot.prepend(stale);
@@ -279,6 +320,7 @@ if(root){
  function update():void{
   if(fieldsRoot.querySelector('[aria-invalid="true"]')){
    cutExport=null;exportButton.disabled=true;printButton.disabled=true;
+   resultRoot.querySelectorAll<HTMLButtonElement>('[data-action="export-shopping"]').forEach(button=>button.disabled=true);
    resultRoot.querySelector('[data-stale-warning]')?.remove();
    const stale=node('div','warning-banner error-banner','Resolve every highlighted input before updating or exporting the cutting plan. The previously accepted project is still safe.');
    stale.setAttribute('data-stale-warning','');resultRoot.prepend(stale);
@@ -326,7 +368,13 @@ if(root){
    }else if(tool==='borders'){
     const b=calculateBorders({widthIn:w,heightIn:h,seamIn:o.seam,layers:p.borders,step:o.step});
     hero(resultRoot,String(b.layers.length),'BUTTED BORDER LAYERS','Final quilt '+num(b.finishedWidthIn)+' × '+num(b.finishedHeightIn)+' in. Side strips are attached before top and bottom strips.',b.layers.length===1?'layer':'layers');
-    shopping(resultRoot,b.layers.map(x=>({label:x.label+' · '+x.sku,hint:'Sides '+num(x.sideCutLengthIn)+' in; top/bottom '+num(x.topCutLengthIn)+' in',amount:x.purchase?.roundedPurchaseYards})));
+    shopping(resultRoot,b.layers.map((x,i)=>({
+     label:x.label+' · '+x.sku,hint:'Sides '+num(x.sideCutLengthIn)+' in; top/bottom '+num(x.topCutLengthIn)+' in',
+     amount:x.purchase?.roundedPurchaseYards,rawYards:x.purchase?.rawPurchaseYards,
+     offcutSqIn:x.layout.isCutFeasible?x.layout.physicalOffcutAreaSqIn:undefined,
+     roundingExtraIn:x.purchase?.purchaseRoundingExtraLengthIn,
+     unitPrice:p.borders[i].pricePerYard
+    })));
     if(b.layers.some(x=>!x.purchase))warning(resultRoot,'At least one layer is FIT_IMPOSSIBLE at its specified WOF. No yardage is offered for that layer.',true);
     section(resultRoot,'Cutting diagrams by border layer','Open each layer to inspect its physical coordinates');
     b.layers.forEach((x,i)=>materialPlan(resultRoot,x.sku,x.label,x.layout,i,x.purchase?.roundedPurchaseYards));
@@ -337,7 +385,13 @@ if(root){
     if(!f.length){warning(resultRoot,'No fabric SKUs planned. Add a fabric and its cut pieces before purchasing.');}
     else{
      hero(resultRoot,String(f.length),'SEPARATE FABRIC SKUS','Each fabric color has independent usable WOF, shrinkage, layout and purchase quantity.',f.length===1?'SKU':'SKUs');
-     shopping(resultRoot,f.map(x=>({label:x.label+' · '+x.fabricSku,hint:x.layout.cutPieces.length+' cut pieces · '+(x.priceEstimate===undefined?'No price entered':'Est. '+money(x.priceEstimate)),amount:x.purchase?.roundedPurchaseYards})));
+     shopping(resultRoot,f.map(x=>({
+      label:x.label+' · '+x.fabricSku,hint:x.layout.cutPieces.length+' cut pieces',
+      amount:x.purchase?.roundedPurchaseYards,rawYards:x.purchase?.rawPurchaseYards,
+      offcutSqIn:x.layout.isCutFeasible?x.layout.physicalOffcutAreaSqIn:undefined,
+      roundingExtraIn:x.purchase?.purchaseRoundingExtraLengthIn,
+      unitPrice:p.fabrics.find(sku=>sku.id===x.fabricSku)?.pricePerYard
+     })));
      if(f.some(x=>!x.purchase))warning(resultRoot,'One or more fabric SKUs contain a piece that cannot fit in the specified WOF.',true);
      section(resultRoot,'Cutting diagrams by fabric SKU','Each roll has independent coordinates and yardage');
      f.forEach((x,i)=>materialPlan(resultRoot,x.fabricSku,x.label,x.layout,i,x.purchase?.roundedPurchaseYards));
@@ -351,11 +405,24 @@ if(root){
     const fabric=calculateQuiltFabric(p.fabrics,o.step);
     hero(resultRoot,yd(backing.recommended.purchase.roundedPurchaseYards),'BACKING FABRIC (RECOMMENDED)','One quilt top: '+num(w)+' × '+num(h)+' in. See all materials below; each remains its own cutting plan.');
     shopping(resultRoot,[
-     {label:'Backing · '+backing.recommended.direction+' seams',hint:backing.recommended.panelCount+' full WOF panels',amount:backing.recommended.purchase.roundedPurchaseYards},
-     {label:'Batting · single piece only',hint:batting.message,amount:batting.purchase?.roundedPurchaseYards},
-     {label:'Straight-grain binding',hint:binding.stripCount+' full WOF strips',amount:binding.purchase.roundedPurchaseYards},
-     ...border.layers.map(x=>({label:x.label+' · '+x.sku,hint:'Butted borders',amount:x.purchase?.roundedPurchaseYards})),
-     ...fabric.map(x=>({label:x.label+' · '+x.fabricSku,hint:x.layout.cutPieces.length+' pieces (different fabric SKU)',amount:x.purchase?.roundedPurchaseYards}))
+     {label:'Backing · '+backing.recommended.direction+' seams',hint:backing.recommended.panelCount+' full WOF panels',
+      amount:backing.recommended.purchase.roundedPurchaseYards,rawYards:backing.recommended.purchase.rawPurchaseYards,
+      offcutSqIn:backing.recommended.layout.physicalOffcutAreaSqIn,roundingExtraIn:backing.recommended.purchase.purchaseRoundingExtraLengthIn,
+      assemblyTrimSqIn:backing.recommended.postAssemblyTrimAreaSqIn},
+     {label:'Batting · single piece only',hint:batting.message,amount:batting.purchase?.roundedPurchaseYards,
+      rawYards:batting.purchase?.rawPurchaseYards,offcutSqIn:batting.isCutFeasible?batting.layout.physicalOffcutAreaSqIn:undefined,
+      roundingExtraIn:batting.purchase?.purchaseRoundingExtraLengthIn},
+     {label:'Straight-grain binding',hint:binding.stripCount+' full WOF strips',amount:binding.purchase.roundedPurchaseYards,
+      rawYards:binding.purchase.rawPurchaseYards,offcutSqIn:binding.layout.physicalOffcutAreaSqIn,
+      roundingExtraIn:binding.purchase.purchaseRoundingExtraLengthIn},
+     ...border.layers.map((x,i)=>({label:x.label+' · '+x.sku,hint:'Butted borders',amount:x.purchase?.roundedPurchaseYards,
+      rawYards:x.purchase?.rawPurchaseYards,offcutSqIn:x.layout.isCutFeasible?x.layout.physicalOffcutAreaSqIn:undefined,
+      roundingExtraIn:x.purchase?.purchaseRoundingExtraLengthIn,unitPrice:p.borders[i].pricePerYard})),
+     ...fabric.map(x=>({label:x.label+' · '+x.fabricSku,hint:x.layout.cutPieces.length+' pieces (different fabric SKU)',
+      amount:x.purchase?.roundedPurchaseYards,rawYards:x.purchase?.rawPurchaseYards,
+      offcutSqIn:x.layout.isCutFeasible?x.layout.physicalOffcutAreaSqIn:undefined,
+      roundingExtraIn:x.purchase?.purchaseRoundingExtraLengthIn,
+      unitPrice:p.fabrics.find(sku=>sku.id===x.fabricSku)?.pricePerYard}))
     ]);
     layout=backing.recommended.layout;plan={backing,binding,batting,border,fabric};
     warning(resultRoot,'Fabric and border sample colors are part of the example project until you edit them. Purchase totals are separate by material; different rolls are never silently merged.');
