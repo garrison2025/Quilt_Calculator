@@ -1,0 +1,24 @@
+<section class="content-block square-test-audit" data-square-test-audit>
+ <div class="editorial-head">
+  <span class="eyebrow-with-line">— PRACTICE-BLOCK MEASUREMENT CHECKLIST</span>
+  <h2>Measure one sewn and trimmed block before bulk cutting.</h2>
+  <p>Press and trim one test block first. Enter the actual unfinished width and height, then measure how far each of the four center-square points sits inside its nearest RAW trimmed edge. Nothing is automatically assumed to pass.</p>
+ </div>
+ <div class="square-audit-guideline"><strong>Trial screening only — not a sewing certification</strong>
+  <p>Target unfinished edge = finished block target + ½ inch. Ideal raw-edge-to-center-point margin = ¼ inch. The comparison allows ±1/16 inch as a configurable worksheet screening criterion, not a universal professional tolerance. Check whether your actual quilt project requires tighter precision.</p>
+ </div>
+ <form class="square-audit-form" data-square-audit-form novalidate>
+  <div class="square-audit-fields">
+   <div class="field-wrap"><label for="audit-width">Measured unfinished width (in)</label><input class="field-control" id="audit-width" data-square-audit-field="measuredUnfinishedWidthIn" inputmode="decimal" placeholder="e.g. 12 1/2" autocomplete="off"/></div>
+   <div class="field-wrap"><label for="audit-height">Measured unfinished height (in)</label><input class="field-control" id="audit-height" data-square-audit-field="measuredUnfinishedHeightIn" inputmode="decimal" placeholder="e.g. 12.5" autocomplete="off"/></div>
+   <div class="field-wrap"><label for="audit-top">Top point to trimmed edge (in)</label><input class="field-control" id="audit-top" data-square-audit-field="topPointClearanceIn" inputmode="decimal" placeholder="e.g. 1/4" autocomplete="off"/></div>
+   <div class="field-wrap"><label for="audit-right">Right point to trimmed edge (in)</label><input class="field-control" id="audit-right" data-square-audit-field="rightPointClearanceIn" inputmode="decimal" placeholder="e.g. 1/4" autocomplete="off"/></div>
+   <div class="field-wrap"><label for="audit-bottom">Bottom point to trimmed edge (in)</label><input class="field-control" id="audit-bottom" data-square-audit-field="bottomPointClearanceIn" inputmode="decimal" placeholder="e.g. 1/4" autocomplete="off"/></div>
+   <div class="field-wrap"><label for="audit-left">Left point to trimmed edge (in)</label><input class="field-control" id="audit-left" data-square-audit-field="leftPointClearanceIn" inputmode="decimal" placeholder="e.g. 1/4" autocomplete="off"/></div>
+  </div>
+  <div class="input-actions"><button class="action-primary" type="submit">Check my measured test block</button><button class="action-secondary" type="button" data-square-audit-download disabled>Download my measurement record</button></div>
+ </form>
+ <div data-square-audit-results class="square-audit-results" role="status" aria-live="polite"><p>Not evaluated — actual sewn-block measurements have not been supplied.</p></div>
+ <p class="footer-note">Results here rely solely on the values you enter. A reported match is not proof that the construction formula works in real fabric, and it does not authorize opening the Square keyword page to indexing.</p>
+</section>
+<script>import {initSquareAudit} from '../client/square-audit';initSquareAudit();</script>
