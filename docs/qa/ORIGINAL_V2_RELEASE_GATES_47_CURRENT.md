@@ -2,9 +2,9 @@
 
 **Original source:** `docs/data/reference/V2_Release_Gates_47.csv` from the user-provided workbook. The source’s 47 `NOT_RUN` cells remain unchanged; the statuses below are a **separate assessment**, not retroactive changes to the workbook. `AUTO_EVIDENCE` means code/CI evidence exists for the narrow requirement, **not** final production sign-off. `PARTIAL` means additional independent review is still required. `MANUAL_NOT_RUN`, `WAIT_DOMAIN`, `WAIT_ADS` and `WAIT_GSC` are open blockers.
 
-Engineering CI proof: [143/143 + all 39 original golden cases](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41812589343). New original-property tests are tracked separately in [`ORIGINAL_V2_PROPERTY_COVERAGE.md`](./ORIGINAL_V2_PROPERTY_COVERAGE.md).
+Engineering CI proof: [167/167 tests + all 39 original golden cases + per-cut SVG/CSV and browser network audit](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41929120595). New original-property tests are tracked separately in [`ORIGINAL_V2_PROPERTY_COVERAGE.md`](./ORIGINAL_V2_PROPERTY_COVERAGE.md).
 
-**Status count across all original 47 gates:** PARTIAL: 18 · AUTO_EVIDENCE: 22 · MANUAL_NOT_RUN: 1 · WAIT_DOMAIN: 1 · WAIT_ADS: 3 · WAIT_GSC: 2. Every ID is present; none has been silently omitted.
+**Status count across all original 47 gates:** PARTIAL: 17 · AUTO_EVIDENCE: 23 · MANUAL_NOT_RUN: 1 · WAIT_DOMAIN: 1 · WAIT_ADS: 3 · WAIT_GSC: 2. Every ID is present; none has been silently omitted.
 
 | ID | Gate | Original check | Current engineering evidence | Missing condition / rationale |
 |---|---|---|---|---|
@@ -49,7 +49,7 @@ Engineering CI proof: [143/143 + all 39 original golden cases](https://github.co
 | 39 | G3 | Schema reflects actual WebApplication behavior and no invented reviews | **AUTO_EVIDENCE** | WebApplication JSON-LD is present without fake review/rating claims. |
 | 40 | G3 | No fake author, operator, testimonials or daily updated dates | **PARTIAL** | No known fabricated operator/rating; complete copy audit still manual. |
 | 41 | G4 | Cloudflare static build passes with no paid API/backend | **AUTO_EVIDENCE** | Cloudflare static preview and CI succeed with no paid runtime API. |
-| 42 | G4 | Network check confirms private project data is not uploaded | **PARTIAL** | Browser Chromium request audit now captures third-party HTTP(S) and all non-GET/HEAD requests across interactive tools, imports, exports, mobile and print. Only same-origin reads are permitted. This is automated browser evidence; a separate future production/ads audit is still required. |
+| 42 | G4 | Network check confirms private project data is not uploaded | **AUTO_EVIDENCE** | Chromium now fails CI on any third-party HTTP(S) request or non-read HTTP method across calculations, JSON imports, exports, storage failure, mobile and print. CI 41929120595 confirms local-only tested preview behavior; future ads/analytics/production network behavior must be audited separately. |
 | 43 | G4 | Privacy and consent statements match real ads/network/storage | **WAIT_ADS** | Ads/consent configuration not yet approved; no production ads deployed. |
 | 44 | G4 | Ad slots do not cause accidental clicks or cover print/compute | **WAIT_ADS** | No production ad slots yet; layout/accidental-click review pending. |
 | 45 | G4 | Ads.txt AdSense and consent check only after relevant approval | **WAIT_ADS** | AdSense approval/consent/ads.txt dependent on future account and domain. |
