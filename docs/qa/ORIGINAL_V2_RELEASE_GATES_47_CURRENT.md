@@ -64,3 +64,7 @@ Do not enable production indexing or describe the original G0–G4 gate set as f
 ### P21 / P24 engineering evidence (2026-11-05)
 - Added a live Chromium P21 navigation test to establish that the same native-inch measurements, display-unit setting, SKU label, rectangle count and Project V2 JSON persist across eight route transitions, with abandoned input drafts excluded.
 - Added an explicitly **print-only** 1 × 1 inch reference square and a 100 mm reference line on each approved print plan. Chromium verifies their CSS physical units under print media, and generated PDFs include them. **A real ruler measurement of actual 100%-printed paper is still NOT_RUN**. Both cutting illustrations and any future paper templates remain schematic until separately validated.
+
+### Automated WCAG A/AA evidence for UI gates (2026-11-05)
+- [CI 41933804432](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41933804432) adds 15 successful axe-core automated A/AA scans (11 desktop, three 375px mobile, one dark theme), retaining 167/167 math/property/unit checks and existing browser functionality. Actual low-contrast text and an accessible-name mismatch were corrected in the source rather than excluding rules.
+- Manual screen-reader/keyboard-only sessions, complex focus handling, all 400% zoom settings, touch hardware, and physical print-ruler measurement remain unverified. This is new **scoped automation evidence**, not a reclassification of every human-acceptance G2 gate as PASS. Original 47 rows and their historical statuses have not been rewritten.

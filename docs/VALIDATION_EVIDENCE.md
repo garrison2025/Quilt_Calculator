@@ -1,5 +1,5 @@
 # Quilt Studio — verification evidence and release blockers
-Last verified: 2026-11-05 · source replay, SVG/CSV, network, cross-tool and printed CSS ruler evidence from CI `41931472782` · `noindex` engineering preview.
+Last verified: 2026-11-05 · WCAG audits, original V2 source replay, geometry, privacy and print evidence through CI `41933804432` · `noindex` engineering preview.
 
 ## What is actually verified
 | Check | Status | Evidence / reproducible action |
@@ -15,7 +15,8 @@ Last verified: 2026-11-05 · source replay, SVG/CSV, network, cross-tool and pri
 | Cross-tool project continuity (P21, engineering) | PASS · tested journey | Chromium follows backing → binding → batting → hub → fabric → yardage → backing → hub; native-inch values, cm display, SKU/quantity edits, abandoned draft and downloaded JSON remain consistent |
 | Print physical-unit ruler aids (P24, digital scope only) | PASS · browser CSS / PDF | Print-only 1 in × 1 in square and 100 mm line verified for CSS physical dimensions; **actual ruler measurement on paper is NOT_RUN** |
 | Print layouts and responsive widths | PASS (automated scope) | Same CI, screenshot/PDF artifacts: https://github.com/garrison2025/Quilt_Calculator/actions/runs/41931472782/artifacts/13371074036 |
-| Automated keyboard and basic accessibility checks | PARTIAL | Same CI: skip link, details expansion, labels and IDs; no full manual screen-reader/contrast audit |
+| Automated WCAG 2.0/2.1/2.2 A/AA (axe-core) | PASS · automated scope only | 15 Chromium scans: 11 desktop routes including the noindex Square lab, three 375px mobile views and one dark-mode view; **zero reported rule violations** in [CI 41933804432](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41933804432). JSON report in workflow artifacts. |
+| Manual screen-reader, zoom and real-device accessibility | PARTIAL / NOT_RUN | Automated scans can have incomplete or untestable findings; at least one item per tested page still requires human review. VoiceOver/NVDA, keyboard-only full journeys, 200–400% zoom and actual touch interaction not independently signed off. |
 | Physical fabric cutting / complete sewing construction | NOT_RUN | Requires independent real-fabric comparison and grain/measurement review |
 | Production domain, canonical and indexing | NOT_CONFIGURED | Requires an approved domain and explicit release decision |
 | AdSense, Search Console and revenue | NOT_CONFIGURED | Account/production evidence required |
@@ -62,3 +63,8 @@ Only these are calculated with checked physical layouts: joined rectangular back
 - A separate browser context traversed the approved tools and verified that switching in/cm only changes display units, native inch dimensions remain stable, SKU and quantity edits persist, and discarded draft inputs never silently overwrite the saved project. Exported V2 JSON agrees with the final saved source. Evidence: [CI 41931472782](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41931472782).
 - All approved tool printouts now include a print-only **1 × 1 inch square** and a **100 mm horizontal reference line**. CSS pixel equivalents were independently measured in Chromium print media, and a PDF screenshot artifact was generated. The printed document explicitly says Actual size / 100%, no fit/shrink and verify with a ruler.
 - A **real printed page with a physically measured 1 in square and 100 mm line** has not been provided or tested. Original P24 remains **NOT_RUN (paper)**; do not misinterpret digitally correct CSS dimensions as calibrated printer output or 1:1 SVG cutting templates.
+
+## WCAG accessibility improvements (2026-11-05)
+- Added free open-source `axe-core` to the **CI-only** Chromium dependency install. This package does not ship in production. The 15 WCAG 2.0, 2.1 and 2.2 A/AA scans cover the 10 approved routes and 1 experimental Square page in default light desktop presentation, plus three 375px mobile views and one dark calculator view.
+- Initial scans correctly identified low contrast on small muted text in the header, project forms, shopping metrics, table headings, educational content and dark CTA/button labels. The original brand link also violated accessible-name matching. After actual CSS/ARIA improvements, all 15 included scans reported **zero axe rule violations** at [run 41933804432](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41933804432).
+- The automated report is attached as `axe-wcag2a-aa-audit.json` to GitHub browser QA artifacts; check `incomplete` items before any final WCAG claim. Automated checks cannot certify assistive-technology usability, keyboard workflows under all modal/error states, 200%/400% zoom, actual phone touch targets or real sewing/print calibration. Keep the original manual gate **PARTIAL**.
