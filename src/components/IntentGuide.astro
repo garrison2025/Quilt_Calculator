@@ -1,0 +1,36 @@
+---
+import type {ToolId} from '../client/types';
+import {guides, fractionRows} from '../data/intent-guides';
+import {byId} from '../data/routes';
+interface Props {tool:ToolId}
+const {tool}=Astro.props;
+const guide=guides[tool];
+const clean=(n:number)=>Number(n.toFixed(4)).toLocaleString('en-US',{maximumFractionDigits:4});
+---
+<section class="intent-guide content-block" data-content-guide={tool} aria-label="Practical calculation guide">
+  <div class="editorial-head"><span class="eyebrow-with-line">— PRACTICAL MEASUREMENT GUIDE</span><h2>{guide.title}</h2><p>{guide.lead}</p></div>
+  <div class="intent-guide-sections">{guide.sections.map((item,i)=>
+    <article class="intent-guide-section">
+      <span class="story-number">{String(i+1).padStart(2,'0')} / EXPLAINED</span>
+      <h3>{item.heading}</h3>
+      {item.paragraphs.map(p=><p>{p}</p>)}
+    </article>
+  )}</div>
+  {tool==='inches'&&
+  <div class="fraction-guide">
+    <h3>Yards to inches and centimeters: common fabric cuts</h3>
+    <p>This is an exact length conversion, not a price chart or a promise of a particular bolt width. Centimeters use exactly 2.54 cm per inch.</p>
+    <div class="table-scroll"><table class="breakdown-table fraction-reference-table">
+      <caption>Linear fabric yard fractions and the corresponding length</caption>
+      <thead><tr><th scope="col">Yards</th><th scope="col">Inches</th><th scope="col">Centimeters</th></tr></thead>
+      <tbody>{fractionRows.map(x=>{
+        const inches=36*x.numerator/x.denominator;
+        return <tr><th scope="row">{x.label} yard{x.numerator>x.denominator?'s':''}</th><td>{clean(inches)} in</td><td>{clean(inches*2.54)} cm</td></tr>;
+      })}</tbody>
+    </table></div>
+    <p class="fraction-footnote">Examples include 1/3 yard = 12 inches, 2/3 yard = 24 inches, 1½ yards = 54 inches and 4 yards = 144 inches. Fabric width must still be measured separately.</p>
+  </div>}
+  <nav class="intent-next" aria-label="Related fabric calculations"><h3>What to calculate next</h3><p>Use the specific calculator for the material you actually plan to cut:</p>
+    <div class="intent-next-links">{guide.related.map(id=><a href={'/'+byId(id).slug+'/'}>{byId(id).nav}<span aria-hidden="true"> ↗</span></a>)}</div>
+  </nav>
+</section>
