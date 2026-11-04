@@ -1,4 +1,4 @@
-import type { FabricSku, BorderLayer } from './math';
+import { MAX_PIECES, type FabricSku, type BorderLayer } from './math';
 export type Project = { schemaVersion: 2; units: 'in' | 'cm'; quilt: { finishedWidth: number; finishedHeight: number };
   options: { overage: number; usableWof: number; battingWof: number; joinTakeup: number; stripWidth: number; tailAllowance: number; stripJoinLoss: number; step: number; lengthShrinkage: number; oneWayPrint: boolean; seam: number; battingOverage: number; allowRotate: boolean };
   yardage: { pieceWidth: number; pieceHeight: number; count: number };
@@ -81,6 +81,7 @@ export function validateProject(data: unknown): Project {
  }
  const fabrics = array(root.fabrics,'fabrics',30);
  const ids = new Set<string>();
+ let totalFabricPieces=0;
  for (const [i,v] of fabrics.entries()){
   const f=object(v,'fabrics['+i+']'),tag='fabrics['+i+']';
   str(f,'id',tag);str(f,'label',tag);
@@ -95,7 +96,8 @@ export function validateProject(data: unknown): Project {
    const piece=object(vp,tag+'.pieces['+j+']'),part=tag+'.pieces['+j+']';
    numeric(piece,'widthIn',part,0,100000,false,true);
    numeric(piece,'heightIn',part,0,100000,false,true);
-   numeric(piece,'count',part,0,2000,true);
+   totalFabricPieces+=numeric(piece,'count',part,0,MAX_PIECES,true);
+   if(totalFabricPieces>MAX_PIECES)throw Error('Maximum 2,000 physical fabric pieces across all SKUs. Reduce quantities or split into multiple projects.');
    str(piece,'label',part,false);
    if(piece.allowRotate!==undefined)bool(piece,'allowRotate',part);
   }

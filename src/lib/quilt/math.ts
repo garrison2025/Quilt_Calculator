@@ -1,6 +1,7 @@
 /* Shared, side-effect-free cutting and purchasing mathematics. Measurements are inches. */
 export const VERSION = 'v2.0';
 export const LIMIT = 100000;
+export const MAX_PIECES = 2000;
 const EPS = 1e-8;
 export type Rect = { xIn: number; yIn: number; widthIn: number; heightIn: number; grainRotationDeg: 0 | 90; label: string };
 export type PieceRequest = { widthIn: number; heightIn: number; count: number; label?: string; allowRotate?: boolean };
@@ -75,7 +76,7 @@ export function layoutRectangles(usableWofIn: number, requests: PieceRequest[]):
     const count = valid(request.count, 'Piece count', true);
     if (!Number.isInteger(count)) throw Error('Piece count must be a whole number.');
     total += count;
-    if (total > 2000) throw Error('Maximum 2,000 physical pieces.');
+    if (total > MAX_PIECES) throw Error('Maximum 2,000 physical pieces per cutting plan. Reduce the number of pieces or split into separate projects.');
     if (count === 0) continue;
     const options: { w: number; h: number; rotation: 0 | 90; across: number; rows: number; run: number }[] = [];
     const add = (width: number, height: number, rotation: 0 | 90) => {
@@ -114,6 +115,7 @@ export function calculateBacking(input: { widthIn: number; heightIn: number; ove
     const span = direction === 'vertical' ? targetWidthIn : targetHeightIn;
     const panelLengthIn = direction === 'vertical' ? targetHeightIn : targetWidthIn;
     const panelCount = minimumCount(span, F, S);
+    if(panelCount>MAX_PIECES)throw Error('Backing requires more than 2,000 panels with this usable fabric width. Choose wider fabric or smaller quilt dimensions.');
     const layout = layoutRectangles(F, [{ widthIn: F, heightIn: panelLengthIn, count: panelCount, label: 'Backing panel' }]);
     const finishedJoinedSpanIn = panelCount * F - (panelCount - 1) * S;
     // One explicit construction convention: split total join take-up equally
@@ -134,6 +136,7 @@ export function calculateStraightBinding(input: { widthIn: number; heightIn: num
   if (join >= F) throw Error('Strip join loss must be smaller than usable fabric width.');
   const requiredLengthIn = 2 * (W + H) + tail;
   const stripCount = minimumCount(requiredLengthIn, F, join);
+  if(stripCount>MAX_PIECES)throw Error('Binding requires more than 2,000 strips. Choose wider fabric or smaller quilt dimensions.');
   const layout = layoutRectangles(F, [{ widthIn: F, heightIn: strip, count: stripCount, label: 'Straight-grain strip' }]);
   return { requiredLengthIn, stripCount, effectiveJoinedLengthIn: stripCount * F - (stripCount - 1) * join,
     layout, purchase: purchase(layout.exactFabricRunLengthIn, input.step, input.shrinkageLengthPct) };
@@ -149,6 +152,8 @@ export function calculateYardage(input: { pieceWidthIn: number; pieceHeightIn: n
 export type FabricSku = { id: string; label: string; usableWidth: number; oneWayPrint: boolean; shrinkageLengthPct: number; pricePerYard?: number; pieces: PieceRequest[] };
 export function calculateQuiltFabric(fabrics: FabricSku[], step = .125) {
   const seen = new Set<string>();
+  const pieces = fabrics.reduce((sum,f)=>sum+f.pieces.reduce((n,p)=>n+p.count,0),0);
+  if(!Number.isSafeInteger(pieces)||pieces>MAX_PIECES)throw Error('Maximum 2,000 physical fabric pieces across this project. Split large projects before calculating.');
   return fabrics.map(f => {
     if (!f.id || seen.has(f.id)) throw Error('Fabric SKUs must have unique non-empty IDs.');
     seen.add(f.id);
@@ -193,6 +198,7 @@ export function calculateSashing(input: { rows: number; columns: number; blockWi
   if (!Number.isInteger(R) || !Number.isInteger(C) || R > 100 || C > 100) throw Error('Grid counts must be whole numbers up to 100.');
   const bW = valid(input.blockWidthIn, 'Block width'), bH = valid(input.blockHeightIn, 'Block height'), sash = valid(input.finishedSashIn, 'Sashing width'), seam = valid(input.seamIn, 'Seam', true);
   const vertical = (C - 1) * R, horizontal = (R - 1) * C, cornerstones = (R - 1) * (C - 1);
+  if(vertical+horizontal+cornerstones>MAX_PIECES)throw Error('This block grid needs more than 2,000 sashing and cornerstone cuts. Reduce rows or columns.');
   const stripWidth = sash + 2 * seam;
   const requests: PieceRequest[] = [
     { widthIn: stripWidth, heightIn: bH + 2 * seam, count: vertical, label: 'Vertical sashing' },

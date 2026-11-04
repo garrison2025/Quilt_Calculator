@@ -20,6 +20,22 @@ describe('V2 independent arithmetic fixtures', () => {
   expect(b.recommended.layout.cutPieces).toHaveLength(2);
   expect(verifyLayout(b.recommended.layout)).toBe(true);
  });
+ it('explicitly limits oversized backing and binding construction',()=>{
+  expect(()=>calculateBacking({widthIn:100000,heightIn:60,overageIn:4,wofIn:40,joinTakeupIn:1,oneWayPrint:true})).toThrow(/more than 2,000 panels/);
+  expect(()=>calculateStraightBinding({widthIn:100000,heightIn:60,wofIn:43,stripWidthIn:2.5,tailAllowanceIn:12,joinLossIn:2.5})).toThrow(/more than 2,000 strips/);
+ });
+ it('limits combined fabric SKU quantities before constructing tens of thousands of rectangles',()=>{
+  const a={id:'a',label:'A',usableWidth:43,shrinkageLengthPct:0,oneWayPrint:false,pieces:[{widthIn:5,heightIn:5,count:1100}]};
+  const b={...a,id:'b',pieces:[{widthIn:5,heightIn:5,count:1000}]};
+  expect(()=>calculateQuiltFabric([a,b])).toThrow(/Maximum 2,000/);
+  const p=structuredClone(sampleProject);
+  p.fabrics[0].pieces[0].count=1990;
+  p.fabrics[1].pieces[0].count=20;
+  expect(()=>validateProject(p)).toThrow(/Maximum 2,000/);
+ });
+ it('limits the total cuts for large sashing grids before trying to pack them',()=>{
+  expect(()=>calculateSashing({rows:40,columns:40,blockWidthIn:10,blockHeightIn:10,finishedSashIn:2,seamIn:.25,wofIn:43})).toThrow(/more than 2,000/);
+ });
  it('one-panel backing has no fabricated seam positions', () => {
   const r=calculateBacking({widthIn:32,heightIn:32,overageIn:2,wofIn:43,joinTakeupIn:1,oneWayPrint:true});
   expect(r.options[0].panelCount).toBe(1);

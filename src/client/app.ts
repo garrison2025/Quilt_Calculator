@@ -260,13 +260,18 @@ if(root){
    });
    const addPiece=node('button','dynamic-add','+ Add rectangle cut group');addPiece.type='button';addPiece.addEventListener('click',()=>{
     if(fabric.pieces.length>=100){note('Maximum 100 piece groups per SKU.',true);return;}
-    fabric.pieces.push({widthIn:5,heightIn:5,count:4,label:'New cut',allowRotate:false});persist();renderEditor();update();
+    const newPiece={widthIn:5,heightIn:5,count:4,label:'New cut',allowRotate:false};
+    fabric.pieces.push(newPiece);
+    try{validateProject(project);}catch(e){fabric.pieces.pop();note((e as Error).message,true);return;}
+    persist();renderEditor();update();
    });card.appendChild(addPiece);shell.appendChild(card);
   });
   const add=node('button','dynamic-add','+ Add fabric SKU');add.type='button';add.addEventListener('click',()=>{
    if(project.fabrics.length>=30){note('Maximum 30 fabric SKUs.',true);return;}
    const id='fabric-'+(project.fabrics.length+1)+'-'+Date.now().toString(36);
-   project.fabrics.push({id,label:'New fabric',usableWidth:43,oneWayPrint:false,shrinkageLengthPct:0,pieces:[{widthIn:5,heightIn:5,count:4,label:'Cut square'}]});persist();renderEditor();update();
+   project.fabrics.push({id,label:'New fabric',usableWidth:43,oneWayPrint:false,shrinkageLengthPct:0,pieces:[{widthIn:5,heightIn:5,count:4,label:'Cut square'}]});
+   try{validateProject(project);}catch(e){project.fabrics.pop();note((e as Error).message,true);return;}
+   persist();renderEditor();update();
   });shell.appendChild(add);fieldsRoot.appendChild(shell);
  }
  function renderBorderEditor():void{
