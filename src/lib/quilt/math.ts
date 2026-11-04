@@ -43,18 +43,38 @@ export function purchase(runLengthIn: number, step = .125, shrinkageLengthPct = 
 export function impossible(wof: number, msg: string): Layout {
   return { isCutFeasible: false, error: msg, usableWofIn: wof, exactFabricRunLengthIn: 0, cutPieces: [], physicalOffcutAreaSqIn: 0, globallyOptimal: false };
 }
+/** Verify physical roll rectangles without a quadratic full-pair scan.
+ * Sorting by roll-length position lets us skip disjoint rows; only pieces
+ * whose y intervals overlap can possibly collide. This remains an exact
+ * geometry check (not a heuristic or a claim of optimal packing).
+ */
 export function verifyLayout(layout: Layout): boolean {
+  if (!Array.isArray(layout.cutPieces)) return false;
   if (!layout.isCutFeasible) return layout.cutPieces.length === 0;
-  const p = layout.cutPieces;
-  for (const r of p) {
-    if (r.xIn < -EPS || r.yIn < -EPS || r.widthIn <= 0 || r.heightIn <= 0 ||
+  if (!Number.isFinite(layout.usableWofIn) || layout.usableWofIn <= 0 ||
+      !Number.isFinite(layout.exactFabricRunLengthIn) || layout.exactFabricRunLengthIn < 0 ||
+      !Number.isFinite(layout.physicalOffcutAreaSqIn) || layout.physicalOffcutAreaSqIn < -EPS) return false;
+  const pieces = layout.cutPieces;
+  for (const r of pieces) {
+    if (![r.xIn, r.yIn, r.widthIn, r.heightIn].every(Number.isFinite) ||
+      (r.grainRotationDeg !== 0 && r.grainRotationDeg !== 90) ||
+      r.xIn < -EPS || r.yIn < -EPS || r.widthIn <= 0 || r.heightIn <= 0 ||
       r.xIn + r.widthIn > layout.usableWofIn + EPS ||
       r.yIn + r.heightIn > layout.exactFabricRunLengthIn + EPS) return false;
   }
-  for (let i = 0; i < p.length; i++) for (let j = i + 1; j < p.length; j++) {
-    const a = p[i], b = p[j];
-    if (Math.min(a.xIn + a.widthIn, b.xIn + b.widthIn) - Math.max(a.xIn, b.xIn) > EPS &&
-        Math.min(a.yIn + a.heightIn, b.yIn + b.heightIn) - Math.max(a.yIn, b.yIn) > EPS) return false;
+  // Never reorder the cutting plan itself; deterministic export coordinates stay intact.
+  const ordered = [...pieces].sort((a, b) => a.yIn - b.yIn || a.xIn - b.xIn);
+  for (let i = 0; i < ordered.length; i++) {
+    const a = ordered[i];
+    const endY = a.yIn + a.heightIn;
+    for (let j = i + 1; j < ordered.length; j++) {
+      const b = ordered[j];
+      // Every later startY is >= the current startY, so remaining pieces
+      // cannot overlap this piece once the first disjoint row is reached.
+      if (b.yIn >= endY - EPS) break;
+      if (Math.min(a.xIn + a.widthIn, b.xIn + b.widthIn) - Math.max(a.xIn, b.xIn) > EPS &&
+          Math.min(endY, b.yIn + b.heightIn) - Math.max(a.yIn, b.yIn) > EPS) return false;
+    }
   }
   return true;
 }

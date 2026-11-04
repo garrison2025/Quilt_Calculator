@@ -37,3 +37,5 @@ Only **straight binding, butted borders, one-piece batting and explicitly feasib
 - Protection against impractically large jobs: aggregate maximum 2,000 fabric pieces across all SKUs at JSON-import and UI-edit boundaries; explicit 2,000-cut checks for sashing, backing and binding prevent oversized constructions before layout generation. Adding a piece group/SKU also validates before committing it to local storage.
 
 - Added downloadable Excel-compatible **Cut List CSV** listing every physical piece by independent material/SKU, with exact roll x/y, width/height, grain rotation, WOF and run length. Export is disabled when a material is infeasible or when no physical pieces exist. The existing full JSON export remains available for diagnostics.
+
+- Layout verifier now sorts by roll-length start and checks only potentially overlapping longitudinal intervals; full geometry is still verified and the original cut order remains unchanged. Stress tests exercise 2,000 cuts, far-apart overlaps, edge-touching cuts, mixed shelves and nonfinite/invalid coordinates. This is not a globally optimal nesting algorithm.

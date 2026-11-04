@@ -124,3 +124,50 @@ describe('V2 deterministic geometry property checks', () => {
   expect(()=>parseMeasure('not a fraction')).toThrow();
  });
 });
+
+describe('physical roll overlap audit at realistic upper bounds', () => {
+ it('verifies 2,000 cut pieces and preserves the exported cut order', () => {
+  const result=layoutRectangles(43,[{widthIn:5,heightIn:7,count:2000,label:'stress'}]);
+  const before=result.cutPieces.map(p=>p.label);
+  expect(result.cutPieces).toHaveLength(2000);
+  expect(verifyLayout(result)).toBe(true);
+  expect(result.cutPieces.map(p=>p.label)).toEqual(before);
+ });
+ it('detects an overlap between pieces placed far apart in input order', () => {
+  const result=layoutRectangles(43,[{widthIn:5,heightIn:7,count:2000,label:'stress'}]);
+  // The first and last array entries collide only after corruption.
+  result.cutPieces[1999].xIn=result.cutPieces[0].xIn;
+  result.cutPieces[1999].yIn=result.cutPieces[0].yIn;
+  expect(verifyLayout(result)).toBe(false);
+ });
+ it('accepts exactly edge-touching pieces but rejects a genuine overlap', () => {
+  const r=layoutRectangles(43,[{widthIn:5,heightIn:10,count:2}]);
+  expect(verifyLayout(r)).toBe(true);
+  r.cutPieces[1].xIn=r.cutPieces[0].xIn+4.5;
+  expect(verifyLayout(r)).toBe(false);
+ });
+ it('rejects nonfinite coordinates, dimensions and invalid grain orientation', () => {
+  const healthy=layoutRectangles(43,[{widthIn:5,heightIn:10,count:2}]);
+  for (const mutator of [
+   (r:typeof healthy)=>{r.cutPieces[0].xIn=NaN;},
+   (r:typeof healthy)=>{r.cutPieces[0].yIn=Infinity;},
+   (r:typeof healthy)=>{r.cutPieces[0].widthIn=NaN;},
+   (r:typeof healthy)=>{r.exactFabricRunLengthIn=Infinity;},
+   (r:typeof healthy)=>{r.physicalOffcutAreaSqIn=NaN;},
+   (r:typeof healthy)=>{r.cutPieces[0].grainRotationDeg=45 as 0;}
+  ]) {
+   const r=structuredClone(healthy);
+   mutator(r);
+   expect(verifyLayout(r)).toBe(false);
+  }
+ });
+ it('does not misclassify shelves with different lengths and rotated rectangles', () => {
+  const r=layoutRectangles(43,[
+   {widthIn:8,heightIn:6,count:400,allowRotate:true,label:'first'},
+   {widthIn:10,heightIn:3,count:700,allowRotate:true,label:'second'},
+   {widthIn:3.5,heightIn:7,count:600,allowRotate:false,label:'third'}
+  ]);
+  expect(r.cutPieces).toHaveLength(1700);
+  expect(verifyLayout(r)).toBe(true);
+ });
+});
