@@ -1,6 +1,6 @@
 # Quilt Studio — verified release status
 
-Updated: 2026-11-04. Public preview: https://quilt-calculator-566.pages.dev/ (no custom domain purchased).
+Updated: 2026-11-04 (CI 41800618643). Public preview: https://quilt-calculator-566.pages.dev/ (no custom domain purchased).
 
 ## Verified in the repository
 
@@ -11,7 +11,7 @@ Updated: 2026-11-04. Public preview: https://quilt-calculator-566.pages.dev/ (no
 - Versioned Project V2, localStorage, inch/cm display, accessible inline errors, preservation of the last valid state, local JSON import/export and print/PDF schematics. Rejected input disables exporting the stale calculation.
 - Material-specific shopping list separates exact raw yardage, rounded purchase, roll offcut, purchase-rounding excess, and post-assembly trim (where applicable). Manual unit prices for fabrics and borders produce clearly labeled estimates. Downloadable UTF-8 CSV uses spreadsheet-formula-safe quoting.
 - Chromium screenshots are retained as GitHub Actions artifacts for desktop and 360, 375, 390, 768, 1024 and 1440px viewport inspections. These screenshots are useful evidence but do not replace manual visual and physical testing.
-- Verified GitHub CI run: https://github.com/garrison2025/Quilt_Calculator/actions/runs/41787119029 ; 54 unit/property tests passed, TypeScript check, Astro build, static route/noindex check and real browser tests for all 10 available routes, multi-SKU and border-layer diagram visibility, data input changes, localStorage recovery, JSON calculation download, invalid input, responsive width, browser PDF rendering and HTTP 404.
+- Latest independently confirmed GitHub CI run: https://github.com/garrison2025/Quilt_Calculator/actions/runs/41800618643 ; **81 unit/property tests passed**, TypeScript check, Astro build, static route/noindex and 218-row keyword-mapping checks, and real Chromium browser tests across the 10 published routes, multi-material plans, JSON/CSV export, offline/localStorage failures, conflict prevention, keyboard navigation, responsive viewports, dark mode, and PDF print. Evidence screenshots: https://github.com/garrison2025/Quilt_Calculator/actions/runs/41800618643/artifacts/13307042723 .
 - Preview website has noindex,follow; no sitemap and no absolute canonical on pages.dev. No search indexing should be enabled without an approved production domain.
 
 ## Outstanding independent validation
@@ -67,3 +67,5 @@ Only **straight binding, butted borders, one-piece batting and explicitly feasib
 - Import contract parity: the V2 project parser now rejects unsupported or misspelled keys at all eight object boundaries, as required by the published JSON Schema's `additionalProperties:false`. Optional text labels no longer silently accept JSON `null`. Tests cover root, quilt, options, yardage, sashing, border, fabric and piece objects.
 
 - Physical roll area reconciliation is now part of `verifyLayout`: every feasible plan must report offcut equal to roll area minus the individual cut-piece areas within floating-point precision. Tests reject forged scrap amounts and inconsistent roll-run lengths, including a 2,000-piece stress case.
+
+- The source V2 plan describes external `V2_Golden_Fixtures.csv` (39 cases), `V2_Property_Test_Plan.csv` (24 requirements) and `V2_Release_Gates.csv` (47 gates), but these exact original worksheets were not present in the deployed repository and were not separately available with the supplied plan during this review. Their original row-by-row gates remain NOT_RUN/PARTIAL as shown above, regardless of the separate 81 passing current tests.

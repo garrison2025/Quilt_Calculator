@@ -56,6 +56,7 @@ The fabric roll SVG is a schematic with actual rectangle coordinates, not an act
 - docs/SEO_KEYWORD_ROUTING.md — unique intent ownership and HOLD constraints.
 - docs/schemas/Project_V2.schema.json — JSON project import structure.
 - docs/RELEASE_STATUS.md — documented real QA evidence and missing acceptance work.
+- docs/VALIDATION_EVIDENCE.md — reproducible test links and an explicit ledger of gates that still require independent material.
 - GitHub Actions (https://github.com/garrison2025/Quilt_Calculator/actions) — live build and test results.
 
 A passing build does not replace a browser, accessibility, physical print or real material cutting acceptance test.
