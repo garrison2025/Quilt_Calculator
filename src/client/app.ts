@@ -126,7 +126,7 @@ type ShoppingLine={
 function csvCell(value:string|number|undefined):string{
  const str=value===undefined?'':String(value);
  // Excel/Sheets may interpret imported labels beginning with =, +, -, or @ as formulas.
- const safe=/^[\\s]*[=+@-]/.test(str)?"'"+str:str;
+ const safe=/^\s*[=+@-]/.test(str)?"'"+str:str;
  return '"'+safe.replace(/"/g,'""')+'"';
 }
 function downloadShoppingCsv(lines:ShoppingLine[]):void{
@@ -135,7 +135,7 @@ function downloadShoppingCsv(lines:ShoppingLine[]):void{
   const estimated=line.amount!==undefined&&line.unitPrice!==undefined ? line.amount*line.unitPrice:undefined;
   return [line.label,line.hint,line.rawYards,line.amount,line.offcutSqIn,line.roundingExtraIn,line.assemblyTrimSqIn,line.unitPrice,estimated];
  });
- const payload='\\uFEFF'+[headers,...rows].map(row=>row.map(csvCell).join(',')).join('\\r\\n')+'\\r\\n';
+ const payload='\uFEFF'+[headers,...rows].map(row=>row.map(csvCell).join(',')).join('\r\n')+'\r\n';
  const blob=new Blob([payload],{type:'text/csv;charset=utf-8'});
  const url=URL.createObjectURL(blob),a=document.createElement('a');
  a.href=url;a.download='quilt-studio-shopping-list.csv';document.body.appendChild(a);a.click();a.remove();
