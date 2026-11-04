@@ -277,6 +277,14 @@ if(root){
   parent.appendChild(item);
  }
  function update():void{
+  if(fieldsRoot.querySelector('[aria-invalid="true"]')){
+   cutExport=null;exportButton.disabled=true;printButton.disabled=true;
+   resultRoot.querySelector('[data-stale-warning]')?.remove();
+   const stale=node('div','warning-banner error-banner','Resolve every highlighted input before updating or exporting the cutting plan. The previously accepted project is still safe.');
+   stale.setAttribute('data-stale-warning','');resultRoot.prepend(stale);
+   note('Correct invalid input before updating the plan.',true);
+   return;
+  }
   resultRoot.replaceChildren();cutExport=null;
   exportButton.disabled=true;printButton.disabled=true;
   try{
@@ -369,7 +377,15 @@ if(root){
   }catch(err){cutExport=null;warning(resultRoot,(err instanceof Error ? err.message : 'Unknown calculation error'),true);note('Cannot prove this cut is feasible. Review your measurements.',true);}
  }
  unitsSelect.addEventListener('change',()=>{project.units=unitsSelect.value==='cm'?'cm':'in';persist();renderEditor();update();});
- root.querySelector('[data-action="recalculate"]')?.addEventListener('click',()=>update());
+ root.querySelector('[data-action="recalculate"]')?.addEventListener('click',()=>{
+  update();
+  if(window.matchMedia('(max-width:760px)').matches){
+   root.querySelector('#results')?.scrollIntoView({
+    behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',
+    block:'start'
+   });
+  }
+ });
  root.querySelector('[data-action="reset"]')?.addEventListener('click',()=>{project=structuredClone(sampleProject);sample=true;selectedDirection='vertical';conv='1/4';localStorage.removeItem('quilt-studio-v2');stateLabel.textContent='● Sample project';renderEditor();update();});
  root.querySelector('[data-action="save"]')?.addEventListener('click',()=>download('quilt-studio-project-v2.json',project));
  exportButton.addEventListener('click',()=>{if(cutExport)download('quilt-studio-cut-plan-v2.json',cutExport);});

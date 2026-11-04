@@ -34,3 +34,5 @@
 .field-error[hidden]{display:none}
 @media(max-width:390px){.sku-plan{padding:0 10px 10px}.sku-plan-label{font-size:11px}.sku-plan-summary strong{font-size:15px}}
 @media print{.sku-plan{border:1px solid #bbb;margin:18px 0;break-inside:auto}.sku-plan-summary{color:#222}.sku-plan-summary:before{display:none!important}.sku-plan[open]>summary{border-bottom:1px solid #bbb}}
+
+#results{scroll-margin-top:15px}
