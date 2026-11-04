@@ -1,0 +1,25 @@
+编号,模块,测试性质,必须满足的性质,引擎状态
+1,UNITS,Fraction conversion,1/4 yd is exactly 9 in; 3/8 is 13.5 in; 1 3/8 is 49.5 in,NOT_RUN
+2,BACK,Overage monotonicity,Larger overage never produces smaller exact raw backing yardage for same grain constraints,NOT_RUN
+3,BACK,Width monotonicity,Decreasing usable WOF never decreases minimum panel count,NOT_RUN
+4,BACK,Panel seam fit,sum panel cut widths minus joint seam losses >= required span,NOT_RUN
+5,BACK,Orientation conditional,One-way print forbids rotated grain layouts even when cheaper,NOT_RUN
+6,BACK,Prewash correctness,Do not deduct shrinkage twice; adjust raw purchase vs already-shrunk usable widths,NOT_RUN
+7,BIND,Join loss,Increasing join loss cannot lower strip count,NOT_RUN
+8,BIND,Perimeter growth,Increasing finished width/height cannot reduce required binding length,NOT_RUN
+9,YARD,No overlaps,All emitted rectangle pairs have disjoint interiors,NOT_RUN
+10,YARD,Bounds,All rectangle coordinates within usable fabric width and raw purchased length,NOT_RUN
+11,YARD,Rotation constraints,Directional grain forbids 90-degree rotation,NOT_RUN
+12,YARD,Quantity fit,Layout contains exactly count emitted rectangles for each SKU and piece type,NOT_RUN
+13,YARD,Loss accounting,Purchased linear fabric >= used cut extent; no purchased length smaller than raw need,NOT_RUN
+14,FABRIC,Color isolation,Never transfer offcuts from different SKU/colors without explicit user confirmation,NOT_RUN
+15,FABRIC,No area shortcut,Mixed-size heuristic must never be represented as an optimal/minimal plan,NOT_RUN
+16,BATT,Roll fit,Non-spliced single piece must physically fit roll width and length,NOT_RUN
+17,SASH,Grid sizing,Crossing cornerstones and strip counts equal selected internal grid construction,NOT_RUN
+18,BORDER,Finished dimensions,Border finished width/height growth equals 2x each added border finished width,NOT_RUN
+19,BORDER,Cut measurements,Butted and mitered layouts independently checked against seam method,NOT_RUN
+20,WOF,Area disclaimer,Equivalent area does not imply same piece fit; non-fit must be explicit,NOT_RUN
+21,PROJECT,Cross-tool consistency,All tool results use same saved dimension and seam inputs; invalidation on edits,NOT_RUN
+22,PROJECT,Import validation,"Malformed/schemaVersion unknown, NaN, negative, extreme input fail safely",NOT_RUN
+23,SVG,Coordinate fidelity,Every label and drawn dimension matches structured calculation output,NOT_RUN
+24,PDF,Physical calibration,Print test 1-inch / 25.4mm line at 100% verified by physical measurement,NOT_RUN

@@ -1,0 +1,729 @@
+[
+  {
+    "id": "BACK-01",
+    "module": "BACK",
+    "scenario": "Seam-fit orientation and purchase yardage",
+    "input": {
+      "F": 43,
+      "h": 80,
+      "o": 4,
+      "seam": 1,
+      "w": 60
+    },
+    "expected": {
+      "best_orientation": "vertical",
+      "best_panels": 2,
+      "best_purchase_yards": 5,
+      "two_legal_orientations": 2
+    },
+    "source_reference_status": "REFERENCE_VERIFIED",
+    "original_engine_status": "NOT_RUN",
+    "notes": "Reference pure arithmetic; production cut-plan must also prove polygon fit"
+  },
+  {
+    "id": "BACK-02",
+    "module": "BACK",
+    "scenario": "Seam-fit orientation and purchase yardage",
+    "input": {
+      "F": 43,
+      "h": 60,
+      "o": 4,
+      "seam": 1,
+      "w": 80
+    },
+    "expected": {
+      "best_orientation": "horizontal",
+      "best_panels": 2,
+      "best_purchase_yards": 5,
+      "two_legal_orientations": 2
+    },
+    "source_reference_status": "REFERENCE_VERIFIED",
+    "original_engine_status": "NOT_RUN",
+    "notes": "Reference pure arithmetic; production cut-plan must also prove polygon fit"
+  },
+  {
+    "id": "BACK-03",
+    "module": "BACK",
+    "scenario": "Seam-fit orientation and purchase yardage",
+    "input": {
+      "F": 43,
+      "h": 40,
+      "o": 2,
+      "seam": 1,
+      "w": 30
+    },
+    "expected": {
+      "best_orientation": "vertical",
+      "best_panels": 1,
+      "best_purchase_yards": 1.25,
+      "two_legal_orientations": 2
+    },
+    "source_reference_status": "REFERENCE_VERIFIED",
+    "original_engine_status": "NOT_RUN",
+    "notes": "Reference pure arithmetic; production cut-plan must also prove polygon fit"
+  },
+  {
+    "id": "BACK-04",
+    "module": "BACK",
+    "scenario": "Seam-fit orientation and purchase yardage",
+    "input": {
+      "F": 108,
+      "h": 80,
+      "o": 4,
+      "seam": 1,
+      "w": 60
+    },
+    "expected": {
+      "best_orientation": "horizontal",
+      "best_panels": 1,
+      "best_purchase_yards": 2,
+      "two_legal_orientations": 2
+    },
+    "source_reference_status": "REFERENCE_VERIFIED",
+    "original_engine_status": "NOT_RUN",
+    "notes": "Reference pure arithmetic; production cut-plan must also prove polygon fit"
+  },
+  {
+    "id": "BACK-05",
+    "module": "BACK",
+    "scenario": "Seam-fit orientation and purchase yardage",
+    "input": {
+      "F": 36,
+      "h": 36,
+      "o": 0,
+      "seam": 0.5,
+      "w": 36
+    },
+    "expected": {
+      "best_orientation": "vertical",
+      "best_panels": 1,
+      "best_purchase_yards": 1,
+      "two_legal_orientations": 2
+    },
+    "source_reference_status": "REFERENCE_VERIFIED",
+    "original_engine_status": "NOT_RUN",
+    "notes": "Reference pure arithmetic; production cut-plan must also prove polygon fit"
+  },
+  {
+    "id": "BACK-06",
+    "module": "BACK",
+    "scenario": "Seam-fit orientation and purchase yardage",
+    "input": {
+      "F": 36,
+      "h": 36,
+      "o": 0,
+      "seam": 0.5,
+      "w": 35.5
+    },
+    "expected": {
+      "best_orientation": "horizontal",
+      "best_panels": 1,
+      "best_purchase_yards": 1,
+      "two_legal_orientations": 2
+    },
+    "source_reference_status": "REFERENCE_VERIFIED",
+    "original_engine_status": "NOT_RUN",
+    "notes": "Reference pure arithmetic; production cut-plan must also prove polygon fit"
+  },
+  {
+    "id": "BACK-07",
+    "module": "BACK",
+    "scenario": "Seam-fit orientation and purchase yardage",
+    "input": {
+      "F": 43,
+      "h": 80,
+      "o": 4,
+      "seam": 0.5,
+      "w": 60
+    },
+    "expected": {
+      "best_orientation": "vertical",
+      "best_panels": 2,
+      "best_purchase_yards": 5,
+      "two_legal_orientations": 2
+    },
+    "source_reference_status": "REFERENCE_VERIFIED",
+    "original_engine_status": "NOT_RUN",
+    "notes": "Reference pure arithmetic; production cut-plan must also prove polygon fit"
+  },
+  {
+    "id": "BIND-01",
+    "module": "BIND",
+    "scenario": "Straight grain strips with seam losses",
+    "input": {
+      "F": 43,
+      "h": 80,
+      "joinLoss": 2.5,
+      "stripWidth": 2.5,
+      "tails": 12,
+      "w": 60
+    },
+    "expected": {
+      "purchase_yards": 0.625,
+      "required_binding_in": 292,
+      "strips": 8
+    },
+    "source_reference_status": "REFERENCE_VERIFIED",
+    "original_engine_status": "NOT_RUN",
+    "notes": ""
+  },
+  {
+    "id": "BIND-02",
+    "module": "BIND",
+    "scenario": "Straight grain strips with seam losses",
+    "input": {
+      "F": 40,
+      "h": 80,
+      "joinLoss": 2.5,
+      "stripWidth": 2.5,
+      "tails": 12,
+      "w": 60
+    },
+    "expected": {
+      "purchase_yards": 0.625,
+      "required_binding_in": 292,
+      "strips": 8
+    },
+    "source_reference_status": "REFERENCE_VERIFIED",
+    "original_engine_status": "NOT_RUN",
+    "notes": ""
+  },
+  {
+    "id": "BIND-03",
+    "module": "BIND",
+    "scenario": "Straight grain strips with seam losses",
+    "input": {
+      "F": 43,
+      "h": 1,
+      "joinLoss": 2.5,
+      "stripWidth": 2.5,
+      "tails": 0,
+      "w": 1
+    },
+    "expected": {
+      "purchase_yards": 0.125,
+      "required_binding_in": 4,
+      "strips": 1
+    },
+    "source_reference_status": "REFERENCE_VERIFIED",
+    "original_engine_status": "NOT_RUN",
+    "notes": ""
+  },
+  {
+    "id": "BIND-04",
+    "module": "BIND",
+    "scenario": "Straight grain strips with seam losses",
+    "input": {
+      "F": 43,
+      "h": 80,
+      "joinLoss": 2.5,
+      "stripWidth": 2.5,
+      "tails": 20,
+      "w": 60
+    },
+    "expected": {
+      "purchase_yards": 0.625,
+      "required_binding_in": 300,
+      "strips": 8
+    },
+    "source_reference_status": "REFERENCE_VERIFIED",
+    "original_engine_status": "NOT_RUN",
+    "notes": ""
+  },
+  {
+    "id": "BIND-05",
+    "module": "BIND",
+    "scenario": "Straight grain strips with seam losses",
+    "input": {
+      "F": 43,
+      "h": 80,
+      "joinLoss": 2.25,
+      "stripWidth": 2.25,
+      "tails": 12,
+      "w": 60
+    },
+    "expected": {
+      "purchase_yards": 0.5,
+      "required_binding_in": 292,
+      "strips": 8
+    },
+    "source_reference_status": "REFERENCE_VERIFIED",
+    "original_engine_status": "NOT_RUN",
+    "notes": ""
+  },
+  {
+    "id": "YARD-01",
+    "module": "YARD",
+    "scenario": "Exact grid layout or impossible-fit error",
+    "input": {
+      "W": 43,
+      "count": 20,
+      "ph": 10,
+      "pw": 5,
+      "rotate": false
+    },
+    "expected": {
+      "across": 8,
+      "best_orientation": "normal",
+      "fit": true,
+      "purchase_yards": 0.875,
+      "rows": 3
+    },
+    "source_reference_status": "REFERENCE_VERIFIED",
+    "original_engine_status": "NOT_RUN",
+    "notes": ""
+  },
+  {
+    "id": "YARD-02",
+    "module": "YARD",
+    "scenario": "Exact grid layout or impossible-fit error",
+    "input": {
+      "W": 43,
+      "count": 20,
+      "ph": 10,
+      "pw": 5,
+      "rotate": true
+    },
+    "expected": {
+      "across": 4,
+      "best_orientation": "rotated",
+      "fit": true,
+      "purchase_yards": 0.75,
+      "rows": 5
+    },
+    "source_reference_status": "REFERENCE_VERIFIED",
+    "original_engine_status": "NOT_RUN",
+    "notes": ""
+  },
+  {
+    "id": "YARD-03",
+    "module": "YARD",
+    "scenario": "Exact grid layout or impossible-fit error",
+    "input": {
+      "W": 43,
+      "count": 5,
+      "ph": 1,
+      "pw": 44,
+      "rotate": true
+    },
+    "expected": {
+      "across": 43,
+      "best_orientation": "rotated",
+      "fit": true,
+      "purchase_yards": 1.25,
+      "rows": 1
+    },
+    "source_reference_status": "REFERENCE_VERIFIED",
+    "original_engine_status": "NOT_RUN",
+    "notes": ""
+  },
+  {
+    "id": "YARD-04",
+    "module": "YARD",
+    "scenario": "Exact grid layout or impossible-fit error",
+    "input": {
+      "W": 43,
+      "count": 0,
+      "ph": 1,
+      "pw": 1,
+      "rotate": false
+    },
+    "expected": {
+      "across": 43,
+      "best_orientation": "normal",
+      "fit": true,
+      "purchase_yards": 0,
+      "rows": 0
+    },
+    "source_reference_status": "REFERENCE_VERIFIED",
+    "original_engine_status": "NOT_RUN",
+    "notes": ""
+  },
+  {
+    "id": "YARD-05",
+    "module": "YARD",
+    "scenario": "Exact grid layout or impossible-fit error",
+    "input": {
+      "W": 43,
+      "count": 21,
+      "ph": 5,
+      "pw": 8,
+      "rotate": false
+    },
+    "expected": {
+      "across": 5,
+      "best_orientation": "normal",
+      "fit": true,
+      "purchase_yards": 0.75,
+      "rows": 5
+    },
+    "source_reference_status": "REFERENCE_VERIFIED",
+    "original_engine_status": "NOT_RUN",
+    "notes": ""
+  },
+  {
+    "id": "YARD-06",
+    "module": "YARD",
+    "scenario": "Exact grid layout or impossible-fit error",
+    "input": {
+      "W": 43,
+      "count": 21,
+      "ph": 5,
+      "pw": 8,
+      "rotate": true
+    },
+    "expected": {
+      "across": 8,
+      "best_orientation": "rotated",
+      "fit": true,
+      "purchase_yards": 0.75,
+      "rows": 3
+    },
+    "source_reference_status": "REFERENCE_VERIFIED",
+    "original_engine_status": "NOT_RUN",
+    "notes": ""
+  },
+  {
+    "id": "INCH-1_8",
+    "module": "INCH",
+    "scenario": "Exact fractional yards",
+    "input": {
+      "input_yards": "1/8"
+    },
+    "expected": {
+      "centimeters": 11.43,
+      "inches": 4.5
+    },
+    "source_reference_status": "REFERENCE_VERIFIED",
+    "original_engine_status": "NOT_RUN",
+    "notes": "Exact Fraction based; not float approximation"
+  },
+  {
+    "id": "INCH-1_4",
+    "module": "INCH",
+    "scenario": "Exact fractional yards",
+    "input": {
+      "input_yards": "1/4"
+    },
+    "expected": {
+      "centimeters": 22.86,
+      "inches": 9
+    },
+    "source_reference_status": "REFERENCE_VERIFIED",
+    "original_engine_status": "NOT_RUN",
+    "notes": "Exact Fraction based; not float approximation"
+  },
+  {
+    "id": "INCH-3_8",
+    "module": "INCH",
+    "scenario": "Exact fractional yards",
+    "input": {
+      "input_yards": "3/8"
+    },
+    "expected": {
+      "centimeters": 34.29,
+      "inches": 13.5
+    },
+    "source_reference_status": "REFERENCE_VERIFIED",
+    "original_engine_status": "NOT_RUN",
+    "notes": "Exact Fraction based; not float approximation"
+  },
+  {
+    "id": "INCH-1_2",
+    "module": "INCH",
+    "scenario": "Exact fractional yards",
+    "input": {
+      "input_yards": "1/2"
+    },
+    "expected": {
+      "centimeters": 45.72,
+      "inches": 18
+    },
+    "source_reference_status": "REFERENCE_VERIFIED",
+    "original_engine_status": "NOT_RUN",
+    "notes": "Exact Fraction based; not float approximation"
+  },
+  {
+    "id": "INCH-5_8",
+    "module": "INCH",
+    "scenario": "Exact fractional yards",
+    "input": {
+      "input_yards": "5/8"
+    },
+    "expected": {
+      "centimeters": 57.15,
+      "inches": 22.5
+    },
+    "source_reference_status": "REFERENCE_VERIFIED",
+    "original_engine_status": "NOT_RUN",
+    "notes": "Exact Fraction based; not float approximation"
+  },
+  {
+    "id": "INCH-3_4",
+    "module": "INCH",
+    "scenario": "Exact fractional yards",
+    "input": {
+      "input_yards": "3/4"
+    },
+    "expected": {
+      "centimeters": 68.58,
+      "inches": 27
+    },
+    "source_reference_status": "REFERENCE_VERIFIED",
+    "original_engine_status": "NOT_RUN",
+    "notes": "Exact Fraction based; not float approximation"
+  },
+  {
+    "id": "INCH-7_8",
+    "module": "INCH",
+    "scenario": "Exact fractional yards",
+    "input": {
+      "input_yards": "7/8"
+    },
+    "expected": {
+      "centimeters": 80.01,
+      "inches": 31.5
+    },
+    "source_reference_status": "REFERENCE_VERIFIED",
+    "original_engine_status": "NOT_RUN",
+    "notes": "Exact Fraction based; not float approximation"
+  },
+  {
+    "id": "INCH-1_3_8",
+    "module": "INCH",
+    "scenario": "Exact fractional yards",
+    "input": {
+      "input_yards": "1 3/8"
+    },
+    "expected": {
+      "centimeters": 125.73,
+      "inches": 49.5
+    },
+    "source_reference_status": "REFERENCE_VERIFIED",
+    "original_engine_status": "NOT_RUN",
+    "notes": "Exact Fraction based; not float approximation"
+  },
+  {
+    "id": "BORDER-01",
+    "module": "BORDER",
+    "scenario": "Finished dimension arithmetic only; cut strips require separate test",
+    "input": {
+      "finished_border_widths": [
+        2
+      ],
+      "height": 80,
+      "width": 60
+    },
+    "expected": {
+      "finished_height": 84,
+      "finished_width": 64
+    },
+    "source_reference_status": "REFERENCE_VERIFIED",
+    "original_engine_status": "NOT_RUN",
+    "notes": "No claim that butted/mitred cutting method validated"
+  },
+  {
+    "id": "BORDER-02",
+    "module": "BORDER",
+    "scenario": "Finished dimension arithmetic only; cut strips require separate test",
+    "input": {
+      "finished_border_widths": [
+        2,
+        3
+      ],
+      "height": 80,
+      "width": 60
+    },
+    "expected": {
+      "finished_height": 90,
+      "finished_width": 70
+    },
+    "source_reference_status": "REFERENCE_VERIFIED",
+    "original_engine_status": "NOT_RUN",
+    "notes": "No claim that butted/mitred cutting method validated"
+  },
+  {
+    "id": "BORDER-03",
+    "module": "BORDER",
+    "scenario": "Finished dimension arithmetic only; cut strips require separate test",
+    "input": {
+      "finished_border_widths": [
+        2,
+        3,
+        4
+      ],
+      "height": 80,
+      "width": 60
+    },
+    "expected": {
+      "finished_height": 98,
+      "finished_width": 78
+    },
+    "source_reference_status": "REFERENCE_VERIFIED",
+    "original_engine_status": "NOT_RUN",
+    "notes": "No claim that butted/mitred cutting method validated"
+  },
+  {
+    "id": "SASH-01",
+    "module": "SASH",
+    "scenario": "Interior sash segments and cornerstones",
+    "input": {
+      "columns": 3,
+      "rows": 4
+    },
+    "expected": {
+      "cornerstones": 6,
+      "horizontal_segments": 9,
+      "vertical_segments": 8
+    },
+    "source_reference_status": "REFERENCE_VERIFIED",
+    "original_engine_status": "NOT_RUN",
+    "notes": "Outer sashing separately specified; no layout SVG yet"
+  },
+  {
+    "id": "SASH-02",
+    "module": "SASH",
+    "scenario": "Interior sash segments and cornerstones",
+    "input": {
+      "columns": 1,
+      "rows": 1
+    },
+    "expected": {
+      "cornerstones": 0,
+      "horizontal_segments": 0,
+      "vertical_segments": 0
+    },
+    "source_reference_status": "REFERENCE_VERIFIED",
+    "original_engine_status": "NOT_RUN",
+    "notes": "Outer sashing separately specified; no layout SVG yet"
+  },
+  {
+    "id": "SASH-03",
+    "module": "SASH",
+    "scenario": "Interior sash segments and cornerstones",
+    "input": {
+      "columns": 2,
+      "rows": 2
+    },
+    "expected": {
+      "cornerstones": 1,
+      "horizontal_segments": 2,
+      "vertical_segments": 2
+    },
+    "source_reference_status": "REFERENCE_VERIFIED",
+    "original_engine_status": "NOT_RUN",
+    "notes": "Outer sashing separately specified; no layout SVG yet"
+  },
+  {
+    "id": "WOF-44-108",
+    "module": "WOF",
+    "scenario": "Area equivalence only; cannot guarantee cut-fit",
+    "input": {
+      "width_new": 108,
+      "width_original": 44,
+      "yards_original": 1.5
+    },
+    "expected": {
+      "area_equivalent_yards": 0.611111111,
+      "fit_guaranteed": false,
+      "purchase_yards": 0.625
+    },
+    "source_reference_status": "REFERENCE_VERIFIED",
+    "original_engine_status": "NOT_RUN",
+    "notes": "Requires separate piece rectangle fit verification"
+  },
+  {
+    "id": "WOF-42-108",
+    "module": "WOF",
+    "scenario": "Area equivalence only; cannot guarantee cut-fit",
+    "input": {
+      "width_new": 108,
+      "width_original": 42,
+      "yards_original": 0.75
+    },
+    "expected": {
+      "area_equivalent_yards": 0.291666667,
+      "fit_guaranteed": false,
+      "purchase_yards": 0.375
+    },
+    "source_reference_status": "REFERENCE_VERIFIED",
+    "original_engine_status": "NOT_RUN",
+    "notes": "Requires separate piece rectangle fit verification"
+  },
+  {
+    "id": "BATT-01",
+    "module": "BATT",
+    "scenario": "Batting size",
+    "input": {
+      "height": 80,
+      "overage_per_side": 4,
+      "width": 60
+    },
+    "expected": {
+      "required_height": 88,
+      "required_width": 68
+    },
+    "source_reference_status": "REFERENCE_VERIFIED",
+    "original_engine_status": "NOT_RUN",
+    "notes": ""
+  },
+  {
+    "id": "SQUARE-01",
+    "module": "SQUARE",
+    "scenario": "Theoretical rotated square bound only",
+    "input": {
+      "finished_center_square": 5
+    },
+    "expected": {
+      "theory_outer_side": 7.071068
+    },
+    "source_reference_status": "REFERENCE_VERIFIED",
+    "original_engine_status": "NOT_RUN",
+    "notes": "Not a final quilting cut size; remains NOT_RUN until sewing-method fixture"
+  },
+  {
+    "id": "DIAG-HOLD-01",
+    "module": "DIAG",
+    "scenario": "Independent diagonal layout proof pending",
+    "input": {
+      "height": 80,
+      "width": 60
+    },
+    "expected": {
+      "status": "HOLD"
+    },
+    "source_reference_status": "SPEC_ONLY",
+    "original_engine_status": "NOT_RUN",
+    "notes": "No numerical promise"
+  },
+  {
+    "id": "BIND-BIAS-HOLD-01",
+    "module": "BIND",
+    "scenario": "Bias strip method pending",
+    "input": {
+      "binding_type": "bias",
+      "required_length": 292
+    },
+    "expected": {
+      "status": "HOLD"
+    },
+    "source_reference_status": "SPEC_ONLY",
+    "original_engine_status": "NOT_RUN",
+    "notes": "Do not market as working bias mode"
+  },
+  {
+    "id": "WOF-FIT-HOLD-01",
+    "module": "WOF",
+    "scenario": "Geometry piece-fit pending",
+    "input": {
+      "piece_width": 50,
+      "width_new": 44
+    },
+    "expected": {
+      "fit": false
+    },
+    "source_reference_status": "SPEC_ONLY",
+    "original_engine_status": "NOT_RUN",
+    "notes": "Should be validated in actual layout engine"
+  }
+]
