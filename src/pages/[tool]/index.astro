@@ -1,0 +1,8 @@
+---
+import Base from '../../layouts/Base.astro';
+import ToolPage from '../../components/ToolPage.astro';
+import {routes} from '../../data/routes';
+export function getStaticPaths(){return routes.filter(r=>r.id!=='hub').map(route=>({params:{tool:route.slug},props:{route}}));}
+const {route}=Astro.props;
+---
+<Base route={route}><ToolPage route={route}/></Base>

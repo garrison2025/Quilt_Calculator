@@ -1,0 +1,21 @@
+---
+import type {ToolRoute} from '../data/routes';
+import {routes} from '../data/routes';
+import Calculator from './Calculator.astro';
+interface Props {route:ToolRoute}
+const {route}=Astro.props;
+const related=routes.filter(t=>t.id!==route.id).slice(0,4);
+---
+<div class="page-shell">
+<div class="page-intro">
+<div class="page-heading"><span class="eyebrow-with-line">— {route.nav.toUpperCase()} / FREE ONLINE TOOL</span><h1>{route.h1}</h1><p>{route.intro}</p><div class="feature-pills"><span>✓ Feasible layouts</span><span>✓ Live yardage</span><span>✓ No sign-up</span></div></div>
+<div class="mini-feature"><div class="mini-top"><span>MADE FOR REAL FABRIC</span><span>01 / 03</span></div><img src={'/images/'+route.id+'.webp'} width="640" height="420" alt={route.nav+' example quilt cutting layout illustration'} loading="eager"/><div class="mini-bottom"><b>Plan it once.</b><span>Cut it with confidence ✳</span></div></div>
+</div>
+<Calculator tool={route.id} sample={route.sample}/>
+<section class="content-block"><div class="editorial-head"><span class="eyebrow-with-line">— UNDER THE STITCHES</span><h2>Clear math. Better cuts.</h2><p>Understand the calculation before cutting into fabric.</p></div>
+<div class="story-grid"><article class="story-panel"><span class="story-number">01 / FORMULA</span><h3>How it works</h3><p>{route.formula}</p></article><article class="story-panel"><span class="story-number">02 / METHOD</span><h3>From measurements to fabric</h3><p>{route.method}</p></article><article class="story-panel disclaimer-panel"><span class="story-number">03 / IMPORTANT</span><h3>What it does not assume</h3><p>{route.caution}</p></article></div>
+</section>
+<section class="sample-block"><div><span class="eyebrow-with-line">— THE WORKED EXAMPLE</span><h2>Start with something familiar.</h2><p>{route.sample}</p></div><span class="sample-icon" aria-hidden="true">✳</span></section>
+<section class="faq-block"><div><span class="eyebrow-with-line">— COMMON QUESTIONS</span><h2>A little clarity goes a long way.</h2></div><div class="faq-list">{route.faqs.map(([q,a])=><details><summary>{q}<span aria-hidden="true">+</span></summary><p>{a}</p></details>)}</div></section>
+<section class="related-block"><span class="eyebrow-with-line">— KEEP MAKING</span><h2>More for your next step.</h2><div class="related-grid">{related.map(r=><a href={'/'+r.slug+'/'} class="related-card"><span class="related-ornament">✳</span><span>{r.nav}</span><strong>{r.h1}</strong><small>Open calculator ↗</small></a>)}</div></section>
+</div>

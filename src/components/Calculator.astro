@@ -1,0 +1,25 @@
+---
+import type {ToolId} from '../client/types';
+interface Props {tool:ToolId;sample:string}
+const {tool,sample}=Astro.props;
+---
+<section class="calculator-wrap" data-tool={tool} aria-label="Interactive cutting calculator">
+<div class="workspace">
+<aside class="input-card">
+<div class="card-heading"><span class="eyebrow-with-dot">● YOUR CUTTING WORKSPACE</span><h2>Project measurements</h2><p>Adjust the sample to fit your real materials.</p></div>
+<div class="workspace-preamble"><span class="sample-pill" data-project-state>● Sample project</span><label class="units-select">Measurement units<select data-units><option value="in">Inches (in)</option><option value="cm">Centimeters (cm)</option></select></label></div>
+<div class="fields" data-fields><p>Preparing your calculator…</p></div>
+<div class="input-actions"><button class="action-primary" type="button" data-action="recalculate">Update cutting plan ↗</button><button class="action-link" type="button" data-action="reset">Reset</button></div>
+<div class="local-controls"><h3>Your project, your device</h3><p>Measurements stay in this browser. Save a JSON file and open it again whenever you like.</p>
+<div class="control-line"><button class="action-secondary" data-action="save" type="button">Save project</button><button class="action-secondary" data-action="import" type="button">Import JSON</button><input type="file" accept=".json,application/json" data-file hidden aria-label="Import a JSON project"/></div></div>
+</aside>
+<section class="result-card" id="results" aria-label="Cutting and shopping results">
+<div class="results-topline"><span class="eyebrow-with-dot">● YOUR CUTTING PLAN</span><span class="result-version">LOCAL CALCULATION · V2</span></div>
+<div data-status class="result-status" role="status" aria-live="polite">Loading sample plan…</div>
+<div data-results><div class="before-hydration"><b>DEFAULT EXAMPLE</b><p>{sample}</p></div></div>
+<div class="results-footer"><button class="action-secondary" data-action="export-cut" type="button">Export cut coordinates</button><button class="action-secondary" data-action="print" type="button">Print plan / Save PDF</button></div>
+</section>
+</div>
+<div class="trust-line"><span>✳ Verifiable cut layout</span><span>⊞ No cloud upload</span><span>↔ Real fabric width</span><span>✓ Print-friendly</span></div>
+</section>
+<script>import '../client/app';</script>
