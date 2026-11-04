@@ -10,3 +10,7 @@ Source workbooks and original `NOT_RUN` statuses are preserved in `docs/data/ref
 ## The remaining 24 properties and 47 release gates
 - The original lists are now recoverable verbatim. Existing unit/property tests already cover many categories but have not yet been mapped 1:1 to all original entries. Physical 100%-scale printing, real quilting samples, production domain, advertising and 28/90-day Search Console data cannot be validated by CI alone. Original rows remain `NOT_RUN` until separately evidenced.
 - Keep Square lab `noindex` and the 16 HOLD keyword entries unchanged until actual construction and SEO gate requirements are met.
+
+## First original-source replay result: one real discrepancy found and corrected
+- Original `YARD-04` had `count=0` and expected `across=43, rows=0, purchase_yards=0`. The current engine reported `across=0` due to no emitted pieces. This was corrected by reporting theoretical per-row capacity even with zero requested pieces; purchase/cut counts remain zero.
+- The original source row and expected output were **not changed**. See the rerun after the corresponding math/fixture commit; actual published CI outcome is the authority.

@@ -223,7 +223,14 @@ export function calculateYardage(input: { pieceWidthIn: number; pieceHeightIn: n
   const layout = layoutRectangles(input.wofIn, [{ widthIn: input.pieceWidthIn, heightIn: input.pieceHeightIn, count: input.count, allowRotate: input.allowRotate, label: 'Rectangle' }]);
   if (!layout.isCutFeasible) return { layout, across: 0, rows: 0 };
   const first = layout.cutPieces[0];
-  const across = first ? Math.floor((input.wofIn + coordSlack(input.wofIn, first.widthIn)) / first.widthIn) : 0;
+  // With zero pieces, retain the *theoretical* per-row capacity rather than
+  // displaying "0 across" for a perfectly usable fabric width. A zero-quantity
+  // plan still has zero rows, zero cut coordinates and zero purchase yardage.
+  // Original V2 Golden fixture YARD-04 requires 43 across for 1-in pieces
+  // on 43-in usable WOF even though the requested count is zero.
+  const across = first
+    ? Math.floor((input.wofIn + coordSlack(input.wofIn, first.widthIn)) / first.widthIn)
+    : input.count===0 ? Math.floor((input.wofIn + coordSlack(input.wofIn,input.pieceWidthIn)) / input.pieceWidthIn) : 0;
   return { layout, purchase: purchase(layout.exactFabricRunLengthIn, input.step, input.shrinkageLengthPct),
     across, rows: first ? Math.ceil(input.count / across) : 0 };
 }

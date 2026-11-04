@@ -3,6 +3,15 @@ import { calculateBacking, calculateStraightBinding, calculateYardage, calculate
  calculateBorders, calculateSashing, compareYardageWidths, parseMeasure, purchase, roundToStep, verifyLayout, layoutRectangles, calculateWofArea } from '../src/lib/quilt/math';
 import { sampleProject, validateProject } from '../src/lib/quilt/project';
 describe('V2 independent arithmetic fixtures', () => {
+ it('preserves theoretical per-row fabric capacity with a zero-piece, zero-purchase plan',()=>{
+  const r=calculateYardage({pieceWidthIn:1,pieceHeightIn:1,count:0,wofIn:43,allowRotate:false});
+  expect(r.layout.isCutFeasible).toBe(true);
+  expect(r.across).toBe(43);
+  expect(r.rows).toBe(0);
+  expect(r.layout.cutPieces).toHaveLength(0);
+  expect(r.layout.exactFabricRunLengthIn).toBe(0);
+  expect(r.purchase?.roundedPurchaseYards).toBe(0);
+ });
  it('supports leading-decimal inches in manual sewing measurements without weakening comma validation',()=>{
    expect(parseMeasure('.25')).toBe(.25);
    expect(parseMeasure('.0625')).toBe(.0625);
