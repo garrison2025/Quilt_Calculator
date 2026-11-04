@@ -93,13 +93,21 @@ function table(parent:Element,headers:string[],rows:string[][]):void{
  for(const row of rows){const r=node('tr');for(const cell of row)r.appendChild(node('td','',cell));body.appendChild(r);}
  t.appendChild(body);shell.appendChild(t);parent.appendChild(shell);
 }
-function diagram(parent:Element,layout:Layout,title:string):void{
+function diagram(parent:Element,layout:Layout,title:string,sku?:string,scope:'current'|'comparison'='current'):void{
  section(parent,title,'Roll coordinates');
  if(!layout.isCutFeasible){warning(parent,layout.error||'FIT_IMPOSSIBLE',true);return;}
  const wrapper=node('div','diagram-wrap');
  const ns='http://www.w3.org/2000/svg',svg=document.createElementNS(ns,'svg');
  svg.setAttribute('viewBox','0 0 780 320');svg.setAttribute('role','img');
  svg.setAttribute('aria-label','Schematic fabric roll layout with '+layout.cutPieces.length+' nonoverlapping rectangles. Numeric coordinates are below.');
+ // Exact structured source dimensions, not rounded screen labels. Browser QA
+ // compares these to the separately exported physical cutting CSV, and also
+ // independently recomputes every displayed SVG rectangle's drawn position.
+ svg.dataset.rollSku=sku||'';
+ svg.dataset.exportScope=scope;
+ svg.dataset.rollWofIn=String(layout.usableWofIn);
+ svg.dataset.rollRunIn=String(layout.exactFabricRunLengthIn);
+ svg.dataset.cutCount=String(layout.cutPieces.length);
  const make=(tag:string,attrs:Record<string,string>,parentNode:SVGElement)=>{
   const e=document.createElementNS(ns,tag);Object.entries(attrs).forEach(([k,v])=>e.setAttribute(k,v));parentNode.appendChild(e);return e;
  };
@@ -108,7 +116,10 @@ function diagram(parent:Element,layout:Layout,title:string):void{
  const colors=['#8ec1b0','#c8d9bb','#dbbd88','#aabbb3','#d1b1b0','#b8d3c5'];
  layout.cutPieces.slice(0,180).forEach((p,i)=>{
   const x=40+(p.yIn/len)*709,y=32+(p.xIn/usable)*240,w=Math.max(.5,p.heightIn/len*709-1),h=Math.max(.5,p.widthIn/usable*240-1);
-  const rect=make('rect',{x:String(x),y:String(y),width:String(w),height:String(h),rx:'2',fill:colors[i%colors.length],stroke:'#426f5e','stroke-width':'.7'},svg);
+  const rect=make('rect',{x:String(x),y:String(y),width:String(w),height:String(h),rx:'2',fill:colors[i%colors.length],stroke:'#426f5e','stroke-width':'.7',
+   'data-cut-index':String(i+1),'data-roll-x-in':String(p.xIn),'data-roll-y-in':String(p.yIn),
+   'data-cut-width-in':String(p.widthIn),'data-cut-height-in':String(p.heightIn),
+   'data-grain-rotation':String(p.grainRotationDeg),'data-cut-label':p.label},svg);
   const tooltip=make('title',{},rect as SVGElement);tooltip.textContent=p.label+': roll (x '+num(p.xIn)+', y '+num(p.yIn)+') cut '+num(p.widthIn)+' × '+num(p.heightIn)+' in';
   if(w>38&&h>19){const txt=make('text',{x:String(x+6),y:String(y+Math.min(18,h-3)),'font-size':'12',fill:'#264a3c'},svg);txt.textContent=String(i+1);}
  });
@@ -389,12 +400,12 @@ if(root){
   if(!verifyLayout(layout))throw Error('Internal geometry check failed. No purchase result can be shown.');
   stats(result,[['Cut run',num(layout.exactFabricRunLengthIn)+' in'],['Pieces',String(layout.cutPieces.length)],['True roll offcut',num(layout.physicalOffcutAreaSqIn,1)+' in²']]);
  }
- function materialPlan(parent:HTMLElement,sku:string,label:string,layout:Layout,index:number,purchaseYards?:number):void{
+ function materialPlan(parent:HTMLElement,sku:string,label:string,layout:Layout,index:number,purchaseYards?:number,exportSku=sku):void{
   const item=node('details','sku-plan');item.open=index===0;item.dataset.sku=sku;
   const summary=node('summary','sku-plan-summary');
   append(summary,node('span','sku-plan-label',label+' · '+sku),node('strong','',purchaseYards===undefined?'FIT IMPOSSIBLE':yd(purchaseYards)+' yd'));
   item.appendChild(summary);
-  if(layout.isCutFeasible){layoutSummary(item,layout);diagram(item,layout,'Cut plan · '+label);}
+  if(layout.isCutFeasible){layoutSummary(item,layout);diagram(item,layout,'Cut plan · '+label,exportSku);}
   else warning(item,layout.error||'FIT_IMPOSSIBLE: no valid cut layout for this fabric.',true);
   parent.appendChild(item);
  }
@@ -535,8 +546,8 @@ if(root){
     materialPlan(resultRoot,'backing','Backing · '+backing.recommended.direction+' seams',backing.recommended.layout,0,backing.recommended.purchase.roundedPurchaseYards);
     materialPlan(resultRoot,'binding','Straight-grain binding',binding.layout,1,binding.purchase.roundedPurchaseYards);
     materialPlan(resultRoot,'batting','One-piece batting',batting.layout,2,batting.purchase?.roundedPurchaseYards);
-    border.layers.forEach((item,i)=>materialPlan(resultRoot,'border-'+item.sku,item.label+' · border',item.layout,3+i,item.purchase?.roundedPurchaseYards));
-    fabric.forEach((item,i)=>materialPlan(resultRoot,'fabric-'+item.fabricSku,item.label+' · '+item.fabricSku,item.layout,3+border.layers.length+i,item.purchase?.roundedPurchaseYards));
+    border.layers.forEach((item,i)=>materialPlan(resultRoot,'border-'+item.sku,item.label+' · border',item.layout,3+i,item.purchase?.roundedPurchaseYards,item.sku));
+    fabric.forEach((item,i)=>materialPlan(resultRoot,'fabric-'+item.fabricSku,item.label+' · '+item.fabricSku,item.layout,3+border.layers.length+i,item.purchase?.roundedPurchaseYards,item.fabricSku));
     materialCuts=[
      {material:'Backing · '+backing.recommended.direction+' seams',sku:'backing',layout:backing.recommended.layout},
      {material:'Straight-grain binding',sku:'binding',layout:binding.layout},
@@ -554,13 +565,13 @@ if(root){
     for(let e=1;e<=8;e++){const c=node('div');append(c,node('b','',e===8?'1':frac[e]),node('small','',num(e*36/8)+' in'),node('small','',num(e*36/8*2.54)+' cm'));grid.appendChild(c);}
     resultRoot.appendChild(grid);warning(resultRoot,'Fabric yards describe length along a bolt. They do not specify usable fabric width.');plan={yards:value,inches,centimeters:cm};
    }
-   if(layout){layoutSummary(resultRoot,layout);diagram(resultRoot,layout,'Cut plan / CURRENT fabric roll');}
+   if(layout){layoutSummary(resultRoot,layout);diagram(resultRoot,layout,'Cut plan / CURRENT fabric roll',materialCuts[0]?.sku);}
    if(alternateLayout){
     const alternatePanel=node('section','alternate-compare-plan');
     alternatePanel.dataset.alternateComparePlan='';
     section(alternatePanel,'Alternate WOF cutting schematic','Comparison only · not in current cut-list CSV or printed cut plan');
     layoutSummary(alternatePanel,alternateLayout);
-    diagram(alternatePanel,alternateLayout,'Alternate roll / not the selected purchase');
+    diagram(alternatePanel,alternateLayout,'Alternate roll / not the selected purchase',undefined,'comparison');
     resultRoot.appendChild(alternatePanel);
    }
    const record={tool,sourceProjectHash:hashProject(project),calculationVersion:VERSION,calculatedAt:new Date().toISOString(),projectUnits:project.units,result:plan};

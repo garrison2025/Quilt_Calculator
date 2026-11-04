@@ -49,7 +49,7 @@ Engineering CI proof: [143/143 + all 39 original golden cases](https://github.co
 | 39 | G3 | Schema reflects actual WebApplication behavior and no invented reviews | **AUTO_EVIDENCE** | WebApplication JSON-LD is present without fake review/rating claims. |
 | 40 | G3 | No fake author, operator, testimonials or daily updated dates | **PARTIAL** | No known fabricated operator/rating; complete copy audit still manual. |
 | 41 | G4 | Cloudflare static build passes with no paid API/backend | **AUTO_EVIDENCE** | Cloudflare static preview and CI succeed with no paid runtime API. |
-| 42 | G4 | Network check confirms private project data is not uploaded | **PARTIAL** | Browser privacy/local storage reviewed in smoke, but complete outbound network capture needed. |
+| 42 | G4 | Network check confirms private project data is not uploaded | **PARTIAL** | Browser Chromium request audit now captures third-party HTTP(S) and all non-GET/HEAD requests across interactive tools, imports, exports, mobile and print. Only same-origin reads are permitted. This is automated browser evidence; a separate future production/ads audit is still required. |
 | 43 | G4 | Privacy and consent statements match real ads/network/storage | **WAIT_ADS** | Ads/consent configuration not yet approved; no production ads deployed. |
 | 44 | G4 | Ad slots do not cause accidental clicks or cover print/compute | **WAIT_ADS** | No production ad slots yet; layout/accidental-click review pending. |
 | 45 | G4 | Ads.txt AdSense and consent check only after relevant approval | **WAIT_ADS** | AdSense approval/consent/ads.txt dependent on future account and domain. |

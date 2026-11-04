@@ -14,3 +14,7 @@ Recovered source: `docs/data/reference/V2_Property_Test_Plan_24.csv` from user-s
 | P24 | Print a real 1 inch / 25.4 mm calibration line at **100%** and physically measure it on paper. CI/browser-generated PDF cannot replace physical verification. | NOT_RUN / PHYSICAL PRINT REQUIRED |
 
 These categories must not be reported as 24/24. Passing automated tests does not certify sewn Square-in-a-Square geometry, paper-scale calibration, actual advertising readiness or SEO rankings.
+
+
+## P23 (2026-11-05): full exported SVG-to-cut geometry check — automated scope
+Every approved cutting page now has Chromium assertions comparing ALL displayed individual SVG cut rectangles (up to the documented first 180 per fabric) to **the independently downloaded current-roll cutting CSV**. The test validates source dimensions, roll SKU identity, index, physical WOF/run, rotation, tooltip text and rendered SVG x/y/width/height. It verifies all roll identities are covered on multi-SKU pages and that the alternate-WOF comparison diagram is not treated as an exported purchase. Beyond-180 designs retain full exported CSV but only the first 180 visual cuts are render-audited. Label visibility and manual graphic legibility still require human inspection.

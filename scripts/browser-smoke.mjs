@@ -10,6 +10,111 @@ const routes=[
   '/fabric-yards-to-inches/','/quilt-batting-calculator/','/quilt-sashing-calculator/'
 ];
 const delay=(ms)=>new Promise(resolve=>setTimeout(resolve,ms));
+/** Parse the actual downloaded RFC4180-style cut-list CSV (including BOM).
+ * Do NOT rely on commas split: a user-supplied piece name can contain quotes.
+ */
+function csvRecords(csv){
+ const rows=[];let row=[],field='',quoted=false;
+ for(let i=0;i<csv.length;i++){
+  const c=csv[i];
+  if(i===0&&c==='\uFEFF')continue;
+  if(quoted){
+   if(c==='"'&&csv[i+1]==='"'){field+='"';i++;}
+   else if(c==='"')quoted=false;
+   else field+=c;
+  }else if(c==='"')quoted=true;
+  else if(c===','){row.push(field);field='';}
+  else if(c==='\n'){row.push(field.replace(/\r$/,''));if(row.some(x=>x!==''))rows.push(row);row=[];field='';}
+  else field+=c;
+ }
+ if(quoted)throw Error('Unclosed cutting CSV quote');
+ if(field||row.length){row.push(field);rows.push(row);}
+ return rows;
+}
+const nearly=(a,b,tolerance=1e-8)=>Math.abs(a-b)<=tolerance*Math.max(1,Math.abs(a),Math.abs(b));
+async function assertSvgCorrespondsToCutCsv(page,route){
+ const pending=page.waitForEvent('download');
+ await page.locator('[data-action="export-cut-csv"]').click();
+ const file=await pending, csv=await fs.readFile(await file.path(),'utf8');
+ const rows=csvRecords(csv);
+ check(rows.length>1,'Missing real cutting rows at '+route);
+ check(rows[0].length===11,'Unexpected cutting CSV columns at '+route);
+ const bySku=new Map();
+ for(const row of rows.slice(1)){
+  check(row.length===11,'Malformed real cutting row '+row.join('|'));
+  const sku=row[1];
+  if(!bySku.has(sku))bySku.set(sku,[]);
+  bySku.get(sku).push(row);
+ }
+ const diagramData=await page.locator('[data-results] .diagram-wrap svg[data-export-scope="current"]').evaluateAll(svgs=>svgs.map(svg=>({
+   sku:svg.dataset.rollSku,
+   count:Number(svg.dataset.cutCount),
+   wof:Number(svg.dataset.rollWofIn),
+   run:Number(svg.dataset.rollRunIn),
+   label:svg.getAttribute('aria-label'),
+   rectangles:[...svg.querySelectorAll('rect[data-cut-index]')].map(rect=>({
+    index:Number(rect.dataset.cutIndex),
+    xIn:Number(rect.dataset.rollXIn),yIn:Number(rect.dataset.rollYIn),
+    widthIn:Number(rect.dataset.cutWidthIn),heightIn:Number(rect.dataset.cutHeightIn),
+    rotation:Number(rect.dataset.grainRotation),pieceLabel:rect.dataset.cutLabel,
+    x:Number(rect.getAttribute('x')),y:Number(rect.getAttribute('y')),
+    w:Number(rect.getAttribute('width')),h:Number(rect.getAttribute('height')),
+    tooltip:rect.querySelector('title')?.textContent
+   }))
+ })));
+ check(diagramData.length===bySku.size,'Every exported fabric roll must have one matching diagram at '+route+
+  ': '+diagramData.map(x=>x.sku)+' vs '+[...bySku.keys()]);
+ const matched=new Set();
+ for(const diagram of diagramData){
+  check(!matched.has(diagram.sku),'Duplicate fabric roll SVG: '+diagram.sku);
+  matched.add(diagram.sku);
+  const cuts=bySku.get(diagram.sku);
+  check(Boolean(cuts),'Missing exported SKU for SVG '+diagram.sku+' at '+route);
+  check(diagram.count===cuts.length,'SVG total piece count does not match exported CSV: '+diagram.sku);
+  check(diagram.rectangles.length===Math.min(cuts.length,180),'SVG truncation/piece count is wrong for '+diagram.sku);
+  check(diagram.label.includes(String(cuts.length)+' nonoverlapping'),'SVG description count mismatch');
+  for(const rect of diagram.rectangles){
+   const row=cuts[rect.index-1];
+   check(Boolean(row),'SVG cut index has no matching CSV row');
+   const [material,sku,serial,pieceLabel,rollX,rollY,cutW,cutH,grain,wof,run]=row;
+   check(rect.index===Number(serial),'SVG item index differs from CSV index: '+route);
+   check(rect.pieceLabel===pieceLabel,'SVG label differs from CSV cut label: '+route);
+   for(const [what,actual,expected] of [
+     ['roll X',rect.xIn,Number(rollX)],['roll Y',rect.yIn,Number(rollY)],
+     ['cut width',rect.widthIn,Number(cutW)],['cut height',rect.heightIn,Number(cutH)],
+     ['rotation',rect.rotation,Number(grain)],['WOF',diagram.wof,Number(wof)],
+     ['roll run length',diagram.run,Number(run)]
+   ])check(nearly(actual,expected),'SVG '+what+' differs from exported CSV on '+route+' SKU '+sku+' cut '+serial);
+   // SVG uses screen-horizontal axis for the roll-length Y coordinate and
+   // vertical axis for WOF X. Verify drawn pixels independently.
+   const expectedX=40+rect.yIn/Math.max(diagram.run,.00001)*709;
+   const expectedY=32+rect.xIn/Math.max(diagram.wof,.00001)*240;
+   const expectedW=Math.max(.5,rect.heightIn/Math.max(diagram.run,.00001)*709-1);
+   const expectedH=Math.max(.5,rect.widthIn/Math.max(diagram.wof,.00001)*240-1);
+   for(const [what,actual,expected] of [
+     ['draw x',rect.x,expectedX],['draw y',rect.y,expectedY],
+     ['draw width',rect.w,expectedW],['draw height',rect.h,expectedH]
+   ])check(nearly(actual,expected),'SVG '+what+' not drawn from physical coordinates on '+route+' SKU '+sku);
+   check(rect.tooltip?.startsWith(pieceLabel+': roll '),'SVG tooltip does not match piece label on '+route);
+  }
+ }
+ check(matched.size===bySku.size,'Unmatched exported fabric roll at '+route);
+ return {rolls:matched.size,rectangles:diagramData.reduce((n,r)=>n+r.rectangles.length,0),totalCuts:rows.length-1};
+}
+const networkEvidence=[];
+function instrumentNetwork(context,contextName){
+ // Observe all HTTP(S) requests: the static preview should neither contact
+ // external origins nor POST/PUT/PATCH project data even to its own origin.
+ context.on('request',request=>{
+  const url=request.url();
+  if(!/^https?:\/\//.test(url))return;
+  let origin;try{origin=new URL(url).origin;}catch{networkEvidence.push(contextName+': bad URL '+url);return;}
+  if(origin!==new URL(ROOT).origin||!['GET','HEAD'].includes(request.method())){
+   networkEvidence.push(contextName+': '+request.method()+' '+url);
+  }
+ });
+}
+
 await fs.mkdir('artifacts/qa',{recursive:true});
 const server=spawn('npm',['run','preview','--','--host','127.0.0.1','--port','4321'],{
   env:process.env,stdio:['ignore','pipe','pipe'],detached:process.platform!=='win32'
@@ -43,6 +148,7 @@ try{
   await ready();
   browser=await chromium.launch({headless:true});
   const desktop=await browser.newContext({viewport:{width:1365,height:900},acceptDownloads:true});
+  instrumentNetwork(desktop,'desktop/interactive');
   const page=await desktop.newPage();
   page.on('pageerror',err=>problems.push('JS exception: '+err.message));
   for(const path of routes){
@@ -95,6 +201,8 @@ try{
       check(!(await page.locator('[data-action="export-cut-csv"]').isEnabled()),'A units converter must not promise physical fabric cuts.');
     }else{
       check(await page.locator('[data-action="export-cut-csv"]').isEnabled(),'Valid material must allow a cut CSV: '+path);
+      const audit=await assertSvgCorrespondsToCutCsv(page,path);
+      console.log('PASS P23 SVG-to-CSV coordinate fidelity '+path+' ('+audit.rolls+' independent roll(s), '+audit.rectangles+' drawn cuts / '+audit.totalCuts+' exported cuts).');
     }
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
     check(overflow<=2,'Desktop horizontal overflow '+overflow+'px: '+path);
@@ -441,6 +549,7 @@ try{
 
   // Browser privacy settings and quota failures must never masquerade as autosave.
   const noStorage=await browser.newContext({viewport:{width:1180,height:800},acceptDownloads:true});
+  instrumentNetwork(noStorage,'storage-blocked');
   await noStorage.addInitScript(()=>{
    Storage.prototype.setItem=function(){throw new DOMException('Storage blocked','QuotaExceededError');};
   });
@@ -460,6 +569,7 @@ try{
   await noStorage.close();
   console.log('PASS localStorage failure warning and offline JSON backup.');
   const mobile=await browser.newContext({viewport:{width:375,height:812},isMobile:true,hasTouch:true});
+  instrumentNetwork(mobile,'mobile');
   const small=await mobile.newPage();
   small.on('pageerror',err=>problems.push('Mobile JS exception: '+err.message));
   for(const path of ['/','/calculators/','/quilt-backing-calculator/','/quilt-fabric-calculator/','/fabric-yards-to-inches/']){
@@ -488,6 +598,7 @@ try{
   assert.equal(missing.status(),404,'Unknown routes must return HTTP 404.');
   check(await small.locator('h1').innerText()==='Lost a stitch?','Custom 404 page is missing.');
   const dark=await browser.newContext({viewport:{width:1280,height:800},colorScheme:'dark'});
+  instrumentNetwork(dark,'dark');
   const darkPage=await dark.newPage();
   darkPage.on('pageerror',err=>problems.push('Dark UI JS exception: '+err.message));
   await hydrated(darkPage,'/quilt-backing-calculator/');
@@ -513,12 +624,15 @@ try{
   console.log('PASS dark color scheme, basic text contrast, and white print output.');
   await dark.close();
   const reduced=await browser.newContext({viewport:{width:1280,height:800},reducedMotion:'reduce'});
+  instrumentNetwork(reduced,'reduced-motion');
   const reducedPage=await reduced.newPage();
   await hydrated(reducedPage,'/quilt-backing-calculator/');
   const motion=await reducedPage.locator('[data-results] .result-hero').evaluate(el=>getComputedStyle(el).animationName);
   check(motion==='none','Reduced motion preference must disable result animation.');
   console.log('PASS reduced-motion accessibility preference.');
   await reduced.close();
+  assert.deepEqual(networkEvidence,[],'G42 private project must never be uploaded or sent to third-party origins.');
+  console.log('PASS G42 no third-party HTTP(S) requests and no write/upload methods across browser projects, imports, exports, mobile and print.');
   assert.deepEqual(problems,[],'Unexpected JavaScript errors in browsers.');
   console.log('PASS 404, mobile navigation, no uncaught JavaScript errors.');
   console.log('BROWSER SMOKE TESTS PASS: '+routes.length+' calculators, unit conversion, real edits, import-state guard, downloads, mobile, print.');
