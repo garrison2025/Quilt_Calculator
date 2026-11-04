@@ -63,7 +63,7 @@ try{
       const third=await table.locator('tbody tr',{hasText:'1/3 yard'}).innerText();
       const twoThirds=await table.locator('tbody tr',{hasText:'2/3 yard'}).innerText();
       check(third.includes('12 in')&&twoThirds.includes('24 in'),'Exact thirds conversion is wrong.');
-      check((await guide.locator('h3',{hasText:'How big is a yard of fabric?'}).count())===1,'Missing yard size explanation.');
+      check((await page.locator('[data-content-guide="inches"] h3',{hasText:'How big is a yard of fabric?'}).count())===1,'Missing yard size explanation.');
       await page.screenshot({path:'artifacts/qa/yards-conversion-guide-desktop.png',fullPage:true,animations:'disabled'});
       console.log('PASS static 14-row fraction chart, yard-size intent, exact thirds and contextual links.');
     }
