@@ -1,16 +1,61 @@
 # Quilt Studio — Quilt & Fabric Calculators
 
-A privacy-first, client-side quilting project planner for US makers. Built with Astro SSG and TypeScript. See `docs/BUILD.md` for the V2 implementation scope, mathematical limitations and release status.
+Free US-English quilting tools built with Astro static pages and a browser-based TypeScript cutting engine. No account, database, paid API or required cloud back end.
 
-## Local commands
+## Local development (Node.js 22+)
 
-```sh
-npm ci
-npm run lint
-npm test
-npm run build
-```
+    npm ci
+    npm run lint
+    npm test
+    npm run build
+    node scripts/check-build.mjs
+    npm run dev
 
-Cloudflare Pages: framework Astro, build `npm run build`, output `dist`.
+The build generates static WebP illustration assets and an Astro output in the dist directory.
 
-**Prelaunch:** robots noindex is intentionally enabled until a verified production domain and all release gates have passed. This repository does not claim to be a launched/indexed site.
+## Deploy a Cloudflare Pages preview
+
+Connect this repository in Cloudflare Workers & Pages > Pages > Connect to Git.
+
+- Repository: garrison2025/Quilt_Calculator
+- Framework: Astro
+- Build command: npm run build
+- Output directory: dist
+- Root directory: repository root
+- Node.js: 22+
+
+Keep PUBLIC_INDEXABLE unset or equal to 0. Keep PUBLIC_SITE_URL unset without a user-approved production domain. The default preview is noindex and has no sitemap. The temporary pages.dev URL is not a canonical domain.
+
+## Indexing is release-gated
+
+Only after written custom-domain approval and the full browser, geometry and print QA should you configure:
+- PUBLIC_SITE_URL as the approved HTTPS site origin (without trailing slash)
+- PUBLIC_INDEXABLE equal to 1
+
+Then redeploy. The production build generates canonical URLs and a sitemap containing only the 9 approved tool intents plus the homepage. No Google Search Console success, indexing or AdSense income is implied.
+
+## Supported calculators
+
+- /calculators/ : complete project planner with independent material purchase summaries
+- /quilt-backing-calculator/ : panel counts, orientations and true roll lengths
+- /quilt-binding-calculator/ : straight-grain strips and effective joined length
+- /quilt-border-calculator/ : butted side-first border layers
+- /fabric-yardage-calculator/ : repeated rectangles with optional permitted rotation
+- /quilt-fabric-calculator/ : SKU-separated multicolor cut groups
+- /fabric-yards-to-inches/ : exact fabric fractions and metric conversion
+- /quilt-batting-calculator/ : single-piece batting roll-fit check
+- /quilt-sashing-calculator/ : sashing strips and cornerstones
+
+Bias binding, diagonal backing, mitered border corners, rag quilt, square-in-a-square, generic block calculator and WOF-area-based purchasing are HOLD, not claimed as working calculators.
+
+The fabric roll SVG is a schematic with actual rectangle coordinates, not an actual-size print pattern. Nonoverlapping feasible cuts are demonstrated; global minimum waste is not guaranteed.
+
+## Sources and checks
+
+- docs/data/V2_Keyword_Appendix_218.csv — all 218 source-grounded V2 keyword candidates and route decisions.
+- docs/SEO_KEYWORD_ROUTING.md — unique intent ownership and HOLD constraints.
+- docs/schemas/Project_V2.schema.json — JSON project import structure.
+- docs/RELEASE_STATUS.md — documented real QA evidence and missing acceptance work.
+- GitHub Actions (https://github.com/garrison2025/Quilt_Calculator/actions) — live build and test results.
+
+A passing build does not replace a browser, accessibility, physical print or real material cutting acceptance test.
