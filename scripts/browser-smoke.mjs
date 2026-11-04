@@ -57,6 +57,14 @@ try{
     if(path==='/calculators/'){
       const rows=page.locator('.shopping-item');
       check(await rows.count()>=5,'Project shopping list must include separately purchasable materials.');
+      const allMaterials=page.locator('details.sku-plan');
+      assert.equal(await allMaterials.count(),6,'Project hub must expose each of the six independently purchased sample materials.');
+      assert.equal(await allMaterials.filter({hasText:'FIT IMPOSSIBLE'}).count(),0,'Example material roll should be feasible.');
+      check(await allMaterials.first().getAttribute('open')!==null,'First material should show its real cut diagram.');
+      await allMaterials.nth(4).locator('summary').click();
+      check(await allMaterials.nth(4).locator('svg[role="img"]').isVisible(),'Hub must provide separate first fabric SKU geometry.');
+      await allMaterials.nth(5).locator('summary').click();
+      check(await allMaterials.nth(5).locator('svg[role="img"]').isVisible(),'Hub must provide separate second fabric SKU geometry.');
       check((await rows.first().innerText()).includes('Raw:'),'Shopping list missing exact raw purchase requirement.');
       check((await rows.first().innerText()).includes('Purchase rounding excess:'),'Shopping list missing purchase increment waste.');
       const downloadPromise=page.waitForEvent('download');
@@ -105,6 +113,16 @@ try{
     }
   }
   await hydrated(page,'/quilt-backing-calculator/');
+  const changeWidth=page.getByLabel('Finished quilt width (in)',{exact:true});
+  const changeHeight=page.getByLabel('Finished quilt height (in)',{exact:true});
+  await changeWidth.fill('80');await changeWidth.press('Tab');
+  await changeHeight.fill('60');await changeHeight.press('Tab');
+  const directions=page.locator('.option-buttons button');
+  check((await directions.nth(1).getAttribute('aria-pressed'))==='true','Backing UI must initially select the mathematically cheapest horizontal seams.');
+  check((await directions.nth(1).innerText()).includes('Best use'),'Recommended direction should be labeled.');
+  await directions.nth(0).click();
+  check((await directions.nth(0).getAttribute('aria-pressed'))==='true','Users must be able to override recommended seam direction.');
+  await page.locator('[data-action="reset"]').click();
   const width=page.getByLabel('Finished quilt width (in)',{exact:true});
   const initial=await page.locator('[data-results] .result-big').innerText();
   await width.fill('90');
@@ -144,6 +162,16 @@ try{
   await page.pdf({path:'artifacts/qa/backing-print.pdf',printBackground:true,format:'A4'});
   await page.emulateMedia({media:'screen'});
   console.log('PASS print stylesheet and PDF rendering.');
+  await hydrated(page,'/calculators/');
+  check(await page.locator('details.sku-plan').count()===6,'Project print must contain all six material plans.');
+  await page.evaluate(()=>{window.__prePrintPlanCount=0;window.addEventListener('beforeprint',()=>{
+    window.__prePrintPlanCount=document.querySelectorAll('details.sku-plan[open]').length;
+  });});
+  await page.pdf({path:'artifacts/qa/all-materials-print.pdf',printBackground:true,format:'A4'});
+  check(await page.evaluate(()=>window.__prePrintPlanCount)===6,'Printing must expand every material plan, not just backing.');
+  await page.waitForFunction(()=>document.querySelectorAll('details.sku-plan[open]').length===1);
+  console.log('PASS all-materials print includes every fabric roll and restores collapsed plan state.');
+  await hydrated(page,'/quilt-backing-calculator/');
   const projectDownload=page.waitForEvent('download');
   await page.locator('[data-action="save"]').click();
   const projectFile=await projectDownload;

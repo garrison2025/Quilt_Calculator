@@ -177,7 +177,7 @@ if(root){
  const exportButton=root.querySelector<HTMLButtonElement>('[data-action="export-cut"]')!;
  const printButton=root.querySelector<HTMLButtonElement>('[data-action="print"]')!;
  let project:Project=structuredClone(sampleProject);
- let sample=true,conv='1/4',selectedDirection:'vertical'|'horizontal'='vertical';
+ let sample=true,conv='1/4',selectedDirection:'vertical'|'horizontal'|null=null;
  let cutExport:unknown=null;
  try{const raw=localStorage.getItem('quilt-studio-v2');if(raw){project=validateProject(JSON.parse(raw));sample=false;}}catch{ /* corrupt local project is ignored */ }
  function note(msg:string,err=false){status.textContent=msg;status.classList.toggle('status-error',err);}
@@ -347,7 +347,7 @@ if(root){
     resultRoot.appendChild(node('p','footer-note','Seam coordinates assume half of the total join take-up on each adjoining panel edge. They refer to the joined assembly before its final trim; trimming shifts the seam locations relative to the final edges.'));
     section(resultRoot,'Compare seam orientations');
     const options=node('div','option-buttons');
-    for(const direction of b.options){const button=node('button','',direction.direction+' · '+yd(direction.purchase.roundedPurchaseYards)+' yd');button.type='button';button.setAttribute('aria-pressed',String(selected.direction===direction.direction));button.addEventListener('click',()=>{selectedDirection=direction.direction;update();});options.appendChild(button);}
+    for(const direction of b.options){const button=node('button','',direction.direction+' · '+yd(direction.purchase.roundedPurchaseYards)+' yd'+(direction.direction===b.recommended.direction?' · Best use':' '));button.type='button';button.setAttribute('aria-pressed',String(selected.direction===direction.direction));button.addEventListener('click',()=>{selectedDirection=direction.direction;update();});options.appendChild(button);}
     resultRoot.appendChild(options);layout=selected.layout;
     warning(resultRoot,'The fabric-roll offcut shown does not include trimming the panel assembly after sewing. Assembly trim: '+num(selected.postAssemblyTrimAreaSqIn)+' in². Do not add it to roll offcuts.');
     plan={options:b.options,selected:selected.direction};
@@ -430,7 +430,13 @@ if(root){
       roundingExtraIn:x.purchase?.purchaseRoundingExtraLengthIn,
       unitPrice:p.fabrics.find(sku=>sku.id===x.fabricSku)?.pricePerYard}))
     ]);
-    layout=backing.recommended.layout;plan={backing,binding,batting,border,fabric};
+    section(resultRoot,'Cutting diagrams for every material','Individual fabric rolls · open each plan to inspect coordinates');
+    materialPlan(resultRoot,'backing','Backing · '+backing.recommended.direction+' seams',backing.recommended.layout,0,backing.recommended.purchase.roundedPurchaseYards);
+    materialPlan(resultRoot,'binding','Straight-grain binding',binding.layout,1,binding.purchase.roundedPurchaseYards);
+    materialPlan(resultRoot,'batting','One-piece batting',batting.layout,2,batting.purchase?.roundedPurchaseYards);
+    border.layers.forEach((item,i)=>materialPlan(resultRoot,'border-'+item.sku,item.label+' · border',item.layout,3+i,item.purchase?.roundedPurchaseYards));
+    fabric.forEach((item,i)=>materialPlan(resultRoot,'fabric-'+item.fabricSku,item.label+' · '+item.fabricSku,item.layout,3+border.layers.length+i,item.purchase?.roundedPurchaseYards));
+    plan={backing,binding,batting,border,fabric};
     warning(resultRoot,'Fabric and border sample colors are part of the example project until you edit them. Purchase totals are separate by material; different rolls are never silently merged.');
    }else if(tool==='inches'){
     const value=parseMeasure(conv),inches=yardsToInches(value),cm=inches*2.54;
@@ -459,7 +465,7 @@ if(root){
    });
   }
  });
- root.querySelector('[data-action="reset"]')?.addEventListener('click',()=>{project=structuredClone(sampleProject);sample=true;selectedDirection='vertical';conv='1/4';localStorage.removeItem('quilt-studio-v2');stateLabel.textContent='● Sample project';renderEditor();update();});
+ root.querySelector('[data-action="reset"]')?.addEventListener('click',()=>{project=structuredClone(sampleProject);sample=true;selectedDirection=null;conv='1/4';localStorage.removeItem('quilt-studio-v2');stateLabel.textContent='● Sample project';renderEditor();update();});
  root.querySelector('[data-action="save"]')?.addEventListener('click',()=>download('quilt-studio-project-v2.json',project));
  exportButton.addEventListener('click',()=>{if(cutExport)download('quilt-studio-cut-plan-v2.json',cutExport);});
  let printingExpanded=false;

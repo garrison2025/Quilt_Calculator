@@ -31,3 +31,5 @@ Only **straight binding, butted borders, one-piece batting and explicitly feasib
 **Status: working noindex engineering preview, not yet a finished production release.**
 
 - UI enhancement: screen-only system dark color scheme with auditable label/body contrast checks, short 180ms reveal animations disabled by `prefers-reduced-motion`, and separate light PDF print stylesheet. GitHub Actions captures dark-mode evidence and checks reduced-motion behavior.
+
+- Project Planner hub now exposes a separately expandable cut layout and coordinates for backing, binding, one-piece batting, every border layer and every fabric SKU; printing expands all material plans. Backing tool now defaults to the engine-recommended, least-yardage seam orientation rather than fixed vertical; manual override remains available.
