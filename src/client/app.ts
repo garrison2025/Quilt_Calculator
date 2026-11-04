@@ -80,8 +80,8 @@ function stats(parent:Element,values:[string,string][]):void{
  for(const [label,value] of values){const card=node('div','stat');append(card,node('span','',label),node('strong','',value));grid.appendChild(card);}
  parent.appendChild(grid);
 }
-function hero(parent:Element,value:string,label:string,description:string):void{
- const h=node('div','result-hero');append(h,node('div','result-kicker',label),node('div','result-big',value+' yd'),node('p','result-sub',description));parent.appendChild(h);
+function hero(parent:Element,value:string,label:string,description:string,unit='yd'):void{
+ const h=node('div','result-hero');append(h,node('div','result-kicker',label),node('div','result-big',value+' '+unit),node('p','result-sub',description));parent.appendChild(h);
 }
 function warning(parent:Element,message:string,error=false):void{parent.appendChild(node('div',error?'warning-banner error-banner':'warning-banner',message));}
 function table(parent:Element,headers:string[],rows:string[][]):void{
@@ -287,7 +287,7 @@ if(root){
     stats(resultRoot,[['Vertical strips',String(r.vertical)],['Horizontal strips',String(r.horizontal)],['Cornerstones',String(r.cornerstones)],['Finished grid',num(r.finishedWidthIn)+' × '+num(r.finishedHeightIn)+' in']]);layout=r.layout;plan=r;
    }else if(tool==='borders'){
     const b=calculateBorders({widthIn:w,heightIn:h,seamIn:o.seam,layers:p.borders,step:o.step});
-    hero(resultRoot,String(b.layers.length),'BUTTED BORDER LAYERS','Final quilt '+num(b.finishedWidthIn)+' × '+num(b.finishedHeightIn)+' in. Side strips are attached before top and bottom strips.');
+    hero(resultRoot,String(b.layers.length),'BUTTED BORDER LAYERS','Final quilt '+num(b.finishedWidthIn)+' × '+num(b.finishedHeightIn)+' in. Side strips are attached before top and bottom strips.',b.layers.length===1?'layer':'layers');
     shopping(resultRoot,b.layers.map(x=>({label:x.label+' · '+x.sku,hint:'Sides '+num(x.sideCutLengthIn)+' in; top/bottom '+num(x.topCutLengthIn)+' in',amount:x.purchase?.roundedPurchaseYards})));
     if(b.layers.some(x=>!x.purchase))warning(resultRoot,'At least one layer is FIT_IMPOSSIBLE at its specified WOF. No yardage is offered for that layer.',true);
     if(b.layers[0])layout=b.layers[0].layout;plan=b;
@@ -296,7 +296,7 @@ if(root){
     const f=calculateQuiltFabric(p.fabrics,o.step);
     if(!f.length){warning(resultRoot,'No fabric SKUs planned. Add a fabric and its cut pieces before purchasing.');}
     else{
-     hero(resultRoot,String(f.length),'SEPARATE FABRIC SKUS','Each fabric color has independent usable WOF, shrinkage, layout and purchase quantity.');
+     hero(resultRoot,String(f.length),'SEPARATE FABRIC SKUS','Each fabric color has independent usable WOF, shrinkage, layout and purchase quantity.',f.length===1?'SKU':'SKUs');
      shopping(resultRoot,f.map(x=>({label:x.label+' · '+x.fabricSku,hint:x.layout.cutPieces.length+' cut pieces · '+(x.priceEstimate===undefined?'No price entered':'Est. '+money(x.priceEstimate)),amount:x.purchase?.roundedPurchaseYards})));
      if(f.some(x=>!x.purchase))warning(resultRoot,'One or more fabric SKUs contain a piece that cannot fit in the specified WOF.',true);
      layout=f.find(x=>x.layout.isCutFeasible)?.layout;plan=f;

@@ -15,6 +15,11 @@ for(const slug of ['diagonal-quilt-backing-calculator','rag-quilt-calculator','q
  if(fs.existsSync('dist/'+slug+'/index.html'))throw Error('HOLD route published: '+slug);
 }
 if(!fs.existsSync('dist/privacy/index.html'))throw Error('Missing privacy page');
+const privacy=fs.readFileSync('dist/privacy/index.html','utf8');
+if(production && !privacy.includes('href="'+site+'/privacy/"'))throw Error('Privacy canonical must not point to undefined.');
+if(!fs.existsSync('dist/404.html'))throw Error('Missing Cloudflare Pages 404.html: unknown URLs would silently fall back to homepage.');
+const page404=fs.readFileSync('dist/404.html','utf8');
+if(!page404.includes('noindex,follow')||page404.includes('rel="canonical"'))throw Error('404 route must be noindex with no canonical.');
 if(production){
  const sitemap=fs.readFileSync('dist/sitemap.xml','utf8');
  if((sitemap.match(/<url>/g)||[]).length!==slugs.length)throw Error('Production sitemap does not match approved routes.');
