@@ -66,4 +66,25 @@ for(const key of ['How big is a yard of fabric?', '1/3', '2/3', '1 1/2','Can squ
 }
 console.log('PASS: 218 source keyword records, 202 mapped to 9 unique tool intents, 16 HOLD, 107 conversion terms consolidated without thin pages.');
 
+/** Fail fast on broken internal routes or duplicate page titles.
+ * Asset hrefs are intentionally excluded; internal navigation URLs must be valid.
+ */
+const seenTitles=new Set();
+const internalRoutes=new Set([...slugs.map(slug=>'/'+(slug?slug+'/':'')),'/privacy/']);
+for(const slug of [...slugs,'privacy']){
+ const html=fs.readFileSync('dist/'+(slug?slug+'/':'')+'index.html','utf8');
+ const title=html.match(/<title>([^<]+)<\/title>/)?.[1];
+ if(!title||seenTitles.has(title))throw Error('Missing/duplicate page title: '+slug);
+ seenTitles.add(title);
+ const h1Count=(html.match(/<h1(?:\s|>)/g)||[]).length;
+ if(h1Count!==1)throw Error('Every static page must have exactly one H1: '+slug+' ('+h1Count+')');
+ for(const hit of html.matchAll(/href="(\/[^"#?]+)"/g)){
+  const href=hit[1];
+  if(/\.[a-z0-9]+$/i.test(href)||href.startsWith('/_astro/'))continue;
+  if(!internalRoutes.has(href))throw Error('Broken internal page link '+href+' from '+slug);
+ }
+}
+console.log('PASS: 11 uniquely titled static pages, one H1 each, internal link destinations verified.');
+
+
 console.log('PASS: '+slugs.length+' approved routes, SEO metadata, '+(production?'production canonical/sitemap':'preview noindex')+', original preview images and HOLD exclusions.');

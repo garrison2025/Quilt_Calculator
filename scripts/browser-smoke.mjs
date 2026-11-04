@@ -48,6 +48,25 @@ try{
   for(const path of routes){
     await page.evaluate(()=>localStorage.removeItem('quilt-studio-v2')).catch(()=>{});
     await hydrated(page,path);
+    if(path!=='/'){
+      const guide=page.locator('[data-content-guide]');
+      assert.equal(await guide.count(),1,'Every tool needs one static explanatory guide: '+path);
+      const related=guide.locator('nav[aria-label="Related fabric calculations"] a');
+      const hrefs=await related.evaluateAll(links=>links.map(el=>el.getAttribute('href')));
+      check(hrefs.length>=2&&new Set(hrefs).size===hrefs.length&&!hrefs.includes(path),
+       'Contextual guide links must be unique and point to other calculators: '+path);
+    }
+    if(path==='/fabric-yards-to-inches/'){
+      const table=page.getByRole('table',{name:'Linear fabric yard fractions and the corresponding length'});
+      assert.equal(await table.count(),1,'Fraction conversion requires one accessible labeled table.');
+      assert.equal(await table.locator('tbody tr').count(),14,'Missing exact fraction reference rows.');
+      const third=await table.locator('tbody tr',{hasText:'1/3 yard'}).innerText();
+      const twoThirds=await table.locator('tbody tr',{hasText:'2/3 yard'}).innerText();
+      check(third.includes('12 in')&&twoThirds.includes('24 in'),'Exact thirds conversion is wrong.');
+      check((await guide.locator('h3',{hasText:'How big is a yard of fabric?'}).count())===1,'Missing yard size explanation.');
+      await page.screenshot({path:'artifacts/qa/yards-conversion-guide-desktop.png',fullPage:true,animations:'disabled'});
+      console.log('PASS static 14-row fraction chart, yard-size intent, exact thirds and contextual links.');
+    }
     if(path!=='/fabric-yards-to-inches/'){
       check(await page.locator('[data-results] svg[role="img"]').count()>0,'Missing schematic SVG: '+path);
     }
@@ -285,16 +304,17 @@ try{
   const mobile=await browser.newContext({viewport:{width:375,height:812},isMobile:true,hasTouch:true});
   const small=await mobile.newPage();
   small.on('pageerror',err=>problems.push('Mobile JS exception: '+err.message));
-  for(const path of ['/','/calculators/','/quilt-backing-calculator/','/quilt-fabric-calculator/']){
+  for(const path of ['/','/calculators/','/quilt-backing-calculator/','/quilt-fabric-calculator/','/fabric-yards-to-inches/']){
     await hydrated(small,path);
     const overflow=await small.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
     check(overflow<=2,'Mobile horizontal overflow '+overflow+'px: '+path);
     if(path==='/quilt-backing-calculator/')await small.screenshot({path:'artifacts/qa/backing-mobile.png',fullPage:true,animations:'disabled'});
+    if(path==='/fabric-yards-to-inches/')await small.screenshot({path:'artifacts/qa/yards-conversion-guide-mobile.png',fullPage:true,animations:'disabled'});
     console.log('PASS narrow phone viewport '+path);
   }
   for(const width of [360,390,768,1024,1440]){
     await small.setViewportSize({width,height:812});
-    for(const path of ['/','/quilt-backing-calculator/','/quilt-fabric-calculator/']){
+    for(const path of ['/','/quilt-backing-calculator/','/quilt-fabric-calculator/','/fabric-yards-to-inches/']){
       await hydrated(small,path);
       const overflow=await small.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
       check(overflow<=2,'Horizontal overflow '+overflow+'px at '+width+'px: '+path);
