@@ -259,3 +259,15 @@
   .fraction-grid small,.fraction-reference-table caption{color:#46604f}
   .results-section-title>span,.shopping-item small{color:#465f4e}
 }
+
+/* WCAG 2.2 dark-mode correction: light green controls need dark ink, not
+ * white ink; muted text on dark surfaces must remain legible at small sizes. */
+@media screen and (prefers-color-scheme:dark){
+  .brand small{color:#c5e0cb}
+  .action-primary{background:#8dc9b1;color:#12291e;border-color:#8dc9b1}
+  .action-primary:hover,.action-primary:focus-visible{background:#b0e0c7;color:#12291e;border-color:#b0e0c7}
+  .action-link{color:#c4dfc8}
+  .result-version,.result-status{color:#c0d7c5}
+  .result-status.status-error{color:#ffb9aa}
+  .related-card>span:not(.related-ornament){color:#c4dcc8}
+}
