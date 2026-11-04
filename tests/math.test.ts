@@ -3,6 +3,12 @@ import { calculateBacking, calculateStraightBinding, calculateYardage, calculate
  calculateBorders, calculateSashing, compareYardageWidths, parseMeasure, purchase, roundToStep, verifyLayout, layoutRectangles, calculateWofArea } from '../src/lib/quilt/math';
 import { sampleProject, validateProject } from '../src/lib/quilt/project';
 describe('V2 independent arithmetic fixtures', () => {
+ it('supports leading-decimal inches in manual sewing measurements without weakening comma validation',()=>{
+   expect(parseMeasure('.25')).toBe(.25);
+   expect(parseMeasure('.0625')).toBe(.0625);
+   expect(parseMeasure('0.25')).toBe(.25);
+   for(const invalid of ['.',',25','1,2','.2.5'])expect(()=>parseMeasure(invalid)).toThrow();
+ });
  it('compares two fabric widths by verified cutting runs instead of area-only ratios',()=>{
   const c=compareYardageWidths({pieceWidthIn:5,pieceHeightIn:10,count:20,wofIn:43,step:.125,allowRotate:false},50);
   expect([c.current.across,c.current.rows,c.current.layout.exactFabricRunLengthIn,c.current.purchase?.roundedPurchaseYards]).toEqual([8,3,30,.875]);
