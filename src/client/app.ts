@@ -234,6 +234,15 @@ if(root){
   if(field.kind==='pct'&&n>=100)throw Error('Shrinkage must be less than 100%.');
   return field.kind==='length'?toInches(n,project.units):n;
  }
+ function markResultsStale(message:string):void{
+  cutExport=null;materialCuts=[];
+  exportButton.disabled=true;cutCsvButton.disabled=true;printButton.disabled=true;
+  resultRoot.querySelectorAll<HTMLButtonElement>('[data-action="export-shopping"]').forEach(button=>button.disabled=true);
+  resultRoot.querySelector('[data-stale-warning]')?.remove();
+  const stale=node('div','warning-banner error-banner',message);
+  stale.setAttribute('data-stale-warning','');
+  resultRoot.prepend(stale);
+ }
  function inputField(field:Field,current:unknown,onValue:(v:unknown)=>void):HTMLElement{
   let lastAccepted=current;
   const wrap=node('div','field-wrap'),id='field-'+Math.random().toString(36).slice(2);
@@ -251,7 +260,19 @@ if(root){
   }
   if(field.note)wrap.appendChild(node('span','hint',field.note));
   wrap.appendChild(fieldError);
+  // Keep the previous accepted project intact while typing. A draft cannot be
+  // exported or printed as though it were already in the cutting plan.
+  if(input.type!=='checkbox')input.addEventListener('input',()=>{
+   input.dataset.pendingEdit='true';
+   let message='';
+   try{read(field,input.value);}catch(e){message=e instanceof Error?e.message:'Invalid measurement.';}
+   input.setAttribute('aria-invalid',String(Boolean(message)));
+   fieldError.hidden=!message;fieldError.textContent=message;
+   markResultsStale('This field has uncommitted changes. Leave the field to validate and recalculate before exporting or printing.');
+   note('Editing '+field.label+' · current cutting result is not ready for export.',true);
+  });
   input.addEventListener('change',()=>{
+   input.dataset.pendingEdit='false';
    try{
     const value=read(field,input.type==='checkbox'?input.checked:input.value);
     onValue(value);
@@ -261,11 +282,7 @@ if(root){
    }catch(e){
     const message=e instanceof Error?e.message:'This input is not valid.';
     input.setAttribute('aria-invalid','true');fieldError.hidden=false;fieldError.textContent=message;
-    cutExport=null;materialCuts=[];exportButton.disabled=true;cutCsvButton.disabled=true;printButton.disabled=true;
-    resultRoot.querySelectorAll<HTMLButtonElement>('[data-action="export-shopping"]').forEach(button=>button.disabled=true);
-    resultRoot.querySelector('[data-stale-warning]')?.remove();
-    const stale=node('div','warning-banner error-banner','The value was not saved. Results below are from the last valid measurements. Correct the highlighted field to recalculate.');
-    stale.setAttribute('data-stale-warning','');resultRoot.prepend(stale);
+    markResultsStale('The value was not saved. Results below are from the last valid measurements. Correct the highlighted field to recalculate.');
     note('Input rejected: '+message,true);
    }
   });
@@ -379,12 +396,8 @@ if(root){
   parent.appendChild(item);
  }
  function update():void{
-  if(fieldsRoot.querySelector('[aria-invalid="true"]')){
-   cutExport=null;materialCuts=[];exportButton.disabled=true;cutCsvButton.disabled=true;printButton.disabled=true;
-   resultRoot.querySelectorAll<HTMLButtonElement>('[data-action="export-shopping"]').forEach(button=>button.disabled=true);
-   resultRoot.querySelector('[data-stale-warning]')?.remove();
-   const stale=node('div','warning-banner error-banner','Resolve every highlighted input before updating or exporting the cutting plan. The previously accepted project is still safe.');
-   stale.setAttribute('data-stale-warning','');resultRoot.prepend(stale);
+  if(fieldsRoot.querySelector('[aria-invalid="true"],[data-pending-edit="true"]')){
+   markResultsStale('Commit or correct every highlighted input before updating or exporting the cutting plan. The previously accepted project is still safe.');
    note('Correct invalid input before updating the plan.',true);
    return;
   }

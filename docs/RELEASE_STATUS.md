@@ -57,3 +57,5 @@ Only **straight binding, butted borders, one-piece batting and explicitly feasib
 - Purchase safety: replaced fixed epsilon in yardage-increment rounding with floating-point-scale tolerance and a final underbuy guard. Tested values just above every supported sample shop increment; tiny but real positive overages must round up, never down.
 
 - Browser keyboard-focused accessibility gate added: skip link activates the main landmark with Enter, FAQ details expand and collapse from keyboard, single main landmark, unique element IDs and explicitly named visible inputs/selects. This is a scoped automated audit and does not replace manual screen-reader testing.
+
+- Draft-edit safety: every noncheckbox input change now invalidates stale cut/CSV/print actions immediately, before blur. The original accepted local project stays intact until the field successfully validates on change, and a visible warning explains when a result is not ready. Browser smoke verifies pre-blur disabled exports and unchanged stored dimensions.
