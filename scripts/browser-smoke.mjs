@@ -54,6 +54,18 @@ try{
     check(await page.locator('[data-action="export-cut"]').isEnabled(),'Export disabled: '+path);
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
     check(overflow<=2,'Desktop horizontal overflow '+overflow+'px: '+path);
+    if(path==='/quilt-fabric-calculator/'){
+      assert.equal(await page.locator('details.sku-plan').count(),2,'Every fabric SKU needs its own cut diagram.');
+      await page.locator('details.sku-plan').nth(1).locator('summary').click();
+      check(await page.locator('details.sku-plan').nth(1).locator('svg[role="img"]').isVisible(),'Second fabric SKU diagram is not visible.');
+    }
+    if(path==='/quilt-border-calculator/'){
+      assert.equal(await page.locator('details.sku-plan').count(),1,'Border layer cut diagram is missing.');
+      await page.getByRole('button',{name:'+ Add border layer'}).click();
+      assert.equal(await page.locator('details.sku-plan').count(),2,'New border layer needs its own cut diagram.');
+      await page.locator('details.sku-plan').nth(1).locator('summary').click();
+      check(await page.locator('details.sku-plan').nth(1).locator('svg[role="img"]').isVisible(),'Second border layer diagram is not visible.');
+    }
     console.log('PASS hydrated calculator '+path);
     if(path==='/quilt-backing-calculator/'){
       await page.screenshot({path:'artifacts/qa/backing-desktop.png',fullPage:true,animations:'disabled'});
@@ -77,10 +89,14 @@ try{
   await cmField.fill('0');
   await cmField.press('Tab');
   check(await cmField.getAttribute('aria-invalid')==='true','Invalid zero width not rejected.');
+  check(await cmField.getAttribute('aria-describedby')!==null && await page.locator('.field-error:not([hidden])').count()===1,'Accessible field error message missing.');
+  check(await page.locator('[data-stale-warning]').isVisible(),'Stale results require a warning.');
+  check(!(await page.locator('[data-action="export-cut"]').isEnabled()),'Cannot export stale calculation after invalid input.');
   saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('quilt-studio-v2')).quilt.finishedWidth);
   assert.equal(saved,90,'Rejected input silently overwrote valid project.');
   await cmField.fill('233.68');
   await cmField.press('Tab');
+  check(await page.locator('[data-stale-warning]').count()===0,'Error banner persists after valid input.');
   check(await cmField.getAttribute('aria-invalid')==='false','Corrected input must clear invalid state.');
   const received=page.waitForEvent('download');
   await page.locator('[data-action="export-cut"]').click();
@@ -105,6 +121,18 @@ try{
     if(path==='/quilt-backing-calculator/')await small.screenshot({path:'artifacts/qa/backing-mobile.png',fullPage:true,animations:'disabled'});
     console.log('PASS narrow phone viewport '+path);
   }
+  for(const width of [360,390,768,1024,1440]){
+    await small.setViewportSize({width,height:812});
+    for(const path of ['/','/quilt-backing-calculator/','/quilt-fabric-calculator/']){
+      await hydrated(small,path);
+      const overflow=await small.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
+      check(overflow<=2,'Horizontal overflow '+overflow+'px at '+width+'px: '+path);
+      if(path==='/quilt-backing-calculator/')await small.screenshot({path:'artifacts/qa/backing-'+width+'px.png',fullPage:true,animations:'disabled'});
+    }
+    console.log('PASS responsive layouts at '+width+'px');
+  }
+  await small.setViewportSize({width:375,height:812});
+  await hydrated(small,'/');
   await small.locator('.mobile-tools summary').click();
   check(await small.locator('nav[aria-label="Mobile calculators"] a').count()===9,'Mobile tool navigation missing links.');
   const missing=await small.goto(ROOT+'/this-route-definitely-does-not-exist/',{waitUntil:'domcontentloaded'});
