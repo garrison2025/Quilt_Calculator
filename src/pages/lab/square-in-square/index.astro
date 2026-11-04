@@ -1,0 +1,55 @@
+---
+import Base from '../../../layouts/Base.astro';
+---
+<Base noIndex title="Square-in-a-Square Cutting Lab — Unverified Preview | Quilt Studio" description="Non-indexed one-round square-in-a-square quilt block prototype: calculate center and corner parent squares, trim allowances and two independent fabric roll layouts. Physical sewing validation pending.">
+<div class="page-shell square-lab" data-square-lab>
+ <div class="square-lab-heading">
+   <span class="eyebrow-with-line">— ENGINEERING PREVIEW / NOT RELEASED FOR CUTTING</span>
+   <h1>Square-in-a-Square Cutting Lab</h1>
+   <p>A test-only, one-round on-point center block calculator. Calculate a center square and two background squares, then cut each background square once diagonally to make four corner triangles. These dimensions require a sewn test block and trimming verification before cutting a quilt.</p>
+   <div class="feature-pills"><span>Fixed ¼″ seam</span><span>1/8″ ruler increments</span><span>Two separate fabric rolls</span><span>Not search-indexable</span></div>
+ </div>
+ <div class="warning-banner square-lab-alert" role="note"><strong>Unverified construction method.</strong> This prototype checks the physical rectangular cuts on each fabric roll. It has NOT verified the sewn square-in-a-square geometry, point clearance, corner-triangle bias handling or finished size against real fabric. Make and trim one practice block first. Do not rely on these quantities for bulk purchases.</div>
+ <div class="workspace">
+  <form class="input-card square-lab-form" data-square-form novalidate>
+   <div class="card-heading"><span class="eyebrow-with-dot">● ONE-ROUND CONSTRUCTION</span><h2>Trial cut measurements</h2><p>US inches only · no account · values remain on this page</p></div>
+   <div class="square-lab-fields">
+    <div class="field-wrap"><label for="sq-finished">Finished outer block side (in)</label><input class="field-control" id="sq-finished" data-square-input="finishedOuterIn" inputmode="decimal" value="12" aria-describedby="sq-finished-help"/><small id="sq-finished-help" class="hint">Final outer edge, after the block joins the quilt · 2–120 in</small></div>
+    <div class="field-wrap"><label for="sq-blocks">Number of identical blocks</label><input class="field-control" id="sq-blocks" data-square-input="blocks" inputmode="numeric" value="4" aria-describedby="sq-blocks-help"/><small id="sq-blocks-help" class="hint">1–200 trial blocks · 1 center and 2 corner parent squares per block</small></div>
+    <div class="field-wrap"><label for="sq-center-wof">Center fabric usable WOF (in)</label><input class="field-control" id="sq-center-wof" data-square-input="centerWofIn" inputmode="decimal" value="43"/></div>
+    <div class="field-wrap"><label for="sq-corner-wof">Corner fabric usable WOF (in)</label><input class="field-control" id="sq-corner-wof" data-square-input="cornerWofIn" inputmode="decimal" value="43"/></div>
+    <div class="field-wrap"><label for="sq-extra">Extra on each corner parent-square side (in)</label><input class="field-control" id="sq-extra" data-square-input="cornerExtraIn" inputmode="decimal" value="0.25"/><small class="hint">Trial trim margin on the parent-square cut dimension, not the center; 0–2 in</small></div>
+    <div class="field-wrap"><label for="sq-shop">Shop purchase increment (yards)</label><select class="field-control" id="sq-shop" data-square-input="stepYards"><option value="0.125">⅛ yd</option><option value="0.25">¼ yd</option><option value="0.5">½ yd</option><option value="1">1 yd</option></select></div>
+   </div>
+   <div class="input-actions"><button class="action-primary" type="submit">Calculate trial cuts ↗</button></div>
+   <div class="local-controls"><h3>What this is not</h3><p>Not a certified quilt pattern, a downloadable full-size template, a finished-size guarantee, a two-round economy block or an endorsement to cut expensive fabric without testing.</p><a href="/fabric-yardage-calculator/" class="action-secondary square-lab-back">Use the verified rectangular yardage tool</a></div>
+  </form>
+  <section class="result-card square-lab-result" aria-label="Trial square-in-a-square results">
+    <div class="results-topline"><span class="eyebrow-with-dot">● TRIAL CUTTING SIZES</span><span class="result-version">ENGINEERING PREVIEW · NOINDEX</span></div>
+    <p data-square-status role="status" aria-live="polite">Preparing trial calculations…</p>
+    <div data-square-output><p>Calculations run locally in your browser. The source page and method limits are available below.</p></div>
+    <div class="results-footer"><button type="button" class="action-secondary" data-square-download disabled>Download trial parent-square cut list CSV</button></div>
+  </section>
+ </div>
+ <section class="content-block square-lab-method">
+  <div class="editorial-head"><span class="eyebrow-with-line">— CHECK BEFORE CUTTING</span><h2>A single round of corner triangles.</h2><p>Construction sequence and the difference between cutting fit and sewn fit.</p></div>
+  <div class="story-grid">
+   <article class="story-panel"><span class="story-number">01 / CENTER</span><h3>One square on point</h3><p>The visible inner square is rotated 45°. Its theoretical finished side follows the desired outer side divided by √2. Add two ¼-inch seam allowances, then round the center square cut upward to the next ⅛ inch.</p></article>
+   <article class="story-panel"><span class="story-number">02 / CORNERS</span><h3>Four triangles from two squares</h3><p>Cut two oversized background squares for each block. Cut each square diagonally once. Sew pairs of triangles on opposite sides of the center, press, then add the other pair. The extra cutting allowance is for trimming, not a guarantee of finished geometry.</p></article>
+   <article class="story-panel disclaimer-panel"><span class="story-number">03 / VALIDATION HOLD</span><h3>Verify the points and trim</h3><p>Check seam placement and the ¼-inch margin beyond every central point on a practice block. Compare its measured unfinished outside edge with the target before committing to a batch. An area formula or non-overlapping roll does not certify sewing accuracy.</p></article>
+  </div>
+  <div class="square-lab-note">
+   <svg viewBox="0 0 480 280" role="img" aria-label="Schematic one-round square-in-a-square block with a diamond-shaped center and four corner triangles; not to scale.">
+    <rect x="124" y="20" width="232" height="232" rx="2" fill="#e1e6d5" stroke="#426f5e" stroke-width="2"/>
+    <polygon points="240,20 356,136 240,252 124,136" fill="#659b89" stroke="#285546" stroke-width="2"/>
+    <circle cx="240" cy="20" r="3" fill="#f8f6f1"/><circle cx="356" cy="136" r="3" fill="#f8f6f1"/>
+    <text x="240" y="138" text-anchor="middle" fill="#fff" font-size="16" font-weight="700">Center</text>
+    <text x="139" y="40" fill="#345a45" font-size="11">Corner</text>
+    <text x="240" y="272" text-anchor="middle" fill="#527263" font-size="11">One sewn block · schematic, never an actual-size pattern</text>
+   </svg>
+   <p><strong>Reference context:</strong> the one-round center-square plus four half-square-triangle construction is a common approach. Different published charts use different rounding and extra-trim practices; this preview makes its particular ¼-inch seam, ⅛-inch rounding and extra corner cut explicit. <a href="https://www.robertkaufman.com/quilting/ask_margrit_fall_2006/" target="_blank" rel="noopener noreferrer">Robert Kaufman sewing advice</a> · <a href="https://www.quiltersparadiseesc.com/Calculators/Square%20in%20a%20Square%20Calculator.php" target="_blank" rel="noopener noreferrer">Quilter's Paradise comparison</a>.</p>
+  </div>
+ </section>
+</div>
+</Base>
+<script>import {initSquareLab} from '../../../client/square-lab';initSquareLab();</script>
