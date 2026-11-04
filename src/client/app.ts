@@ -338,7 +338,13 @@ if(root){
     const b=calculateBacking({widthIn:w,heightIn:h,overageIn:o.overage,wofIn:o.usableWof,joinTakeupIn:o.joinTakeup,oneWayPrint:o.oneWayPrint,...buyArgs});
     const selected=b.options.find(v=>v.direction===selectedDirection)||b.recommended;
     purchasesTitle(resultRoot,selected.purchase,'BACKING');
-    stats(resultRoot,[['Backing size',num(b.targetWidthIn)+' × '+num(b.targetHeightIn)+' in'],['Panels',String(selected.panelCount)],['Joined width',num(selected.finishedJoinedSpanIn)+' in']]);
+    stats(resultRoot,[['Backing size',num(b.targetWidthIn)+' × '+num(b.targetHeightIn)+' in'],['Panels',String(selected.panelCount)],['Joined span before trim',num(selected.finishedJoinedSpanIn)+' in']]);
+    section(resultRoot,'Joined seam positions',selected.direction==='vertical'?'Along joined width · before trimming':'Along joined height · before trimming');
+    if(selected.joinedSeamPositionsIn.length){
+     table(resultRoot,['Seam number','Position in assembled backing','Construction assumption'],
+      selected.joinedSeamPositionsIn.map((pos,i)=>[String(i+1),num(pos)+' in','Equal half of '+num(o.joinTakeup)+' in total loss per join']));
+    }else resultRoot.appendChild(node('p','footer-note','One panel covers the requested span. No joined seam is required.'));
+    resultRoot.appendChild(node('p','footer-note','Seam coordinates assume half of the total join take-up on each adjoining panel edge. They refer to the joined assembly before its final trim; trimming shifts the seam locations relative to the final edges.'));
     section(resultRoot,'Compare seam orientations');
     const options=node('div','option-buttons');
     for(const direction of b.options){const button=node('button','',direction.direction+' · '+yd(direction.purchase.roundedPurchaseYards)+' yd');button.type='button';button.setAttribute('aria-pressed',String(selected.direction===direction.direction));button.addEventListener('click',()=>{selectedDirection=direction.direction;update();});options.appendChild(button);}

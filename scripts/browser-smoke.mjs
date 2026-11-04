@@ -67,6 +67,10 @@ try{
       check(csv.includes('Backing')&&csv.includes('Straight-grain binding'),'Shopping CSV omits key materials.');
       console.log('PASS auditable shopping breakdown and CSV download.');
     }
+    if(path==='/quilt-backing-calculator/'){
+      check(await page.getByText('Joined seam positions',{exact:true}).count()===1,'Backing seam table is missing.');
+      check(await page.getByText('42.5 in',{exact:true}).count()>=1,'Backing seam coordinates do not match symmetric construction.');
+    }
     if(path==='/quilt-fabric-calculator/'){
       assert.equal(await page.locator('details.sku-plan').count(),2,'Every fabric SKU needs its own cut diagram.');
       const price=page.getByLabel('Price per yard (optional)').first();

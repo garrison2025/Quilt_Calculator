@@ -49,6 +49,14 @@ describe('V2 deterministic geometry property checks', () => {
     expect(choice.finishedJoinedSpanIn+1e-8).toBeGreaterThanOrEqual(target);
     if(choice.panelCount>1)expect((choice.panelCount-1)*wof-(choice.panelCount-2)).toBeLessThan(target);
     expect(choice.layout.cutPieces.length).toBe(choice.panelCount);
+    expect(choice.joinedSeamPositionsIn).toHaveLength(choice.panelCount-1);
+    for(let i=0;i<choice.joinedSeamPositionsIn.length;i++){
+     const pos=choice.joinedSeamPositionsIn[i];
+     expect(pos).toBeCloseTo((i+1)*wof-(i+.5)*1,8);
+     expect(pos).toBeGreaterThan(0);
+     expect(pos).toBeLessThan(choice.finishedJoinedSpanIn);
+     if(i>0)expect(pos).toBeGreaterThan(choice.joinedSeamPositionsIn[i-1]);
+    }
     expect(verifyLayout(choice.layout)).toBe(true);
    }
   });

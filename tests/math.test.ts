@@ -9,7 +9,15 @@ describe('V2 independent arithmetic fixtures', () => {
   expect(v.options.map(o => o.layout.exactFabricRunLengthIn)).toEqual([176, 204]);
   expect(v.options.map(o => o.purchase.roundedPurchaseYards)).toEqual([5, 5.75]);
   expect(v.recommended.direction).toBe('vertical');
+  expect(v.options[0].joinedSeamPositionsIn).toEqual([42.5]);
+  expect(v.options[1].joinedSeamPositionsIn).toEqual([42.5,84.5]);
   for (const o of v.options) expect(verifyLayout(o.layout)).toBe(true);
+ });
+ it('one-panel backing has no fabricated seam positions', () => {
+  const r=calculateBacking({widthIn:32,heightIn:32,overageIn:2,wofIn:43,joinTakeupIn:1,oneWayPrint:true});
+  expect(r.options[0].panelCount).toBe(1);
+  expect(r.options[0].joinedSeamPositionsIn).toEqual([]);
+  expect(r.options[0].finishedJoinedSpanIn).toBe(43);
  });
  it('one-way backing forbids rotating the panel layout', () => {
   expect(calculateBacking({ widthIn: 60, heightIn: 80, overageIn: 4, wofIn: 43, joinTakeupIn: 1, oneWayPrint: true }).options).toHaveLength(1);

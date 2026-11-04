@@ -6,7 +6,7 @@ export type Rect = { xIn: number; yIn: number; widthIn: number; heightIn: number
 export type PieceRequest = { widthIn: number; heightIn: number; count: number; label?: string; allowRotate?: boolean };
 export type Layout = { isCutFeasible: boolean; error?: string; usableWofIn: number; exactFabricRunLengthIn: number; cutPieces: Rect[]; physicalOffcutAreaSqIn: number; globallyOptimal: false };
 export type Purchase = { exactFabricRunLengthIn: number; rawPurchaseYards: number; roundedPurchaseYards: number; purchaseRoundingExtraLengthIn: number; shrinkageLengthPct: number };
-export type BackingOption = { direction: 'vertical' | 'horizontal'; targetWidthIn: number; targetHeightIn: number; panelCount: number; panelLengthIn: number; finishedJoinedSpanIn: number; postAssemblyTrimAreaSqIn: number; layout: Layout; purchase: Purchase };
+export type BackingOption = { direction: 'vertical' | 'horizontal'; targetWidthIn: number; targetHeightIn: number; panelCount: number; panelLengthIn: number; finishedJoinedSpanIn: number; joinedSeamPositionsIn: number[]; postAssemblyTrimAreaSqIn: number; layout: Layout; purchase: Purchase };
 const valid = (x: number, label: string, zero = false) => {
   if (!Number.isFinite(x) || x < (zero ? 0 : EPS) || x > LIMIT) throw Error(label + ' must be a valid ' + (zero ? 'nonnegative' : 'positive') + ' number.');
   return x;
@@ -116,9 +116,12 @@ export function calculateBacking(input: { widthIn: number; heightIn: number; ove
     const panelCount = minimumCount(span, F, S);
     const layout = layoutRectangles(F, [{ widthIn: F, heightIn: panelLengthIn, count: panelCount, label: 'Backing panel' }]);
     const finishedJoinedSpanIn = panelCount * F - (panelCount - 1) * S;
+    // One explicit construction convention: split total join take-up equally
+    // across the adjacent panel edges. Coordinates are BEFORE final trimming.
+    const joinedSeamPositionsIn = Array.from({length:panelCount-1},(_,i)=>(i+1)*F-(i+0.5)*S);
     const postAssemblyTrimAreaSqIn = Math.max(0, finishedJoinedSpanIn - span) * panelLengthIn;
     return { direction, targetWidthIn, targetHeightIn, panelCount, panelLengthIn, finishedJoinedSpanIn,
-      postAssemblyTrimAreaSqIn, layout, purchase: purchase(layout.exactFabricRunLengthIn, input.step, input.shrinkageLengthPct) };
+      joinedSeamPositionsIn, postAssemblyTrimAreaSqIn, layout, purchase: purchase(layout.exactFabricRunLengthIn, input.step, input.shrinkageLengthPct) };
   });
   const recommended = [...options].sort((a, b) => a.purchase.roundedPurchaseYards - b.purchase.roundedPurchaseYards || a.purchase.rawPurchaseYards - b.purchase.rawPurchaseYards)[0];
   return { targetWidthIn, targetHeightIn, options, recommended };
