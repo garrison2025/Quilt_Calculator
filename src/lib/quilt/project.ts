@@ -21,6 +21,12 @@ function object(value: unknown, name: string): Record<string, unknown> {
  if (!value || typeof value !== 'object' || Array.isArray(value)) throw Error(name + ' must be a JSON object.');
  return value as Record<string, unknown>;
 }
+/** Reject misspelled and unsupported project keys, consistent with the published
+ * V2 JSON schema (additionalProperties:false at every object boundary). */
+function onlyKeys(o: Record<string, unknown>, name: string, allowed: readonly string[]): void {
+ for (const key of Object.keys(o)) if (!allowed.includes(key))
+  throw Error(name+'.'+key+' is not a supported V2 project field.');
+}
 function numeric(o: Record<string, unknown>, key: string, name: string, min = 0, max = 100000, integer = false, exclusiveMin = false): number {
  const v = o[key];
  if (typeof v !== 'number' || !Number.isFinite(v) || (exclusiveMin ? v <= min : v < min) || v > max || (integer && !Number.isInteger(v)))
@@ -32,7 +38,7 @@ function bool(o: Record<string, unknown>, key: string, name: string): void {
 }
 function str(o: Record<string, unknown>, key: string, name: string, required = true): void {
  const v = o[key];
- if ((v === undefined || v === null) && !required) return;
+ if (v === undefined && !required) return;
  if (typeof v !== 'string' || (required && v.trim().length === 0) || v.length > 160) throw Error(name + '.' + key + ' must be a valid label.');
 }
 function array(value: unknown, name: string, max: number): unknown[] {
@@ -47,12 +53,15 @@ function shrink(o: Record<string, unknown>, key: string, name: string, optional 
 /** Strict JSON-import boundary; physics and WOF constraints remain separately enforced by each calculator. */
 export function validateProject(data: unknown): Project {
  const root = object(data, 'Project');
+ onlyKeys(root,'Project',['schemaVersion','units','quilt','options','yardage','sashing','borders','fabrics']);
  if (root.schemaVersion !== 2 || (root.units !== 'in' && root.units !== 'cm'))
   throw Error('Expected schemaVersion 2 and units "in" or "cm".');
  const quilt = object(root.quilt, 'quilt');
+ onlyKeys(quilt,'quilt',['finishedWidth','finishedHeight']);
  numeric(quilt, 'finishedWidth', 'quilt', 0, 100000, false, true);
  numeric(quilt, 'finishedHeight', 'quilt', 0, 100000, false, true);
  const opts = object(root.options, 'options');
+ onlyKeys(opts,'options',['overage','usableWof','battingWof','joinTakeup','stripWidth','tailAllowance','stripJoinLoss','step','lengthShrinkage','oneWayPrint','seam','battingOverage','allowRotate']);
  for (const name of ['overage','joinTakeup','tailAllowance','stripJoinLoss','seam','battingOverage'])
   numeric(opts,name,'options');
  for (const name of ['usableWof','battingWof','stripWidth','step'])
@@ -62,10 +71,12 @@ export function validateProject(data: unknown): Project {
  if((opts.stripJoinLoss as number)>=(opts.usableWof as number))throw Error('Binding strip join loss must be smaller than usable WOF.');
  bool(opts,'oneWayPrint','options');bool(opts,'allowRotate','options');
  const yardage = object(root.yardage, 'yardage');
+ onlyKeys(yardage,'yardage',['pieceWidth','pieceHeight','count']);
  numeric(yardage,'pieceWidth','yardage',0,100000,false,true);
  numeric(yardage,'pieceHeight','yardage',0,100000,false,true);
  numeric(yardage,'count','yardage',0,2000,true);
  const sash = object(root.sashing, 'sashing');
+ onlyKeys(sash,'sashing',['rows','columns','blockWidth','blockHeight','width']);
  for (const name of ['rows','columns']) numeric(sash,name,'sashing',1,100,true);
  for (const name of ['blockWidth','blockHeight','width']) numeric(sash,name,'sashing',0,100000,false,true);
  const rows=sash.rows as number,columns=sash.columns as number;
@@ -74,6 +85,7 @@ export function validateProject(data: unknown): Project {
  const borderIds = new Set<string>();
  for (const [i,v] of borders.entries()){
   const b=object(v,'borders['+i+']'),tag='borders['+i+']';
+  onlyKeys(b,tag,['sku','label','widthIn','wofIn','shrinkageLengthPct','pricePerYard']);
   str(b,'sku',tag);str(b,'label',tag,false);
   const id=b.sku as string;
   if (borderIds.has(id)) throw Error('Border SKU IDs must be unique for independent purchasing.');
@@ -88,6 +100,7 @@ export function validateProject(data: unknown): Project {
  let totalFabricPieces=0;
  for (const [i,v] of fabrics.entries()){
   const f=object(v,'fabrics['+i+']'),tag='fabrics['+i+']';
+  onlyKeys(f,tag,['id','label','usableWidth','oneWayPrint','shrinkageLengthPct','pricePerYard','pieces']);
   str(f,'id',tag);str(f,'label',tag);
   const id=f.id as string;
   if(ids.has(id))throw Error('Duplicate fabric SKU ID: '+id);
@@ -98,6 +111,7 @@ export function validateProject(data: unknown): Project {
   if(f.pricePerYard!==undefined)numeric(f,'pricePerYard',tag);
   for(const [j,vp] of array(f.pieces,tag+'.pieces',100).entries()){
    const piece=object(vp,tag+'.pieces['+j+']'),part=tag+'.pieces['+j+']';
+   onlyKeys(piece,part,['widthIn','heightIn','count','label','allowRotate']);
    numeric(piece,'widthIn',part,0,100000,false,true);
    numeric(piece,'heightIn',part,0,100000,false,true);
    totalFabricPieces+=numeric(piece,'count',part,0,MAX_PIECES,true);

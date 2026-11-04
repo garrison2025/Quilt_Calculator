@@ -63,3 +63,5 @@ Only **straight binding, butted borders, one-piece batting and explicitly feasib
 - A pending or invalid input now disables the project JSON Save button as well as cut/CSV/print: the downloaded backup must not silently omit the visible draft. After successful commit, backups re-enable. Cross-tab conflict backup remains available when the form has no pending/invalid field.
 
 - Minimum stitched-span coverage now uses a post-count physical coverage guard rather than fixed `-EPS` in the count ratio. Boundary tests exercise WOF 12/43/108 in, multiple join losses, exact thresholds and values just above thresholds; protects against underbuying one backing panel or one straight-binding strip.
+
+- Import contract parity: the V2 project parser now rejects unsupported or misspelled keys at all eight object boundaries, as required by the published JSON Schema's `additionalProperties:false`. Optional text labels no longer silently accept JSON `null`. Tests cover root, quilt, options, yardage, sashing, border, fabric and piece objects.
