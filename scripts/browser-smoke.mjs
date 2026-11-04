@@ -12,7 +12,7 @@ const routes=[
 const delay=(ms)=>new Promise(resolve=>setTimeout(resolve,ms));
 await fs.mkdir('artifacts/qa',{recursive:true});
 const server=spawn('npm',['run','preview','--','--host','127.0.0.1','--port','4321'],{
-  env:process.env,stdio:['ignore','pipe','pipe']
+  env:process.env,stdio:['ignore','pipe','pipe'],detached:process.platform!=='win32'
 });
 let serverLog='';
 server.stdout.on('data',chunk=>{serverLog+=chunk.toString();});
@@ -119,5 +119,10 @@ try{
   process.exitCode=1;
 }finally{
   if(browser)await browser.close();
-  server.kill('SIGTERM');
+  try{
+    if(process.platform!=='win32'&&server.pid)process.kill(-server.pid,'SIGTERM');
+    else server.kill('SIGTERM');
+  }catch{server.kill('SIGTERM');}
+  server.stdout.destroy();
+  server.stderr.destroy();
 }
