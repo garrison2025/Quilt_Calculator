@@ -27,7 +27,7 @@ export function toInches(value: number, units: 'in' | 'cm' = 'in'): number { ret
 export function fromInches(value: number, units: 'in' | 'cm' = 'in'): number { return value * (units === 'cm' ? 2.54 : 1); }
 export function roundToStep(yards: number, step = .125): number {
   valid(yards, 'Yardage', true); valid(step, 'Purchase increment');
-  return Math.ceil(yards / step - EPS) * step;
+  return yards === 0 ? 0 : Math.ceil(yards / step - EPS) * step;
 }
 export function purchase(runLengthIn: number, step = .125, shrinkageLengthPct = 0): Purchase {
   valid(runLengthIn, 'Cut run length', true);
