@@ -71,3 +71,5 @@ Only **straight binding, butted borders, one-piece batting and explicitly feasib
 - The source V2 plan describes external `V2_Golden_Fixtures.csv` (39 cases), `V2_Property_Test_Plan.csv` (24 requirements) and `V2_Release_Gates.csv` (47 gates), but these exact original worksheets were not present in the deployed repository and were not separately available with the supplied plan during this review. Their original row-by-row gates remain NOT_RUN/PARTIAL as shown above, regardless of the separate 81 passing current tests.
 
 - Removed a fixed `1e-8` coordinate tolerance that could accept a physically oversized WOF row or ignore a small true overlap. Geometry uses bounded floating-point-scale slack; regression tests cover sub-1e-8 violations and decimal exact-touching layouts.
+
+- Allowed grain rotation now also considers near-square rectangular cut dimensions (rather than suppressing rotations solely due to a fixed epsilon). Tests demonstrate a borderline piece is rejected when rotation is forbidden but accepted when its rotated width actually fits.

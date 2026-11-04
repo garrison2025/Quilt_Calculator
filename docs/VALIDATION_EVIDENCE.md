@@ -35,3 +35,5 @@ Only these are calculated with checked physical layouts: joined rectangular back
 
 ## Numerical edge-fit gate (2026-11-04)
 - WOF placement and overlap checks use scale-specific IEEE-754 slack instead of a fixed physical `1e-8` inch allowance. New tests check one oversize piece, rows that would barely exceed roll width, sub-`1e-8` physical overlaps, and exact decimal boundaries. This improves mathematical fit classification only; independent real cutting is still not certified.
+
+- Nearly-square directional exception: allow 90° grain rotation whenever the two cut dimensions differ, even below 1e-8 inch. This prevents wrongly rejecting a permitted rotated fit at the WOF boundary. Automated cases verify both rotation-disabled failure and rotation-enabled success.

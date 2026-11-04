@@ -144,7 +144,9 @@ export function layoutRectangles(usableWofIn: number, requests: PieceRequest[]):
       }
     };
     add(w, h, 0);
-    if (request.allowRotate && Math.abs(w - h) > EPS) add(h, w, 90);
+    // Near-square rectangles can still cross the physical WOF threshold when rotated;
+    // a fixed 1e-8 difference cutoff would incorrectly mark that valid cut impossible.
+    if (request.allowRotate && w !== h) add(h, w, 90);
     if (!options.length) return impossible(F, 'FIT_IMPOSSIBLE: a requested piece is wider than the usable fabric in every permitted grain direction.');
     options.sort((a, b) => a.run - b.run || a.rotation - b.rotation);
     const chosen = options[0];

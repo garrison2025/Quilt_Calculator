@@ -3,6 +3,15 @@ import { calculateBacking, calculateStraightBinding, calculateYardage, calculate
  calculateBorders, calculateSashing, parseMeasure, purchase, roundToStep, verifyLayout, layoutRectangles, calculateWofArea } from '../src/lib/quilt/math';
 import { sampleProject, validateProject } from '../src/lib/quilt/project';
 describe('V2 independent arithmetic fixtures', () => {
+ it('keeps 90-degree rotation available for nearly square pieces at a WOF boundary',()=>{
+  const piece=43+5e-9;
+  const locked=calculateYardage({pieceWidthIn:piece,pieceHeightIn:43,count:2,wofIn:43,allowRotate:false});
+  expect(locked.layout.isCutFeasible).toBe(false);
+  const rotated=calculateYardage({pieceWidthIn:piece,pieceHeightIn:43,count:2,wofIn:43,allowRotate:true});
+  expect(rotated.layout.isCutFeasible).toBe(true);
+  expect(rotated.layout.cutPieces.every(p=>p.grainRotationDeg===90)).toBe(true);
+  expect(verifyLayout(rotated.layout)).toBe(true);
+ });
  it('rejects a cut slightly wider than the real WOF rather than applying a fixed 1e-8 inch waiver',()=>{
   const r=calculateYardage({pieceWidthIn:43+5e-9,pieceHeightIn:9,count:2,wofIn:43,allowRotate:false});
   expect(r.layout.isCutFeasible).toBe(false);
