@@ -24,3 +24,17 @@ jobs:
         run: npm run build
       - name: Inspect static output and index gates
         run: node scripts/check-build.mjs
+      - name: Install isolated browser smoke-test dependency
+        run: npm install --no-save --package-lock=false playwright
+      - name: Install Chromium and Linux browser libraries
+        run: npx playwright install --with-deps chromium
+      - name: Test real calculator interactions, downloads, mobile and print
+        run: node scripts/browser-smoke.mjs
+      - name: Archive desktop, mobile and print smoke-test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quilt-browser-qa
+          path: artifacts/qa/
+          if-no-files-found: ignore
+          retention-days: 7

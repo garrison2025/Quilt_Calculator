@@ -134,6 +134,8 @@ if(root){
  const status=root.querySelector<HTMLElement>('[data-status]')!;
  const stateLabel=root.querySelector<HTMLElement>('[data-project-state]')!;
  const unitsSelect=root.querySelector<HTMLSelectElement>('[data-units]')!;
+ const exportButton=root.querySelector<HTMLButtonElement>('[data-action="export-cut"]')!;
+ const printButton=root.querySelector<HTMLButtonElement>('[data-action="print"]')!;
  let project:Project=structuredClone(sampleProject);
  let sample=true,conv='1/4',selectedDirection:'vertical'|'horizontal'='vertical';
  let cutExport:unknown=null;
@@ -150,6 +152,7 @@ if(root){
   return field.kind==='length'?toInches(n,project.units):n;
  }
  function inputField(field:Field,current:unknown,onValue:(v:unknown)=>void):HTMLElement{
+  let lastAccepted=current;
   const wrap=node('div','field-wrap'),id='field-'+Math.random().toString(36).slice(2);
   const label=node('label','',field.label+(field.kind==='length'?' ('+project.units+')':''));label.htmlFor=id;
   const input=node('input','field-control');
@@ -162,8 +165,13 @@ if(root){
   }
   if(field.note)wrap.appendChild(node('span','hint',field.note));
   input.addEventListener('change',()=>{
-   try{const value=read(field,input.type==='checkbox'?input.checked:input.value);onValue(value);input.setAttribute('aria-invalid','false');persist();update();}
-   catch(e){input.setAttribute('aria-invalid','true');note((e as Error).message,true);}
+   try{
+    const value=read(field,input.type==='checkbox'?input.checked:input.value);
+    onValue(value);
+    try{validateProject(project);}catch(e){onValue(lastAccepted);throw e;}
+    lastAccepted=value;
+    input.setAttribute('aria-invalid','false');persist();update();
+   }catch(e){input.setAttribute('aria-invalid','true');note((e as Error).message,true);}
   });
   return wrap;
  }
@@ -249,6 +257,7 @@ if(root){
  }
  function update():void{
   resultRoot.replaceChildren();cutExport=null;
+  exportButton.disabled=true;printButton.disabled=true;
   try{
    const p=project,o=p.options,w=p.quilt.finishedWidth,h=p.quilt.finishedHeight;
    const buyArgs={step:o.step,shrinkageLengthPct:o.lengthShrinkage};
@@ -328,6 +337,8 @@ if(root){
    if(layout){layoutSummary(resultRoot,layout);diagram(resultRoot,layout,'Cut plan / fabric roll');}
    const record={tool,sourceProjectHash:hashProject(project),calculationVersion:VERSION,calculatedAt:new Date().toISOString(),projectUnits:project.units,result:plan};
    cutExport=record;
+   exportButton.disabled=false;printButton.disabled=false;
+   resultRoot.prepend(node('p','calculation-context','Current project · '+num(w)+' × '+num(h)+' in quilt · '+(project.units==='cm'?'cm display':'in display')+' · source hash '+record.sourceProjectHash));
    resultRoot.appendChild(node('p','footer-note','Cut lengths and coordinates are calculated in inches. Purchase rounding applied once. Source project hash '+record.sourceProjectHash+'. Export JSON to review complete values. Print is a schematic, not an actual-size template.'));
    note('✓ Updated from the current project · '+new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}));
   }catch(err){cutExport=null;warning(resultRoot,(err instanceof Error ? err.message : 'Unknown calculation error'),true);note('Cannot prove this cut is feasible. Review your measurements.',true);}
@@ -336,8 +347,8 @@ if(root){
  root.querySelector('[data-action="recalculate"]')?.addEventListener('click',()=>update());
  root.querySelector('[data-action="reset"]')?.addEventListener('click',()=>{project=structuredClone(sampleProject);sample=true;selectedDirection='vertical';conv='1/4';localStorage.removeItem('quilt-studio-v2');stateLabel.textContent='● Sample project';renderEditor();update();});
  root.querySelector('[data-action="save"]')?.addEventListener('click',()=>download('quilt-studio-project-v2.json',project));
- root.querySelector('[data-action="export-cut"]')?.addEventListener('click',()=>{if(cutExport)download('quilt-studio-cut-plan-v2.json',cutExport);});
- root.querySelector('[data-action="print"]')?.addEventListener('click',()=>window.print());
+ exportButton.addEventListener('click',()=>{if(cutExport)download('quilt-studio-cut-plan-v2.json',cutExport);});
+ printButton.addEventListener('click',()=>{if(cutExport)window.print();});
  const picker=root.querySelector<HTMLInputElement>('[data-file]')!;
  root.querySelector('[data-action="import"]')?.addEventListener('click',()=>picker.click());
  picker.addEventListener('change',async()=>{const file=picker.files?.[0];if(!file)return;try{
