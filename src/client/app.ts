@@ -264,6 +264,7 @@ if(root){
   const input=node('input','field-control');
   const fieldError=node('span','field-error');
   fieldError.id=id+'-error';fieldError.hidden=true;
+  fieldError.setAttribute('role','alert');
   input.setAttribute('aria-describedby',fieldError.id);
   input.id=id;input.type=field.kind==='check'?'checkbox':'text';
   if(field.kind==='check'){input.checked=Boolean(current);wrap.classList.add('check-field');append(wrap,input,label);}
@@ -272,7 +273,11 @@ if(root){
    input.value=field.kind==='length'?num(fromInches(Number(current)||0,project.units),4):String(current??'');
    append(wrap,label,input);
   }
-  if(field.note)wrap.appendChild(node('span','hint',field.note));
+  if(field.note){
+   const hint=node('span','hint',field.note);hint.id=id+'-hint';
+   wrap.appendChild(hint);
+   input.setAttribute('aria-describedby',hint.id+' '+fieldError.id);
+  }
   wrap.appendChild(fieldError);
   // Keep the previous accepted project intact while typing. A draft cannot be
   // exported or printed as though it were already in the cutting plan.
@@ -586,11 +591,19 @@ if(root){
  unitsSelect.addEventListener('change',()=>{project.units=unitsSelect.value==='cm'?'cm':'in';persist();renderEditor();update();});
  root.querySelector('[data-action="recalculate"]')?.addEventListener('click',()=>{
   update();
+  // A keyboard or switch-control user must remain next to the exact field
+  // that blocks recalculation, not be scrolled to stale shopping results.
+  const blocked=fieldsRoot.querySelector<HTMLInputElement>('[aria-invalid="true"],[data-pending-edit="true"]');
+  if(blocked){blocked.focus();return;}
   if(window.matchMedia('(max-width:760px)').matches){
-   root.querySelector('#results')?.scrollIntoView({
+   const results=root.querySelector<HTMLElement>('#results');
+   results?.scrollIntoView({
     behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',
     block:'start'
    });
+   // Transferring programmatic focus after a successful explicitly requested
+   // update makes the fresh results discoverable to assistive technology.
+   results?.focus({preventScroll:true});
   }
  });
  root.querySelector('[data-action="reset"]')?.addEventListener('click',()=>{

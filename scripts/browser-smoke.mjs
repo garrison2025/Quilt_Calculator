@@ -448,6 +448,32 @@ try{
   check(inputAudit.main===1&&inputAudit.duplicates.length===0&&inputAudit.unnamed.length===0,
     'Form accessibility metadata problem: '+JSON.stringify(inputAudit));
   console.log('PASS keyboard skip-link and FAQ interaction, unique IDs and labeled form controls.');
+  // Error reporting must be bound to the actual field, not only to a distant
+  // result status. Recalculate should focus the invalid field, never stale PDF.
+  await hydrated(page,'/quilt-backing-calculator/');
+  const a11yField=page.getByLabel('Finished quilt width (in)',{exact:true});
+  await a11yField.fill('not a number');
+  await page.getByRole('button',{name:'Update cutting plan'}).click();
+  check(await a11yField.evaluate(el=>document.activeElement===el),
+    'Recalculate with an invalid input must return keyboard focus to that field.');
+  check((await a11yField.getAttribute('aria-invalid'))==='true',
+    'Invalid width must expose aria-invalid=true.');
+  const errorIds=(await a11yField.getAttribute('aria-describedby'))?.trim().split(/\s+/)||[];
+  check(errorIds.length>0,'Invalid input must reference an accessible error description.');
+  check(await page.locator('#'+errorIds.at(-1)+'[role="alert"]:not([hidden])').count()===1,
+    'Error text should be programmatically associated with the invalid field and announced.');
+  await a11yField.fill('60');await a11yField.press('Tab');
+  check((await a11yField.getAttribute('aria-invalid'))==='false'&&
+    await page.locator('[data-stale-warning]').count()===0,
+    'Correcting the error must clear both aria-invalid and stale warnings.');
+  const describedHint=await page.locator('.field-wrap:has(.hint) input[aria-describedby]').first().evaluate(el=>{
+    const ids=el.getAttribute('aria-describedby').trim().split(/\s+/);
+    return {hint:ids.some(id=>document.getElementById(id)?.classList.contains('hint')),
+            error:ids.some(id=>document.getElementById(id)?.classList.contains('field-error'))};
+  });
+  check(describedHint.hint&&describedHint.error,
+    'Field-specific help and errors must both be discoverable via aria-describedby.');
+  console.log('PASS input error focus, live error description and associated help; recovery restores exports.');
   await hydrated(page,'/quilt-backing-calculator/');
   const changeWidth=page.getByLabel('Finished quilt width (in)',{exact:true});
   const changeHeight=page.getByLabel('Finished quilt height (in)',{exact:true});
@@ -717,7 +743,25 @@ try{
     }
     console.log('PASS responsive layouts at '+width+'px');
   }
+  // A 320 CSS-pixel viewport is the WCAG 1.4.10 reflow proxy for
+  // a 1280 CSS-pixel browser viewport at 400% text/browser zoom.
+  // It is NOT a substitute for manual real-zoom and screen-reader testing.
+  await small.setViewportSize({width:320,height:720});
+  for(const path of ['/','/calculators/','/quilt-backing-calculator/',
+    '/quilt-fabric-calculator/','/fabric-yards-to-inches/']){
+    await hydrated(small,path);
+    const overflow=await small.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+    check(overflow<=2,'WCAG 1.4.10 reflow overflow at 320 CSS px: '+path+' ('+overflow+'px)');
+    check(await small.locator('[data-action="recalculate"]').isVisible(),
+      'Primary calculator action must be visible at 320 CSS px: '+path);
+  }
+  await small.screenshot({path:'artifacts/qa/320px-reflow-proxy.png',fullPage:true,animations:'disabled'});
+  console.log('PASS narrow 320 CSS-pixel reflow proxy across 5 routes.');
   await small.setViewportSize({width:375,height:812});
+  await hydrated(small,'/quilt-backing-calculator/');
+  await small.getByRole('button',{name:'Update cutting plan'}).click();
+  check(await small.locator('#results').evaluate(el=>el===document.activeElement),
+    'On narrow mobile, successful manual recalculation should focus the results landmark.');
   await hydrated(small,'/');
   await small.locator('.mobile-tools summary').click();
   check(await small.locator('nav[aria-label="Mobile calculators"] a').count()===9,'Mobile tool navigation missing links.');

@@ -117,3 +117,8 @@ Only **straight binding, butted borders, one-piece batting and explicitly feasib
 - Open-source `axe-core` now scans all ten approved route pages plus the noindex Square lab at default desktop width, three narrow 375px mobile views, and one dark theme view on every CI. The library is installed only for CI; no new production network client or paid API was added.
 - Genuine issues fixed: small-size decorative and functional caption text below the WCAG 4.5 contrast target, white button text on light mint dark-theme buttons, and the brand link visible-label/accessibility-name mismatch. After corrections **all 15 automated scans had zero reported violations**: https://github.com/garrison2025/Quilt_Calculator/actions/runs/41933804432 .
 - This is **NOT** a full WCAG conformance certification. Axe marks some checks as incomplete and independent manual screen reader/zoom/real phone audits remain outstanding. Do not reinterpret original 47-gate statuses as passed merely because scanner output is clean.
+
+
+## Error focus and 320-CSS-pixel reflow proxy (2026-11-05)
+- Error text is now an associated `role="alert"` and field notes are connected using `aria-describedby`. Clicking Update with invalid input focuses the first invalid field rather than scrolling away to stale results. A successful explicit recalculation on small screens focuses the results region with programmatic `tabindex="-1"` (no additional normal tab stop).
+- Chromium QA checks both keyboard focus/error recovery and a **320 CSS px viewport** across the homepage, calculator hub, backing, fabric and conversion tools. The latter is a WCAG 1.4.10 *reflow proxy* for 1280 CSS pixels at 400% zoom, **not** proof of actual physical 400% browser zoom or assistive technology compatibility.
