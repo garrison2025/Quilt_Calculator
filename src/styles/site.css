@@ -205,3 +205,24 @@
  .square-audit-results .square-audit-selfpass{background:#284d36;border-color:#517d5a;color:#d6f3e0}
 }
 @media print{.square-audit-form{display:none!important}.square-test-audit{break-inside:avoid}}
+
+/* A measurable, PRINT-ONLY scale reference. These are CSS physical units,
+ * unlike the cutting schematics; actual paper/driver measurements are manual.
+ * Keep the 1-inch box border-box exactly 1in in both dimensions.
+ */
+.print-scale-audit{display:none!important}
+@media print{
+ .print-scale-audit{display:block!important;position:relative;color:#111!important;background:#fff!important;
+   margin:18pt 0 0;padding:10pt 0 0;border-top:1px solid #222;
+   break-inside:avoid;page-break-inside:avoid;font:10pt/1.4 Arial,sans-serif!important}
+ .print-scale-audit h2{font:bold 10pt Arial,sans-serif!important;margin:0 0 6pt!important;letter-spacing:.035em}
+ .print-scale-audit p{font:9pt/1.45 Arial,sans-serif!important;margin:4pt 0 7pt!important}
+ .print-scale-rulers{display:flex;align-items:center;gap:12pt;margin:8pt 0!important}
+ .print-inch-gauge{display:block!important;box-sizing:border-box!important;width:1in!important;height:1in!important;
+  border:1px solid #000!important;min-width:1in!important;min-height:1in!important;max-width:1in!important;max-height:1in!important}
+ .print-mm-gauge{display:block!important;box-sizing:border-box!important;width:100mm!important;height:0!important;
+  border:0!important;border-bottom:2px solid #000!important;margin:7pt 0 3pt!important}
+ .print-scale-label{font-size:9pt!important;color:#111!important}
+ .print-scale-label strong{display:block}
+ .print-scale-label small{display:block}
+}

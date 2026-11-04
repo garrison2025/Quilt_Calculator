@@ -59,3 +59,8 @@ Engineering CI proof: [167/167 tests + all 39 original golden cases + per-cut SV
 ## Release policy
 
 Do not enable production indexing or describe the original G0–G4 gate set as fully complete. Physical printing, sewn Square-in-a-Square samples, accessibility review, owned production domain, optional ad setup and future Search Console measurements require actions not proven by the automated suite. 
+
+
+### P21 / P24 engineering evidence (2026-11-05)
+- Added a live Chromium P21 navigation test to establish that the same native-inch measurements, display-unit setting, SKU label, rectangle count and Project V2 JSON persist across eight route transitions, with abandoned input drafts excluded.
+- Added an explicitly **print-only** 1 × 1 inch reference square and a 100 mm reference line on each approved print plan. Chromium verifies their CSS physical units under print media, and generated PDFs include them. **A real ruler measurement of actual 100%-printed paper is still NOT_RUN**. Both cutting illustrations and any future paper templates remain schematic until separately validated.

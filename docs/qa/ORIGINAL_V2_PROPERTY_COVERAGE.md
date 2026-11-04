@@ -21,3 +21,7 @@ Every approved cutting page now has Chromium assertions comparing ALL displayed 
 
 ### Executed evidence for P23, not final physical signoff
 Source and line-by-line pixel placement were cross-checked in real Chromium against independently downloaded current-roll CSV on all approved cutting routes at [CI 41929120595](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41929120595). This upgrades the *rendered numeric coordinate* portion from untested to passing. Accessibility of every graphic label to humans, hardcopy print scale and visual inspection remain separate and are **not** claimed complete.
+
+
+### P21 (2026-11-05): across-tool project data continuity
+The full P21 engineering scenario is now executed in an isolated Chromium browser context across backing → binding → batting → hub → fabric → yardage → backing → hub. Native-inch dimensions, reversible cm/in display, fabric SKU label, cut quantity, unsaved edit protection and final downloaded Project V2 JSON must agree with the one locally saved project. The original manual/full cross-tool signoff remains separately identifiable; this strengthens the automated P21 evidence rather than proving every UI journey.

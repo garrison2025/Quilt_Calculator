@@ -33,6 +33,17 @@ const canonical=approved ? candidate+Astro.url.pathname : undefined;
 <details class="mobile-tools"><summary>Tools <span aria-hidden="true">⌄</span></summary><nav aria-label="Mobile calculators">{routes.map(r=><a href={'/'+r.slug+'/'}>{r.nav}</a>)}</nav></details>
 </div></header>
 <main id="main"><slot/></main>
+{route && <aside class="print-scale-audit" aria-label="Physical print size verification before cutting" data-print-scale-audit>
+ <h2>PRINT SCALE CHECK · MEASURE BEFORE CUTTING</h2>
+ <p>Print at <strong>100% / Actual size</strong>. Disable “Fit to page”, “Shrink oversized pages” and browser scaling. Check both marks using a real ruler. If either measurement is inaccurate, correct printer settings and reprint.</p>
+ <div class="print-scale-rulers">
+  <div class="print-inch-gauge" data-print-inch-gauge role="img" aria-label="One-inch square. Both sides must physically measure exactly one inch."></div>
+  <div class="print-scale-label"><strong>1 in × 1 in</strong><small>Verify both width and height on paper.</small></div>
+ </div>
+ <div class="print-mm-gauge" data-print-mm-gauge role="img" aria-label="Horizontal line which must measure exactly 100 millimeters on printed paper."></div>
+ <p class="print-scale-label"><strong>100 mm reference line</strong> · should measure 10 cm with a physical ruler.</p>
+ <p><strong>Note:</strong> all illustrated cutting diagrams remain schematics, not full-size templates. Passing this paper-size check does not validate sewing or cutting geometry.</p>
+</aside>}
 <footer class="site-footer"><div class="footer-inner">
 <div><a href="/" class="footer-mark">quiltstudio ✳</a><p>Thoughtful tools for confident cutting. No account or subscription required.</p></div>
 <div class="footer-links"><strong>Calculators</strong>{routes.map(r=><a href={'/'+r.slug+'/'}>{r.nav}</a>)}</div>

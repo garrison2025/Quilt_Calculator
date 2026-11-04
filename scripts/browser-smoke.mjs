@@ -473,6 +473,24 @@ try{
   check((await page.getByLabel('Finished quilt width (in)',{exact:true}).inputValue())==='60','Reset must restore original sample.');
   await page.emulateMedia({media:'print'});
   check(await page.locator('.input-card').evaluate(el=>getComputedStyle(el).display)==='none','Print view still includes editable form.');
+  const printScale=page.locator('[data-print-scale-audit]');
+  check(await printScale.isVisible(),'Approved print plan needs a real-sized, ruler-measurable calibration reference.');
+  const physicalCss=await page.evaluate(()=>{
+   const inch=document.querySelector('[data-print-inch-gauge]');
+   const mm=document.querySelector('[data-print-mm-gauge]');
+   const inRect=inch.getBoundingClientRect(),mmRect=mm.getBoundingClientRect();
+   return {inchW:inRect.width,inchH:inRect.height,mmW:mmRect.width,
+    inchStyle:getComputedStyle(inch).boxSizing,mmStyle:getComputedStyle(mm).width,
+    content:document.querySelector('[data-print-scale-audit]')?.innerText||''};
+  });
+  check(Math.abs(physicalCss.inchW-96)<.25&&Math.abs(physicalCss.inchH-96)<.25,
+   '1-inch print box must use exactly one physical CSS inch in both axes: '+JSON.stringify(physicalCss));
+  check(Math.abs(physicalCss.mmW-100/25.4*96)<.35,
+   '100-mm print reference must be physically dimensioned in CSS: '+JSON.stringify(physicalCss));
+  check(physicalCss.inchStyle==='border-box'&&physicalCss.content.includes('100% / Actual size')&&
+    physicalCss.content.includes('not full-size templates'),
+   'Print calibration must include both real-unit dimensions and an honest schematic warning.');
+  console.log('PASS P24 in-browser CSS physical-unit calibration (1in square, 100mm line); real printed ruler check remains NOT_RUN.');
   await page.pdf({path:'artifacts/qa/backing-print.pdf',printBackground:true,format:'A4'});
   await page.emulateMedia({media:'screen'});
   console.log('PASS print stylesheet and PDF rendering.');
@@ -568,6 +586,76 @@ try{
    'Local JSON backup must work even when browser autosave is blocked.');
   await noStorage.close();
   console.log('PASS localStorage failure warning and offline JSON backup.');
+  // Original P21: verify an actual browser journey across all project tools.
+  // Screens must share ONE native-inch V2 project, not recompute or overwrite
+  // measurements when the UI units change, and non-committed drafts must not
+  // silently persist on navigation.
+  const crossCtx=await browser.newContext({viewport:{width:1260,height:900},acceptDownloads:true});
+  instrumentNetwork(crossCtx,'cross-tool-v2');
+  const cross=await crossCtx.newPage();
+  cross.on('pageerror',e=>problems.push('Cross-tool project: '+e.message));
+  await hydrated(cross,'/quilt-backing-calculator/');
+  await cross.getByLabel('Finished quilt width (in)',{exact:true}).fill('72');
+  await cross.getByLabel('Finished quilt width (in)',{exact:true}).press('Tab');
+  await cross.getByLabel('Finished quilt height (in)',{exact:true}).fill('84');
+  await cross.getByLabel('Finished quilt height (in)',{exact:true}).press('Tab');
+  let crossStored=await cross.evaluate(()=>JSON.parse(localStorage.getItem('quilt-studio-v2')));
+  check(crossStored.quilt.finishedWidth===72&&crossStored.quilt.finishedHeight===84,
+    'P21 current backing dimensions must enter the shared native-inch project.');
+  await hydrated(cross,'/quilt-binding-calculator/');
+  check((await cross.getByLabel('Finished quilt width (in)',{exact:true}).inputValue())==='72',
+    'P21 binding must restore backing width rather than revert to sample.');
+  check((await cross.getByLabel('Finished quilt height (in)',{exact:true}).inputValue())==='84',
+    'P21 binding must restore backing height.');
+  await cross.locator('[data-units]').selectOption('cm');
+  const actualCM=Number(await cross.getByLabel('Finished quilt width (cm)',{exact:true}).inputValue());
+  check(Math.abs(actualCM-182.88)<.01,'P21 native 72 inches must display 182.88 cm in binding.');
+  crossStored=await cross.evaluate(()=>JSON.parse(localStorage.getItem('quilt-studio-v2')));
+  check(crossStored.quilt.finishedWidth===72&&crossStored.quilt.finishedHeight===84&&crossStored.units==='cm',
+    'P21 changing display units must not convert stored native-inch geometry twice.');
+  await hydrated(cross,'/quilt-batting-calculator/');
+  check(Math.abs(Number(await cross.getByLabel('Finished quilt width (cm)',{exact:true}).inputValue())-182.88)<.01,
+    'P21 batting must share cm display without changing stored inches.');
+  await hydrated(cross,'/calculators/');
+  check(Math.abs(Number(await cross.getByLabel('Finished quilt width (cm)',{exact:true}).inputValue())-182.88)<.01,
+    'P21 main project hub must retain same native geometry and chosen display units.');
+  await cross.locator('[data-units]').selectOption('in');
+  check((await cross.getByLabel('Finished quilt width (in)',{exact:true}).inputValue())==='72',
+    'P21 switching back to inches must not introduce measurement drift.');
+  await hydrated(cross,'/quilt-fabric-calculator/');
+  const firstColor=cross.getByLabel('Fabric / color label',{exact:true}).first();
+  await firstColor.fill('P21 Verified Indigo');
+  await firstColor.press('Tab');
+  check((await cross.evaluate(()=>JSON.parse(localStorage.getItem('quilt-studio-v2')).fabrics[0].label))==='P21 Verified Indigo',
+    'P21 fabric label must persist as part of the same project.');
+  await hydrated(cross,'/fabric-yardage-calculator/');
+  const qty=cross.getByLabel('Piece quantity',{exact:true});
+  await qty.fill('37');
+  await qty.press('Tab');
+  await hydrated(cross,'/quilt-backing-calculator/');
+  check((await cross.getByLabel('Finished quilt width (in)',{exact:true}).inputValue())==='72',
+    'P21 editing another tool must not overwrite the original backing measurements.');
+  // Typing an unfinished draft and navigating away must keep the last valid project.
+  await cross.getByLabel('Finished quilt width (in)',{exact:true}).fill('999');
+  check(!(await cross.locator('[data-action="export-cut"]').isEnabled()),
+    'P21 a draft input must immediately disable export before commitment.');
+  await hydrated(cross,'/calculators/');
+  crossStored=await cross.evaluate(()=>JSON.parse(localStorage.getItem('quilt-studio-v2')));
+  check(crossStored.quilt.finishedWidth===72&&crossStored.quilt.finishedHeight===84&&
+    crossStored.yardage.count===37&&crossStored.fabrics[0].label==='P21 Verified Indigo'&&
+    crossStored.units==='in','P21 multi-tool navigation must preserve all committed data and reject the abandoned draft.');
+  check((await cross.locator('.shopping-item').allInnerTexts()).some(x=>x.includes('P21 Verified Indigo')),
+    'P21 project shopping list must show the SKU label saved in the dedicated fabric tool.');
+  const crossExportPromise=cross.waitForEvent('download');
+  await cross.locator('[data-action="save"]').click();
+  const crossDownloaded=await crossExportPromise;
+  const crossJson=JSON.parse(await fs.readFile(await crossDownloaded.path(),'utf8'));
+  check(crossJson.quilt.finishedWidth===72&&crossJson.quilt.finishedHeight===84&&
+    crossJson.yardage.count===37&&crossJson.fabrics[0].label==='P21 Verified Indigo',
+    'P21 project JSON download must reflect cross-tool committed measurements exactly.');
+  await cross.screenshot({path:'artifacts/qa/p21-cross-tool-project-retention.png',fullPage:true,animations:'disabled'});
+  await crossCtx.close();
+  console.log('PASS P21 cross-tool native-inch geometry, reversible unit display, SKU persistence and unsaved-draft protection.');
   const mobile=await browser.newContext({viewport:{width:375,height:812},isMobile:true,hasTouch:true});
   instrumentNetwork(mobile,'mobile');
   const small=await mobile.newPage();

@@ -103,3 +103,8 @@ Only **straight binding, butted borders, one-piece batting and explicitly feasib
 - Added G42 browser request monitoring across normal editing, JSON imports, CSV exports, storage-failure mode, mobile, dark mode and print. Any third-party HTTP(S) request or non-read HTTP method now fails CI, guarding the current promise that the preview stays local-only. This must be re-audited if any future ad/analytics integration is approved.
 
 - Latest real Chromium P23/G42 acceptance: https://github.com/garrison2025/Quilt_Calculator/actions/runs/41929120595 — all SVG cut rectangles drawn on the nine approved cutting routes reconciled to exported CSV, including SKU identity and displayed pixel-coordinate mapping. No third-party HTTP(S) or non-read upload/write requests appeared across checked preview interactions. Original 47-gate current evidence register now contains **23 scoped automation-evidence gates / 17 partial**; source historical statuses are unchanged.
+
+
+## Original P21 and P24: cross-tool project and print ruler aids (2026-11-05)
+- Original P21 now has an isolated Chromium end-to-end journey across backing/binding/batting/hub/fabric/yardage and back, verifying native-inch data never double-converts, project SKU/quantity persist, abandoned uncommitted edits are not stored, and exported Project V2 JSON matches localStorage.
+- A print-only 1 × 1 inch physical CSS box plus 100 mm measurement line is now included on approved calculator printouts, along with 100%/Actual Size printing instructions and a prominent warning that SVG cutting plans are schematic. CI checks physical *CSS* dimensions and exports a PDF artifact. **Real 100%-scale paper measurement by a user with a ruler remains NOT_RUN**, and this does not certify actual-size pattern printing.
