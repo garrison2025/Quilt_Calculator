@@ -25,4 +25,45 @@ if(production){
  if((sitemap.match(/<url>/g)||[]).length!==slugs.length)throw Error('Production sitemap does not match approved routes.');
  for(const slug of slugs)if(!sitemap.includes(site+'/'+(slug?slug+'/':'')))throw Error('Missing sitemap URL '+slug);
 }else if(fs.existsSync('dist/sitemap.xml'))throw Error('Preview build must not emit sitemap.');
+
+/** Original V2 keyword mapping is planning evidence, not a claim of organic ranking.
+ * Preserve one page per coherent intent; reject accidental unmapped published targets.
+ */
+const keywordSource=fs.readFileSync('docs/data/V2_Keyword_Appendix_218.csv','utf8');
+const lines=keywordSource.trim().split(/\r?\n/);
+if(lines.length!==219)throw Error('Expected header and 218 source keyword records.');
+let mapped=0,hold=0,support=0;
+const known=new Set(slugs.filter(Boolean).map(x=>'/'+x+'/'));
+for(const row of lines.slice(1)){
+ const values=[...row.matchAll(/"((?:[^"]|"")*)"/g)].map(m=>m[1].replace(/""/g,'"'));
+ if(values.length!==8)throw Error('Invalid V2 keyword data row: '+row.slice(0,90));
+ const [keyword,volume,kd,,group,decision,path,status]=values;
+ if(!keyword||!Number.isFinite(Number(volume))||!Number.isFinite(Number(kd))||Number(kd)>29)throw Error('Invalid or out-of-scope keyword evidence: '+keyword);
+ if(path){
+  if(!known.has(path)||status!=='CONDITIONAL_QA')throw Error('Keyword maps to missing or nonapproved route: '+keyword+' => '+path);
+  mapped++;
+ }else{
+  if(status!=='HOLD_NO_INDEX')throw Error('Unmapped keyword must stay HOLD: '+keyword);
+  hold++;
+ }
+ if(decision==='SUPPORT-ONE-PAGE'){
+  support++;
+  if(path!=='/fabric-yards-to-inches/')throw Error('Conversion keyword cannibalization risk: '+keyword);
+ }
+ if(['WOF','SQUARE'].includes(group)&&path)throw Error('Unvalidated WOF or square intent cannot be published: '+keyword);
+}
+if(mapped!==202||hold!==16||support!==107)throw Error('V2 keyword allocation changed without updated evidence and intentional review.');
+for(const slug of slugs.filter(Boolean)){
+ const html=fs.readFileSync('dist/'+slug+'/index.html','utf8');
+ if(!html.includes('data-content-guide=')||!html.includes('PRACTICAL MEASUREMENT GUIDE')||!html.includes('What to calculate next')){
+  throw Error('Missing static unique educational guide: '+slug);
+ }
+ if((html.match(/class="intent-guide-section"/g)||[]).length<2)throw Error('Insufficient unique guide sections: '+slug);
+}
+const conversion=fs.readFileSync('dist/fabric-yards-to-inches/index.html','utf8');
+for(const key of ['How big is a yard of fabric?', '1/3', '2/3', '1 1/2','Can square inches be converted to fabric yards?', '1,548 square inches']){
+ if(!conversion.includes(key))throw Error('Conversion page misses verified user intent '+key);
+}
+console.log('PASS: 218 source keyword records, 202 mapped to 9 unique tool intents, 16 HOLD, 107 conversion terms consolidated without thin pages.');
+
 console.log('PASS: '+slugs.length+' approved routes, SEO metadata, '+(production?'production canonical/sitemap':'preview noindex')+', original preview images and HOLD exclusions.');

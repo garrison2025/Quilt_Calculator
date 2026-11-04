@@ -41,3 +41,11 @@ Only **straight binding, butted borders, one-piece batting and explicitly feasib
 - Layout verifier now sorts by roll-length start and checks only potentially overlapping longitudinal intervals; full geometry is still verified and the original cut order remains unchanged. Stress tests exercise 2,000 cuts, far-apart overlaps, edge-touching cuts, mixed shelves and nonfinite/invalid coordinates. This is not a globally optimal nesting algorithm.
 
 - Local project integrity: `quilt-studio-v2` autosave compares the latest stored JSON with the last observed version before writing; conflicting tabs show a visible warning and require an explicit reload. The user can export their unsaved edits as a JSON backup first. Stale-tab resets do not delete newer projects. Blocked localStorage shows an unsaved warning while JSON backups remain available. Chromium captures screenshots of both recovery states as QA artifacts.
+
+
+## Search-intent content upgrade (2026-11-04)
+- Source: the original 218-row Semrush appendix under `docs/data/V2_Keyword_Appendix_218.csv`; 202 queries map to the nine existing tool pages, 16 are intentionally on HOLD, including unresolved WOF, Square-in-a-Square, bias and chart terms. This is **keyword allocation**, not verification that 202 queries rank.
+- Each tool page now has a distinct server-rendered practical guide with formulas, examples, method constraints and contextual links to genuinely related calculators. The same handful of generic links are no longer reused everywhere.
+- The shared conversion page consolidates 107 search variants: 14 actual length measurements (including thirds and mixed fractions), explanation of a yard of fabric as 36 inches of length rather than fixed width, and why square-inch area is not reliable purchase yardage.
+- Static build QA now verifies exactly 218 source rows, 202 mapped/HOLD states, conversion no-cannibalization mapping, live guide sections on each approved tool route, and absence of HOLD route exposure.
+- **Not yet independently validated**: Google SERP intent alignment, original golden fixture source workbook, original release gates, actual production rankings/indexing or physical fabric cutting. Publication remains `noindex` until an approved custom domain is configured.

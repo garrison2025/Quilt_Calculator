@@ -116,3 +116,35 @@
 
 .results-footer{flex-wrap:wrap;gap:9px}.results-footer button{min-width:0;flex:1 1 170px;text-align:center}
 @media(max-width:490px){.results-footer button{flex:1 1 100%}}
+
+
+/* Unique, first-party static answers follow the interactive tool; no keyword doorway routes. */
+.intent-guide{margin:58px 0 68px}
+.intent-guide>.editorial-head p{font-size:14px;line-height:1.85;max-width:900px}
+.intent-guide-sections{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+.intent-guide-section{background:#fff;border:1px solid var(--stroke);border-radius:14px;padding:26px 28px;min-width:0}
+.intent-guide-section h3,.fraction-guide h3,.intent-next h3{font:400 clamp(19px,2.2vw,26px)/1.24 Georgia,serif;letter-spacing:-.35px;margin:12px 0 16px}
+.intent-guide-section p,.fraction-guide p,.intent-next p{font-size:13px;line-height:1.9;color:#687a6f;margin:0 0 14px}
+.intent-guide-section p:last-child{margin-bottom:0}
+.fraction-guide{background:#f5f8f3;border:1px solid #d9e5da;border-radius:14px;padding:25px 28px;margin:18px 0}
+.fraction-guide .table-scroll{margin:17px 0;max-width:860px}
+.fraction-reference-table{width:100%;border-collapse:collapse}
+.fraction-reference-table caption{font-weight:650;font-size:13px;text-align:left;margin-bottom:10px}
+.fraction-reference-table th,.fraction-reference-table td{text-align:left;padding:10px 14px;white-space:normal;font-size:13px}
+.fraction-reference-table tbody tr:nth-child(even){background:#edf4eb}
+.fraction-reference-table tbody th{font-weight:650}
+.fraction-footnote{margin:12px 0 0}
+.intent-next{border-top:1px solid var(--stroke);padding:20px 0 0;margin:25px 0 0}
+.intent-next-links{display:flex;gap:10px;flex-wrap:wrap}
+.intent-next-links a{display:inline-flex;align-items:center;gap:5px;border:1px solid #bdd2c1;color:#265b46;background:#edf4ee;border-radius:8px;padding:11px 13px;font-size:12px;font-weight:750}
+.intent-next-links a:hover,.intent-next-links a:focus-visible{background:#dcecdf;border-color:#76a58a}
+@media(max-width:760px){.intent-guide-sections{grid-template-columns:1fr}.intent-guide-section,.fraction-guide{padding:20px 18px}.fraction-reference-table th,.fraction-reference-table td{padding:9px 11px}.intent-guide{margin:42px 0 50px}}
+@media screen and (prefers-color-scheme:dark){
+ .intent-guide-section,.fraction-guide{background:#1d3025;color:#e8f1ea;border-color:#40594a}
+ .intent-guide-section p,.fraction-guide p,.intent-next p{color:#bfd1c2}
+ .intent-guide-section h3,.fraction-guide h3,.intent-next h3,.fraction-reference-table caption,.fraction-reference-table tbody th{color:#e7f2e8}
+ .fraction-reference-table tbody tr:nth-child(even){background:#294434}
+ .intent-next-links a{background:#254431;color:#cee8d6;border-color:#46694f}
+ .intent-next-links a:hover{background:#34583f}
+}
+@media print{.intent-guide{display:none!important}}
