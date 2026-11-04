@@ -190,6 +190,14 @@ try{
       const skuCsv=await skuCsvPromise;
       const csvContent=await fs.readFile(await skuCsv.path(),'utf8');
       check(csvContent.includes('8.5')&&csvContent.includes('Sky blue')&&csvContent.includes('Sand'),'SKU CSV misses prices or fabric colors.');
+      check(csvContent.charCodeAt(0)===0xFEFF&&csvContent.includes('\r\n'),'CSV requires UTF-8 BOM and actual CRLF rows for Excel.');
+      const maliciousLabel=page.getByLabel('Fabric / color label').first();
+      await maliciousLabel.fill('=SUM(1,2)');await maliciousLabel.press('Tab');
+      const safeCsvPromise=page.waitForEvent('download');
+      await page.getByRole('button',{name:'Download shopping CSV'}).click();
+      const safeFile=await safeCsvPromise;
+      const safeContent=await fs.readFile(await safeFile.path(),'utf8');
+      check(safeContent.includes("'=SUM(1,2)"),'CSV spreadsheet-formula injection was not escaped.');
       await page.locator('details.sku-plan').nth(1).locator('summary').click();
       check(await page.locator('details.sku-plan').nth(1).locator('svg[role="img"]').isVisible(),'Second fabric SKU diagram is not visible.');
     }
