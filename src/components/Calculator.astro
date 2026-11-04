@@ -9,7 +9,7 @@ const {tool,sample}=Astro.props;
 <div class="card-heading"><span class="eyebrow-with-dot">● YOUR CUTTING WORKSPACE</span><h2>Project measurements</h2><p>Adjust the sample to fit your real materials.</p></div>
 <div class="workspace-preamble"><span class="sample-pill" data-project-state>● Sample project</span><label class="units-select">Measurement units<select data-units><option value="in">Inches (in)</option><option value="cm">Centimeters (cm)</option></select></label></div>
 <div class="fields" data-fields><p>Preparing your calculator…</p></div>
-<div class="input-actions"><button class="action-primary" type="button" data-action="recalculate">Update cutting plan ↗</button><button class="action-link" type="button" data-action="reset">Reset</button></div>
+<div class="input-actions"><button class="action-primary" type="button" data-action="recalculate">Update cutting plan ↗</button><button class="action-link" type="button" data-action="reset">Reset</button><button class="action-link" type="button" data-action="undo-reset" disabled aria-label="Undo last project reset">Undo reset</button></div>
 <div class="local-controls"><h3>Your project, your device</h3><p>Measurements stay in this browser. Save a JSON file and open it again whenever you like.</p>
 <p class="project-storage-state" data-persist-state role="status" aria-live="polite">Checking local project storage…</p>
 <div class="project-sync-warning" data-sync-warning role="alert" hidden><p>Another tab changed the saved project. Your current tab has not overwritten it. Download a JSON backup of your changes before loading the other tab's version.</p><button class="action-secondary" data-action="load-latest" type="button">Load latest saved project</button></div>

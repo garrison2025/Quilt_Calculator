@@ -613,7 +613,12 @@ try{
   await tabB.getByLabel('Finished quilt width (in)',{exact:true}).fill('75');
   await tabB.getByLabel('Finished quilt width (in)',{exact:true}).press('Tab');
   await tabA.locator('[data-sync-warning]').waitFor({state:'visible'});
+  const staleBeforeReset=await tabA.getByLabel('Finished quilt width (in)',{exact:true}).inputValue();
   await tabA.locator('[data-action="reset"]').click();
+  assert.equal(await tabA.getByLabel('Finished quilt width (in)',{exact:true}).inputValue(),staleBeforeReset,
+    'Reset on stale tab must not discard unsaved local project edits.');
+  check((await tabA.locator('[data-status]').innerText()).includes('Reset canceled'),
+    'Stale tab must clearly explain why reset was blocked.');
   assert.equal(await tabA.evaluate(()=>JSON.parse(localStorage.getItem('quilt-studio-v2')).quilt.finishedWidth),75,
    'Reset from stale tab must not delete newer saved data.');
   await tabA.locator('[data-action="load-latest"]').click();
@@ -621,6 +626,42 @@ try{
    'Stale tab failed to recover the saved project after reset.');
   await tabA.close();await tabB.close();
   console.log('PASS two-tab conflict warning, safe JSON backup, reload and reset protection.');
+
+  // Reset safety: one-step recovery preserves the last accepted project and
+  // its local-storage backup. Any new accepted change invalidates Undo.
+  const resetCtx=await browser.newContext({viewport:{width:1150,height:800},acceptDownloads:true});
+  instrumentNetwork(resetCtx,'reset-undo');
+  const resetPage=await resetCtx.newPage();
+  resetPage.on('pageerror',err=>problems.push('Undo reset: '+err.message));
+  await hydrated(resetPage,'/quilt-backing-calculator/');
+  const undo=resetPage.locator('[data-action="undo-reset"]');
+  check(!(await undo.isEnabled()),'Undo reset must initially be disabled.');
+  const resetWidth=resetPage.getByLabel('Finished quilt width (in)',{exact:true});
+  await resetWidth.fill('87');await resetWidth.press('Tab');
+  assert.equal(await resetPage.evaluate(()=>JSON.parse(localStorage.getItem('quilt-studio-v2')).quilt.finishedWidth),87,
+    'Undo fixture must start from a persisted, user-edited project.');
+  await resetPage.locator('[data-action="reset"]').click();
+  check(await undo.isEnabled(),'Reset should enable one-step restoration.');
+  check((await resetPage.getByLabel('Finished quilt width (in)',{exact:true}).inputValue())==='60',
+    'Reset must show the sample project.');
+  check(await resetPage.evaluate(()=>localStorage.getItem('quilt-studio-v2'))===null,
+    'Normal Reset should clear only this tab’s current autosaved project.');
+  await undo.click();
+  check((await resetPage.getByLabel('Finished quilt width (in)',{exact:true}).inputValue())==='87',
+    'Undo reset must restore the previous native-inch project.');
+  assert.equal(await resetPage.evaluate(()=>JSON.parse(localStorage.getItem('quilt-studio-v2')).quilt.finishedWidth),87,
+    'Undo reset must restore the previous valid browser backup.');
+  check(!(await undo.isEnabled()),'Undo reset must be one-time only.');
+  await resetPage.locator('[data-action="reset"]').click();
+  check(await undo.isEnabled(),'Second reset must expose a new recovery point.');
+  await resetPage.getByLabel('Finished quilt width (in)',{exact:true}).fill('82');
+  await resetPage.getByLabel('Finished quilt width (in)',{exact:true}).press('Tab');
+  check(!(await undo.isEnabled()),'A committed edit after reset must invalidate the older Undo.');
+  check((await resetPage.getByLabel('Finished quilt width (in)',{exact:true}).inputValue())==='82',
+    'Newly committed work must remain after invalidating Undo.');
+  await resetPage.screenshot({path:'artifacts/qa/safe-reset-undo.png',fullPage:true,animations:'disabled'});
+  await resetCtx.close();
+  console.log('PASS reset undo restores autosaved project; stale-tab reset is blocked and new edits invalidate old undo.');
 
   // Browser privacy settings and quota failures must never masquerade as autosave.
   const noStorage=await browser.newContext({viewport:{width:1180,height:800},acceptDownloads:true});

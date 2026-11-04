@@ -122,3 +122,9 @@ Only **straight binding, butted borders, one-piece batting and explicitly feasib
 ## Error focus and 320-CSS-pixel reflow proxy (2026-11-05)
 - Error text is now an associated `role="alert"` and field notes are connected using `aria-describedby`. Clicking Update with invalid input focuses the first invalid field rather than scrolling away to stale results. A successful explicit recalculation on small screens focuses the results region with programmatic `tabindex="-1"` (no additional normal tab stop).
 - Chromium QA checks both keyboard focus/error recovery and a **320 CSS px viewport** across the homepage, calculator hub, backing, fabric and conversion tools. The latter is a WCAG 1.4.10 *reflow proxy* for 1280 CSS pixels at 400% zoom, **not** proof of actual physical 400% browser zoom or assistive technology compatibility.
+
+
+## Recoverable reset and stale-tab data protection (2026-11-05)
+- In a stale tab with a changed shared browser project, Reset now explicitly refuses to replace the tab's local project; this prevents inadvertent loss of an unexported local version. The user can Save project JSON or deliberately Load latest.
+- After a normal successful Reset, an `Undo reset` action restores the previous accepted native-inch V2 project **and** its saved browser JSON. Undo is single-use and invalidates as soon as a subsequent accepted edit/import/unit change occurs, so it cannot overwrite newer work.
+- Added real Chromium two-tab regression assertions, reset/undo/export recovery and invalidation after new edits. Undo is an in-memory single-tab safety net, not a permanent history; drafts not yet committed are not included. The original mathematical tests and noindex release gate remain unchanged.

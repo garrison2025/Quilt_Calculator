@@ -187,6 +187,13 @@ if(root){
  const cutCsvButton=root.querySelector<HTMLButtonElement>('[data-action="export-cut-csv"]')!;
  const printButton=root.querySelector<HTMLButtonElement>('[data-action="print"]')!;
  const saveButton=root.querySelector<HTMLButtonElement>('[data-action="save"]')!;
+ const undoResetButton=root.querySelector<HTMLButtonElement>('[data-action="undo-reset"]')!;
+ type ResetSnapshot={project:Project; sample:boolean; conv:string; selectedDirection:'vertical'|'horizontal'|null; savedJson:string|null};
+ let resetSnapshot:ResetSnapshot|null=null;
+ function clearResetSnapshot():void{
+  resetSnapshot=null;
+  undoResetButton.disabled=true;
+ }
  let project:Project=structuredClone(sampleProject);
  let sample=true,conv='1/4',selectedDirection:'vertical'|'horizontal'|null=null;
  let cutExport:unknown=null;
@@ -210,6 +217,9 @@ if(root){
   stateLabel.textContent='● Unsaved · another tab changed';
  }
  function persist():void{
+  // Any successfully accepted edit, import, SKU operation or unit change
+  // supersedes the undo point. A later Undo must never erase newer work.
+  clearResetSnapshot();
   sample=false;
   try{
    const actual=localStorage.getItem(STORAGE_KEY);
@@ -229,6 +239,7 @@ if(root){
   try{
    const latest=localStorage.getItem(STORAGE_KEY);
    const loaded=latest?validateProject(JSON.parse(latest)):structuredClone(sampleProject);
+   clearResetSnapshot();
    project=loaded;sample=!latest;lastStoredJson=latest;selectedDirection=null;conv='1/4';
    syncWarning.hidden=true;
    storageState.textContent=latest?'Loaded the newest saved project from this browser.':'The saved project was reset in another tab; sample restored.';
@@ -607,17 +618,57 @@ if(root){
   }
  });
  root.querySelector('[data-action="reset"]')?.addEventListener('click',()=>{
-  project=structuredClone(sampleProject);sample=true;selectedDirection=null;conv='1/4';
+  // Refuse to discard even this tab's unsaved edits when the shared storage
+  // has changed in another tab. A user can first download a JSON backup or
+  // deliberately load the newer saved project.
+  let storageReadable=true;
   try{
-   const actual=localStorage.getItem(STORAGE_KEY);
-   if(actual!==lastStoredJson)showStorageConflict();
-   else{
+   if(localStorage.getItem(STORAGE_KEY)!==lastStoredJson){
+    showStorageConflict();
+    note('Reset canceled: another tab saved a newer project. Download your JSON backup or load the latest project first.',true);
+    return;
+   }
+  }catch{storageReadable=false;}
+  if(!resetSnapshot){
+   resetSnapshot={
+    project:structuredClone(project),sample,conv,selectedDirection,
+    savedJson:lastStoredJson
+   };
+  }
+  project=structuredClone(sampleProject);sample=true;selectedDirection=null;conv='1/4';
+  undoResetButton.disabled=false;
+  if(storageReadable){
+   try{
     localStorage.removeItem(STORAGE_KEY);lastStoredJson=null;syncWarning.hidden=true;
     stateLabel.textContent='● Sample project';
-    storageState.textContent='Sample restored and saved browser project cleared.';
+    storageState.textContent='Sample restored. Undo reset restores your previous project in this tab.';
+   }catch{storageUnavailable();}
+  }else storageUnavailable();
+  renderEditor();update();
+ });
+ undoResetButton.addEventListener('click',()=>{
+  const previous=resetSnapshot;
+  if(!previous)return;
+  clearResetSnapshot();
+  project=structuredClone(previous.project);sample=previous.sample;
+  conv=previous.conv;selectedDirection=previous.selectedDirection;
+  let conflicted=false;
+  try{
+   const current=localStorage.getItem(STORAGE_KEY);
+   if(current!==lastStoredJson){
+    conflicted=true;
+    showStorageConflict();
+   }else{
+    if(previous.savedJson!==null)localStorage.setItem(STORAGE_KEY,previous.savedJson);
+    else localStorage.removeItem(STORAGE_KEY);
+    lastStoredJson=previous.savedJson;
+    syncWarning.hidden=true;
+    stateLabel.textContent=sample?'● Sample project':'● My local project';
+    storageState.textContent=sample?'Sample project restored.':'Previous project and browser autosave restored.';
    }
   }catch{storageUnavailable();}
   renderEditor();update();
+  if(conflicted)note('Previous local project restored without changing the newer project in another tab. Save a JSON backup of this version.',true);
  });
  saveButton.addEventListener('click',()=>{
   if(fieldsRoot.querySelector('[aria-invalid="true"],[data-pending-edit="true"]')){
