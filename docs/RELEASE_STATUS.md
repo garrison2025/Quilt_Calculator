@@ -55,3 +55,5 @@ Only **straight binding, butted borders, one-piece batting and explicitly feasib
 - Input safety: strictly rejects malformed comma-separated measurements (e.g. `1,2` cannot silently become `12`), while accepting `1,000` and mixed fractions. Converter offers an inline accessible error and disables stale exports until corrected; covered by Vitest and Chromium tests.
 
 - Purchase safety: replaced fixed epsilon in yardage-increment rounding with floating-point-scale tolerance and a final underbuy guard. Tested values just above every supported sample shop increment; tiny but real positive overages must round up, never down.
+
+- Browser keyboard-focused accessibility gate added: skip link activates the main landmark with Enter, FAQ details expand and collapse from keyboard, single main landmark, unique element IDs and explicitly named visible inputs/selects. This is a scoped automated audit and does not replace manual screen-reader testing.

@@ -172,6 +172,31 @@ try{
       await page.screenshot({path:'artifacts/qa/backing-desktop.png',fullPage:true,animations:'disabled'});
     }
   }
+  // Keyboard accessibility gate: the bypass link, FAQ disclosure and editable
+  // converter must work with focus/Enter instead of requiring pointer input.
+  await hydrated(page,'/fabric-yards-to-inches/');
+  const skip=page.locator('.skip-link');
+  await skip.focus();
+  check(await skip.evaluate(el=>document.activeElement===el),'Skip-to-main link must receive keyboard focus.');
+  await page.keyboard.press('Enter');
+  check(await page.evaluate(()=>location.hash)==='#main','Skip-to-main link must navigate to the main landmark.');
+  const firstFaq=page.locator('.faq-list details').first(),faqToggle=firstFaq.locator('summary');
+  await faqToggle.focus();
+  await page.keyboard.press('Enter');
+  check(await firstFaq.getAttribute('open')!==null,'FAQ must open with keyboard Enter.');
+  await page.keyboard.press('Enter');
+  check(await firstFaq.getAttribute('open')===null,'FAQ must close with keyboard Enter.');
+  const inputAudit=await page.evaluate(()=>{
+    const ids=[...document.querySelectorAll('[id]')].map(el=>el.id);
+    const duplicates=ids.filter((id,i)=>ids.indexOf(id)!==i);
+    const unnamed=[...document.querySelectorAll('input:not([type="hidden"]),select')]
+      .filter(el=>!el.getAttribute('aria-label')&&!el.closest('label')&&!(el.id&&document.querySelector('label[for="'+el.id+'"]')))
+      .map(el=>el.outerHTML.slice(0,100));
+    return {duplicates,unnamed,main:document.querySelectorAll('main').length};
+  });
+  check(inputAudit.main===1&&inputAudit.duplicates.length===0&&inputAudit.unnamed.length===0,
+    'Form accessibility metadata problem: '+JSON.stringify(inputAudit));
+  console.log('PASS keyboard skip-link and FAQ interaction, unique IDs and labeled form controls.');
   await hydrated(page,'/quilt-backing-calculator/');
   const changeWidth=page.getByLabel('Finished quilt width (in)',{exact:true});
   const changeHeight=page.getByLabel('Finished quilt height (in)',{exact:true});
