@@ -25,7 +25,7 @@ jobs:
       - name: Inspect static output and index gates
         run: node scripts/check-build.mjs
       - name: Install isolated browser smoke-test dependency
-        run: npm install --no-save --package-lock=false playwright
+        run: npm install --no-save --package-lock=false playwright axe-core
       - name: Install Chromium and Linux browser libraries
         run: npx playwright install --with-deps chromium
       - name: Test real calculator interactions, downloads, mobile and print

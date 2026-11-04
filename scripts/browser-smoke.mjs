@@ -2,6 +2,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import {spawn} from 'node:child_process';
 import {chromium} from 'playwright';
+import {createRequire} from 'node:module';
+const require=createRequire(import.meta.url);
+const axeSource=require.resolve('axe-core/axe.min.js');
 
 const ROOT='http://127.0.0.1:4321';
 const routes=[
@@ -10,6 +13,32 @@ const routes=[
   '/fabric-yards-to-inches/','/quilt-batting-calculator/','/quilt-sashing-calculator/'
 ];
 const delay=(ms)=>new Promise(resolve=>setTimeout(resolve,ms));
+const wcagReport=[];
+async function auditWcag(page,path){
+  // The axe script is loaded from the local CI dependency, not a remote CDN.
+  await page.addScriptTag({path:axeSource});
+  const findings=await page.evaluate(async()=>{
+    const result=await window.axe.run(document,{
+      runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21a','wcag21aa','wcag22aa']}
+    });
+    return {
+      violations:result.violations.map(v=>({
+        id:v.id,impact:v.impact,help:v.help,
+        nodes:v.nodes.slice(0,10).map(n=>({selector:n.target.join(' '),summary:n.failureSummary}))
+      })),
+      incomplete:result.incomplete.map(v=>({id:v.id,nodes:v.nodes.length})),
+      passes:result.passes.length
+    };
+  });
+  wcagReport.push({path,...findings});
+  const problems=findings.violations.map(v=>v.id+' ('+v.impact+'): '+
+    v.nodes.map(n=>n.selector+' '+n.summary).join(' | ')).join('\n');
+  if(findings.violations.length)
+    console.error('WCAG AXE FAIL '+path+'\n'+problems.slice(0,11000));
+  else console.log('PASS WCAG axe-core '+path+' ('+findings.passes+' rules passed; '+
+    findings.incomplete.length+' require manual review).');
+  return findings.violations.length;
+}
 /** Parse the actual downloaded RFC4180-style cut-list CSV (including BOM).
  * Do NOT rely on commas split: a user-supplied piece name can contain quotes.
  */
@@ -154,6 +183,7 @@ try{
   for(const path of routes){
     await page.evaluate(()=>localStorage.removeItem('quilt-studio-v2')).catch(()=>{});
     await hydrated(page,path);
+    await auditWcag(page,path);
     if(path!=='/'){
       const guide=page.locator('[data-content-guide]');
       assert.equal(await guide.count(),1,'Every tool needs one static explanatory guide: '+path);
@@ -353,6 +383,7 @@ try{
     'Restoring usable width must restore a geometrically verifiable trial plan.');
   await page.screenshot({path:'artifacts/qa/square-in-square-unindexed-lab.png',fullPage:true,animations:'disabled'});
   console.log('PASS square laboratory noindex, reference cuts, separate 12-piece parent CSV and impossible-fit guard.');
+  await auditWcag(page,'/lab/square-in-square/');
   // A trial block cannot self-certify from computed cut sizes. The user must
   // enter six actual measured values to receive a labeled self-reported result.
   const auditForm=page.locator('[data-square-audit-form]');
@@ -719,6 +750,10 @@ try{
   check(motion==='none','Reduced motion preference must disable result animation.');
   console.log('PASS reduced-motion accessibility preference.');
   await reduced.close();
+  await fs.writeFile('artifacts/qa/axe-wcag2a-aa-audit.json',JSON.stringify(wcagReport,null,2));
+  const axeFailures=wcagReport.filter(x=>x.violations.length);
+  assert.equal(axeFailures.length,0,'Automated WCAG 2/2.1/2.2 A/AA violations: '+
+    JSON.stringify(axeFailures.map(x=>({path:x.path,ids:x.violations.map(y=>y.id)}))));
   assert.deepEqual(networkEvidence,[],'G42 private project must never be uploaded or sent to third-party origins.');
   console.log('PASS G42 no third-party HTTP(S) requests and no write/upload methods across browser projects, imports, exports, mobile and print.');
   assert.deepEqual(problems,[],'Unexpected JavaScript errors in browsers.');
