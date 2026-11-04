@@ -1,0 +1,23 @@
+{
+  "name": "quilt-studio",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/previews.mjs && astro dev",
+    "build": "node scripts/previews.mjs && astro build",
+    "preview": "astro preview",
+    "lint": "tsc --noEmit",
+    "test": "vitest run",
+    "check": "npm run lint && npm test && npm run build"
+  },
+  "dependencies": {
+    "astro": "^5.16.0",
+    "sharp": "^0.34.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  }
+}

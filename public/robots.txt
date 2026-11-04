@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+# Index eligibility is controlled by the HTML robots meta tag.
