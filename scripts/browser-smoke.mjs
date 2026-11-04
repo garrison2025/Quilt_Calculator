@@ -52,6 +52,11 @@ try{
       check(await page.locator('[data-results] svg[role="img"]').count()>0,'Missing schematic SVG: '+path);
     }
     check(await page.locator('[data-action="export-cut"]').isEnabled(),'Export disabled: '+path);
+    if(path==='/fabric-yards-to-inches/'){
+      check(!(await page.locator('[data-action="export-cut-csv"]').isEnabled()),'A units converter must not promise physical fabric cuts.');
+    }else{
+      check(await page.locator('[data-action="export-cut-csv"]').isEnabled(),'Valid material must allow a cut CSV: '+path);
+    }
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
     check(overflow<=2,'Desktop horizontal overflow '+overflow+'px: '+path);
     if(path==='/calculators/'){
@@ -59,6 +64,17 @@ try{
       check(await rows.count()>=5,'Project shopping list must include separately purchasable materials.');
       const allMaterials=page.locator('details.sku-plan');
       assert.equal(await allMaterials.count(),6,'Project hub must expose each of the six independently purchased sample materials.');
+      const cutFilePromise=page.waitForEvent('download');
+      await page.getByRole('button',{name:'Download cut list CSV'}).click();
+      const cutFile=await cutFilePromise;
+      const cutCsv=await fs.readFile(await cutFile.path(),'utf8');
+      check(cutCsv.charCodeAt(0)===0xFEFF,'Cut CSV must include UTF-8 BOM.');
+      check(cutCsv.includes('Roll X (in)')&&cutCsv.includes('Grain rotation (degrees)'),'Cut CSV must include exact coordinates and grain orientation.');
+      for(const material of ['backing','binding','batting','border-indigo','sky-blue','sand']){
+        check(cutCsv.includes('"'+material+'"'),'Cut CSV missing fabric roll / SKU: '+material);
+      }
+      check(cutCsv.split('\r\n').filter(Boolean).length===36,'Sample project should yield 35 exact cut pieces plus one header row.');
+      console.log('PASS full 35-piece cut CSV across all 6 independent material rolls.');
       assert.equal(await allMaterials.filter({hasText:'FIT IMPOSSIBLE'}).count(),0,'Example material roll should be feasible.');
       check(await allMaterials.first().getAttribute('open')!==null,'First material should show its real cut diagram.');
       await allMaterials.nth(4).locator('summary').click();
@@ -97,8 +113,21 @@ try{
       const safeFile=await safeCsvPromise;
       const safeContent=await fs.readFile(await safeFile.path(),'utf8');
       check(safeContent.includes("'=SUM(1,2)"),'CSV spreadsheet-formula injection was not escaped.');
+      const safeCutPromise=page.waitForEvent('download');
+      await page.getByRole('button',{name:'Download cut list CSV'}).click();
+      const safeCut=await safeCutPromise;
+      const safeCutContent=await fs.readFile(await safeCut.path(),'utf8');
+      check(safeCutContent.includes(""'=SUM(1,2)""),'Cut-list export must escape a formula-bearing material label.');
       await page.locator('details.sku-plan').nth(1).locator('summary').click();
       check(await page.locator('details.sku-plan').nth(1).locator('svg[role="img"]').isVisible(),'Second fabric SKU diagram is not visible.');
+    }
+    if(path==='/quilt-batting-calculator/'){
+      const rollWidth=page.getByLabel('Actual roll width (in)',{exact:true});
+      await rollWidth.fill('40');await rollWidth.press('Tab');
+      check(!(await page.locator('[data-action="export-cut-csv"]').isEnabled()),'Do not offer a physical cut CSV for an impossible batting roll.');
+      await page.locator('[data-action="reset"]').click();
+      check(await page.locator('[data-action="export-cut-csv"]').isEnabled(),'Valid sample batting should restore cut export after reset.');
+      console.log('PASS infeasible batting disables cut-list export without disabling valid projects.');
     }
     if(path==='/quilt-border-calculator/'){
       assert.equal(await page.locator('details.sku-plan').count(),1,'Border layer cut diagram is missing.');
