@@ -14,6 +14,13 @@ for(const slug of slugs){
 for(const slug of ['diagonal-quilt-backing-calculator','rag-quilt-calculator','quilt-block-calculator','square-in-a-square-calculator','fabric-width-yardage-converter']){
  if(fs.existsSync('dist/'+slug+'/index.html'))throw Error('HOLD route published: '+slug);
 }
+// Deliberately non-indexed experimental lab: never part of original approved SEO routes.
+const squareLabHtml=fs.readFileSync('dist/lab/square-in-square/index.html','utf8');
+if(!squareLabHtml.includes('noindex,follow')||squareLabHtml.includes('rel="canonical"')||
+   squareLabHtml.includes('application/ld+json')||!squareLabHtml.includes('Unverified construction method.')||
+   !squareLabHtml.includes('Square-in-a-Square Cutting Lab'))
+ throw Error('Square trial must remain unindexed and clearly provisional.');
+if(fs.existsSync('dist/square-in-a-square-calculator/index.html'))throw Error('Premature public SQUARE keyword route.');
 if(!fs.existsSync('dist/privacy/index.html'))throw Error('Missing privacy page');
 const privacy=fs.readFileSync('dist/privacy/index.html','utf8');
 if(production && !privacy.includes('href="'+site+'/privacy/"'))throw Error('Privacy canonical must not point to undefined.');
@@ -23,6 +30,7 @@ if(!page404.includes('noindex,follow')||page404.includes('rel="canonical"'))thro
 if(production){
  const sitemap=fs.readFileSync('dist/sitemap.xml','utf8');
  if((sitemap.match(/<url>/g)||[]).length!==slugs.length)throw Error('Production sitemap does not match approved routes.');
+ if(sitemap.includes('square-in-square')||sitemap.includes('square-in-a-square'))throw Error('Square trial must not appear in sitemap.');
  for(const slug of slugs)if(!sitemap.includes(site+'/'+(slug?slug+'/':'')))throw Error('Missing sitemap URL '+slug);
 }else if(fs.existsSync('dist/sitemap.xml'))throw Error('Preview build must not emit sitemap.');
 

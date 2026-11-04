@@ -60,3 +60,7 @@ The fabric roll SVG is a schematic with actual rectangle coordinates, not an act
 - GitHub Actions (https://github.com/garrison2025/Quilt_Calculator/actions) — live build and test results.
 
 A passing build does not replace a browser, accessibility, physical print or real material cutting acceptance test.
+
+
+## Non-indexed experiment: Square-in-a-Square
+The cutting laboratory is at /lab/square-in-square/. It is intentionally not part of the published tool directory, keywords or production sitemap. It calculates conservative 1/8-in-ruler cuts for one center and two background parent squares per block, per-roll cutting layouts and separate purchase estimates. It is not cleared for real sewing until a physical sewn/trimmed test block confirms corner seams and dimensions.

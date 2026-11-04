@@ -79,3 +79,9 @@ Only **straight binding, butted borders, one-piece batting and explicitly feasib
 - Physical dual-WOF comparison now appears within the original Fabric Yardage Calculator, with two independently verified rectangle layouts, per-width cut-run and rounded purchase values, and an explicit no-buy warning for the hypothetical alternate. Only the CURRENT fabric WOF feeds the cut-list CSV. The optional V2 project field `yardage.alternateWof` is backwards-compatible with earlier saved project JSON. **The separate conditional WOF SEO route remains HOLD.**
 
 - Print safety for dual-WOF comparison: the hypothetical comparison numbers and second-roll diagram are omitted from the real cut-plan PDF/print stylesheet. Browser QA checks screen visibility, print hiding, retained current-roll SVG and produces a current-width-only PDF artifact.
+
+
+## Square-in-a-Square cutting laboratory (non-indexed, 2026-11-04)
+- Trial calculator at /lab/square-in-square/ using fixed 1/4-in seam, 1/8-in ruler grid, optional oversized corner parents and two independent, physically verified rectangular parent-square roll plans. Cut two background squares diagonally once per block; the exported parent-square CSV does not certify the sewn HST triangles.
+- The original /square-in-a-square-calculator/ route stays HOLD and out of production sitemap; even in a production build the lab page is noindex, without canonical or app JSON-LD.
+- Trial mathematical reference checks are not independent real piecing proof: sewn point clearance, bias handling and the actual trimmed outside dimensions still require a physical sample. Original four Square keywords remain HOLD_NO_INDEX.
