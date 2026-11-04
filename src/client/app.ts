@@ -174,6 +174,7 @@ if(root){
  const exportButton=root.querySelector<HTMLButtonElement>('[data-action="export-cut"]')!;
  const cutCsvButton=root.querySelector<HTMLButtonElement>('[data-action="export-cut-csv"]')!;
  const printButton=root.querySelector<HTMLButtonElement>('[data-action="print"]')!;
+ const saveButton=root.querySelector<HTMLButtonElement>('[data-action="save"]')!;
  let project:Project=structuredClone(sampleProject);
  let sample=true,conv='1/4',selectedDirection:'vertical'|'horizontal'|null=null;
  let cutExport:unknown=null;
@@ -236,6 +237,7 @@ if(root){
  }
  function markResultsStale(message:string):void{
   cutExport=null;materialCuts=[];
+  saveButton.disabled=true;
   exportButton.disabled=true;cutCsvButton.disabled=true;printButton.disabled=true;
   resultRoot.querySelectorAll<HTMLButtonElement>('[data-action="export-shopping"]').forEach(button=>button.disabled=true);
   resultRoot.querySelector('[data-stale-warning]')?.remove();
@@ -402,6 +404,7 @@ if(root){
    return;
   }
   resultRoot.replaceChildren();cutExport=null;materialCuts=[];
+  saveButton.disabled=false;
   exportButton.disabled=true;cutCsvButton.disabled=true;printButton.disabled=true;
   try{
    const p=project,o=p.options,w=p.quilt.finishedWidth,h=p.quilt.finishedHeight;
@@ -562,7 +565,12 @@ if(root){
   }catch{storageUnavailable();}
   renderEditor();update();
  });
- root.querySelector('[data-action="save"]')?.addEventListener('click',()=>download('quilt-studio-project-v2.json',project));
+ saveButton.addEventListener('click',()=>{
+  if(fieldsRoot.querySelector('[aria-invalid="true"],[data-pending-edit="true"]')){
+   note('Commit or correct the current input before downloading a project backup.',true);return;
+  }
+  download('quilt-studio-project-v2.json',project);
+ });
  exportButton.addEventListener('click',()=>{if(cutExport)download('quilt-studio-cut-plan-v2.json',cutExport);});
  cutCsvButton.addEventListener('click',()=>{
   if(!cutExport || cutCsvButton.disabled)return;

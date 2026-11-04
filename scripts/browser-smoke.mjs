@@ -214,10 +214,12 @@ try{
   check(!(await page.locator('[data-action="export-cut"]').isEnabled()),'Editing a field before blur must immediately invalidate the previous plan export.');
   check(!(await page.locator('[data-action="export-cut-csv"]').isEnabled()),'Cut CSV must be disabled during a pending edit.');
   check(!(await page.locator('[data-action="print"]').isEnabled()),'Print must be disabled during a pending edit.');
+  check(!(await page.locator('[data-action="save"]').isEnabled()),'Project backup must not pretend to include an uncommitted measurement.');
   check(await page.locator('[data-stale-warning]').isVisible(),'Pending edit needs an explicit stale-plan warning.');
   const pendingSaved=await page.evaluate(()=>JSON.parse(localStorage.getItem('quilt-studio-v2')).quilt.finishedWidth);
   assert.notEqual(pendingSaved,90,'Uncommitted typing must not silently persist a new measurement.');
   await width.press('Tab');
+  check(await page.locator('[data-action="save"]').isEnabled(),'Committed measurement must re-enable the project backup.');
   const modified=await page.locator('[data-results] .result-big').innerText();
   check(modified!==initial,'Changed quilt width did not update backing yardage.');
   let saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('quilt-studio-v2')).quilt.finishedWidth);

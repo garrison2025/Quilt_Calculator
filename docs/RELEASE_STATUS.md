@@ -59,3 +59,5 @@ Only **straight binding, butted borders, one-piece batting and explicitly feasib
 - Browser keyboard-focused accessibility gate added: skip link activates the main landmark with Enter, FAQ details expand and collapse from keyboard, single main landmark, unique element IDs and explicitly named visible inputs/selects. This is a scoped automated audit and does not replace manual screen-reader testing.
 
 - Draft-edit safety: every noncheckbox input change now invalidates stale cut/CSV/print actions immediately, before blur. The original accepted local project stays intact until the field successfully validates on change, and a visible warning explains when a result is not ready. Browser smoke verifies pre-blur disabled exports and unchanged stored dimensions.
+
+- A pending or invalid input now disables the project JSON Save button as well as cut/CSV/print: the downloaded backup must not silently omit the visible draft. After successful commit, backups re-enable. Cross-tab conflict backup remains available when the form has no pending/invalid field.
