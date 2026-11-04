@@ -693,12 +693,20 @@ try{
   small.on('pageerror',err=>problems.push('Mobile JS exception: '+err.message));
   for(const path of ['/','/calculators/','/quilt-backing-calculator/','/quilt-fabric-calculator/','/fabric-yards-to-inches/']){
     await hydrated(small,path);
+    if(path==='/quilt-backing-calculator/'||path==='/quilt-fabric-calculator/')
+      await auditWcag(small,path+' [mobile 375px]');
     const overflow=await small.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
     check(overflow<=2,'Mobile horizontal overflow '+overflow+'px: '+path);
     if(path==='/quilt-backing-calculator/')await small.screenshot({path:'artifacts/qa/backing-mobile.png',fullPage:true,animations:'disabled'});
     if(path==='/fabric-yards-to-inches/')await small.screenshot({path:'artifacts/qa/yards-conversion-guide-mobile.png',fullPage:true,animations:'disabled'});
     console.log('PASS narrow phone viewport '+path);
   }
+  await small.goto(ROOT+'/lab/square-in-square/',{waitUntil:'domcontentloaded'});
+  await small.waitForFunction(()=>document.querySelector('[data-square-status]')?.textContent?.includes('Calculated preview'));
+  await auditWcag(small,'/lab/square-in-square/ [mobile 375px]');
+  check(await small.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth)<=2,
+    'Square lab mobile width must not overflow the phone viewport.');
+  console.log('PASS mobile Square laboratory viewport and a11y scan.');
   for(const width of [360,390,768,1024,1440]){
     await small.setViewportSize({width,height:812});
     for(const path of ['/','/quilt-backing-calculator/','/quilt-fabric-calculator/','/fabric-yards-to-inches/']){
@@ -721,6 +729,7 @@ try{
   const darkPage=await dark.newPage();
   darkPage.on('pageerror',err=>problems.push('Dark UI JS exception: '+err.message));
   await hydrated(darkPage,'/quilt-backing-calculator/');
+  await auditWcag(darkPage,'/quilt-backing-calculator/ [dark mode]');
   const darkColors=await darkPage.evaluate(()=>{
     const rgb=value=>value.match(/\d+/g).slice(0,3).map(Number);
     const light=v=>{const a=v/255;return a<=.04045?a/12.92:Math.pow((a+.055)/1.055,2.4);};
