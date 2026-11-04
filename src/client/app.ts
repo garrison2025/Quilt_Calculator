@@ -156,6 +156,9 @@ if(root){
   const wrap=node('div','field-wrap'),id='field-'+Math.random().toString(36).slice(2);
   const label=node('label','',field.label+(field.kind==='length'?' ('+project.units+')':''));label.htmlFor=id;
   const input=node('input','field-control');
+  const fieldError=node('span','field-error');
+  fieldError.id=id+'-error';fieldError.hidden=true;
+  input.setAttribute('aria-describedby',fieldError.id);
   input.id=id;input.type=field.kind==='check'?'checkbox':'text';
   if(field.kind==='check'){input.checked=Boolean(current);wrap.classList.add('check-field');append(wrap,input,label);}
   else{
@@ -164,14 +167,23 @@ if(root){
    append(wrap,label,input);
   }
   if(field.note)wrap.appendChild(node('span','hint',field.note));
+  wrap.appendChild(fieldError);
   input.addEventListener('change',()=>{
    try{
     const value=read(field,input.type==='checkbox'?input.checked:input.value);
     onValue(value);
     try{validateProject(project);}catch(e){onValue(lastAccepted);throw e;}
     lastAccepted=value;
-    input.setAttribute('aria-invalid','false');persist();update();
-   }catch(e){input.setAttribute('aria-invalid','true');note((e as Error).message,true);}
+    input.setAttribute('aria-invalid','false');fieldError.hidden=true;fieldError.textContent='';persist();update();
+   }catch(e){
+    const message=e instanceof Error?e.message:'This input is not valid.';
+    input.setAttribute('aria-invalid','true');fieldError.hidden=false;fieldError.textContent=message;
+    cutExport=null;exportButton.disabled=true;printButton.disabled=true;
+    resultRoot.querySelector('[data-stale-warning]')?.remove();
+    const stale=node('div','warning-banner error-banner','The value was not saved. Results below are from the last valid measurements. Correct the highlighted field to recalculate.');
+    stale.setAttribute('data-stale-warning','');resultRoot.prepend(stale);
+    note('Input rejected: '+message,true);
+   }
   });
   return wrap;
  }
@@ -255,6 +267,15 @@ if(root){
   if(!verifyLayout(layout))throw Error('Internal geometry check failed. No purchase result can be shown.');
   stats(result,[['Cut run',num(layout.exactFabricRunLengthIn)+' in'],['Pieces',String(layout.cutPieces.length)],['True roll offcut',num(layout.physicalOffcutAreaSqIn,1)+' in²']]);
  }
+ function materialPlan(parent:HTMLElement,sku:string,label:string,layout:Layout,index:number,purchaseYards?:number):void{
+  const item=node('details','sku-plan');item.open=index===0;item.dataset.sku=sku;
+  const summary=node('summary','sku-plan-summary');
+  append(summary,node('span','sku-plan-label',label+' · '+sku),node('strong','',purchaseYards===undefined?'FIT IMPOSSIBLE':yd(purchaseYards)+' yd'));
+  item.appendChild(summary);
+  if(layout.isCutFeasible){layoutSummary(item,layout);diagram(item,layout,'Cut plan · '+label);}
+  else warning(item,layout.error||'FIT_IMPOSSIBLE: no valid cut layout for this fabric.',true);
+  parent.appendChild(item);
+ }
  function update():void{
   resultRoot.replaceChildren();cutExport=null;
   exportButton.disabled=true;printButton.disabled=true;
@@ -299,7 +320,9 @@ if(root){
     hero(resultRoot,String(b.layers.length),'BUTTED BORDER LAYERS','Final quilt '+num(b.finishedWidthIn)+' × '+num(b.finishedHeightIn)+' in. Side strips are attached before top and bottom strips.',b.layers.length===1?'layer':'layers');
     shopping(resultRoot,b.layers.map(x=>({label:x.label+' · '+x.sku,hint:'Sides '+num(x.sideCutLengthIn)+' in; top/bottom '+num(x.topCutLengthIn)+' in',amount:x.purchase?.roundedPurchaseYards})));
     if(b.layers.some(x=>!x.purchase))warning(resultRoot,'At least one layer is FIT_IMPOSSIBLE at its specified WOF. No yardage is offered for that layer.',true);
-    if(b.layers[0])layout=b.layers[0].layout;plan=b;
+    section(resultRoot,'Cutting diagrams by border layer','Open each layer to inspect its physical coordinates');
+    b.layers.forEach((x,i)=>materialPlan(resultRoot,x.sku,x.label,x.layout,i,x.purchase?.roundedPurchaseYards));
+    plan=b;
     warning(resultRoot,'Continuous, lengthwise-grain butted strips only. Do not use this result for mitered or separately pieced borders.');
    }else if(tool==='fabric'){
     const f=calculateQuiltFabric(p.fabrics,o.step);
@@ -308,7 +331,9 @@ if(root){
      hero(resultRoot,String(f.length),'SEPARATE FABRIC SKUS','Each fabric color has independent usable WOF, shrinkage, layout and purchase quantity.',f.length===1?'SKU':'SKUs');
      shopping(resultRoot,f.map(x=>({label:x.label+' · '+x.fabricSku,hint:x.layout.cutPieces.length+' cut pieces · '+(x.priceEstimate===undefined?'No price entered':'Est. '+money(x.priceEstimate)),amount:x.purchase?.roundedPurchaseYards})));
      if(f.some(x=>!x.purchase))warning(resultRoot,'One or more fabric SKUs contain a piece that cannot fit in the specified WOF.',true);
-     layout=f.find(x=>x.layout.isCutFeasible)?.layout;plan=f;
+     section(resultRoot,'Cutting diagrams by fabric SKU','Each roll has independent coordinates and yardage');
+     f.forEach((x,i)=>materialPlan(resultRoot,x.fabricSku,x.label,x.layout,i,x.purchase?.roundedPurchaseYards));
+     plan=f;
     }
    }else if(tool==='hub'){
     const backing=calculateBacking({widthIn:w,heightIn:h,overageIn:o.overage,wofIn:o.usableWof,joinTakeupIn:o.joinTakeup,oneWayPrint:o.oneWayPrint,...buyArgs});
@@ -348,6 +373,19 @@ if(root){
  root.querySelector('[data-action="reset"]')?.addEventListener('click',()=>{project=structuredClone(sampleProject);sample=true;selectedDirection='vertical';conv='1/4';localStorage.removeItem('quilt-studio-v2');stateLabel.textContent='● Sample project';renderEditor();update();});
  root.querySelector('[data-action="save"]')?.addEventListener('click',()=>download('quilt-studio-project-v2.json',project));
  exportButton.addEventListener('click',()=>{if(cutExport)download('quilt-studio-cut-plan-v2.json',cutExport);});
+ let printingExpanded=false;
+ let collapsedForPrint:HTMLDetailsElement[]=[];
+ window.addEventListener('beforeprint',()=>{
+  if(printingExpanded)return;
+  printingExpanded=true;
+  collapsedForPrint=[...resultRoot.querySelectorAll<HTMLDetailsElement>('details.sku-plan:not([open])')];
+  collapsedForPrint.forEach(el=>el.open=true);
+ });
+ window.addEventListener('afterprint',()=>{
+  if(!printingExpanded)return;
+  collapsedForPrint.forEach(el=>el.open=false);
+  collapsedForPrint=[];printingExpanded=false;
+ });
  printButton.addEventListener('click',()=>{if(cutExport)window.print();});
  const picker=root.querySelector<HTMLInputElement>('[data-file]')!;
  root.querySelector('[data-action="import"]')?.addEventListener('click',()=>picker.click());

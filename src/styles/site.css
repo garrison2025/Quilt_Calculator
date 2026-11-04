@@ -20,3 +20,17 @@
 
 .calculation-context{margin:10px 0 13px;padding:8px 11px;background:#f7faf5;border:1px solid #e1ebe0;border-radius:7px;color:#587266;font-size:11px;font-variant-numeric:tabular-nums}
 @media print{.calculation-context{border-color:#ddd;background:white;color:#333}}
+
+/* One independent cut plan per fabric roll and border layer. */
+.sku-plan{margin:12px 0;border:1px solid #d7e5db;border-radius:11px;background:#fbfdfa;padding:0 15px 12px;break-inside:auto}
+.sku-plan-summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;gap:12px;align-items:center;padding:16px 0;color:#365f4b}
+.sku-plan-summary::-webkit-details-marker{display:none}
+.sku-plan-summary:before{content:'+';font-weight:800;font-size:17px;line-height:1}
+.sku-plan[open]>.sku-plan-summary:before{content:'−'}
+.sku-plan-label{font-size:13px;font-weight:800;flex:1;overflow-wrap:anywhere}
+.sku-plan-summary strong{font:18px Georgia,serif;white-space:nowrap}
+.sku-plan[open]>.sku-plan-summary{border-bottom:1px solid #e1ebdf}
+.field-error{display:block;color:#a73d32;font-size:11px;line-height:1.5;margin-top:5px;font-weight:650}
+.field-error[hidden]{display:none}
+@media(max-width:390px){.sku-plan{padding:0 10px 10px}.sku-plan-label{font-size:11px}.sku-plan-summary strong{font-size:15px}}
+@media print{.sku-plan{border:1px solid #bbb;margin:18px 0;break-inside:auto}.sku-plan-summary{color:#222}.sku-plan-summary:before{display:none!important}.sku-plan[open]>summary{border-bottom:1px solid #bbb}}
