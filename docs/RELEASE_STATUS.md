@@ -53,3 +53,5 @@ Only **straight binding, butted borders, one-piece batting and explicitly feasib
 - Extra SEO release checks: static per-page unique title/H1, known internal navigation destinations, labeled 14-row fraction reference, 1/3 and 2/3 exact outputs, responsive screenshots on converter at desktop and phone viewports, and guide links with no self-link or duplicate destinations.
 
 - Input safety: strictly rejects malformed comma-separated measurements (e.g. `1,2` cannot silently become `12`), while accepting `1,000` and mixed fractions. Converter offers an inline accessible error and disables stale exports until corrected; covered by Vitest and Chromium tests.
+
+- Purchase safety: replaced fixed epsilon in yardage-increment rounding with floating-point-scale tolerance and a final underbuy guard. Tested values just above every supported sample shop increment; tiny but real positive overages must round up, never down.

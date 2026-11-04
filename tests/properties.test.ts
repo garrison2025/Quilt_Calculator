@@ -6,6 +6,16 @@ import {
 } from '../src/lib/quilt/math';
 
 describe('V2 deterministic geometry property checks', () => {
+ it('upward purchasing cannot round a real fractional overage down',()=>{
+  for(const step of [.0625,.125,.25,.5,1]){
+   for(const n of [1,2,5,10,50,100]){
+    const raw=n*step+1e-9;
+    const result=roundToStep(raw,step);
+    expect(result).toBeGreaterThanOrEqual(raw);
+    expect(Math.abs(result/step-Math.round(result/step))).toBeLessThan(1e-7);
+   }
+  }
+ });
  // Across a broad range of quantities, every generated roll rectangle must be count-preserving,
  // nonoverlapping, in bounds and an actual physical cutting arrangement.
  for (const count of [1, 2, 7, 19, 57, 333]) {

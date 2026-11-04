@@ -3,6 +3,15 @@ import { calculateBacking, calculateStraightBinding, calculateYardage, calculate
  calculateBorders, calculateSashing, parseMeasure, purchase, roundToStep, verifyLayout, layoutRectangles, calculateWofArea } from '../src/lib/quilt/math';
 import { sampleProject, validateProject } from '../src/lib/quilt/project';
 describe('V2 independent arithmetic fixtures', () => {
+ it('never underbuys when raw yardage sits just above a purchase increment',()=>{
+  const over=0.25+1e-9;
+  expect(roundToStep(over,0.25)).toBe(0.5);
+  const p=purchase(over*36,0.25);
+  expect(p.rawPurchaseYards).toBeGreaterThan(0.25);
+  expect(p.roundedPurchaseYards).toBe(0.5);
+  expect(roundToStep(0.3,0.1)).toBeCloseTo(0.3,12);
+  expect(roundToStep(0,0.125)).toBe(0);
+ });
  it('parses only valid US comma grouping to prevent mistaken fabric amounts', () => {
   expect(parseMeasure('1000')).toBe(1000);
   expect(parseMeasure('1,000')).toBe(1000);

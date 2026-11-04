@@ -33,7 +33,21 @@ export function toInches(value: number, units: 'in' | 'cm' = 'in'): number { ret
 export function fromInches(value: number, units: 'in' | 'cm' = 'in'): number { return value * (units === 'cm' ? 2.54 : 1); }
 export function roundToStep(yards: number, step = .125): number {
   valid(yards, 'Yardage', true); valid(step, 'Purchase increment');
-  return yards === 0 ? 0 : Math.ceil(yards / step - EPS) * step;
+  if (yards === 0) return 0;
+  const ratio = yards / step;
+  const nearest = Math.round(ratio);
+  // Only forgive machine-representation noise, never a real shortage.
+  // The previous fixed 1e-8 ratio tolerance could round 0.250000001 yd
+  // down to 0.25 yd, violating the no-underbuy purchasing rule.
+  const noise = 8 * Number.EPSILON * Math.max(1, Math.abs(ratio));
+  let increments = Math.abs(ratio - nearest) <= noise ? nearest : Math.ceil(ratio);
+  let rounded = increments * step;
+  if (rounded < yards) {
+    increments += 1;
+    rounded = increments * step;
+  }
+  if (!Number.isFinite(rounded)) throw Error('Purchase amount exceeds the supported numeric range.');
+  return rounded;
 }
 export function purchase(runLengthIn: number, step = .125, shrinkageLengthPct = 0): Purchase {
   valid(runLengthIn, 'Cut run length', true);
