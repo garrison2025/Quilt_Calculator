@@ -220,7 +220,12 @@ try{
   await page.locator('[data-file]').setInputFiles({name:'oversized-quilt-project.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(excessProject))});
   await page.waitForFunction(()=>document.querySelector('[data-status]')?.textContent?.includes('Maximum 2,000'));
   assert.equal(await page.getByLabel('Finished quilt width (in)',{exact:true}).inputValue(),'74','Too-large imported project must leave existing valid project unchanged.');
-  console.log('PASS valid JSON import, rejection of invalid schema and oversized multi-SKU quantities.');
+  const invalidJoin=structuredClone(validProject);
+  invalidJoin.options.joinTakeup=invalidJoin.options.usableWof;
+  await page.locator('[data-file]').setInputFiles({name:'invalid-join.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(invalidJoin))});
+  await page.waitForFunction(()=>document.querySelector('[data-status]')?.textContent?.includes('Backing join take-up'));
+  assert.equal(await page.getByLabel('Finished quilt width (in)',{exact:true}).inputValue(),'74','Invalid join input must preserve current project.');
+  console.log('PASS valid JSON import and rejections of schema, quantity and join-width errors.');
   const mobile=await browser.newContext({viewport:{width:375,height:812},isMobile:true,hasTouch:true});
   const small=await mobile.newPage();
   small.on('pageerror',err=>problems.push('Mobile JS exception: '+err.message));
