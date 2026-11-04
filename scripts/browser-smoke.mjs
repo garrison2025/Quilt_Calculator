@@ -236,6 +236,7 @@ try{
   const bWidth=tabB.getByLabel('Finished quilt width (in)',{exact:true});
   await aWidth.fill('72');await aWidth.press('Tab');
   await tabB.locator('[data-sync-warning]').waitFor({state:'visible'});
+  await tabB.screenshot({path:'artifacts/qa/project-multitab-conflict.png',fullPage:true,animations:'disabled'});
   await bWidth.fill('76');await bWidth.press('Tab');
   assert.equal(await tabB.evaluate(()=>JSON.parse(localStorage.getItem('quilt-studio-v2')).quilt.finishedWidth),72,
    'Outdated browser tab silently overwrote another tab\'s latest project.');
@@ -273,6 +274,7 @@ try{
   await unsavedWidth.fill('69');await unsavedWidth.press('Tab');
   check((await privatePage.locator('[data-persist-state]').innerText()).includes('unavailable'),
    'Unavailable localStorage must show an explicit unsaved warning.');
+  await privatePage.screenshot({path:'artifacts/qa/project-storage-disabled.png',fullPage:true,animations:'disabled'});
   const unsavedDownload=privatePage.waitForEvent('download');
   await privatePage.locator('[data-action="save"]').click();
   const unsavedFile=await unsavedDownload;
