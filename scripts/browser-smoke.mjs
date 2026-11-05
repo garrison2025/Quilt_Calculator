@@ -186,6 +186,14 @@ try{
   for(const path of routes){
     await page.evaluate(()=>localStorage.removeItem('quilt-studio-v2')).catch(()=>{});
     await hydrated(page,path,{incomplete:path==='/'||path==='/calculators/'});
+    // The user must supply post-prewash *usable WOF* for valid cross-grain
+    // fit. Length shrinkage percentage never reduces input roll width.
+    if(['/', '/calculators/', '/quilt-backing-calculator/', '/quilt-binding-calculator/',
+        '/fabric-yardage-calculator/', '/quilt-fabric-calculator/',
+        '/quilt-border-calculator/', '/quilt-sashing-calculator/'].includes(path)){
+      const hints=page.locator('.field-wrap .hint',{hasText:'Use the actual usable WOF AFTER planned prewash'});
+      check(await hints.count()>0,'Usable WOF postwash assumption not disclosed on '+path);
+    }
     if(path==='/'||path==='/calculators/'){
       const review=page.getByLabel('I reviewed every quilt-top color, cut size and piece quantity.');
       check(!(await review.isChecked()),'Sample quilt-top cutting list must never be auto-verified.');
