@@ -14,6 +14,42 @@ export function shoppingLineStatus(line:ShoppingLine):ShoppingStatus {
  return line.status==='not-reviewed'?'TOP_CUT_LIST_NOT_REVIEWED':'FEASIBLE_LAYOUT';
 }
 
+/** Only user-supplied prices on cut-feasible lines contribute to this partial
+ * subtotal. The value must never be described as an all-project quotation:
+ * backing, batting, binding or a different fabric SKU can still be unpriced.
+ */
+export function shoppingPriceSummary(lines:readonly ShoppingLine[]):{
+ enteredPriceSubtotalUsd?:number;pricedCount:number;unpricedCount:number;unreadyCount:number;
+}{
+ let subtotal=0,pricedCount=0,unpricedCount=0,unreadyCount=0;
+ for(const line of lines){
+  const status=shoppingLineStatus(line);
+  for(const [name,value] of [
+   ['raw yardage',line.rawYards],['offcut area',line.offcutSqIn],
+   ['purchase rounding extra',line.roundingExtraIn],['assembly trim area',line.assemblyTrimSqIn],
+   ['entered unit price',line.unitPrice]
+  ] as const){
+   if(value!==undefined && (!Number.isFinite(value)||value<0))
+    throw Error('Invalid '+name+' for '+line.label+'.');
+  }
+  if(line.status==='not-planned' && line.amount!==undefined)
+   throw Error('A not-planned material cannot have a purchasing quantity: '+line.label);
+  if(line.amount!==undefined && (!Number.isFinite(line.amount)||line.amount<0))
+   throw Error('Invalid purchased yardage for '+line.label);
+  if(status!=='FEASIBLE_LAYOUT' && status!=='TOP_CUT_LIST_NOT_REVIEWED'){
+   unreadyCount++;continue;
+  }
+  if(line.amount===undefined)throw Error('Missing purchased yardage for '+line.label);
+  if(line.unitPrice===undefined){unpricedCount++;continue;}
+  const cost=line.amount*line.unitPrice;
+  if(!Number.isFinite(cost))throw Error('Estimated cost is outside the supported range for '+line.label+'.');
+  subtotal+=cost;
+  if(!Number.isFinite(subtotal))throw Error('Entered-price subtotal is outside the supported range.');
+  pricedCount++;
+ }
+ return {enteredPriceSubtotalUsd:pricedCount?subtotal:undefined,pricedCount,unpricedCount,unreadyCount};
+}
+
 export function hasIncompleteShopping(lines:readonly ShoppingLine[]):boolean {
  return lines.some(line=>shoppingLineStatus(line)!=='FEASIBLE_LAYOUT');
 }
@@ -30,6 +66,8 @@ export function needsTopFabricPlan(fabrics:readonly {pieces:readonly {count:numb
  */
 export function shoppingCsv(lines:readonly ShoppingLine[]):string {
  if(!lines.length)throw Error('No materials in shopping list.');
+ // CSV rows and screen subtotal share the same finite-number validation.
+ shoppingPriceSummary(lines);
  const headers=[
   'Material / SKU','Notes','Exact raw yards','Rounded purchase yards','Roll offcut sq in',
   'Purchase rounding excess in','Post-assembly trim sq in',
@@ -38,9 +76,6 @@ export function shoppingCsv(lines:readonly ShoppingLine[]):string {
  const rows=lines.map(line=>{
   const status=shoppingLineStatus(line);
   const feasible=status==='FEASIBLE_LAYOUT' || status==='TOP_CUT_LIST_NOT_REVIEWED';
-  if(line.status==='not-planned' && line.amount!==undefined)
-   throw Error('A not-planned material cannot have a purchasing quantity: '+line.label);
-  if(feasible && (!Number.isFinite(line.amount)||line.amount!<0))throw Error('Invalid purchased yardage for '+line.label);
   const estimated=feasible && line.unitPrice!==undefined ? line.amount!*line.unitPrice : undefined;
   return [
    line.label,line.hint,feasible?line.rawYards:undefined,feasible?line.amount:undefined,

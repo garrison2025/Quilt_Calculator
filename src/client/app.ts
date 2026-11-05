@@ -1,7 +1,7 @@
 import { VERSION, calculateBacking, calculateStraightBinding, calculateYardage, compareYardageWidths, calculateQuiltFabric, calculateBatting, calculateBorders, calculateSashing, layoutRectangles, verifyLayout, parseMeasure, fromInches, toInches, yardsToInches, purchase, hashProject, type Layout, type PieceRequest } from '../lib/quilt/math';
 import { sampleProject, validateProject, quiltTopReviewFingerprint, hasCurrentQuiltTopReview, type Project } from '../lib/quilt/project';
 import { cutListCsv, type MaterialCutPlan } from '../lib/quilt/cutlist';
-import { shoppingCsv, hasIncompleteShopping, shoppingLineStatus, needsTopFabricPlan, type ShoppingLine } from '../lib/quilt/shopping';
+import { shoppingCsv, shoppingPriceSummary, hasIncompleteShopping, shoppingLineStatus, needsTopFabricPlan, type ShoppingLine } from '../lib/quilt/shopping';
 import type { ToolId } from './types';
 type Kind = 'length' | 'whole' | 'number' | 'pct' | 'check' | 'text';
 type Field = { label: string; path: string; kind?: Kind; note?: string };
@@ -144,6 +144,13 @@ function downloadShoppingCsv(lines:ShoppingLine[]):void{
 }
 function shopping(parent:Element,lines:ShoppingLine[]):void{
  section(parent,'Material shopping list','Each material is purchased independently');
+ // Optional border layers can all be deleted. An empty bill of materials is
+ // not an exportable zero-dollar order: never show a CSV button which throws.
+ if(!lines.length){
+  parent.appendChild(node('p','footer-note','No materials configured for this calculator. Add a border layer to produce a shopping estimate; nothing is ready to purchase or export.'));
+  return;
+ }
+ const prices=shoppingPriceSummary(lines);
  const unfit=lines.filter(line=>shoppingLineStatus(line)==='FIT_IMPOSSIBLE_NOT_PURCHASE_READY').length;
  const notPlanned=lines.filter(line=>shoppingLineStatus(line)==='NOT_PLANNED_NO_CUT_PIECES').length;
  const notReviewed=lines.filter(line=>shoppingLineStatus(line)==='TOP_CUT_LIST_NOT_REVIEWED').length;
@@ -157,6 +164,13 @@ function shopping(parent:Element,lines:ShoppingLine[]):void{
  button.addEventListener('click',()=>downloadShoppingCsv(lines));
  append(tools,node('p','footer-note','Exact raw amount, rounded purchase, fabric-roll offcut and shop rounding are different measurements.'),button);
  parent.appendChild(tools);
+ const priceNote=prices.enteredPriceSubtotalUsd===undefined
+  ?'No entered-price subtotal: add prices to feasible material lines to calculate a partial cost estimate.'
+  :'Entered-price subtotal (only '+prices.pricedCount+' priced material line(s)): '+money(prices.enteredPriceSubtotalUsd)+'.';
+ const excluded=' '+prices.unpricedCount+' feasible material line(s) have no price; '+prices.unreadyCount+' material line(s) are not purchase-ready. Never treat this as a complete project quote, including taxes or shipping.';
+ const sum=node('p','shopping-price-summary',priceNote+excluded);
+ sum.dataset.shoppingPriceSummary='';
+ parent.appendChild(sum);
  const list=node('div','shopping-list');
  for(const line of lines){
   const item=node('div','shopping-item'),left=node('div','shopping-info'),metrics=node('div','shopping-metrics');

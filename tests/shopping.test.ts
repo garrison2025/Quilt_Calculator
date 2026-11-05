@@ -1,5 +1,7 @@
 import {describe,expect,it} from 'vitest';
-import {shoppingCsv,hasIncompleteShopping,needsTopFabricPlan,shoppingLineStatus, type ShoppingLine} from '../src/lib/quilt/shopping';
+import {shoppingCsv,shoppingPriceSummary,hasIncompleteShopping,needsTopFabricPlan,shoppingLineStatus, type ShoppingLine} from '../src/lib/quilt/shopping';
+import {calculateQuiltFabric,verifyLayout, type FabricSku} from '../src/lib/quilt/math';
+import {cutListCsv} from '../src/lib/quilt/cutlist';
 
 describe('Shopping CSV is explicit about cut-fit safety and incomplete purchase lists',()=>{
  const good:ShoppingLine={label:'Indigo fabric',hint:'43 in usable WOF',amount:.875,rawYards:5/6,offcutSqIn:125,roundingExtraIn:1.5,unitPrice:8};
@@ -51,6 +53,67 @@ describe('Shopping CSV is explicit about cut-fit safety and incomplete purchase 
   expect(csv).toContain('"0.875"');
   expect(csv).toContain('"7"');
   expect(csv).not.toContain('FIT_IMPOSSIBLE_NOT_PURCHASE_READY');
+ });
+ it('reconciles only entered-price feasible SKU costs, without calling unpriced materials free',()=>{
+  const reviewed:ShoppingLine={...good,status:'not-reviewed'};
+  const other:ShoppingLine={label:'Linen',hint:'50-in roll',amount:1.375,rawYards:1.31,unitPrice:12};
+  const unpriced:ShoppingLine={label:'Backing',hint:'42-in roll',amount:5.5,rawYards:5.42};
+  const unfitPriced:ShoppingLine={...impossible,unitPrice:100};
+  const missing:ShoppingLine={label:'Unused color',hint:'not entered',status:'not-planned'};
+  const rows=[reviewed,other,unpriced,unfitPriced,missing];
+  const total=shoppingPriceSummary(rows);
+  expect(total).toEqual({
+   enteredPriceSubtotalUsd:.875*8+1.375*12,
+   pricedCount:2,unpricedCount:1,unreadyCount:2
+  });
+  expect(hasIncompleteShopping(rows)).toBe(true);
+  const csv=shoppingCsv(rows);
+  expect(csv).toContain('"7"');
+  expect(csv).toContain('"16.5"');
+  expect(csv).toContain('"TOP_CUT_LIST_NOT_REVIEWED"');
+  expect(csv).toContain('"FIT_IMPOSSIBLE_NOT_PURCHASE_READY"');
+  expect(shoppingPriceSummary([unpriced])).toEqual({
+   enteredPriceSubtotalUsd:undefined,pricedCount:0,unpricedCount:1,unreadyCount:0
+  });
+  expect(shoppingPriceSummary([])).toEqual({
+   enteredPriceSubtotalUsd:undefined,pricedCount:0,unpricedCount:0,unreadyCount:0
+  });
+ });
+ it('rejects malformed money, hidden negative estimates and non-finite numeric CSV fields',()=>{
+  for(const value of [NaN,Infinity,-Infinity,-.01]){
+   for(const key of ['amount','unitPrice','rawYards','offcutSqIn','roundingExtraIn','assemblyTrimSqIn'] as const){
+    const broken={...good,[key]:value};
+    expect(()=>shoppingPriceSummary([broken]),'Bad '+key+' '+value).toThrow();
+    expect(()=>shoppingCsv([broken]),'Bad CSV '+key+' '+value).toThrow();
+   }
+  }
+  expect(()=>shoppingCsv([{...good,amount:1e308,unitPrice:1e308}])).toThrow(/Estimated cost/);
+  expect(()=>shoppingPriceSummary([{...good,amount:1e308,unitPrice:1e308}])).toThrow(/Estimated cost/);
+  expect(()=>shoppingCsv([{...good,status:'not-planned'}])).toThrow(/not-planned material/);
+ });
+ it('preserves 2,000 physical cuts across 30 separate SKUs without mixing roll coordinates',()=>{
+  const fabrics:FabricSku[]=Array.from({length:30},(_,i)=>({
+   id:'sku-'+i,label:'Fabric '+i,usableWidth:43,oneWayPrint:i%2===0,shrinkageLengthPct:5,
+   pieces:[{widthIn:5,heightIn:5,count:i===29?86:66,label:'Cut '+i,allowRotate:true}]
+  }));
+  const start=Date.now();
+  const result=calculateQuiltFabric(fabrics,.125);
+  expect(result).toHaveLength(30);
+  expect(result.reduce((total,roll)=>total+roll.layout.cutPieces.length,0)).toBe(2000);
+  for(const [i,roll] of result.entries()){
+   expect(roll.fabricSku).toBe('sku-'+i);
+   expect(roll.purchase!.roundedPurchaseYards).toBeGreaterThanOrEqual(roll.purchase!.rawPurchaseYards);
+   expect(verifyLayout(roll.layout)).toBe(true);
+   expect(roll.layout.cutPieces[0].xIn).toBe(0);
+   expect(roll.layout.cutPieces[0].yIn).toBe(0);
+   expect(roll.layout.cutPieces.every(piece=>piece.grainRotationDeg===0)).toBe(true);
+  }
+  const csv=cutListCsv(result.map((roll,i)=>({material:roll.label,sku:fabrics[i].id,layout:roll.layout})));
+  expect(csv.split('\\r\\n').filter(Boolean)).toHaveLength(2001);
+  expect(csv).toContain('"sku-29"');
+  // This is a functional capacity test, NOT a brittle machine-specific
+  // performance SLA. The browser smoke separately exercises real UI.
+  expect(Date.now()-start).toBeLessThan(15000);
  });
  it('escapes potentially executable spreadsheet labels',()=>{
   const csv=shoppingCsv([{...good,label:'=1+2'}]);
