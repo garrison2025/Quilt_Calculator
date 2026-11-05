@@ -1,11 +1,11 @@
 # Quilt Studio — verification evidence and release blockers
-Last verified: 2026-11-05 · manual quilt-top cut-list confirmation CI `41948844759` · `noindex` engineering preview.
+Last verified: 2026-11-05 · review-fingerprint and V2 JSON import CI `41950121030` · `noindex` engineering preview.
 
 ## What is actually verified
 | Check | Status | Evidence / reproducible action |
 |---|---|---|
 | TypeScript static typing | PASS | GitHub CI https://github.com/garrison2025/Quilt_Calculator/actions/runs/41931472782 · `npm run lint` |
-| Deterministic arithmetic, geometry and V2 import checks | PASS · 177 tests | Same CI · `npm test`; includes backing seam thresholds, binding strip thresholds and 2,000-piece roll-area conservation |
+| Deterministic arithmetic, geometry and V2 import checks | PASS · 178 tests | Same CI · `npm test`; includes backing seam thresholds, binding strip thresholds and 2,000-piece roll-area conservation |
 | Astro static build and route list | PASS | Same CI · `npm run build && node scripts/check-build.mjs` |
 | Original 218-keyword source appendices and canonical intent routing | PASS (engineering mapping only) | `docs/data/V2_Keyword_Appendix_218.csv`: 202 assigned to nine distinct tool intents; 16 HOLD; not search ranking evidence |
 | Published preview index protection | PASS | Static check ensures only `noindex,follow`; no preview sitemap or absolute canonical |
@@ -112,3 +112,8 @@ Only these are calculated with checked physical layouts: joined rectangular back
 - Project Planner on both `/` and `/calculators/` requires the user to check “I reviewed every quilt-top color, cut size and piece quantity” before a whole-project physical cut CSV/printout becomes available. This confirmation is disabled if any entered top-fabric SKU has no positive-count cuts. It begins unchecked in the sample, and legacy JSON missing the optional flag remains valid and unchecked.
 - A confirmed project becomes unreviewed after accepted changes to the quilt's finished dimensions or any quilt-top fabric SKU/cut-group properties or structure. Browser regression asserts the actual saved JSON flag **and** visible checkbox reconcile without resetting unrelated drafts; changing batting-buying settings alone does not claim to validate unreviewed top cuts. Users must replace sample data with real design cuts before confirming.
 - Individual material calculators' feasible-cut claims and tests are separate. The manual flag records a review by the user; it does **not** establish design area conservation, true completeness, physical block construction, or a production release.
+
+## Bound user review to exact entered cutting data · 2026-11-05
+- [CI 41950121030](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41950121030) verifies TypeScript, static Astro/noindex/keyword checks, **178 unit and property checks** and full Chromium. An optional, non-cryptographic eight-hex-digit `quilt.topCutsReviewFingerprint` now accompanies manual coverage confirmation in V2 project JSON.
+- Calculated `hasCurrentQuiltTopReview` compares the saved fingerprint to the current entered finished top size and all top-fabric SKUs, dimensions and cutting quantities. A plain true flag from a legacy export or a stale file with mutated cuts no longer unlocks full project purchase/print. A matching reviewed import correctly restores export readiness. Unrelated backing/batting/shop rounding or measurement display-unit changes do not revoke an otherwise unchanged top.
+- Original V2 schema version and golden numeric reference data remain unchanged, with the fingerprint strictly optional for backward compatibility. This covers **accidental staleness**, not malicious JSON tampering; the human attestation and actual quilt completeness are not mathematically proven by any fingerprint.

@@ -1,6 +1,6 @@
 # Quilt Studio — verified release status
 
-Updated: 2026-11-05 (verified feature/browser CI 41948844759). `.pages.dev` is a `noindex` engineering preview; current Cloudflare deployment and production domain are not independently signed off.
+Updated: 2026-11-05 (verified code/browser CI 41950121030). Cloudflare preview remains `noindex`; production domain and deployment not independently signed off.
 
 ## Verified in the repository
 
@@ -165,3 +165,9 @@ Only **straight binding, butted borders, one-piece batting and explicitly feasib
 - Any accepted change to the finished quilt dimensions or to the quilt-top fabric SKU, grain, price, cut-group or count data revokes confirmation; removal or addition of fabric SKUs/groups also revokes it. The visible checkbox clears instantly without a destructive editor re-render. The explicit confirmation and revocation are reflected in JSON `readiness` (`topCutsReviewed`, `topCutListNotReviewed`, status) and the local Project V2 backup.
 - [CI 41948844759](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41948844759) passed **177/177** Vitest assertions across ten suites, TypeScript, Astro static/noindex gates and Chromium: home/hub default review state, incomplete shopping CSV, full cut export recovery on user confirmation, automatic revocation after quilt dimensions and fabric piece-count changes, mobile 320–1440px reflow, P21 project continuity and print/PDF checks.
 - This new release gate makes purchase messaging more conservative; it does **not** close original real-fabric, physically calibrated 100%-size paper, manual WCAG, domain, AdSense or Search Console release gates.
+
+## Bound quilt-top review fingerprint on V2 JSON import (2026-11-05)
+- Closing the whole-project manual cutting review on a boolean alone was insufficient: a manually edited V2 JSON file could keep `quilt.topCutsReviewed=true` even after changing cut counts, sizes or fabric colors. The UI could incorrectly treat the imported fabric geometry as previously checked.
+- Added **optional V2** `quilt.topCutsReviewFingerprint` (eight lowercase hex characters) to the TypeScript project model, validator, JSON Schema, local storage and portable JSON. The fingerprint covers only finished quilt-top dimensions and the entered top-fabric SKU/cutting-list data; backing, batting, display units, and shop-rounding settings are independent. The value is **non-cryptographic change detection**, not tamper resistance, a signature, or evidence of a completed physical quilt.
+- The user's checkbox now saves the fingerprint when confirming and clears it on unreview or relevant edits. All purchase/print readiness uses `hasCurrentQuiltTopReview` which requires both `topCutsReviewed=true` and a matching fingerprint. A legacy V2 file with no fingerprint remains fully importable but **not reviewed** even if it has a true review boolean; the user must explicitly recheck. A reviewed JSON file with unmodified matching fabric geometry remains reviewed.
+- [CI 41950121030](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41950121030) passed **178/178** unit/property tests, lint, build/index gates, Chromium downloads and import journeys: stale imported cut quantity, legacy unbound review flag, exact matching reviewed import. Full cut CSV/print stay blocked for unbound/stale cuts. Real-world fabric/paper scale, manual accessibility, owned domain and AdSense remain **NOT_RUN/WAIT**.
