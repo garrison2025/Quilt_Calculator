@@ -1,5 +1,5 @@
 # Quilt Studio — verification evidence and release blockers
-Last verified: 2026-11-05 · hub/batting parity and incomplete purchase release gates, CI `41941616100` · `noindex` engineering preview.
+Last verified: 2026-11-05 · browser Ctrl+P / Save as PDF print-safety CI `41944674495` · `noindex` engineering preview.
 
 ## What is actually verified
 | Check | Status | Evidence / reproducible action |
@@ -95,3 +95,8 @@ Only these are calculated with checked physical layouts: joined rectangular back
 - Project Planner and the standalone batting tool now pass the same `options.allowRotate` flag to the single-piece batting engine. An actual 108 × 58 in cut on 65-in usable roll is infeasible unrotated, then feasible as 58 × 108 in with grainRotationDeg=90° and 3 yd required in both tool CSVs. Both tools share the saved browser Project V2 state.
 - On projects with any impossible physical roll, the shopping list shows an explicit incomplete status and the exported sheet marks each impossible material without fabricated quantity/cost. A partial CSV filename begins with `quilt-studio-INCOMPLETE`. Full physical cut CSV and the built-in Print-plan action are disabled until every present material has a feasible layout. Diagnostic JSON remains available.
 - [CI 41941616100](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41941616100) passed 173/173 tests across 10 suites, 10 published route browser checks, one isolated hub/batting grain-parity scenario, partial purchasing CSV and corrected fabric SKU recovery. Real paper measurement, material grain inspection by a quilter, and actual sewing remain NOT_RUN.
+
+## Browser-level printing of incomplete or stale cutting plans · 2026-11-05
+- [CI 41944674495](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41944674495): TypeScript PASS, **173/173** unit/property tests PASS, Astro build and preview index protection PASS, Chromium browser regression PASS.
+- In browser **print media**, an infeasible 65-in batting roll without permitted rotation and a rejected draft measurement both set `data-print-ready=false` and the entire cutting/shopping result subtree computes to `display:none`; the print-only header states `NOT A CUT-READY PLAN`. The smoke test also creates a real PDF for the blocked state. A valid project still prints its coordinates, and the valid length-only yard conversion remains printable.
+- The site's disabled Print button alone is not treated as a Ctrl+P safeguard. This CSS rule is deliberately independent of the browser print event and applies before hydration. This is digital print safety evidence **not** an actual-size quilt pattern, physical paper calibration, or independent human construction audit.

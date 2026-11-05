@@ -1,6 +1,6 @@
 # Quilt Studio — verified release status
 
-Updated: 2026-11-04 (CI 41800618643). Public preview: https://quilt-calculator-566.pages.dev/ (no custom domain purchased).
+Updated: 2026-11-05 (code and browser CI 41944674495). Public preview remains `noindex`; domain and production deployment not independently signed off.
 
 ## Verified in the repository
 
@@ -145,3 +145,8 @@ Only **straight binding, butted borders, one-piece batting and explicitly feasib
 - A material with no independently verified feasible cut never receives an invented yardage in the shopping CSV. The visible shopping list warns `INCOMPLETE SHOPPING LIST`; a downloaded partial sheet has an `INCOMPLETE` filename and explicit per-material `FIT_IMPOSSIBLE_NOT_PURCHASE_READY` status. Feasible lines retain raw and rounded yardage, WOF-dependent offcuts, optional user price and independent prices.
 - The "Print plan / Save PDF" action and complete physical cut CSV are disabled whenever any current material has an infeasible geometry or no physical pieces exist. The diagnostic JSON export remains available, with machine-readable feasibility. A simple yards-to-inches conversion retains its standard print option.
 - [CI 41941616100](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41941616100) passed **173/173 Vitest tests**, TypeScript, Astro static output/keyword gates and Chromium tests of hub/batting parity, grain=90° in both downloadable cut CSVs, 3-yard physical purchase, impossible batting/SKU warnings and partial CSV status/filename. This is browser/math evidence, not a physical cutting or paper-scale certification.
+
+## Browser Print / Ctrl+P safety gate (2026-11-05)
+- Closing the built-in Print plan button was insufficient: the browser's **Ctrl+P**, Print menu or Save as PDF can still print the DOM. When an uncommitted input, rejected measurement, impossible material roll or zero-physical-cut state leaves a plan not cut-ready, the calculator now writes `data-print-ready="false"` on its host and print-only CSS hides the entire cut/shopping result subtree and replaces the ordinary print heading with a bold `NOT A CUT-READY PLAN` diagnostic. This protection also applies before JavaScript has hydrated; it does not depend on the browser honoring the disabled button.
+- Every successful recalculation sets `data-print-ready` from the same availability decision as the built-in Print button. The pure length-conversion route remains printable without any physical cut requirement; valid material plans retain diagrams and cutting coordinates.
+- [CI 41944674495](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41944674495) passed TypeScript, **173/173** Vitest cases, static/SEO gates and actual Chromium print emulation for feasible, infeasible and stale-input views, including generation of `artifacts/qa/infeasible-browser-print-blocked.pdf` during the QA job. Automated CSS visibility and PDF creation are verified; independent paper ruler measurements and sewing construction remain **NOT_RUN**.
