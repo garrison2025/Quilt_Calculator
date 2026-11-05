@@ -1,18 +1,34 @@
 import fs from 'node:fs/promises';
 import sharp from 'sharp';
-import {build} from 'esbuild';
+import ts from 'typescript';
 
 /** Every social illustration is generated from the same independently tested
  * numeric calculator functions used by the actual cutting UI. No invented
  * layouts or identical placeholder mosaics are presented as worked examples.
- * These are SCHEMATIC previews, NOT 1:1 cutting templates. */
-async function loadEngine(entry){
- const built=await build({entryPoints:[entry],bundle:true,write:false,platform:'node',format:'esm',target:'es2022'});
- return import('data:text/javascript;base64,'+Buffer.from(built.outputFiles[0].contents).toString('base64'));
+ * These are SCHEMATIC previews, NOT 1:1 cutting templates.
+ * Use DIRECT TypeScript dependency, not Astro's private esbuild dependency.
+ * This also lets the build run against future Astro major versions. */
+async function compileDataModule(file,imports={}){
+ const source=await fs.readFile(file,'utf8');
+ const compiled=ts.transpileModule(source,{
+  fileName:file,
+  compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}
+ });
+ let js=compiled.outputText;
+ for(const [relative,url] of Object.entries(imports)){
+  const a="from '"+relative+"'",b="from '"+url+"'";
+  if(js.includes(a))js=js.replaceAll(a,b);
+  else{
+   const double='from "'+relative+'"';
+   if(!js.includes(double))throw Error('Expected engine dependency missing: '+relative);
+   js=js.replaceAll(double,b);
+  }
+ }
+ return 'data:text/javascript;base64,'+Buffer.from(js).toString('base64');
 }
-const [math,projectModule]=await Promise.all([
- loadEngine('src/lib/quilt/math.ts'),loadEngine('src/lib/quilt/project.ts')
-]);
+const mathUrl=await compileDataModule('src/lib/quilt/math.ts');
+const projectUrl=await compileDataModule('src/lib/quilt/project.ts',{'./math':mathUrl});
+const [math,projectModule]=await Promise.all([import(mathUrl),import(projectUrl)]);
 const p=projectModule.sampleProject,o=p.options;
 const border=math.calculateBorders({
  widthIn:p.quilt.finishedWidth,heightIn:p.quilt.finishedHeight,
