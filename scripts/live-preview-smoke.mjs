@@ -127,6 +127,36 @@ try{
   'Exact matching V2 review fingerprint failed to restore public cut-plan status.');
  assert.equal(errors.length,0,'Public browser JS exceptions: '+errors.join('; '));
  console.log('PASS public import rejects stale reviewed JSON and accepts exact matching reviewed backup.');
+ // Verify that the live Cloudflare bundle (not only the local CI preview)
+ // preserves keyboard focus after replacing dynamic material controls.
+ const focusContext=await browser.newContext({viewport:{width:1100,height:820}});
+ const focusPage=await focusContext.newPage();
+ const focusErrors=[];
+ focusPage.on('pageerror',e=>focusErrors.push(e.message));
+ await focusPage.goto(BASE+'/quilt-fabric-calculator/',{waitUntil:'domcontentloaded',timeout:20000});
+ await focusPage.waitForFunction(()=>document.querySelector('[data-status]')?.textContent?.includes('Updated from the current project'),null,{timeout:15000});
+ const liveAddCut=focusPage.locator('[data-fabric-index="0"] [data-add-cut]');
+ await liveAddCut.focus();await liveAddCut.press('Enter');
+ assertThat(await focusPage.locator('[data-fabric-index="0"] [data-cut-index="1"] .field-control').first()
+  .evaluate(el=>document.activeElement===el),
+  'Live add-cut keyboard action lost focus instead of opening the new piece-label field.');
+ await focusPage.locator('[data-fabric-index="0"] [data-cut-index="1"] [data-remove-cut]').press('Enter');
+ assertThat(await focusPage.locator('[data-fabric-index="0"] [data-cut-index="0"] [data-remove-cut]')
+  .evaluate(el=>document.activeElement===el),
+  'Live delete-cut keyboard action lost focus instead of selecting a surviving cut.');
+ await focusPage.locator('[data-add-sku]').press('Enter');
+ assertThat(await focusPage.locator('[data-fabric-index="2"] .field-control').first()
+  .evaluate(el=>document.activeElement===el),
+  'Live new SKU keyboard action lost focus instead of selecting its editable SKU field.');
+ await focusPage.goto(BASE+'/quilt-border-calculator/',{waitUntil:'domcontentloaded',timeout:20000});
+ await focusPage.waitForFunction(()=>document.querySelector('[data-status]')?.textContent?.includes('Updated from the current project'),null,{timeout:15000});
+ await focusPage.locator('[data-add-border]').press('Enter');
+ assertThat(await focusPage.locator('[data-border-index="1"] .field-control').first()
+  .evaluate(el=>document.activeElement===el),
+  'Live new border layer keyboard action did not focus its first editable field.');
+ assert.equal(focusErrors.length,0,'Dynamic live keyboard interaction threw: '+focusErrors.join('; '));
+ await focusContext.close();
+ console.log('PASS public Cloudflare dynamic material keyboard focus after Enter add/remove cut, SKU and border actions.');
  await page.goto(BASE+'/qa/print-calibration/',{waitUntil:'domcontentloaded',timeout:20000});
  await page.emulateMedia({media:'print'});
  const measuredCss=await page.evaluate(()=>{
