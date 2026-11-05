@@ -1,6 +1,6 @@
 # Quilt Studio — verified release status
 
-Updated: 2026-11-05 (lazy material rendering: full Chromium CI 41963871015; exact-commit Cloudflare public CI 41963871059; real fabric/paper signoff still NOT_RUN).
+Updated: 2026-11-05 (cross-tab export/print gate: CI 41966154999; independent public verification CI 41966155069; physical sewing and printer still NOT_RUN).
 
 ## Verified in the repository
 
@@ -220,3 +220,11 @@ Only **straight binding, butted borders, one-piece batting and explicitly feasib
 - [CI 41963871015](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41963871015): **184/184** unit/property checks plus full Chromium, SVG-to-complete-CSV coordinate reconciliation on approved calculator routes, all-material PDF print, a 30-SKU/2,000-cut browser stress test that starts with 29 unrendered plans and only 45 table rows, print-time generation of all 30 plans followed by collapse restoration, and one-SKU/2,000-cut export.
 - [Public Pages CI 41963871059](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41963871059): exact deployed SHA `8f8e1d3d`, ten live calculator routes, safe project interaction, print limits and `noindex` preview behavior passed. Cloudflare Pages source deployment check succeeded.
 - The work reduces **initial hidden DOM generation**; it does not prove a per-device time threshold, real paper scale, sewn fabric accuracy, or assistive technology manual acceptance. No new external APIs.
+
+## Cross-tab stale output safety (2026-11-05)
+- Addressed a remaining data-consistency hazard: an outdated browser tab already refused to overwrite another tab's localStorage but could still present **cut-list CSV, calculated JSON, an outdated material shopping CSV or printable physical cuts**. A shared-storage conflict now immediately disables the stale tab's cuts, computed-result JSON, shopping export and physical print; **Save project JSON** remains deliberately available to back up that tab's private unsaved work. The user must explicitly load the latest stored project before the cut and shopping outputs are eligible again.
+- Output click handlers independently compare the current `localStorage` value to the last accepted snapshot, so a delayed `storage` event cannot slip a stale download through. The browser's Ctrl+P / print-menu path also verifies storage in `beforeprint` and falls back to the print stylesheet's independently tested `data-print-ready=false` blocking rule.
+- Recalculation from an out-of-sync tab does not re-enable obsolete output buttons, even when new local edits are mathematically valid; the user can save a local JSON backup first. Browser storage unavailable/private cases do not require paid APIs or a remote database.
+- [Quality CI 41966154999](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41966154999): **184/184** unit/property tests plus Chromium exercising two live tabs, cutting/export and print blocking, safe JSON backup, edits after conflict, latest load and restored exports; a separate Project Planner scenario checks that combined shopping CSV is disabled on conflict and re-enabled only after loading current data.
+- [Cloudflare public CI 41966155069](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41966155069) confirms the exact `43ca0c62` source was deployed and public calculator workflows passed. An additional two-tab **public Cloudflare** regression is now incorporated into `scripts/live-preview-smoke.mjs` for ongoing verification on subsequent pushes.
+- No original physical sewing or printer-ruler gate is signed off and preview remains `noindex`.

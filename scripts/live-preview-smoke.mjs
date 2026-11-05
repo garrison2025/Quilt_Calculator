@@ -127,6 +127,61 @@ try{
   'Exact matching V2 review fingerprint failed to restore public cut-plan status.');
  assert.equal(errors.length,0,'Public browser JS exceptions: '+errors.join('; '));
  console.log('PASS public import rejects stale reviewed JSON and accepts exact matching reviewed backup.');
+
+ // Real public Cloudflare cross-tab ownership: stale materials cannot be
+ // downloaded as a complete purchase/cut plan after a newer shared save.
+ const conflictContext=await browser.newContext({viewport:{width:1150,height:820},acceptDownloads:true});
+ const oldBacking=await conflictContext.newPage(),newBacking=await conflictContext.newPage();
+ const conflicts=[];
+ oldBacking.on('pageerror',e=>conflicts.push(e.message));
+ newBacking.on('pageerror',e=>conflicts.push(e.message));
+ for(const p of [oldBacking,newBacking]){
+  await p.goto(BASE+'/quilt-backing-calculator/',{waitUntil:'domcontentloaded',timeout:20000});
+  await p.waitForFunction(()=>document.querySelector('[data-status]')?.textContent?.includes('Updated from the current project'),null,{timeout:20000});
+ }
+ assertThat(await oldBacking.locator('[data-action="export-cut-csv"]').isEnabled(),
+  'Live backing cut CSV must initially be enabled before conflict.');
+ const liveWidth=newBacking.getByLabel('Finished quilt width (in)',{exact:true});
+ await liveWidth.fill('75');await liveWidth.press('Tab');
+ await oldBacking.locator('[data-sync-warning]').waitFor({state:'visible',timeout:15000});
+ assertThat(!(await oldBacking.locator('[data-action="export-cut-csv"]').isEnabled()) &&
+            !(await oldBacking.locator('[data-action="export-cut"]').isEnabled()) &&
+            !(await oldBacking.locator('[data-action="print"]').isEnabled()),
+  'Live outdated tab must disable all cutting and print exports.');
+ assert.equal(await oldBacking.locator('[data-tool]').getAttribute('data-print-ready'),'false');
+ await oldBacking.emulateMedia({media:'print'});
+ assert.equal(await oldBacking.locator('[data-results]').evaluate(el=>getComputedStyle(el).display),'none',
+  'Public browser Ctrl+P must conceal out-of-sync cutting dimensions.');
+ await oldBacking.emulateMedia({media:'screen'});
+ const retained=await downloadText(oldBacking,'[data-action="save"]');
+ assert.equal(JSON.parse(retained.content).quilt.finishedWidth,60,
+  'A conflicting old tab should still allow downloading its in-memory JSON backup.');
+ await oldBacking.locator('[data-action="load-latest"]').click();
+ assert.equal(await oldBacking.getByLabel('Finished quilt width (in)',{exact:true}).inputValue(),'75');
+ assertThat(await oldBacking.locator('[data-action="export-cut-csv"]').isEnabled(),
+  'Loading the latest public project must restore correct cutting export.');
+ await conflictContext.close();
+
+ const shoppingContext=await browser.newContext({viewport:{width:1150,height:820}});
+ const oldShopping=await shoppingContext.newPage(),newShopping=await shoppingContext.newPage();
+ await oldShopping.goto(BASE+'/calculators/',{waitUntil:'domcontentloaded',timeout:20000});
+ await oldShopping.waitForFunction(()=>document.querySelector('[data-status]')?.textContent?.includes('Incomplete material plan'),null,{timeout:20000});
+ await newShopping.goto(BASE+'/quilt-backing-calculator/',{waitUntil:'domcontentloaded',timeout:20000});
+ await newShopping.waitForFunction(()=>document.querySelector('[data-status]')?.textContent?.includes('Updated from the current project'),null,{timeout:20000});
+ const shopButton=oldShopping.locator('[data-results] [data-action="export-shopping"]');
+ assertThat(await shopButton.isEnabled(),'Live combined shopping list should be downloadable before a conflict.');
+ const newWidth=newShopping.getByLabel('Finished quilt width (in)',{exact:true});
+ await newWidth.fill('79');await newWidth.press('Tab');
+ await oldShopping.locator('[data-sync-warning]').waitFor({state:'visible',timeout:15000});
+ assertThat(!(await shopButton.isEnabled())&&await oldShopping.locator('[data-action="save"]').isEnabled(),
+  'Live cross-tab conflict must block stale shopping but allow a project backup.');
+ await oldShopping.locator('[data-action="load-latest"]').click();
+ assertThat(await oldShopping.locator('[data-results] [data-action="export-shopping"]').isEnabled(),
+  'Latest public shopping plan should become exportable after loading.');
+ await shoppingContext.close();
+ assert.equal(conflicts.length,0,'Public conflicting browser JS errors: '+conflicts.join('; '));
+ console.log('PASS public Cloudflare two-tab stale-cut/shopping/print lock, safe project backup and latest reload.');
+
  // Verify that the live Cloudflare bundle (not only the local CI preview)
  // preserves keyboard focus after replacing dynamic material controls.
  const focusContext=await browser.newContext({viewport:{width:1100,height:820}});
