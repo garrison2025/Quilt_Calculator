@@ -1496,6 +1496,91 @@ try{
    'Local JSON backup must work even when browser autosave is blocked.');
   await noStorage.close();
   console.log('PASS localStorage failure warning and offline JSON backup.');
+
+  // An existing browser autosave may be corrupt or from an unsupported
+  // future schema. It must never be automatically replaced with the sample
+  // by the first accepted edit, reset, import, or user navigation.
+  const unreadableCtx=await browser.newContext({viewport:{width:1180,height:820},acceptDownloads:true});
+  instrumentNetwork(unreadableCtx,'unreadable-autosave-recovery');
+  const brokenPage=await unreadableCtx.newPage();
+  brokenPage.on('pageerror',err=>problems.push('Unreadable autosave: '+err.message));
+  await hydrated(brokenPage,'/quilt-backing-calculator/');
+  const rawInvalid='{"schemaVersion":300,"fabrics":[{"id":"future-color"}],"recover":"do not lose this literal data"}';
+  await brokenPage.evaluate(raw=>localStorage.setItem('quilt-studio-v2',raw),rawInvalid);
+  await brokenPage.reload({waitUntil:'domcontentloaded'});
+  await brokenPage.locator('[data-download-unreadable-backup]').waitFor({state:'visible'});
+  check((await brokenPage.locator('[data-persist-state]').innerText()).includes('UNREADABLE AUTOSAVE PROTECTED'),
+   'An unsupported autosave must show a highly visible data preservation warning.');
+  check(!(await brokenPage.locator('[data-sync-warning]').isHidden()) &&
+    !(await brokenPage.locator('[data-action="export-cut-csv"]').isEnabled()) &&
+    !(await brokenPage.locator('[data-action="print"]').isEnabled()),
+   'Unreadable startup autosave must block cutting and PDF outputs before any edit.');
+  check(!(await brokenPage.locator('[data-replace-unreadable-backup]').isEnabled()),
+   'Replacing original unreadable data must require first downloading its raw backup.');
+  const brokenWidth=brokenPage.getByLabel('Finished quilt width (in)',{exact:true});
+  await brokenWidth.fill('88');await brokenWidth.press('Tab');
+  check((await brokenWidth.inputValue())==='88' &&
+    (await brokenPage.evaluate(()=>localStorage.getItem('quilt-studio-v2')))===rawInvalid,
+   'Editing the example must NEVER silently overwrite unreadable original saved data.');
+  check(!(await brokenPage.locator('[data-action="export-cut-csv"]').isEnabled()) &&
+    !(await brokenPage.locator('[data-action="print"]').isEnabled()),
+   'Unsaved example edits cannot appear ready to cut while an original autosave is protected.');
+  await brokenPage.locator('[data-action="reset"]').click();
+  check((await brokenWidth.inputValue())==='88' &&
+    (await brokenPage.evaluate(()=>localStorage.getItem('quilt-studio-v2')))===rawInvalid,
+   'Normal Reset must not delete the unreadable original without explicit backed-up replacement.');
+  const sampleBackup=brokenPage.waitForEvent('download');
+  await brokenPage.locator('[data-action="save"]').click();
+  const sampleBackupFile=await sampleBackup;
+  check(JSON.parse(await fs.readFile(await sampleBackupFile.path(),'utf8')).quilt.finishedWidth===88,
+   'Current example edits must remain separately downloadable as a valid project JSON backup.');
+  const rawBackup=brokenPage.waitForEvent('download');
+  await brokenPage.locator('[data-download-unreadable-backup]').click();
+  const rawBackupFile=await rawBackup;
+  check((await fs.readFile(await rawBackupFile.path(),'utf8'))===rawInvalid &&
+    rawBackupFile.suggestedFilename()==='quilt-unreadable-original-autosave.txt',
+   'Downloaded unreadable autosave must exactly preserve the original raw text, not stringify it.');
+  check(await brokenPage.locator('[data-replace-unreadable-backup]').isEnabled(),
+   'Downloading the raw original should enable explicit replacement of the unreadable autosave.');
+  check((await brokenPage.evaluate(()=>localStorage.getItem('quilt-studio-v2')))===rawInvalid,
+   'Downloading a raw backup must not mutate the existing stored text.');
+  await brokenPage.locator('[data-replace-unreadable-backup]').click();
+  check(await brokenPage.locator('[data-sync-warning]').isHidden() &&
+    await brokenPage.locator('[data-action="export-cut-csv"]').isEnabled(),
+   'Explicit replacement after raw backup should recover normally calculated cutting outputs.');
+  check((await brokenPage.evaluate(()=>JSON.parse(localStorage.getItem('quilt-studio-v2')).quilt.finishedWidth))===88,
+   'Explicit replacement must save the accepted current project and not the invalid original.');
+  await brokenPage.reload({waitUntil:'domcontentloaded'});
+  await brokenPage.waitForFunction(()=>document.querySelector('[data-status]')?.textContent?.includes('Updated from the current project'));
+  check(await brokenPage.getByLabel('Finished quilt width (in)',{exact:true}).inputValue()==='88',
+   'A recovered original project must survive a full page reload.');
+
+  // Even with a raw backup in hand, a different tab's new stored version
+  // should win over an attempted explicit reset of previously corrupt data.
+  await brokenPage.evaluate(raw=>localStorage.setItem('quilt-studio-v2',raw),rawInvalid);
+  await brokenPage.reload({waitUntil:'domcontentloaded'});
+  await brokenPage.locator('[data-download-unreadable-backup]').waitFor({state:'visible'});
+  const rawBackupAgain=brokenPage.waitForEvent('download');
+  await brokenPage.locator('[data-download-unreadable-backup]').click();
+  await rawBackupAgain;
+  await brokenPage.evaluate(()=>{
+   // Use a valid newer project captured as fixture in this same browser turn.
+   localStorage.setItem('quilt-studio-v2',JSON.stringify({
+    schemaVersion:2,units:'in',quilt:{finishedWidth:91,finishedHeight:80},
+    options:{overage:4,usableWof:43,battingWof:96,joinTakeup:1,stripWidth:2.5,
+     tailAllowance:12,stripJoinLoss:2.5,step:.125,lengthShrinkage:0,
+     oneWayPrint:false,seam:.25,battingOverage:4,allowRotate:false},
+    yardage:{pieceWidth:5,pieceHeight:10,count:20,alternateWof:50,allowRotate:false,oneWayPrint:false},
+    sashing:{rows:4,columns:5,blockWidth:10,blockHeight:10,width:2},
+    borders:[],fabrics:[]
+   }));
+  });
+  await brokenPage.locator('[data-replace-unreadable-backup]').click();
+  check((await brokenPage.evaluate(()=>JSON.parse(localStorage.getItem('quilt-studio-v2')).quilt.finishedWidth))===91,
+   'A changed saved project must not be destroyed by an outdated explicit corrupt-autosave replacement.');
+  await unreadableCtx.close();
+  console.log('PASS malformed or incompatible browser autosave raw backup, explicit replacement and raced version safety.');
+
   // Original P21: verify an actual browser journey across all project tools.
   // Screens must share ONE native-inch V2 project, not recompute or overwrite
   // measurements when the UI units change, and non-committed drafts must not
