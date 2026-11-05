@@ -1,11 +1,11 @@
 import { MAX_PIECES, type FabricSku, type BorderLayer } from './math';
-export type Project = { schemaVersion: 2; units: 'in' | 'cm'; quilt: { finishedWidth: number; finishedHeight: number };
+export type Project = { schemaVersion: 2; units: 'in' | 'cm'; quilt: { finishedWidth: number; finishedHeight: number; topCutsReviewed?: boolean };
   options: { overage: number; usableWof: number; battingWof: number; joinTakeup: number; stripWidth: number; tailAllowance: number; stripJoinLoss: number; step: number; lengthShrinkage: number; oneWayPrint: boolean; seam: number; battingOverage: number; allowRotate: boolean };
   yardage: { pieceWidth: number; pieceHeight: number; count: number; alternateWof?: number; allowRotate?: boolean; oneWayPrint?: boolean };
   sashing: { rows: number; columns: number; blockWidth: number; blockHeight: number; width: number };
   borders: BorderLayer[]; fabrics: FabricSku[] };
 export const sampleProject: Project = {
-  schemaVersion: 2, units: 'in', quilt: { finishedWidth: 60, finishedHeight: 80 },
+  schemaVersion: 2, units: 'in', quilt: { finishedWidth: 60, finishedHeight: 80, topCutsReviewed: false },
   options: { overage: 4, usableWof: 43, battingWof: 96, joinTakeup: 1, stripWidth: 2.5,
     tailAllowance: 12, stripJoinLoss: 2.5, step: .125, lengthShrinkage: 0, oneWayPrint: false,
     seam: .25, battingOverage: 4, allowRotate: false },
@@ -57,9 +57,10 @@ export function validateProject(data: unknown): Project {
  if (root.schemaVersion !== 2 || (root.units !== 'in' && root.units !== 'cm'))
   throw Error('Expected schemaVersion 2 and units "in" or "cm".');
  const quilt = object(root.quilt, 'quilt');
- onlyKeys(quilt,'quilt',['finishedWidth','finishedHeight']);
+ onlyKeys(quilt,'quilt',['finishedWidth','finishedHeight','topCutsReviewed']);
  numeric(quilt, 'finishedWidth', 'quilt', 0, 100000, false, true);
  numeric(quilt, 'finishedHeight', 'quilt', 0, 100000, false, true);
+ if(quilt.topCutsReviewed!==undefined)bool(quilt,'topCutsReviewed','quilt');
  const opts = object(root.options, 'options');
  onlyKeys(opts,'options',['overage','usableWof','battingWof','joinTakeup','stripWidth','tailAllowance','stripJoinLoss','step','lengthShrinkage','oneWayPrint','seam','battingOverage','allowRotate']);
  for (const name of ['overage','joinTakeup','tailAllowance','stripJoinLoss','seam','battingOverage'])

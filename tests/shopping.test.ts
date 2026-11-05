@@ -42,6 +42,16 @@ describe('Shopping CSV is explicit about cut-fit safety and incomplete purchase 
   expect(needsTopFabricPlan([{pieces:[{count:5}]},{pieces:[{count:0}]}])).toBe(true);
   expect(needsTopFabricPlan([{pieces:[{count:5}]},{pieces:[{count:2}]}])).toBe(false);
  });
+ it('keeps numeric estimates but marks unreconciled quilt-top cutting coverage as incomplete',()=>{
+  const reviewPending:ShoppingLine={...good,status:'not-reviewed'};
+  expect(shoppingLineStatus(reviewPending)).toBe('TOP_CUT_LIST_NOT_REVIEWED');
+  expect(hasIncompleteShopping([reviewPending])).toBe(true);
+  const csv=shoppingCsv([reviewPending]);
+  expect(csv).toContain('"TOP_CUT_LIST_NOT_REVIEWED"');
+  expect(csv).toContain('"0.875"');
+  expect(csv).toContain('"7"');
+  expect(csv).not.toContain('FIT_IMPOSSIBLE_NOT_PURCHASE_READY');
+ });
  it('escapes potentially executable spreadsheet labels',()=>{
   const csv=shoppingCsv([{...good,label:'=1+2'}]);
   expect(csv).toContain('"\'=1+2"');

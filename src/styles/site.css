@@ -290,3 +290,15 @@
   display:block;margin-top:16px;font:13px/1.5 system-ui,sans-serif;color:#333;
  }
 }
+
+/* Project-level cutting coverage is a manual attestation, not a computed geometry claim. */
+.top-cut-review{margin:8px 0;padding:16px;border:1px solid #d8e2d4;border-radius:12px;background:#f7faf5}
+.top-cut-review h3{font-size:13px;color:#315f4b;margin:0 0 10px}
+.top-cut-review-label{display:flex;align-items:flex-start;gap:10px;cursor:pointer;color:#3f594c;font-size:12px;font-weight:750}
+.top-cut-review-label input{width:18px;height:18px;flex-shrink:0;accent-color:var(--green);margin:0}
+.top-cut-review .footer-note{margin:9px 0 0}
+@media screen and (prefers-color-scheme:dark){
+ .top-cut-review{background:#1c2b22;border-color:#47614e}
+ .top-cut-review h3,.top-cut-review-label{color:#dcebdd}
+}
+@media print{.top-cut-review{display:none!important}}

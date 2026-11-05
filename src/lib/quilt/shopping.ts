@@ -3,14 +3,15 @@ import {csvDocument} from './cutlist';
 export type ShoppingLine = {
  label:string; hint:string; amount?:number; rawYards?:number; offcutSqIn?:number;
  roundingExtraIn?:number; unitPrice?:number; assemblyTrimSqIn?:number;
- status?: 'not-planned';
+ status?: 'not-planned' | 'not-reviewed';
 };
 
-export type ShoppingStatus = 'FEASIBLE_LAYOUT' | 'FIT_IMPOSSIBLE_NOT_PURCHASE_READY' | 'NOT_PLANNED_NO_CUT_PIECES';
+export type ShoppingStatus = 'FEASIBLE_LAYOUT' | 'FIT_IMPOSSIBLE_NOT_PURCHASE_READY' | 'NOT_PLANNED_NO_CUT_PIECES' | 'TOP_CUT_LIST_NOT_REVIEWED';
 
 export function shoppingLineStatus(line:ShoppingLine):ShoppingStatus {
  if(line.status==='not-planned')return 'NOT_PLANNED_NO_CUT_PIECES';
- return line.amount===undefined?'FIT_IMPOSSIBLE_NOT_PURCHASE_READY':'FEASIBLE_LAYOUT';
+ if(line.amount===undefined)return 'FIT_IMPOSSIBLE_NOT_PURCHASE_READY';
+ return line.status==='not-reviewed'?'TOP_CUT_LIST_NOT_REVIEWED':'FEASIBLE_LAYOUT';
 }
 
 export function hasIncompleteShopping(lines:readonly ShoppingLine[]):boolean {
@@ -36,7 +37,7 @@ export function shoppingCsv(lines:readonly ShoppingLine[]):string {
  ];
  const rows=lines.map(line=>{
   const status=shoppingLineStatus(line);
-  const feasible=status==='FEASIBLE_LAYOUT';
+  const feasible=status==='FEASIBLE_LAYOUT' || status==='TOP_CUT_LIST_NOT_REVIEWED';
   if(line.status==='not-planned' && line.amount!==undefined)
    throw Error('A not-planned material cannot have a purchasing quantity: '+line.label);
   if(feasible && (!Number.isFinite(line.amount)||line.amount!<0))throw Error('Invalid purchased yardage for '+line.label);

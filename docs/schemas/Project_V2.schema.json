@@ -25,6 +25,10 @@
           "type": "number",
           "exclusiveMinimum": 0,
           "maximum": 100000
+        },
+        "topCutsReviewed": {
+          "type": "boolean",
+          "description": "Optional manual confirmation: user checked that all intended quilt-top fabric SKU colors and cut pieces were entered. The calculator cannot verify design completeness. Omitted in older V2 imports means not reviewed."
         }
       },
       "required": [

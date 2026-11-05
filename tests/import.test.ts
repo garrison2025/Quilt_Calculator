@@ -2,6 +2,16 @@ import { describe,expect,it } from 'vitest';
 import { sampleProject,validateProject } from '../src/lib/quilt/project';
 const fresh=()=>JSON.parse(JSON.stringify(sampleProject)) as Record<string,any>;
 describe('Version 2 project import security and data invariants',()=>{
+ it('accepts legacy project files without a review flag, while strictly validating manual confirmation',()=>{
+  const old=fresh();delete old.quilt.topCutsReviewed;
+  expect(validateProject(old).quilt.topCutsReviewed).toBeUndefined();
+  const current=fresh();current.quilt.topCutsReviewed=true;
+  expect(validateProject(current).quilt.topCutsReviewed).toBe(true);
+  for(const value of [null,'true',1,{},[]]){
+   const invalid=fresh();invalid.quilt.topCutsReviewed=value;
+   expect(()=>validateProject(invalid),'Review must be a real optional boolean').toThrow(/quilt.topCutsReviewed/);
+  }
+ });
  it('accepts legacy yardage JSON without new directional fields and rejects bad booleans',()=>{
   const legacy=fresh();delete legacy.yardage.oneWayPrint;delete legacy.yardage.allowRotate;
   expect(validateProject(legacy).yardage.oneWayPrint).toBeUndefined();
