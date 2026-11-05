@@ -1,5 +1,5 @@
 import { VERSION, calculateBacking, calculateStraightBinding, calculateYardage, compareYardageWidths, calculateQuiltFabric, calculateBatting, calculateBorders, calculateSashing, layoutRectangles, verifyLayout, parseMeasure, fromInches, toInches, yardsToInches, purchase, hashProject, type Layout, type PieceRequest } from '../lib/quilt/math';
-import { sampleProject, validateProject, type Project } from '../lib/quilt/project';
+import { sampleProject, validateProject, quiltTopReviewFingerprint, hasCurrentQuiltTopReview, type Project } from '../lib/quilt/project';
 import { cutListCsv, type MaterialCutPlan } from '../lib/quilt/cutlist';
 import { shoppingCsv, hasIncompleteShopping, shoppingLineStatus, needsTopFabricPlan, type ShoppingLine } from '../lib/quilt/shopping';
 import type { ToolId } from './types';
@@ -326,6 +326,7 @@ if(root){
     lastAccepted=value;
     if(tool==='fabric' || field.path==='quilt.finishedWidth' || field.path==='quilt.finishedHeight'){
      project.quilt.topCutsReviewed=false;
+     project.quilt.topCutsReviewFingerprint=undefined;
      // Reconcile the visible manual-attestation control without rebuilding the
      // editor and discarding a separate in-progress measurement draft.
      const review=fieldsRoot.querySelector<HTMLInputElement>('#quilt-top-review');
@@ -352,7 +353,7 @@ if(root){
   const shell=node('div');shell.appendChild(node('h3','group-title','Fabric colors / SKUs'));
   project.fabrics.forEach((fabric,i)=>{
    const card=node('div','dynamic-entry'),head=node('div','dynamic-head');
-   const del=node('button','','Remove SKU');del.type='button';del.addEventListener('click',()=>{if(!requireCommittedDraft('remove a fabric SKU'))return;project.fabrics.splice(i,1);project.quilt.topCutsReviewed=false;persist();renderEditor();update();});
+   const del=node('button','','Remove SKU');del.type='button';del.addEventListener('click',()=>{if(!requireCommittedDraft('remove a fabric SKU'))return;project.fabrics.splice(i,1);project.quilt.topCutsReviewed=false;project.quilt.topCutsReviewFingerprint=undefined;persist();renderEditor();update();});
    append(head,node('strong','',fabric.label||'Fabric '+(i+1)),del);card.appendChild(head);
    card.appendChild(makeGroup('Fabric roll',[
     {label:'SKU (unique)',path:'id',kind:'text'},{label:'Fabric / color label',path:'label',kind:'text'},
@@ -362,7 +363,7 @@ if(root){
    ],fabric,(f,v)=>{if(f.path==='id'&&project.fabrics.some((g,j)=>j!==i&&g.id===v))throw Error('SKU IDs must be unique.');(fabric as unknown as Record<string,unknown>)[f.path]=v;}));
    fabric.pieces.forEach((piece,j)=>{
     const group=node('div','dynamic-entry'),h=node('div','dynamic-head');
-    const remove=node('button','','Remove cut group');remove.type='button';remove.addEventListener('click',()=>{if(!requireCommittedDraft('remove a cut group'))return;fabric.pieces.splice(j,1);project.quilt.topCutsReviewed=false;persist();renderEditor();update();});
+    const remove=node('button','','Remove cut group');remove.type='button';remove.addEventListener('click',()=>{if(!requireCommittedDraft('remove a cut group'))return;fabric.pieces.splice(j,1);project.quilt.topCutsReviewed=false;project.quilt.topCutsReviewFingerprint=undefined;persist();renderEditor();update();});
     append(h,node('strong','','Cut group '+(j+1)),remove);group.appendChild(h);
     group.appendChild(makeGroup('Rectangle CUT sizes',[
      {label:'Piece label',path:'label',kind:'text'},{label:'Cut width',path:'widthIn',kind:'length'},
@@ -377,7 +378,7 @@ if(root){
     const newPiece={widthIn:5,heightIn:5,count:4,label:'New cut',allowRotate:false};
     fabric.pieces.push(newPiece);
     try{validateProject(project);}catch(e){fabric.pieces.pop();note((e as Error).message,true);return;}
-    project.quilt.topCutsReviewed=false;persist();renderEditor();update();
+    project.quilt.topCutsReviewed=false;project.quilt.topCutsReviewFingerprint=undefined;persist();renderEditor();update();
    });card.appendChild(addPiece);shell.appendChild(card);
   });
   const add=node('button','dynamic-add','+ Add fabric SKU');add.type='button';add.addEventListener('click',()=>{
@@ -386,7 +387,7 @@ if(root){
    const id='fabric-'+(project.fabrics.length+1)+'-'+Date.now().toString(36);
    project.fabrics.push({id,label:'New fabric',usableWidth:43,oneWayPrint:false,shrinkageLengthPct:0,pieces:[{widthIn:5,heightIn:5,count:4,label:'Cut square'}]});
    try{validateProject(project);}catch(e){project.fabrics.pop();note((e as Error).message,true);return;}
-   project.quilt.topCutsReviewed=false;persist();renderEditor();update();
+   project.quilt.topCutsReviewed=false;project.quilt.topCutsReviewFingerprint=undefined;persist();renderEditor();update();
   });shell.appendChild(add);fieldsRoot.appendChild(shell);
  }
  function renderBorderEditor():void{
@@ -435,7 +436,7 @@ if(root){
   if(tool==='hub'){
    const review=node('section','top-cut-review'),heading=node('h3','','Confirm quilt-top cutting coverage');
    const label=node('label','top-cut-review-label'),control=node('input');
-   control.type='checkbox';control.id='quilt-top-review';control.checked=project.quilt.topCutsReviewed===true;
+   control.type='checkbox';control.id='quilt-top-review';control.checked=hasCurrentQuiltTopReview(project);
    control.disabled=needsTopFabricPlan(project.fabrics);
    const words=node('span','','I reviewed every quilt-top color, cut size and piece quantity.');
    label.htmlFor=control.id;append(label,control,words);
@@ -443,9 +444,10 @@ if(root){
    review.appendChild(node('p','footer-note','Manual acknowledgement only: the calculator cannot prove all blocks are included. Replace the sample fabric data with your real quilt-top cutting list first. Changes to the quilt dimensions or any fabric SKU/cut group automatically revoke this confirmation.'));
    if(control.disabled)review.appendChild(node('p','footer-note','Enter positive-count cut pieces for every fabric SKU before reviewing.'));
    control.addEventListener('change',()=>{
-    if(!requireCommittedDraft('confirm quilt-top cutting coverage')){control.checked=project.quilt.topCutsReviewed===true;return;}
+    if(!requireCommittedDraft('confirm quilt-top cutting coverage')){control.checked=hasCurrentQuiltTopReview(project);return;}
     if(needsTopFabricPlan(project.fabrics)){control.checked=false;note('Quilt-top cutting coverage cannot be confirmed without cuts for each fabric SKU.',true);return;}
     project.quilt.topCutsReviewed=control.checked;
+    project.quilt.topCutsReviewFingerprint=control.checked?quiltTopReviewFingerprint(project):undefined;
     persist();update();
    });
    fieldsRoot.appendChild(review);
@@ -605,8 +607,9 @@ if(root){
     const fabric=calculateQuiltFabric(p.fabrics,o.step);
     topFabricMissing=needsTopFabricPlan(p.fabrics);
     hero(resultRoot,yd(backing.recommended.purchase.roundedPurchaseYards),'BACKING FABRIC (RECOMMENDED)','One quilt top: '+num(w)+' × '+num(h)+' in. This is the backing amount, not a total for all quilt materials.');
+    const reviewedTop=hasCurrentQuiltTopReview(p);
     if(topFabricMissing)warning(resultRoot,'QUILT TOP NOT PLANNED: one or more fabric SKUs have no actual cut pieces, or no top-fabric SKUs exist. Backing, batting and binding estimates remain separate; the whole-project shopping list is incomplete.',true);
-    else if(!p.quilt.topCutsReviewed)warning(resultRoot,'QUILT TOP NOT REVIEWED: entered fabric cuts are preliminary estimates. Check every real block, color and cutting quantity, then tick the review checkbox on Project Planner before exporting a whole-project cut list.',true);
+    else if(!reviewedTop)warning(resultRoot,'QUILT TOP NOT REVIEWED: entered fabric cuts are preliminary estimates. Check every real block, color and cutting quantity, then tick the review checkbox on Project Planner before exporting a whole-project cut list.',true);
     else resultRoot.appendChild(node('p','footer-note','Quilt-top coverage was manually reviewed for the entered project. Physical assembly and real fabric orientation still need independent verification.'));
     shopping(resultRoot,[
      {label:'Backing · '+backing.recommended.direction+' seams',hint:backing.recommended.panelCount+' full WOF panels',
@@ -622,7 +625,7 @@ if(root){
      ...border.layers.map((x,i)=>({label:x.label+' · '+x.sku,hint:'Butted borders',amount:x.purchase?.roundedPurchaseYards,
       rawYards:x.purchase?.rawPurchaseYards,offcutSqIn:x.layout.isCutFeasible?x.layout.physicalOffcutAreaSqIn:undefined,
       roundingExtraIn:x.purchase?.purchaseRoundingExtraLengthIn,unitPrice:p.borders[i].pricePerYard})),
-     ...(fabric.length?fabric.map(x=>topFabricShoppingLine(x,p.fabrics.find(sku=>sku.id===x.fabricSku)?.pricePerYard,p.quilt.topCutsReviewed===true)):[missingTopFabricShoppingLine()])
+     ...(fabric.length?fabric.map(x=>topFabricShoppingLine(x,p.fabrics.find(sku=>sku.id===x.fabricSku)?.pricePerYard,reviewedTop)):[missingTopFabricShoppingLine()])
     ]);
     section(resultRoot,'Cutting diagrams for every material','Individual fabric rolls · open each plan to inspect coordinates');
     materialPlan(resultRoot,'backing','Backing · '+backing.recommended.direction+' seams',backing.recommended.layout,0,backing.recommended.purchase.roundedPurchaseYards);
@@ -659,13 +662,13 @@ if(root){
    const anyInfeasible=materialCuts.some(x=>!x.layout.isCutFeasible);
    const physicalCutPieceCount=materialCuts.reduce((total,x)=>total+x.layout.cutPieces.length,0);
    const hasPhysicalCuts=physicalCutPieceCount>0;
-   const topCutListNotReviewed=tool==='hub' && project.quilt.topCutsReviewed!==true && !topFabricMissing;
+   const topCutListNotReviewed=tool==='hub' && !hasCurrentQuiltTopReview(project) && !topFabricMissing;
    const readyPhysicalPlan=materialCuts.length>0 && !anyInfeasible && hasPhysicalCuts && !topFabricMissing && !topCutListNotReviewed;
    const printable=tool==='inches' || readyPhysicalPlan;
    const readiness={
     scope:tool==='hub'?'entered-project-materials':tool==='fabric'?'entered-top-fabric-skus':tool==='inches'?'length-conversion':'single-material',
     status:tool==='inches'?'LENGTH_CONVERSION':topFabricMissing?'TOP_FABRIC_NOT_PLANNED':anyInfeasible?'FIT_IMPOSSIBLE':topCutListNotReviewed?'TOP_CUT_LIST_NOT_REVIEWED':readyPhysicalPlan?'LISTED_CUTS_FEASIBLE':'NO_PHYSICAL_CUTS',
-    topFabricMissing,topCutsReviewed:project.quilt.topCutsReviewed===true,topCutListNotReviewed,
+    topFabricMissing,topCutsReviewed:hasCurrentQuiltTopReview(project),topCutListNotReviewed,
     hasInfeasibleMaterial:anyInfeasible,physicalCutPieceCount,
     cutCsvReady:readyPhysicalPlan,printReady:printable
    };
