@@ -1772,6 +1772,19 @@ try{
   console.log('PASS narrow 320 CSS-pixel reflow proxy across all '+routes.length+' approved routes.');
   await small.setViewportSize({width:375,height:812});
   await hydrated(small,'/quilt-backing-calculator/');
+  const phoneWalk=small.locator('[data-results] [data-cut-walkthrough]').first();
+  check(await phoneWalk.count()===1&&await phoneWalk.getByRole('button',{name:'Next cut'}).isVisible(),
+    'Mobile phones need visible, actionable cut-walkthrough controls.');
+  const phoneSlider=phoneWalk.getByRole('slider',{name:'Cut-order preview position'});
+  await phoneSlider.focus();
+  await phoneSlider.press('Home');
+  await phoneWalk.getByRole('button',{name:'Next cut'}).click();
+  check(await phoneSlider.inputValue()==='1',
+    'Mobile cut step must remain keyboard accessible and advance exactly once.');
+  const phoneOverflow=await small.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
+  check(phoneOverflow<=2,
+    'Cut playback controls cause mobile horizontal overflow: '+phoneOverflow+'px');
+  await phoneWalk.getByRole('button',{name:'Show all cuts'}).click();
   await small.getByRole('button',{name:'Update cutting plan'}).click();
   check(await small.locator('#results').evaluate(el=>el===document.activeElement),
     'On narrow mobile, successful manual recalculation should focus the results landmark.');
