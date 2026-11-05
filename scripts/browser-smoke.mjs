@@ -1085,8 +1085,26 @@ try{
   const bWidth=tabB.getByLabel('Finished quilt width (in)',{exact:true});
   await aWidth.fill('72');await aWidth.press('Tab');
   await tabB.locator('[data-sync-warning]').waitFor({state:'visible'});
+  check(!(await tabB.locator('[data-action="export-cut-csv"]').isEnabled()) &&
+        !(await tabB.locator('[data-action="export-cut"]').isEnabled()) &&
+        !(await tabB.locator('[data-action="print"]').isEnabled()),
+   'A superseded tab must disable complete cutting CSV, JSON and print.');
+  check(await tabB.locator('[data-results] [data-action="export-shopping"]').count()>0 &&
+        await tabB.locator('[data-results] [data-action="export-shopping"]:disabled').count()>0,
+   'Superseded tab must disable shopping CSV rather than export an obsolete purchase list.');
+  check(await tabB.locator('[data-action="save"]').isEnabled(),
+   'Conflict must preserve the ability to back up the superseded local project as JSON.');
+  check(await tabB.locator('[data-tool]').getAttribute('data-print-ready')==='false',
+   'A stale tab must disable print-ready CSS even for browser menu/Ctrl+P.');
+  await tabB.emulateMedia({media:'print'});
+  check(await tabB.locator('[data-results]').evaluate(el=>getComputedStyle(el).display)==='none',
+   'Ctrl+P must hide obsolete coordinates after a cross-tab conflict.');
+  await tabB.emulateMedia({media:'screen'});
   await tabB.screenshot({path:'artifacts/qa/project-multitab-conflict.png',fullPage:true,animations:'disabled'});
   await bWidth.fill('76');await bWidth.press('Tab');
+  check(!(await tabB.locator('[data-action="export-cut-csv"]').isEnabled()) &&
+        !(await tabB.locator('[data-action="print"]').isEnabled()),
+   'Recalculation of local unsaved edits must not enable out-of-sync cut exports.');
   assert.equal(await tabB.evaluate(()=>JSON.parse(localStorage.getItem('quilt-studio-v2')).quilt.finishedWidth),72,
    'Outdated browser tab silently overwrote another tab\'s latest project.');
   check((await tabB.locator('[data-project-state]').innerText()).includes('Unsaved'),
@@ -1097,6 +1115,9 @@ try{
   assert.equal(JSON.parse(await fs.readFile(await backup.path(),'utf8')).quilt.finishedWidth,76,
    'The current tab must still allow downloading its unsaved edits as JSON.');
   await tabB.locator('[data-action="load-latest"]').click();
+  check(await tabB.locator('[data-action="export-cut-csv"]').isEnabled() &&
+        await tabB.locator('[data-action="print"]').isEnabled(),
+   'Loading the newest saved project must restore legitimate cutting and printing exports.');
   assert.equal(await tabB.getByLabel('Finished quilt width (in)',{exact:true}).inputValue(),'72',
    'Load latest must retrieve the other tab\'s saved measurements.');
   await tabB.getByLabel('Finished quilt width (in)',{exact:true}).fill('75');
