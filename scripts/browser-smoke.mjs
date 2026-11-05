@@ -185,7 +185,25 @@ try{
   page.on('pageerror',err=>problems.push('JS exception: '+err.message));
   for(const path of routes){
     await page.evaluate(()=>localStorage.removeItem('quilt-studio-v2')).catch(()=>{});
-    await hydrated(page,path);
+    await hydrated(page,path,{incomplete:path==='/calculators/'});
+    if(path==='/calculators/'){
+      const review=page.getByLabel('I reviewed every quilt-top color, cut size and piece quantity.');
+      check(!(await review.isChecked()),'Sample quilt-top cutting list must never be auto-verified.');
+      check(!(await page.locator('[data-action="export-cut-csv"]').isEnabled()) &&
+            !(await page.locator('[data-action="print"]').isEnabled()),
+        'An unreviewed whole-project cutting plan must never claim full export readiness.');
+      check((await page.locator('[data-results]').innerText()).includes('QUILT TOP NOT REVIEWED'),
+        'Project sample needs an explicit manual review warning.');
+      const pending=page.waitForEvent('download');
+      await page.getByRole('button',{name:'Download INCOMPLETE shopping CSV'}).click();
+      const partial=await fs.readFile(await (await pending).path(),'utf8');
+      check(partial.includes('TOP_CUT_LIST_NOT_REVIEWED') && partial.includes('Sky blue'),
+        'Unreviewed sample CSV must carry a review-pending flag alongside real estimated quantities.');
+      await review.check();
+      await page.waitForFunction(()=>document.querySelector('[data-status]')?.textContent?.includes('Updated from the current project'));
+      check(await page.locator('[data-action="export-cut-csv"]').isEnabled(),
+        'Manual quilt-top confirmation must restore the complete-project cutting CSV.');
+    }
     await auditWcag(page,path);
     if(path!=='/'){
       const guide=page.locator('[data-content-guide]');
@@ -399,7 +417,7 @@ try{
   instrumentNetwork(crossBatting,'hub-batting-fit');
   const batPage=await crossBatting.newPage();
   batPage.on('pageerror',err=>problems.push('Hub/batting parity: '+err.message));
-  await hydrated(batPage,'/calculators/');
+  await hydrated(batPage,'/calculators/',{incomplete:true});
   const hubWidth=batPage.getByLabel('Finished quilt width (in)',{exact:true});
   const hubHeight=batPage.getByLabel('Finished quilt height (in)',{exact:true});
   await hubWidth.fill('100');await hubWidth.press('Tab');
@@ -437,6 +455,9 @@ try{
   check(!(await rotateBatting.isChecked()),'Sample project must start with unrotated batting.');
   await rotateBatting.check();
   check((await battingRow.innerText()).includes('3 yd'),'Rotated 58-in-wide × 108-in-long batting must fit for 3 yd.');
+  check(!(await batPage.locator('[data-action="print"]').isEnabled()),
+    'Correct batting fit alone does not confirm every quilt-top cutting piece.');
+  await batPage.getByLabel('I reviewed every quilt-top color, cut size and piece quantity.').check();
   check(await batPage.locator('[data-action="print"]').isEnabled(),
     'A fully feasible cross-tool plan should restore print.');
   check(await batPage.locator('[data-tool]').getAttribute('data-print-ready')==='true',
@@ -559,7 +580,17 @@ try{
   await restoredQuantity.fill('4');await restoredQuantity.press('Tab');
   check(await topPage.locator('[data-action="print"]').isEnabled(),
     'Adding positive-count physical cut pieces should make the fabric tool printable again.');
-  await hydrated(topPage,'/calculators/');
+  await hydrated(topPage,'/calculators/',{incomplete:true});
+  const topReview=topPage.getByLabel('I reviewed every quilt-top color, cut size and piece quantity.');
+  check(!(await topReview.isChecked()),'Entering cuts must not automatically confirm a complete quilt-top design.');
+  check(!(await topPage.locator('[data-action="print"]').isEnabled()),
+    'Entered cuts without user review must remain a partial project.');
+  const reviewPendingDownload=topPage.waitForEvent('download');
+  await topPage.getByRole('button',{name:'Download INCOMPLETE shopping CSV'}).click();
+  const pendingCsv=await fs.readFile(await (await reviewPendingDownload).path(),'utf8');
+  check(pendingCsv.includes('TOP_CUT_LIST_NOT_REVIEWED')&&pendingCsv.includes('New fabric'),
+    'Unreviewed top fabric must retain provisional computed yardage but not claim a complete purchase order.');
+  await topReview.check();
   check(await topPage.locator('[data-action="print"]').isEnabled(),
     'Restored quilt-top cut data should re-enable project hub print.');
   check(await topPage.locator('[data-action="export-cut-csv"]').isEnabled(),
@@ -569,10 +600,32 @@ try{
   const readyJsonPending=topPage.waitForEvent('download');
   await topPage.locator('[data-action="export-cut"]').click();
   const readyJson=JSON.parse(await fs.readFile(await (await readyJsonPending).path(),'utf8'));
-  check(readyJson.readiness.status==='LISTED_CUTS_FEASIBLE'&&readyJson.readiness.topFabricMissing===false&&
+  check(readyJson.readiness.status==='LISTED_CUTS_FEASIBLE'&&readyJson.readiness.topCutsReviewed===true&&
+        readyJson.readiness.topFabricMissing===false&&
         readyJson.readiness.cutCsvReady===true&&readyJson.readiness.printReady===true,
     'Restoring real top fabric cuts must make the JSON readiness match the user-facing controls.');
   await topPage.screenshot({path:'artifacts/qa/quilt-top-material-completeness.png',fullPage:true,animations:'disabled'});
+  // Any accepted finished-size or quilt-top cut edit invalidates the user's
+  // previous completeness review; other material buying settings do not.
+  const reviewedWidth=topPage.getByLabel('Finished quilt width (in)',{exact:true});
+  await reviewedWidth.fill('61');await reviewedWidth.press('Tab');
+  check(!(await topReview.isChecked()),'Changing quilt top dimensions must revoke any old review acknowledgement.');
+  check(!(await topPage.locator('[data-action="export-cut-csv"]').isEnabled()),
+    'Changing top dimensions must revoke the full-project cutting CSV.');
+  const reviewRevoked=topPage.waitForEvent('download');
+  await topPage.locator('[data-action="export-cut"]').click();
+  const revokedJson=JSON.parse(await fs.readFile(await (await reviewRevoked).path(),'utf8'));
+  check(revokedJson.readiness.status==='TOP_CUT_LIST_NOT_REVIEWED'&&revokedJson.readiness.topCutsReviewed===false,
+    'JSON readiness must record review invalidation after quilt-size edits.');
+  await topReview.check();
+  await hydrated(topPage,'/quilt-fabric-calculator/');
+  const editedCount=topPage.getByLabel('Count',{exact:true}).first();
+  await editedCount.fill('7');await editedCount.press('Tab');
+  await hydrated(topPage,'/calculators/',{incomplete:true});
+  check(!(await topPage.getByLabel('I reviewed every quilt-top color, cut size and piece quantity.').isChecked()),
+    'Editing top-fabric piece counts must revoke the previously checked whole-project completeness claim.');
+  check(!(await topPage.locator('[data-action="print"]').isEnabled()),
+    'An edited fabric SKU must not inherit stale whole-project print authorisation.');
   await topContext.close();
   console.log('PASS empty/zero-quantity top-fabric planning, incomplete CSV reasons, no-print safety and restored complete project.');
   // Isolated Square-in-a-Square lab must stay off approved SEO routes.
@@ -780,7 +833,8 @@ try{
   await page.pdf({path:'artifacts/qa/backing-print.pdf',printBackground:true,format:'A4'});
   await page.emulateMedia({media:'screen'});
   console.log('PASS print stylesheet and PDF rendering.');
-  await hydrated(page,'/calculators/');
+  await hydrated(page,'/calculators/',{incomplete:true});
+  await page.getByLabel('I reviewed every quilt-top color, cut size and piece quantity.').check();
   check(await page.locator('details.sku-plan').count()===6,'Project print must contain all six material plans.');
   await page.evaluate(()=>{window.__prePrintPlanCount=0;window.addEventListener('beforeprint',()=>{
     window.__prePrintPlanCount=document.querySelectorAll('details.sku-plan[open]').length;
@@ -1007,7 +1061,7 @@ try{
   await hydrated(cross,'/quilt-batting-calculator/');
   check(Math.abs(Number(await cross.getByLabel('Finished quilt width (cm)',{exact:true}).inputValue())-182.88)<.01,
     'P21 batting must share cm display without changing stored inches.');
-  await hydrated(cross,'/calculators/');
+  await hydrated(cross,'/calculators/',{incomplete:true});
   check(Math.abs(Number(await cross.getByLabel('Finished quilt width (cm)',{exact:true}).inputValue())-182.88)<.01,
     'P21 main project hub must retain same native geometry and chosen display units.');
   await cross.locator('[data-units]').selectOption('in');
@@ -1030,7 +1084,7 @@ try{
   await cross.getByLabel('Finished quilt width (in)',{exact:true}).fill('999');
   check(!(await cross.locator('[data-action="export-cut"]').isEnabled()),
     'P21 a draft input must immediately disable export before commitment.');
-  await hydrated(cross,'/calculators/');
+  await hydrated(cross,'/calculators/',{incomplete:true});
   crossStored=await cross.evaluate(()=>JSON.parse(localStorage.getItem('quilt-studio-v2')));
   check(crossStored.quilt.finishedWidth===72&&crossStored.quilt.finishedHeight===84&&
     crossStored.yardage.count===37&&crossStored.fabrics[0].label==='P21 Verified Indigo'&&
@@ -1052,7 +1106,7 @@ try{
   const small=await mobile.newPage();
   small.on('pageerror',err=>problems.push('Mobile JS exception: '+err.message));
   for(const path of ['/','/calculators/','/quilt-backing-calculator/','/quilt-fabric-calculator/','/fabric-yards-to-inches/']){
-    await hydrated(small,path);
+    await hydrated(small,path,{incomplete:path==='/calculators/'});
     if(path==='/quilt-backing-calculator/'||path==='/quilt-fabric-calculator/')
       await auditWcag(small,path+' [mobile 375px]');
     const overflow=await small.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
