@@ -279,6 +279,21 @@ if(root){
  window.addEventListener('storage',event=>{
   if(event.key===STORAGE_KEY && event.newValue!==lastStoredJson)showStorageConflict();
  });
+ // Background tabs, mobile tab suspension and back/forward cache restoration
+ // are not guaranteed to deliver the storage event while this document is
+ // active. Reconcile BEFORE a user sees an apparently ready old cut plan.
+ // The click/print guards still check storage independently as a final gate.
+ function reconcileResumedProject():void{
+  if(!syncWarning.hidden)return; // Never silently dismiss an existing conflict.
+  try{
+   if(localStorage.getItem(STORAGE_KEY)!==lastStoredJson)showStorageConflict();
+  }catch{/* Storage blocked: keep the browser-only in-memory workflow. */}
+ }
+ window.addEventListener('pageshow',reconcileResumedProject);
+ window.addEventListener('focus',reconcileResumedProject);
+ document.addEventListener('visibilitychange',()=>{
+  if(!document.hidden)reconcileResumedProject();
+ });
  // Shopping buttons are regenerated on each calculation: one capture-phase
  // gate runs before any individual shopping download click handler.
  resultRoot.addEventListener('click',event=>{
