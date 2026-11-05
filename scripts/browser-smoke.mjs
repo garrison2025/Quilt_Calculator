@@ -1207,6 +1207,21 @@ try{
   const keyboard=await keyboardCtx.newPage();
   keyboard.on('pageerror',err=>problems.push('Dynamic material keyboard: '+err.message));
   await hydrated(keyboard,'/quilt-fabric-calculator/');
+  const renamedFabric=keyboard.getByLabel('Fabric / color label',{exact:true}).first();
+  await renamedFabric.fill('Updated sky blue');
+  await renamedFabric.press('Tab');
+  check((await keyboard.locator('[data-fabric-index="0"] > .dynamic-head strong').innerText())==='Updated sky blue',
+   'Fabric card heading must reflect a committed label edit without requiring a page reload.');
+  const fabricDelete=keyboard.locator('[data-fabric-index="0"] [data-remove-sku]');
+  check((await fabricDelete.getAttribute('aria-describedby'))==='fabric-editor-label-0',
+   'Screen readers need SKU-specific context for otherwise identical Remove SKU buttons.');
+  const fabricDesc=await fabricDelete.evaluate(el=>document.getElementById(el.getAttribute('aria-describedby'))?.textContent);
+  check(fabricDesc==='Updated sky blue','Remove SKU accessible description must track the edited label.');
+  const firstCutDelete=keyboard.locator('[data-fabric-index="0"] [data-cut-index="0"] [data-remove-cut]');
+  const cutDesc=await firstCutDelete.evaluate(el=>el.getAttribute('aria-describedby')?.split(' ')
+    .map(id=>document.getElementById(id)?.textContent).join(' | '));
+  check(cutDesc==='Updated sky blue | Cut group 1',
+   'Same-label Remove cut group buttons must identify the parent SKU and group number.');
   const activeIs=async selector=>keyboard.locator(selector).first().evaluate(el=>document.activeElement===el);
   const selectedAll=async selector=>keyboard.locator(selector).first().evaluate(el=>el instanceof HTMLInputElement &&
     el.selectionStart===0&&el.selectionEnd===el.value.length);
@@ -1245,6 +1260,14 @@ try{
     'Removing all SKUs must retain its incomplete shopping safeguard.');
 
   await hydrated(keyboard,'/quilt-border-calculator/');
+  const borderLabel=keyboard.getByLabel('Label / color',{exact:true}).first();
+  await borderLabel.fill('Indigo edge');
+  await borderLabel.press('Tab');
+  check((await keyboard.locator('[data-border-index="0"] > .dynamic-head strong').innerText())==='Layer 1 · Indigo edge',
+   'Border card heading must track a committed label edit immediately.');
+  const borderDelete=keyboard.locator('[data-border-index="0"] [data-remove-border]');
+  const borderDesc=await borderDelete.evaluate(el=>document.getElementById(el.getAttribute('aria-describedby'))?.textContent);
+  check(borderDesc==='Layer 1 · Indigo edge','Remove border control must have context from the current border label.');
   const addBorder=keyboard.locator('[data-add-border]');
   await addBorder.focus();await addBorder.press('Enter');
   check(await activeIs('[data-border-index="1"] .field-control')&&
@@ -1298,8 +1321,36 @@ try{
   const stressOverflow=await keyboard.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
   check(stressOverflow<=2,'2,000-cut large-project preview must not introduce mobile horizontal overflow.');
   await keyboard.screenshot({path:'artifacts/qa/keyboard-and-2000-cut-stress.png',fullPage:false,animations:'disabled'});
+
+  // The other 2,000-cut extreme is one very dense fabric roll: the app
+  // must keep all 2,000 export coordinates but expose that only 180 are
+  // actually drawn. Verify in Chromium, not just isolated math tests.
+  stressProject.fabrics=[{
+   id:'single-dense',label:'Single dense prewashed roll',usableWidth:43,
+   shrinkageLengthPct:5,oneWayPrint:true,
+   pieces:[{widthIn:.05,heightIn:5,count:2000,label:'Dense cut',allowRotate:false}]
+  }];
+  await keyboard.locator('[data-file]').setInputFiles({
+   name:'quilt-single-roll-2000-cuts.json',mimeType:'application/json',
+   buffer:Buffer.from(JSON.stringify(stressProject))
+  });
+  await keyboard.waitForFunction(()=>document.querySelector('details.sku-plan svg[data-cut-count="2000"]'),null,{timeout:30000});
+  const denseSvg=keyboard.locator('details.sku-plan svg[data-cut-count="2000"]');
+  check(await denseSvg.getAttribute('data-rendered-cut-count')==='180',
+   'A single-SKU 2,000-piece plan must cap the SVG preview at 180 drawn cuts.');
+  check((await denseSvg.getAttribute('aria-label')).includes('first 180 of 2000 cuts'),
+   'Assistive technology must distinguish the 180 shown cut rectangles from the complete 2,000-cut plan.');
+  check(await denseSvg.locator('rect[data-cut-index]').count()===180,
+   'Dense single roll must render exactly 180 schematic rectangles.');
+  check((await keyboard.locator('details.sku-plan .diagram-note').innerText()).includes('complete physical cut-list CSV includes every cut'),
+   'Dense cut preview must direct users to the full CSV, not imply missing pieces.');
+  const denseDownload=keyboard.waitForEvent('download');
+  await keyboard.locator('[data-action="export-cut-csv"]').click();
+  const denseCsv=csvRecords(await fs.readFile(await (await denseDownload).path(),'utf8'));
+  check(denseCsv.length===2001 && denseCsv.slice(1).every(row=>row[1]==='single-dense'),
+   'Single dense roll must still export all 2,000 actual cuts under the one correct roll ID.');
   await keyboardCtx.close();
-  console.log('PASS 30-SKU, 2,000-cut browser import, complete CSV and bounded mobile preview; no hardware speed SLA.');
+  console.log('PASS 30-SKU 2,000-cut and one-dense-SKU 2,000-cut browser exports, truthful SVG limits and live editor labels; no hardware speed SLA.');
 
   // Browser privacy settings and quota failures must never masquerade as autosave.
   const noStorage=await browser.newContext({viewport:{width:1180,height:800},acceptDownloads:true});
