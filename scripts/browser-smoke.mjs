@@ -1861,6 +1861,30 @@ try{
   check(await slider.inputValue()===String(totalSequence) &&
     await visualDiagram.locator('svg rect[data-preview-phase="all"]').count()===totalSequence,
     'Show all cuts must fully restore the original diagram.');
+  // Every displayed cut, INCLUDING the last one, must be individually
+  // inspectable; "all visible" is distinct from step N.
+  await slider.focus();
+  await slider.press('End');
+  check(await visualDiagram.locator('svg rect[data-preview-phase="current"]').count()===1 &&
+    await visualDiagram.locator('svg rect[data-preview-phase="all"]').count()===0,
+    'The final displayed cut must be focusable via slider instead of being merged with Show all.');
+  const lastSource=await sequenceCuts.last().evaluate(el=>({
+    x:el.getAttribute('data-roll-x-in'),
+    y:el.getAttribute('data-roll-y-in'),
+    width:el.getAttribute('data-cut-width-in'),
+    height:el.getAttribute('data-cut-height-in')
+  }));
+  const inspect=visualDiagram.locator('[data-cut-inspector]');
+  const inspectorText=await inspect.innerText();
+  check(inspectorText.includes('Cut '+totalSequence+' / '+totalSequence) &&
+    inspectorText.includes('Roll X')&&inspectorText.includes('Grain rotation')&&
+    inspectorText.includes(Number(lastSource.width).toLocaleString('en-US',{maximumFractionDigits:4})),
+    'Inspector must report data from the final real cut rectangle, not inferred pixels.');
+  await visualDiagram.locator('svg rect[data-cut-index="1"]').click();
+  check(await slider.inputValue()==='1' &&
+    (await inspect.innerText()).includes('Cut 1 / '+totalSequence),
+    'Pointer selection must use same cut-order state as accessible range slider.');
+  await walkthrough.getByRole('button',{name:'Show all cuts'}).click();
   const finalSvgGeometry=await sequenceCuts.evaluateAll(items=>items.map(el=>
     ['x','y','width','height','data-roll-x-in','data-roll-y-in','data-cut-width-in','data-cut-height-in']
       .map(k=>el.getAttribute(k)).join('|')));
@@ -1868,6 +1892,20 @@ try{
     'Cut-order visuals must NEVER edit drawing geometry or physical export source coordinates.');
   console.log('PASS opt-in SVG cut-order play/pause/step/reset, unchanged geometry and full-print restoration.');
   await visual.screenshot({path:'artifacts/qa/quilt-ui-v3-backing-desktop.png',fullPage:true,animations:'disabled'});
+  const oldPurchase=await visual.locator('.result-hero .result-big').innerText();
+  const widthInput=visual.getByLabel('Finished quilt width (in)');
+  await widthInput.fill('125');
+  await widthInput.press('Tab');
+  const changed=visual.locator('[data-result-change]');
+  await changed.waitFor({state:'visible'});
+  const newPurchase=await visual.locator('.result-hero .result-big').innerText();
+  check(oldPurchase!==newPurchase &&
+    (await changed.innerText()).includes(oldPurchase) &&
+    (await changed.innerText()).includes(newPurchase),
+    'Committed size changes must show honest, exact before/after primary estimate values.');
+  check(await visual.locator('[data-action="export-cut-csv"]').isEnabled(),
+    'The UI diff must not affect verified cutting exports.');
+  console.log('PASS physical cut inspector including final cut, SVG pointer selection, and verified estimate-change feedback.');
   await visualCtx.close();
   console.log('PASS UI v3 home + tool hierarchy, active stitch animation, nine task links and desktop screenshot evidence.');
 
