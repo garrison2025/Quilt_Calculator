@@ -1089,9 +1089,8 @@ try{
         !(await tabB.locator('[data-action="export-cut"]').isEnabled()) &&
         !(await tabB.locator('[data-action="print"]').isEnabled()),
    'A superseded tab must disable complete cutting CSV, JSON and print.');
-  check(await tabB.locator('[data-results] [data-action="export-shopping"]').count()>0 &&
-        await tabB.locator('[data-results] [data-action="export-shopping"]:disabled').count()>0,
-   'Superseded tab must disable shopping CSV rather than export an obsolete purchase list.');
+  // Backing-only calculator deliberately has no composite shopping control;
+  // the actual material shopping gate is tested on Project Planner below.
   check(await tabB.locator('[data-action="save"]').isEnabled(),
    'Conflict must preserve the ability to back up the superseded local project as JSON.');
   check(await tabB.locator('[data-tool]').getAttribute('data-print-ready')==='false',
@@ -1136,6 +1135,35 @@ try{
    'Stale tab failed to recover the saved project after reset.');
   await tabA.close();await tabB.close();
   console.log('PASS two-tab conflict warning, safe JSON backup, reload and reset protection.');
+
+  // Project Planner is the source of combined shopping CSV. Test that a newer
+  // save elsewhere disables the *real* purchase download, without erasing
+  // a user's ability to back up this tab's older version as project JSON.
+  const shopCtx=await browser.newContext({viewport:{width:1150,height:840},acceptDownloads:true});
+  instrumentNetwork(shopCtx,'two-tab-shopping-conflict');
+  const shoppingTab=await shopCtx.newPage();
+  const editingTab=await shopCtx.newPage();
+  shoppingTab.on('pageerror',e=>problems.push('Shopping tab: '+e.message));
+  editingTab.on('pageerror',e=>problems.push('Shopping edit tab: '+e.message));
+  await hydrated(shoppingTab,'/calculators/',{incomplete:true});
+  await hydrated(editingTab,'/quilt-backing-calculator/');
+  const shopButton=shoppingTab.locator('[data-results] [data-action="export-shopping"]');
+  check(await shopButton.count()===1 && await shopButton.isEnabled(),
+    'Combined shopping CSV must be available before a shared-storage conflict.');
+  const newestWidth=editingTab.getByLabel('Finished quilt width (in)',{exact:true});
+  await newestWidth.fill('74');await newestWidth.press('Tab');
+  await shoppingTab.locator('[data-sync-warning]').waitFor({state:'visible'});
+  check(!(await shopButton.isEnabled()),
+    'Project Planner must disable its combined shopping download when another tab commits.');
+  check(await shoppingTab.locator('[data-action="save"]').isEnabled(),
+    'Out-of-sync shopping tab should still permit local project JSON backup.');
+  await shoppingTab.locator('[data-action="load-latest"]').click();
+  check(await shoppingTab.locator('[data-results] [data-action="export-shopping"]').isEnabled(),
+    'Loading the latest project must restore its shopping download.');
+  check((await shoppingTab.getByLabel('Finished quilt width (in)',{exact:true}).inputValue())==='74',
+    'Recovered shopping planner must use the newest saved quilt measurements.');
+  await shopCtx.close();
+  console.log('PASS two-tab project shopping CSV blocked on conflict, JSON backup preserved and latest data recovery works.');
 
   // Reset safety: one-step recovery preserves the last accepted project and
   // its local-storage backup. Any new accepted change invalidates Undo.
