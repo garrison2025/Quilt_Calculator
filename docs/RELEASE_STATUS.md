@@ -1,6 +1,17 @@
 # Quilt Studio — verified release status
 
-Updated: 2026-11-05 (186 tests and full Chromium CI 41970521774; exact-commit Cloudflare public CI 41970521840; manual physical paper and fabric tests remain NOT_RUN).
+Updated: 2026-11-05. **Final scoped status: preview software engineering accepted; actual physical testing and public-production signoff still open.** The 47 original gates are not all closed; historical items below remain a chronological engineering changelog.
+
+## Final engineering acceptance / scope freeze
+
+- **PASS** — 187/187 unit and property tests, TypeScript, build/SEO checks and all approved calculator interactions in Chromium. The complete QA run [41978590893](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41978590893) covers all **10** approved calculator/home routes at 320 CSS px, downloads and import, saved state, keyboard, mobile, safety and automated axe accessibility checks.
+- **PASS** — exact-revision public Cloudflare verification [41978590943](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41978590943) for source commit `4b4f290`. A following documentation-only update does not modify the audited engine.
+- **PREVIEW ACCEPTED, NOT A PRODUCTION LAUNCH** — keep `https://quilt-calculator-566.pages.dev/` noindex and leave the production canonical/sitemap disabled. The approved development scope is complete; reopen only for a reproducible defect, new user requirement or separately authorized production launch.
+- **MANUAL_NOT_RUN / PARTIAL** — physical paper measurements (1-inch square width/height, 100-mm reference and six-inch reference), actual fabric cutting/constructing including the experimental Square-in-a-Square lab, and real assistive-technology/physical-device usability review. Automated PDF, CSS, geometric and axe checks do not certify these real-world steps.
+- **WAIT_DOMAIN / WAIT_ADS / WAIT_GSC** — only relevant after an owned custom domain and user authorization; do not enable indexing or claim ads/search performance prematurely.
+- Definitive decision and linked evidence: [PREVIEW_ENGINEERING_ACCEPTANCE_20261105.md](qa/PREVIEW_ENGINEERING_ACCEPTANCE_20261105.md). Original independent gate dispositions remain [ORIGINAL_V2_RELEASE_GATES_47_CURRENT.md](qa/ORIGINAL_V2_RELEASE_GATES_47_CURRENT.md).
+
+
 
 ## Verified in the repository
 
@@ -11,7 +22,7 @@ Updated: 2026-11-05 (186 tests and full Chromium CI 41970521774; exact-commit Cl
 - Versioned Project V2, localStorage, inch/cm display, accessible inline errors, preservation of the last valid state, local JSON import/export and print/PDF schematics. Rejected input disables exporting the stale calculation.
 - Material-specific shopping list separates exact raw yardage, rounded purchase, roll offcut, purchase-rounding excess, and post-assembly trim (where applicable). Manual unit prices for fabrics and borders produce clearly labeled estimates. Downloadable UTF-8 CSV uses spreadsheet-formula-safe quoting.
 - Chromium screenshots are retained as GitHub Actions artifacts for desktop and 360, 375, 390, 768, 1024 and 1440px viewport inspections. These screenshots are useful evidence but do not replace manual visual and physical testing.
-- Latest independently confirmed complete test suite: https://github.com/garrison2025/Quilt_Calculator/actions/runs/41967645708 ; **184/184 unit/property tests**, TypeScript, Astro build, static route/noindex and 218-row source keyword-mapping checks, and real Chromium browser tests for 10 calculator routes, CSV/JSON, material cutting, multi-tab/version conflicts, background-page resume, keyboard navigation, responsive viewports, dark mode and print/PDF. Public Cloudflare code provenance and interactive page recovery also passed https://github.com/garrison2025/Quilt_Calculator/actions/runs/41967645681 . This is engineering evidence, not actual material or paper measurement.
+- Previous engineering milestone: https://github.com/garrison2025/Quilt_Calculator/actions/runs/41967645708 verified **184/184** unit/property tests and full Chromium project workflows; the **latest final acceptance** is the 187/187 suite and expanded all-tool 320px check above. Prior milestone evidence is retained here for historical traceability.
 - Preview website has noindex,follow; no sitemap and no absolute canonical on pages.dev. No search indexing should be enabled without an approved production domain.
 
 ## Outstanding independent validation
