@@ -159,7 +159,8 @@ function diagram(parent:Element,layout:Layout,title:string,sku?:string,scope:'cu
   if(!first)return;
   const button=node('button','cut-coordinate-link',first.textContent||String(i+1));
   button.type='button';button.dataset.cutRow=String(i+1);
-  button.setAttribute('aria-label','Inspect cut '+(i+1)+' on diagram: '+layout.cutPieces[i].label);
+  // Visible piece text must remain the accessible name (WCAG 2.5.3).
+  button.title='Highlight this piece on the fabric roll diagram';
   first.replaceChildren(button);
   button.addEventListener('click',()=>{
    svg.dispatchEvent(new CustomEvent<number>('quilt-select-cut',{detail:i+1}));

@@ -1845,7 +1845,7 @@ try{
   const zoomExtent=await stage.evaluate(el=>({scroll:el.scrollWidth,client:el.clientWidth,
     overflow:document.documentElement.scrollWidth-innerWidth}));
   check(zoomExtent.scroll>zoomExtent.client&&zoomExtent.overflow<=2,
-    'Zoom must allow pan within the diagram, not create page-level horizontal overflow.');
+    'Zoom must allow pan within the diagram, not create page-level horizontal overflow: '+JSON.stringify(zoomExtent));
   await walkthrough.getByRole('button',{name:'Reset zoom'}).click();
   check(await stage.locator('svg').getAttribute('data-preview-zoom')==='1',
     'Reset zoom must restore exact default viewport scale.');

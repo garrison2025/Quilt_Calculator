@@ -301,3 +301,12 @@
  .quilt-ui-v3 .cut-coordinate-link{padding:0!important;background:transparent!important;border:0!important;color:#222!important}
  .quilt-ui-v3 .cut-coordinate-selected td{background:transparent!important}
 }
+
+/* Avoid min-content propagation when a 200–300% SVG is inside the results
+ * grid. Zoom scroll belongs exclusively to cut-diagram-stage, never to body. */
+@media screen{
+ .quilt-ui-v3 .diagram-wrap{min-width:0;max-width:100%;overflow:hidden}
+ .quilt-ui-v3 .cut-diagram-stage{display:block;min-width:0;max-width:100%;overflow-x:auto;overflow-y:hidden}
+ .quilt-ui-v3 .cut-diagram-stage>svg{max-height:none}
+}
+@media print{.quilt-ui-v3 .diagram-wrap{overflow:visible!important;max-width:none!important}}
