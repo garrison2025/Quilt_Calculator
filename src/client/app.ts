@@ -189,7 +189,7 @@ function downloadShoppingCsv(lines:ShoppingLine[]):void{
  document.body.appendChild(a);a.click();a.remove();
  setTimeout(()=>URL.revokeObjectURL(url),2000);
 }
-function shopping(parent:Element,lines:ShoppingLine[]):void{
+function shopping(parent:Element,lines:ShoppingLine[],{centralReadiness=false}:{centralReadiness?:boolean}={}):void{
  section(parent,'Material shopping list','Each material is purchased independently');
  // Optional border layers can all be deleted. An empty bill of materials is
  // not an exportable zero-dollar order: never show a CSV button which throws.
@@ -201,7 +201,7 @@ function shopping(parent:Element,lines:ShoppingLine[]):void{
  const unfit=lines.filter(line=>shoppingLineStatus(line)==='FIT_IMPOSSIBLE_NOT_PURCHASE_READY').length;
  const notPlanned=lines.filter(line=>shoppingLineStatus(line)==='NOT_PLANNED_NO_CUT_PIECES').length;
  const notReviewed=lines.filter(line=>shoppingLineStatus(line)==='TOP_CUT_LIST_NOT_REVIEWED').length;
- if(unfit || notPlanned || notReviewed)warning(parent,'INCOMPLETE SHOPPING LIST: '+
+ if(!centralReadiness && (unfit || notPlanned || notReviewed))warning(parent,'INCOMPLETE SHOPPING LIST: '+
   (notPlanned?notPlanned+' fabric/material entry or SKU(s) have no cut pieces. Add the missing quilt-top pieces in Quilt Fabric Calculator. ':'')+
   (unfit?unfit+' material roll(s) cannot fit the specified usable width. ':'')+
   (notReviewed?'Quilt-top cutting coverage is NOT REVIEWED. Check all actual blocks, colors and quantities, then confirm on Project Planner. ':'')+
@@ -240,6 +240,57 @@ function shopping(parent:Element,lines:ShoppingLine[]):void{
  }
  parent.appendChild(list);
 }
+/** One truthful, actionable project-level explanation replaces multiple
+ * duplicate red banners. Does not affect the underlying purchase/export gates,
+ * per-SKU readiness statuses, original evidence or physical assumptions.
+ */
+function projectReadinessPanel(missingTop:boolean,topReviewed:boolean,unfitRolls:number,ready:boolean):HTMLElement{
+ const panel=node('section','project-readiness'+(unfitRolls?' project-readiness--blocked':ready?' project-readiness--ready':''));
+ panel.dataset.planReadiness=ready?'ready':unfitRolls?'blocked':'partial';
+ panel.setAttribute('aria-labelledby','project-readiness-title');
+ const header=node('div','project-readiness-header');
+ const headerText=node('div');
+ const eyebrow=node('span','project-readiness-eyebrow',ready?'LISTED CUTS READY':'PROJECT COMPLETENESS');
+ const title=node('h3','',ready?'Entered materials ready for cut-list export':'Finish your whole-quilt plan');
+ title.id='project-readiness-title';
+ const description=node('p','',ready
+  ?'The listed cuts are feasible and you have confirmed quilt-top coverage. This is not independent fabric or sewing certification.'
+  :'The backing amount shown above is a separate estimate, not a total for every material. Finish these checks before a full-project cut list or print.');
+ append(headerText,eyebrow,title,description);
+ const pill=node('span','project-readiness-pill',ready?'Ready for listed cuts':unfitRolls?'Fit needs correction':'Partial estimate');
+ append(header,headerText,pill);panel.appendChild(header);
+ const steps=node('ol','project-readiness-steps');
+ function addStep(titleText:string,descriptionText:string,done:boolean,href?:string,actionText?:string):void{
+  const item=node('li','project-readiness-step'+(done?' is-complete':''));
+  const glyph=node('span','project-readiness-step-indicator',done?'✓':'!');
+  glyph.setAttribute('aria-hidden','true');
+  const main=node('div','project-readiness-step-body');
+  append(main,node('strong','',titleText),node('p','',descriptionText));
+  if(href&&actionText){
+   const action=node('a','project-readiness-link',actionText);
+   action.href=href;main.appendChild(action);
+  }
+  item.append(glyph,main);steps.appendChild(item);
+ }
+ addStep(missingTop?'QUILT TOP NOT PLANNED':'Quilt-top cut pieces entered',
+  missingTop?'At least one fabric SKU has no positive-count cut pieces. Enter real fabric colors, dimensions and quantities.':'All entered quilt-top SKUs have cut pieces. Confirm the actual colors and quantities match your pattern.',
+  !missingTop,'/quilt-fabric-calculator/',missingTop?'Add quilt-top cut pieces':'Review fabric cuts');
+ addStep(unfitRolls?'FIT IMPOSSIBLE · review '+unfitRolls+' roll(s)':'Material widths and cuts are feasible',
+  unfitRolls?'At least one material roll cannot fit its calculated pieces at the usable fabric width. Correct it before export.':'The engine verified fit for all listed rolls, using your supplied usable widths. Real-world fabric must still be checked.',
+  unfitRolls===0,'#project-material-diagrams','Inspect cut diagrams');
+ addStep(topReviewed?'Quilt-top coverage manually reviewed':missingTop?'Review available after planning':'QUILT TOP NOT REVIEWED',
+  topReviewed?'You checked the supplied quilt-top cut list for all blocks, colors and quantities. Editing the relevant cuts revokes review.':
+  missingTop?'First add positive-count pieces for each top fabric.':'Check the real quilt-top pattern and manually confirm all fabric cuts in the project workspace.',
+  topReviewed,!missingTop?'#quilt-top-review':undefined,!missingTop&&!topReviewed?'Go to review checkbox':undefined);
+ panel.appendChild(steps);
+ const footer=node('p','project-readiness-footnote');
+ footer.dataset.planExportNote='';
+ footer.textContent=ready?'Full cut-list CSV and print are enabled for the entered material plan. Check real fabric, seam allowance and print scale before cutting.':
+  'INCOMPLETE SHOPPING LIST · Partial shopping CSV remains available with per-material reasons. Full cut-list CSV and print stay disabled until the checklist is complete.';
+ panel.appendChild(footer);
+ return panel;
+}
+
 const root=document.querySelector<HTMLElement>('[data-tool]');
 if(root){
  const tool=root.dataset.tool as ToolId;
@@ -860,9 +911,9 @@ if(root){
     topFabricMissing=needsTopFabricPlan(p.fabrics);
     hero(resultRoot,yd(backing.recommended.purchase.roundedPurchaseYards),'BACKING FABRIC (RECOMMENDED)','One quilt top: '+num(w)+' × '+num(h)+' in. This is the backing amount, not a total for all quilt materials.');
     const reviewedTop=hasCurrentQuiltTopReview(p);
-    if(topFabricMissing)warning(resultRoot,'QUILT TOP NOT PLANNED: one or more fabric SKUs have no actual cut pieces, or no top-fabric SKUs exist. Backing, batting and binding estimates remain separate; the whole-project shopping list is incomplete.',true);
-    else if(!reviewedTop)warning(resultRoot,'QUILT TOP NOT REVIEWED: entered fabric cuts are preliminary estimates. Check every real block, color and cutting quantity, then tick the review checkbox on Project Planner before exporting a whole-project cut list.',true);
-    else resultRoot.appendChild(node('p','footer-note','Quilt-top coverage was manually reviewed for the entered project. Physical assembly and real fabric orientation still need independent verification.'));
+    // A single readiness checklist is placed directly after the result hero
+    // after all material roll feasibility checks have run, rather than
+    // stacking warnings here, in shopping, and again after the SVG.
     shopping(resultRoot,[
      {label:'Backing · '+backing.recommended.direction+' seams',rollId:'backing',hint:backing.recommended.panelCount+' full WOF panels',
       amount:backing.recommended.purchase.roundedPurchaseYards,rawYards:backing.recommended.purchase.rawPurchaseYards,
@@ -878,8 +929,8 @@ if(root){
       rawYards:x.purchase?.rawPurchaseYards,offcutSqIn:x.layout.isCutFeasible?x.layout.physicalOffcutAreaSqIn:undefined,
       roundingExtraIn:x.purchase?.purchaseRoundingExtraLengthIn,unitPrice:p.borders[i].pricePerYard})),
      ...(fabric.length?fabric.map(x=>topFabricShoppingLine(x,p.fabrics.find(sku=>sku.id===x.fabricSku)?.pricePerYard,reviewedTop)):[missingTopFabricShoppingLine()])
-    ]);
-    section(resultRoot,'Cutting diagrams for every material','Individual fabric rolls · open each plan to inspect coordinates');
+    ],{centralReadiness:true});
+    section(resultRoot,'Cutting diagrams for every material','Individual fabric rolls · open each plan to inspect coordinates').id='project-material-diagrams';
     materialPlan(resultRoot,'backing','Backing · '+backing.recommended.direction+' seams',backing.recommended.layout,0,backing.recommended.purchase.roundedPurchaseYards);
     materialPlan(resultRoot,'binding','Straight-grain binding',binding.layout,1,binding.purchase.roundedPurchaseYards);
     materialPlan(resultRoot,'batting','One-piece batting',batting.layout,2,batting.purchase?.roundedPurchaseYards);
@@ -893,7 +944,7 @@ if(root){
      ...fabric.map(x=>({material:x.label,sku:physicalRollId('fabric',x.fabricSku),layout:x.layout}))
     ];
     plan={backing,binding,batting,border,fabric};
-    warning(resultRoot,'Fabric and border sample colors are part of the example project until you edit them. Purchase totals are separate by material; different rolls are never silently merged.');
+    if(sample)resultRoot.appendChild(node('p','footer-note','Sample project: fabric and border colors are examples. Replace all sample values before purchasing. Material quantities remain separate by roll and SKU.'));
    }else if(tool==='inches'){
     const value=parseMeasure(conv),inches=yardsToInches(value),cm=inches*2.54;
     const h1=node('div','result-hero');append(h1,node('span','result-kicker','EXACT LENGTH CONVERSION'),node('div','result-big',num(inches)+' in'),node('p','result-sub',num(value)+' yards = '+num(inches)+' inches = '+num(cm,4)+' centimeters'));resultRoot.appendChild(h1);
@@ -930,10 +981,18 @@ if(root){
    printButton.disabled=!printable;
    cutCsvButton.disabled=!readyPhysicalPlan;
    root!.dataset.printReady=printButton.disabled?'false':'true';
-   if(anyInfeasible)warning(resultRoot,'PRINT BLOCKED: at least one current material roll cannot fit its required cut. The JSON calculation export remains available for diagnosis, but this is not a complete cut-ready plan.',true);
-   if(topFabricMissing)warning(resultRoot,'COMPLETE PLAN EXPORT BLOCKED: quilt-top fabric is NOT PLANNED for at least one SKU. Add real cut-piece quantities or remove unused SKUs. JSON diagnostics remain available.',true);
-   if(topCutListNotReviewed)warning(resultRoot,'WHOLE-PROJECT EXPORT BLOCKED: your entered quilt-top cuts have not been manually checked for coverage. Confirm the cutting list before printing or exporting a complete project CSV.',true);
-   else if(tool!=='inches' && !hasPhysicalCuts)warning(resultRoot,'There are no physical cut pieces in this plan. Print and cut-list CSV are disabled until a material has real cuts.');
+   if(tool==='hub'){
+    const unfitRolls=materialCuts.filter(x=>!x.layout.isCutFeasible).length;
+    const panel=projectReadinessPanel(topFabricMissing,hasCurrentQuiltTopReview(p),unfitRolls,readyPhysicalPlan);
+    const headline=resultRoot.querySelector('.result-hero');
+    if(headline)headline.after(panel);
+    else resultRoot.prepend(panel);
+   }else{
+    if(anyInfeasible)warning(resultRoot,'PRINT BLOCKED: at least one current material roll cannot fit its required cut. The JSON calculation export remains available for diagnosis, but this is not a complete cut-ready plan.',true);
+    if(topFabricMissing)warning(resultRoot,'COMPLETE PLAN EXPORT BLOCKED: quilt-top fabric is NOT PLANNED for at least one SKU. Add real cut-piece quantities or remove unused SKUs. JSON diagnostics remain available.',true);
+    if(topCutListNotReviewed)warning(resultRoot,'WHOLE-PROJECT EXPORT BLOCKED: your entered quilt-top cuts have not been manually checked for coverage. Confirm the cutting list before printing or exporting a complete project CSV.',true);
+    else if(tool!=='inches' && !hasPhysicalCuts)warning(resultRoot,'There are no physical cut pieces in this plan. Print and cut-list CSV are disabled until a material has real cuts.');
+   }
    resultRoot.prepend(node('p','calculation-context','Current project · '+num(w)+' × '+num(h)+' in quilt · '+(project.units==='cm'?'cm display':'in display')+' · source hash '+record.sourceProjectHash));
    // Visual feedback announces an actual primary-value change without
    // interpolating, re-rounding or altering the real calculated number.
@@ -952,7 +1011,11 @@ if(root){
     lastAcceptedFigure={label:currentKicker,value:currentFigure};
    resultRoot.appendChild(node('p','footer-note','Cut lengths and coordinates are calculated in inches. Purchase rounding applied once. Source project hash '+record.sourceProjectHash+'. Export JSON to review complete values. Print is a schematic, not an actual-size template.'));
    const incompleteProject=anyInfeasible || topFabricMissing || topCutListNotReviewed;
-   note((incompleteProject?'⚠ Incomplete material plan · check review, missing cuts or infeasible rolls · ':'✓ Updated from the current project · ')+new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}),incompleteProject);
+   const time=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+   note(tool==='hub'
+    ?(incompleteProject?'Incomplete material plan · backing estimate available · see 3-step checklist · ':'✓ Entered materials reviewed · ')+time
+    :(incompleteProject?'⚠ Incomplete material plan · check review, missing cuts or infeasible rolls · ':'✓ Updated from the current project · ')+time,
+    tool!=='hub'&&incompleteProject);
    // Recalculating a valid local edit must not re-enable outputs while
    // another tab holds a newer saved project. Save project remains enabled.
    if(!syncWarning.hidden){

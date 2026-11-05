@@ -410,3 +410,41 @@
  .methodology-link a,.about-methods a:not(.header-cta){color:#c6f2d6}
 }
 @media print{.task-grid,.methodology-link,.about-return{display:none!important}}
+
+/* A single actionable whole-quilt readiness workflow replaces repeated red
+ * status, shopping and export warnings. It never changes export safeguards. */
+.project-readiness{margin:16px 0 22px;padding:19px;border:1px solid #cddfce;border-radius:14px;background:#f6faf5;min-width:0}
+.project-readiness--blocked{background:#fff8f4;border-color:#ddb8aa}
+.project-readiness--ready{background:#f0f8f2;border-color:#9abfa4}
+.project-readiness-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.project-readiness-header>div{min-width:0;flex:1}
+.project-readiness-eyebrow{font-size:10px;font-weight:850;letter-spacing:1.2px;color:#426b51}
+.project-readiness-header h3{font:500 clamp(19px,2vw,24px)/1.25 Georgia,serif;color:#214a36;margin:6px 0 8px}
+.project-readiness-header p{color:#4b6956;font-size:12px;line-height:1.65;margin:0}
+.project-readiness-pill{white-space:nowrap;font-size:10px;font-weight:800;color:#2d6546;border:1px solid #b1d2b7;border-radius:30px;padding:7px 9px;background:#e8f4e9}
+.project-readiness--blocked .project-readiness-pill{background:#fff0e7;border-color:#d6b39d;color:#86503d}
+.project-readiness-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;list-style:none;margin:18px 0 13px;padding:0}
+.project-readiness-step{display:flex;gap:9px;align-items:flex-start;border:1px solid #d6e4d6;background:#fff;border-radius:9px;padding:12px;min-width:0}
+.project-readiness-step.is-complete{border-color:#b5d9bd;background:#f7fcf8}
+.project-readiness-step-indicator{font-size:11px;font-weight:900;width:20px;height:20px;flex-shrink:0;display:grid;place-items:center;border-radius:50%;background:#fff0d3;color:#815c19}
+.project-readiness-step.is-complete .project-readiness-step-indicator{background:#dcefe1;color:#21633c}
+.project-readiness-step-body{min-width:0}
+.project-readiness-step-body strong{display:block;line-height:1.45;font-size:12px;color:#294d38;overflow-wrap:anywhere}
+.project-readiness-step-body p{font-size:11px;line-height:1.55;color:#526a59;margin:5px 0 7px}
+.project-readiness-link{display:inline-block;font-size:11px;font-weight:800;color:#1d6241;text-decoration:underline;text-underline-offset:3px;line-height:1.5}
+.project-readiness-link:hover{color:#124b31}
+.project-readiness-footnote{margin:0;font-size:11px;font-weight:650;line-height:1.6;border-top:1px solid #d7e6d8;padding-top:11px;color:#3f5d48}
+@media(max-width:1050px){.project-readiness-steps{grid-template-columns:1fr}}
+@media(max-width:570px){.project-readiness{padding:14px 12px;margin:12px 0 18px}.project-readiness-header{flex-direction:column;gap:8px}.project-readiness-pill{align-self:flex-start}.project-readiness-step{padding:11px}}
+@media screen and (prefers-color-scheme:dark){
+ .project-readiness,.project-readiness--ready{background:#223a2b;border-color:#55745c}
+ .project-readiness--blocked{background:#3b2f27;border-color:#996f58}
+ .project-readiness-eyebrow,.project-readiness-header h3,.project-readiness-step-body strong{color:#e3f4e7}
+ .project-readiness-header p,.project-readiness-step-body p,.project-readiness-footnote{color:#d2e8d5}
+ .project-readiness-pill{background:#365b43;border-color:#74a17c;color:#e4f6e7}
+ .project-readiness--blocked .project-readiness-pill{background:#533e30;border-color:#b68e77;color:#fff0e8}
+ .project-readiness-step,.project-readiness-step.is-complete{background:#294432;border-color:#537159}
+ .project-readiness-link{color:#b6e9c8}
+ .project-readiness-footnote{border-color:#55745c}
+}
+@media print{.project-readiness{display:none!important}}

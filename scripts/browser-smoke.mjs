@@ -215,6 +215,17 @@ try{
         'An unreviewed whole-project cutting plan must never claim full export readiness.');
       check((await page.locator('[data-results]').innerText()).includes('QUILT TOP NOT REVIEWED'),
         'Project sample needs an explicit manual review warning.');
+      const checklist=page.locator('[data-results] [data-plan-readiness]');
+      check(await checklist.count()===1&&await checklist.getAttribute('data-plan-readiness')==='partial',
+        'Whole-quilt sample must show exactly one partial-plan readiness checklist.');
+      check(await checklist.locator('.project-readiness-step').count()===3,
+        'Readiness should give exactly three actionable steps.');
+      check(await checklist.locator('a[href="#quilt-top-review"]').count()===1,
+        'Review step must link directly to the real quilt-top confirmation checkbox.');
+      check(await page.locator('[data-results] .error-banner').count()===0,
+        'Review-pending project should not repeat the same warning as multiple red error boxes.');
+      check(!(await page.locator('[data-status]').getAttribute('class')).includes('status-error'),
+        'Partial reviewed-pending project must remain a warning, not a failed calculation.');
       const pending=page.waitForEvent('download');
       await page.getByRole('button',{name:'Download INCOMPLETE shopping CSV'}).click();
       const partial=await fs.readFile(await (await pending).path(),'utf8');
@@ -588,6 +599,9 @@ try{
   const missingSummary=await topPage.locator('[data-results]').innerText();
   check(missingSummary.includes('QUILT TOP NOT PLANNED')&&missingSummary.includes('INCOMPLETE SHOPPING LIST'),
     'Project planner must disclose missing top fabric separately from its valid backing estimate.');
+  check(await topPage.locator('[data-plan-readiness="partial"]').count()===1 &&
+    await topPage.locator('[data-results] .error-banner').count()===0,
+    'Missing top fabric must have a single actionable panel, without redundant red banners.');
   check(missingSummary.includes('NOT PLANNED')&&!missingSummary.includes('FIT IMPOSSIBLE'),
     'No top-fabric SKU is missing data, not physically impossible.');
   check(!(await topPage.locator('[data-action="print"]').isEnabled()),
@@ -662,8 +676,9 @@ try{
     'Restored quilt-top cut data should re-enable project hub print.');
   check(await topPage.locator('[data-action="export-cut-csv"]').isEnabled(),
     'Restored top-fabric cuts should re-enable full-project cutting CSV.');
-  check(!(await topPage.locator('[data-results]').innerText()).includes('INCOMPLETE SHOPPING LIST'),
-    'The missing-top warning must clear after positive-count cuts are entered.');
+  check(!(await topPage.locator('[data-results]').innerText()).includes('INCOMPLETE SHOPPING LIST') &&
+    await topPage.locator('[data-plan-readiness="ready"]').count()===1,
+    'Reviewed, feasible material plan must switch to ready state and clear partial-shop messaging.');
   const readyJsonPending=topPage.waitForEvent('download');
   await topPage.locator('[data-action="export-cut"]').click();
   const readyJson=JSON.parse(await fs.readFile(await (await readyJsonPending).path(),'utf8'));
