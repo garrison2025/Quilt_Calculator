@@ -29,6 +29,11 @@
         "topCutsReviewed": {
           "type": "boolean",
           "description": "Optional manual confirmation: user checked that all intended quilt-top fabric SKU colors and cut pieces were entered. The calculator cannot verify design completeness. Omitted in older V2 imports means not reviewed."
+        },
+        "topCutsReviewFingerprint": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}$",
+          "description": "Optional non-cryptographic content-change fingerprint of the manual quilt-top review. An imported topCutsReviewed=true is only current if this matches the entered quilt top and fabric cut-list fingerprint."
         }
       },
       "required": [

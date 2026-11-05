@@ -1,5 +1,5 @@
-import { MAX_PIECES, type FabricSku, type BorderLayer } from './math';
-export type Project = { schemaVersion: 2; units: 'in' | 'cm'; quilt: { finishedWidth: number; finishedHeight: number; topCutsReviewed?: boolean };
+import { MAX_PIECES, hashProject, type FabricSku, type BorderLayer } from './math';
+export type Project = { schemaVersion: 2; units: 'in' | 'cm'; quilt: { finishedWidth: number; finishedHeight: number; topCutsReviewed?: boolean; topCutsReviewFingerprint?: string };
   options: { overage: number; usableWof: number; battingWof: number; joinTakeup: number; stripWidth: number; tailAllowance: number; stripJoinLoss: number; step: number; lengthShrinkage: number; oneWayPrint: boolean; seam: number; battingOverage: number; allowRotate: boolean };
   yardage: { pieceWidth: number; pieceHeight: number; count: number; alternateWof?: number; allowRotate?: boolean; oneWayPrint?: boolean };
   sashing: { rows: number; columns: number; blockWidth: number; blockHeight: number; width: number };
@@ -17,6 +17,17 @@ export const sampleProject: Project = {
     { id: 'sand', label: 'Sand', usableWidth: 43, oneWayPrint: false, shrinkageLengthPct: 0,
     pieces: [{ widthIn: 4.5, heightIn: 8.5, count: 8, label: 'Sand blocks', allowRotate: false }] }]
 };
+/** Change detection, not a cryptographic assertion or physical quilt approval.
+ * Scope: finished quilt top dimensions and each fabric SKU/cut request.
+ * Backing, batting, display units and shop rounding are independent.
+ */
+export function quiltTopReviewFingerprint(p:Project):string {
+ return hashProject({finishedWidth:p.quilt.finishedWidth,finishedHeight:p.quilt.finishedHeight,fabrics:p.fabrics});
+}
+export function hasCurrentQuiltTopReview(p:Project):boolean {
+ return p.quilt.topCutsReviewed===true &&
+  p.quilt.topCutsReviewFingerprint===quiltTopReviewFingerprint(p);
+}
 function object(value: unknown, name: string): Record<string, unknown> {
  if (!value || typeof value !== 'object' || Array.isArray(value)) throw Error(name + ' must be a JSON object.');
  return value as Record<string, unknown>;
@@ -57,10 +68,13 @@ export function validateProject(data: unknown): Project {
  if (root.schemaVersion !== 2 || (root.units !== 'in' && root.units !== 'cm'))
   throw Error('Expected schemaVersion 2 and units "in" or "cm".');
  const quilt = object(root.quilt, 'quilt');
- onlyKeys(quilt,'quilt',['finishedWidth','finishedHeight','topCutsReviewed']);
+ onlyKeys(quilt,'quilt',['finishedWidth','finishedHeight','topCutsReviewed','topCutsReviewFingerprint']);
  numeric(quilt, 'finishedWidth', 'quilt', 0, 100000, false, true);
  numeric(quilt, 'finishedHeight', 'quilt', 0, 100000, false, true);
  if(quilt.topCutsReviewed!==undefined)bool(quilt,'topCutsReviewed','quilt');
+ if(quilt.topCutsReviewFingerprint!==undefined &&
+    (typeof quilt.topCutsReviewFingerprint!=='string' || !/^[0-9a-f]{8}$/.test(quilt.topCutsReviewFingerprint)))
+  throw Error('quilt.topCutsReviewFingerprint must be an eight-character lowercase hex fingerprint.');
  const opts = object(root.options, 'options');
  onlyKeys(opts,'options',['overage','usableWof','battingWof','joinTakeup','stripWidth','tailAllowance','stripJoinLoss','step','lengthShrinkage','oneWayPrint','seam','battingOverage','allowRotate']);
  for (const name of ['overage','joinTakeup','tailAllowance','stripJoinLoss','seam','battingOverage'])

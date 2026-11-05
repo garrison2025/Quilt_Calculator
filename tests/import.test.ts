@@ -1,5 +1,5 @@
 import { describe,expect,it } from 'vitest';
-import { sampleProject,validateProject } from '../src/lib/quilt/project';
+import { sampleProject,validateProject,quiltTopReviewFingerprint,hasCurrentQuiltTopReview } from '../src/lib/quilt/project';
 const fresh=()=>JSON.parse(JSON.stringify(sampleProject)) as Record<string,any>;
 describe('Version 2 project import security and data invariants',()=>{
  it('accepts legacy project files without a review flag, while strictly validating manual confirmation',()=>{
@@ -21,6 +21,39 @@ describe('Version 2 project import security and data invariants',()=>{
   for(const field of ['oneWayPrint','allowRotate'])for(const invalid of ['true',1,null,{}]){
     const bad=fresh();bad.yardage[field]=invalid;
     expect(()=>validateProject(bad),field+': '+String(invalid)).toThrow();
+  }
+ });
+ it('rejects stale and unbound manual quilt-top review flags without breaking older V2 files',()=>{
+  const p=validateProject(fresh());
+  expect(hasCurrentQuiltTopReview(p)).toBe(false);
+  p.quilt.topCutsReviewed=true;
+  expect(hasCurrentQuiltTopReview(p)).toBe(false);
+  p.quilt.topCutsReviewFingerprint=quiltTopReviewFingerprint(p);
+  expect(hasCurrentQuiltTopReview(p)).toBe(true);
+  const original=validateProject(p);
+  expect(hasCurrentQuiltTopReview(original)).toBe(true);
+  for(const modify of [
+   (v:typeof original)=>{v.quilt.finishedWidth+=1;},
+   (v:typeof original)=>{v.quilt.finishedHeight+=1;},
+   (v:typeof original)=>{v.fabrics[0].label+=' new';},
+   (v:typeof original)=>{v.fabrics[0].pieces[0].count+=1;},
+   (v:typeof original)=>{v.fabrics[0].oneWayPrint=!v.fabrics[0].oneWayPrint;},
+   (v:typeof original)=>{v.fabrics[0].pieces[0].widthIn+=1;},
+   (v:typeof original)=>{v.fabrics.splice(0,1);}
+  ]){
+   const changed=structuredClone(original);modify(changed);
+   expect(hasCurrentQuiltTopReview(changed)).toBe(false);
+  }
+  const independent=structuredClone(original);
+  independent.options.battingWof=110;independent.options.step=.25;independent.units='cm';
+  expect(hasCurrentQuiltTopReview(independent)).toBe(true);
+  const modified=fresh();modified.quilt.topCutsReviewed=true;
+  modified.quilt.topCutsReviewFingerprint=quiltTopReviewFingerprint(p);
+  modified.fabrics[0].pieces[0].count=40;
+  expect(hasCurrentQuiltTopReview(validateProject(modified))).toBe(false);
+  for(const invalid of [null,1,'1234','ABCDEF12','1234567g',{}]){
+   const bad=fresh();bad.quilt.topCutsReviewFingerprint=invalid;
+   expect(()=>validateProject(bad)).toThrow(/topCutsReviewFingerprint/);
   }
  });
  it('keeps legacy V2 project exports valid without an alternate WOF',()=>{
