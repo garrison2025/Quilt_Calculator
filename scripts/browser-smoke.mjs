@@ -1199,6 +1199,108 @@ try{
   await resetCtx.close();
   console.log('PASS reset undo restores autosaved project; stale-tab reset is blocked and new edits invalidate old undo.');
 
+  // Dynamic material editors previously rebuilt their own clicked buttons and
+  // sent keyboard focus to the document body. Exercise actual Enter presses
+  // and confirm focus lands on a nearby meaningful new/remaining control.
+  const keyboardCtx=await browser.newContext({viewport:{width:1080,height:850},acceptDownloads:true});
+  instrumentNetwork(keyboardCtx,'keyboard-dynamic-materials');
+  const keyboard=await keyboardCtx.newPage();
+  keyboard.on('pageerror',err=>problems.push('Dynamic material keyboard: '+err.message));
+  await hydrated(keyboard,'/quilt-fabric-calculator/');
+  const activeIs=async selector=>keyboard.locator(selector).evaluate(el=>document.activeElement===el);
+  const selectedAll=async selector=>keyboard.locator(selector).evaluate(el=>el instanceof HTMLInputElement &&
+    el.selectionStart===0&&el.selectionEnd===el.value.length);
+  const addCut0=keyboard.locator('[data-fabric-index="0"] [data-add-cut]');
+  await addCut0.focus();await addCut0.press('Enter');
+  const newCutName='[data-fabric-index="0"] [data-cut-index="1"] .field-control';
+  check(await activeIs(newCutName)&&await selectedAll(newCutName),
+    'Adding a cut group with Enter must focus/select its editable piece label.');
+  const newCutRemove=keyboard.locator('[data-fabric-index="0"] [data-cut-index="1"] [data-remove-cut]');
+  await newCutRemove.focus();await newCutRemove.press('Enter');
+  check(await activeIs('[data-fabric-index="0"] [data-cut-index="0"] [data-remove-cut]'),
+    'Removing a cut group must leave focus on the nearest remaining group.');
+  const lastCutRemove=keyboard.locator('[data-fabric-index="0"] [data-cut-index="0"] [data-remove-cut]');
+  await lastCutRemove.focus();await lastCutRemove.press('Enter');
+  check(await activeIs('[data-fabric-index="0"] [data-add-cut]'),
+    'Removing the last cut group must focus Add cut group instead of losing keyboard focus.');
+  await addCut0.press('Enter');
+  check(await activeIs('[data-fabric-index="0"] [data-cut-index="0"] .field-control'),
+    'Adding a replacement physical cut must restore input focus.');
+  const addSku=keyboard.locator('[data-add-sku]');
+  await addSku.focus();await addSku.press('Enter');
+  const newSkuName='[data-fabric-index="2"] .field-control';
+  check(await activeIs(newSkuName)&&await selectedAll(newSkuName),
+    'Add SKU with Enter must focus/select the unique SKU field.');
+  const sku2=keyboard.locator('[data-fabric-index="2"] [data-remove-sku]');
+  await sku2.focus();await sku2.press('Enter');
+  check(await activeIs('[data-fabric-index="1"] [data-remove-sku]'),
+    'Removing the final SKU should focus the previous remaining SKU.');
+  await keyboard.locator('[data-fabric-index="0"] [data-remove-sku]').press('Enter');
+  check(await activeIs('[data-fabric-index="0"] [data-remove-sku]'),
+    'Removing the first of two SKUs should focus the next remaining SKU.');
+  await keyboard.locator('[data-fabric-index="0"] [data-remove-sku]').press('Enter');
+  check(await activeIs('[data-add-sku]'),
+    'Removing every SKU should focus the action needed to add a new one.');
+  check((await keyboard.locator('[data-results]').innerText()).includes('NOT PLANNED'),
+    'Removing all SKUs must retain its incomplete shopping safeguard.');
+
+  await hydrated(keyboard,'/quilt-border-calculator/');
+  const addBorder=keyboard.locator('[data-add-border]');
+  await addBorder.focus();await addBorder.press('Enter');
+  check(await activeIs('[data-border-index="1"] .field-control')&&
+        await selectedAll('[data-border-index="1"] .field-control'),
+    'New border layer must place keyboard focus in its editable SKU field.');
+  await keyboard.locator('[data-border-index="1"] [data-remove-border]').press('Enter');
+  check(await activeIs('[data-border-index="0"] [data-remove-border]'),
+    'Removing a border must restore focus to the next remaining border.');
+  await keyboard.locator('[data-border-index="0"] [data-remove-border]').press('Enter');
+  check(await activeIs('[data-add-border]'),
+    'Removing the last border layer must focus Add border layer.');
+  await addBorder.press('Enter');
+  check(await activeIs('[data-border-index="0"] .field-control'),
+    'Border creation must remain keyboard-operable after an empty configuration.');
+  console.log('PASS keyboard focus and text selection for adding/removing fabric SKUs, cut groups and borders.');
+
+  // Import a real upper-capacity material fixture. The UI may show only the
+  // first 45 coordinate rows per SKU, but the downloadable cut CSV must hold
+  // exactly 2,000 physical pieces on 30 independent fabric rolls.
+  await hydrated(keyboard,'/quilt-fabric-calculator/',{incomplete:true,noHero:true});
+  const stressProject=await keyboard.evaluate(()=>JSON.parse(localStorage.getItem('quilt-studio-v2')));
+  stressProject.quilt.topCutsReviewed=false;
+  delete stressProject.quilt.topCutsReviewFingerprint;
+  stressProject.fabrics=Array.from({length:30},(_,i)=>({
+    id:'stress-'+i,label:'Roll '+i,usableWidth:43,shrinkageLengthPct:5,oneWayPrint:i%2===0,
+    pieces:[{widthIn:5,heightIn:5,count:i===29?86:66,label:'Square '+i,allowRotate:true}]
+  }));
+  await keyboard.locator('[data-file]').setInputFiles({
+    name:'quilt-2000-cuts-30-rolls.json',mimeType:'application/json',
+    buffer:Buffer.from(JSON.stringify(stressProject))
+  });
+  await keyboard.waitForFunction(()=>document.querySelectorAll('details.sku-plan').length===30,null,{timeout:30000});
+  check(await keyboard.locator('[data-fabric-index]').count()===30,
+    'Upper-capacity project must display 30 editable fabric SKU groups.');
+  const svgCounts=await keyboard.locator('details.sku-plan svg[data-export-scope="current"]').evaluateAll(
+    svgs=>svgs.map(svg=>Number(svg.dataset.cutCount))
+  );
+  check(svgCounts.length===30&&svgCounts.reduce((a,b)=>a+b,0)===2000,
+    '30 independently indexed cutting SVGs must account for all 2,000 cut pieces.');
+  check((await keyboard.locator('details.sku-plan .breakdown-table tbody tr').count())===30*45,
+    'UI should render bounded 45-row coordinate previews per roll rather than 2,000 full table rows.');
+  check(await keyboard.locator('[data-action="export-cut-csv"]').isEnabled(),
+    'All 2,000 feasible cuts should remain exportable independently of preview limits.');
+  const stressDownload=keyboard.waitForEvent('download');
+  await keyboard.locator('[data-action="export-cut-csv"]').click();
+  const stressCsv=csvRecords(await fs.readFile(await (await stressDownload).path(),'utf8'));
+  check(stressCsv.length===2001,'All 2,000 cuts plus the header must be present in the CSV.');
+  check(new Set(stressCsv.slice(1).map(row=>row[1])).size===30,
+    'Upper-capacity CSV must keep all 30 separate fabric SKU roll identifiers.');
+  await keyboard.setViewportSize({width:375,height:820});
+  const stressOverflow=await keyboard.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+  check(stressOverflow<=2,'2,000-cut large-project preview must not introduce mobile horizontal overflow.');
+  await keyboard.screenshot({path:'artifacts/qa/keyboard-and-2000-cut-stress.png',fullPage:false,animations:'disabled'});
+  await keyboardCtx.close();
+  console.log('PASS 30-SKU, 2,000-cut browser import, complete CSV and bounded mobile preview; no hardware speed SLA.');
+
   // Browser privacy settings and quota failures must never masquerade as autosave.
   const noStorage=await browser.newContext({viewport:{width:1180,height:800},acceptDownloads:true});
   instrumentNetwork(noStorage,'storage-blocked');
