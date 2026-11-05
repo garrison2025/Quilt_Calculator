@@ -232,3 +232,109 @@ describe('V2 independent arithmetic fixtures', () => {
   expect(() => validateProject({ ...sampleProject, schemaVersion: 1 })).toThrow();
  });
 });
+
+
+/** The supplied usable WOF is measured after any planned prewash. The
+ * shrinkage input affects bolt purchasing LENGTH only. Failing fit cannot be
+ * fixed by inflating purchased length, or silently rotating one-way prints. */
+describe('postwash width, orientation and shrinkage cross-product',()=>{
+ it('checks all 192 width × rectangle × grain × shrink cases with independent fit predictions',()=>{
+  const widths=[30,36,43,50];
+  const parts=[
+   {pieceWidthIn:5,pieceHeightIn:11,count:37},
+   {pieceWidthIn:32,pieceHeightIn:9,count:8},
+   {pieceWidthIn:45,pieceHeightIn:7,count:5},
+   {pieceWidthIn:43.000000002,pieceHeightIn:20,count:3}
+  ];
+  let total=0,feasible=0,blocked=0;
+  for(const wofIn of widths)
+   for(const part of parts)
+    for(const allowRotate of [false,true])
+     for(const oneWayPrint of [false,true])
+      for(const shrinkageLengthPct of [0,5,12]){
+       total++;
+       const result=calculateYardage({...part,wofIn,allowRotate,oneWayPrint,shrinkageLengthPct,step:.125});
+       const mayRotate=allowRotate&&!oneWayPrint;
+       const fits=part.pieceWidthIn<=wofIn||(mayRotate&&part.pieceHeightIn<=wofIn);
+       expect(result.layout.isCutFeasible).toBe(fits);
+       if(!fits){
+        blocked++;
+        expect(result.layout.error).toContain('FIT_IMPOSSIBLE');
+        expect(result.layout.cutPieces).toHaveLength(0);
+        expect(result.purchase).toBeUndefined();
+        continue;
+       }
+       feasible++;
+       expect(verifyLayout(result.layout)).toBe(true);
+       expect(result.layout.usableWofIn).toBe(wofIn);
+       expect(result.layout.cutPieces).toHaveLength(part.count);
+       expect(result.layout.cutPieces.every(r=>r.grainRotationDeg===0||mayRotate)).toBe(true);
+       const area=result.layout.cutPieces.reduce((sum,r)=>sum+r.widthIn*r.heightIn,0);
+       expect(result.layout.physicalOffcutAreaSqIn).toBeCloseTo(
+        wofIn*result.layout.exactFabricRunLengthIn-area,8);
+       const buy=result.purchase!;
+       expect(buy.exactFabricRunLengthIn).toBe(result.layout.exactFabricRunLengthIn);
+       expect(buy.rawPurchaseYards).toBeCloseTo(
+        result.layout.exactFabricRunLengthIn/(1-shrinkageLengthPct/100)/36,10);
+       expect(buy.roundedPurchaseYards+1e-12).toBeGreaterThanOrEqual(buy.rawPurchaseYards);
+       expect(buy.roundedPurchaseYards/.125).toBeCloseTo(Math.round(buy.roundedPurchaseYards/.125),9);
+       expect(buy.roundedPurchaseYards*36*(1-shrinkageLengthPct/100)+1e-9)
+        .toBeGreaterThanOrEqual(result.layout.exactFabricRunLengthIn);
+      }
+  expect(total).toBe(192);
+  expect(feasible).toBeGreaterThan(0);
+  expect(blocked).toBeGreaterThan(0);
+ });
+ it('does not transfer width or buying feasibility between independent fabric SKUs',()=>{
+  const fabrics=[
+   {id:'one-way',label:'Directional floral',usableWidth:43,shrinkageLengthPct:9,oneWayPrint:true,
+    pieces:[{widthIn:44,heightIn:8,count:6,allowRotate:true,label:'Floral stripe'}]},
+   {id:'rotatable',label:'Checked linen',usableWidth:43,shrinkageLengthPct:9,oneWayPrint:false,
+    pieces:[{widthIn:44,heightIn:8,count:6,allowRotate:true,label:'Linen piece'}]},
+   {id:'narrow',label:'Narrow prewashed bolt',usableWidth:30,shrinkageLengthPct:5,oneWayPrint:false,
+    pieces:[{widthIn:43,heightIn:8,count:6,allowRotate:true,label:'Narrow bolt cut'}]}
+  ];
+  const res=calculateQuiltFabric(fabrics,.125);
+  expect(res.map(x=>x.layout.isCutFeasible)).toEqual([false,true,true]);
+  expect(res[0].purchase).toBeUndefined();
+  expect(res[0].layout.cutPieces).toHaveLength(0);
+  for(const index of [1,2]){
+   expect(verifyLayout(res[index].layout)).toBe(true);
+   expect(res[index].layout.cutPieces).toHaveLength(6);
+   expect(res[index].layout.cutPieces.every(p=>p.grainRotationDeg===90)).toBe(true);
+   expect(res[index].purchase!.roundedPurchaseYards).toBeGreaterThanOrEqual(res[index].purchase!.rawPurchaseYards);
+  }
+  const tighter=structuredClone(fabrics);
+  tighter[2].usableWidth=7.5;
+  const after=calculateQuiltFabric(tighter,.125);
+  expect(after[2].layout.isCutFeasible).toBe(false);
+  expect(after[2].purchase).toBeUndefined();
+  expect(after[1].purchase?.roundedPurchaseYards).toEqual(res[1].purchase?.roundedPurchaseYards);
+ });
+ it('does not change the backing/binding cut geometry merely because buying length shrinks',()=>{
+  for(const wofIn of [36,43,50,108])
+   for(const oneWayPrint of [false,true]){
+    const backing={widthIn:60,heightIn:80,overageIn:4,wofIn,joinTakeupIn:1,oneWayPrint,step:.125};
+    const initial=calculateBacking({...backing,shrinkageLengthPct:0});
+    for(const rate of [4,8,15]){
+     const changed=calculateBacking({...backing,shrinkageLengthPct:rate});
+     expect(changed.options).toHaveLength(oneWayPrint?1:2);
+     for(let i=0;i<initial.options.length;i++){
+      const before=initial.options[i],after=changed.options[i];
+      expect(after.panelCount).toBe(before.panelCount);
+      expect(after.layout.cutPieces).toEqual(before.layout.cutPieces);
+      expect(after.purchase.rawPurchaseYards).toBeCloseTo(before.purchase.rawPurchaseYards/(1-rate/100),10);
+      expect(after.purchase.roundedPurchaseYards).toBeGreaterThanOrEqual(before.purchase.roundedPurchaseYards);
+      expect(verifyLayout(after.layout)).toBe(true);
+     }
+    }
+    const args={widthIn:60,heightIn:80,wofIn,stripWidthIn:2.5,tailAllowanceIn:12,joinLossIn:1.5,step:.125};
+    const before=calculateStraightBinding({...args,shrinkageLengthPct:0});
+    const after=calculateStraightBinding({...args,shrinkageLengthPct:8});
+    expect(after.stripCount).toBe(before.stripCount);
+    expect(after.layout.cutPieces).toEqual(before.layout.cutPieces);
+    expect(after.purchase.rawPurchaseYards).toBeCloseTo(before.purchase.rawPurchaseYards/.92,10);
+    expect(after.purchase.roundedPurchaseYards).toBeGreaterThanOrEqual(before.purchase.roundedPurchaseYards);
+   }
+ });
+});
