@@ -13,6 +13,17 @@ const related=guides[route.id].related.map(id=>routes.find(t=>t.id===id)!);
 <div class="page-heading"><span class="eyebrow-with-line">— {route.nav.toUpperCase()} / FREE ONLINE TOOL</span><h1>{route.h1}</h1><p>{route.intro}</p><div class="feature-pills"><span>{route.id==='inches'?'✓ Exact conversions':'✓ Feasible layouts'}</span><span>{route.id==='inches'?'✓ Fractions explained':'✓ Live yardage'}</span><span>✓ No sign-up</span></div></div>
 <div class="mini-feature"><div class="mini-top"><span>MADE FOR REAL FABRIC</span><span>01 / 03</span></div><img src={'/images/'+route.id+'.webp'} width="640" height="420" alt={route.nav+' example quilt cutting layout illustration'} loading="eager"/><div class="mini-bottom"><b>Plan it once.</b><span>Cut it with confidence ✳</span></div></div>
 </div>
+{route.id==='inches'&&
+<section class="seo-direct-answer" aria-label="Quick yard to inch answers" data-seo-direct-answer>
+  <div class="seo-direct-answer-text">
+    <span class="eyebrow-with-line">— QUICK ANSWER</span>
+    <h2>How big is a yard of fabric?</h2>
+    <p><strong>One linear yard of fabric is exactly 36 inches (91.44 centimeters) long.</strong> The width is not fixed: measure the usable width on your own fabric bolt.</p>
+    <p>A quarter yard is <strong>9 inches</strong>, a half yard is <strong>18 inches</strong>, one and a half yards is <strong>54 inches</strong>, and four yards is <strong>144 inches</strong>. These are lengths, not fixed fabric areas or retailer prices.</p>
+    <a href="#fraction-reference">See the full fractions and centimeters chart</a>
+  </div>
+  <div class="seo-direct-answer-metric" aria-label="One yard equals 36 inches"><strong>1 yd</strong><span>=</span><strong>36 in</strong><small>Exact linear measure</small></div>
+</section>}
 <Calculator tool={route.id} sample={route.sample}/>
 <section class="content-block"><div class="editorial-head"><span class="eyebrow-with-line">— UNDER THE STITCHES</span><h2>Clear math. Better cuts.</h2><p>Understand the calculation before cutting into fabric.</p></div>
 <div class="story-grid"><article class="story-panel"><span class="story-number">01 / FORMULA</span><h3>How it works</h3><p>{route.formula}</p></article><article class="story-panel"><span class="story-number">02 / METHOD</span><h3>From measurements to fabric</h3><p>{route.method}</p></article><article class="story-panel disclaimer-panel"><span class="story-number">03 / IMPORTANT</span><h3>What it does not assume</h3><p>{route.caution}</p></article></div>
