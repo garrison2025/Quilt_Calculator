@@ -69,7 +69,26 @@ try{
  const {response:lab,html:labHtml}=await get('/lab/square-in-square/');
  assert.equal(lab.status,200);
  assertThat(labHtml.includes('noindex,follow')&&!labHtml.includes('rel="canonical"'),'Lab must remain noindex with no canonical.');
- console.log('PASS robots, suppressed sitemap and intentionally unindexed experimental lab.');
+ const {response:aboutResponse,html:aboutHtml}=await get('/about/');
+ assert.equal(aboutResponse.status,200,'Live About and source-method page must be accessible.');
+ assert.equal(stamp(aboutHtml),sha,'Live About page must match exactly deployed code.');
+ assertThat(aboutHtml.includes('name="robots" content="noindex,follow"')&&!aboutHtml.includes('rel="canonical"')&&
+    !aboutHtml.includes('application/ld+json')&&
+    aboutHtml.includes('https://github.com/garrison2025/Quilt_Calculator/issues'),
+  'Public source and contact policy must be transparent and not a premature SEO route.');
+ const {html:homeHtml}=await get('/');
+ for(const id of ['hub','backing','binding','borders','yardage','fabric','inches','batting','sashing'])
+  assertThat(homeHtml.includes('data-task="'+id+'"'),'Missing public task-first calculator navigation '+id);
+ for(const path of routes){
+  const {html}=await get(path);
+  const scripts=[...html.matchAll(/<script type="application\\/ld\\+json">([\\s\\S]*?)<\\/script>/g)]
+    .map(m=>JSON.parse(m[1]));
+  const app=scripts.find(x=>x['@type']==='WebApplication');
+  assertThat(app?.offers?.price===0&&app?.isAccessibleForFree===true&&
+    app?.inLanguage==='en-US'&&!app?.aggregateRating&&!app?.review,
+   'Public software markup should advertise free service truthfully, with no fake reviews: '+path);
+ }
+ console.log('PASS robots, suppressed sitemap, task directory, honest About page and truthful free-app schema.');
 
  browser=await chromium.launch({headless:true});
  const context=await browser.newContext({viewport:{width:1280,height:850},acceptDownloads:true});

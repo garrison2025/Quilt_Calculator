@@ -28,6 +28,21 @@ for(let i=0;i<slugs.length;i++){
  if(!fs.existsSync('dist/images/'+id+'.webp'))throw Error('Missing social preview image: '+id);
  if(!production&&html.includes('rel="canonical"'))throw Error('Preview canonical must remain absent: '+slug);
 }
+// Free WebApplication metadata must match the visible browser-only service.
+// This is truthful semantic markup, not a promise of Google's software-app rich result;
+// Google also requires real ratings/reviews for that specific display, which we lack.
+for(const slug of slugs){
+ const html=fs.readFileSync('dist/'+(slug?slug+'/':'')+'index.html','utf8');
+ const json=[...html.matchAll(/<script type="application\\/ld\\+json">([\\s\\S]*?)<\\/script>/g)]
+  .map(m=>{try{return JSON.parse(m[1]);}catch{return null;}});
+ const app=json.find(x=>x?.['@type']==='WebApplication');
+ if(!app||app.offers?.['@type']!=='Offer'||app.offers.price!==0||
+    app.offers.priceCurrency!=='USD'||app.inLanguage!=='en-US'||
+    app.isAccessibleForFree!==true||!app.image?.endsWith('.webp')||
+    app.aggregateRating||app.review)
+  throw Error('Untruthful or malformed WebApplication JSON-LD on '+slug);
+ if(!production&&app.url)throw Error('No preview-site URL can become a canonical app identifier: '+slug);
+}
 for(const slug of ['diagonal-quilt-backing-calculator','rag-quilt-calculator','quilt-block-calculator','square-in-a-square-calculator','fabric-width-yardage-converter']){
  if(fs.existsSync('dist/'+slug+'/index.html'))throw Error('HOLD route published: '+slug);
 }
@@ -39,6 +54,20 @@ if(!squareLabHtml.includes('noindex,follow')||squareLabHtml.includes('rel="canon
  throw Error('Square trial must remain unindexed and clearly provisional.');
 if(fs.existsSync('dist/square-in-a-square-calculator/index.html'))throw Error('Premature public SQUARE keyword route.');
 if(!fs.existsSync('dist/privacy/index.html'))throw Error('Missing privacy page');
+if(!fs.existsSync('dist/about/index.html'))throw Error('Missing publicly accessible source/method/feedback page');
+const aboutHtml=fs.readFileSync('dist/about/index.html','utf8');
+if(!aboutHtml.includes('name="robots" content="noindex,follow"')||
+   aboutHtml.includes('rel="canonical"')||aboutHtml.includes('application/ld+json')||
+   !aboutHtml.includes('https://github.com/garrison2025/Quilt_Calculator/issues')||
+   !aboutHtml.includes('not physical sewing certification'))
+ throw Error('About page must be transparent, non-indexed and accurately link to real issue reporting.');
+const homeHtml=fs.readFileSync('dist/index.html','utf8');
+const taskIds=['hub','backing','binding','borders','yardage','fabric','inches','batting','sashing'];
+for(const id of taskIds){
+ if(!homeHtml.includes('data-task="'+id+'"'))throw Error('Missing one unique task-first calculator link: '+id);
+}
+if((homeHtml.match(/class="task-card"/g)||[]).length!==9)
+ throw Error('Home task finder must have exactly one accessible link per approved tool.');
 const qaPath='dist/qa/print-calibration/index.html';
 if(!fs.existsSync(qaPath))throw Error('Missing manual physical print-calibration worksheet.');
 const qaHtml=fs.readFileSync(qaPath,'utf8');
@@ -152,8 +181,8 @@ console.log('PASS: 218 source keyword records, 202 mapped to 9 unique tool inten
  * Asset hrefs are intentionally excluded; internal navigation URLs must be valid.
  */
 const seenTitles=new Set();
-const internalRoutes=new Set([...slugs.map(slug=>'/'+(slug?slug+'/':'')),'/privacy/','/qa/print-calibration/']);
-for(const slug of [...slugs,'privacy','qa/print-calibration']){
+const internalRoutes=new Set([...slugs.map(slug=>'/'+(slug?slug+'/':'')),'/about/','/privacy/','/qa/print-calibration/']);
+for(const slug of [...slugs,'about','privacy','qa/print-calibration']){
  const html=fs.readFileSync('dist/'+(slug?slug+'/':'')+'index.html','utf8');
  const title=html.match(/<title>([^<]+)<\/title>/)?.[1];
  if(!title||seenTitles.has(title))throw Error('Missing/duplicate page title: '+slug);
@@ -166,7 +195,7 @@ for(const slug of [...slugs,'privacy','qa/print-calibration']){
   if(!internalRoutes.has(href))throw Error('Broken internal page link '+href+' from '+slug);
  }
 }
-console.log('PASS: 12 uniquely titled static pages including noindex manual calibration worksheet, one H1 each, internal link destinations verified.');
+console.log('PASS: 13 uniquely titled static pages including an honest noindex About page and physical QA worksheet, one H1 each, internal link destinations verified.');
 
 const primaryHeadings=new Map([
  ['calculators','Quilt calculator'],
