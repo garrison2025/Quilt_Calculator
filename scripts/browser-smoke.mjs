@@ -1165,6 +1165,52 @@ try{
   await shopCtx.close();
   console.log('PASS two-tab project shopping CSV blocked on conflict, JSON backup preserved and latest data recovery works.');
 
+  // A suspended/back-forward-cache tab may resume without a delivered
+  // StorageEvent. Set shared storage in the SAME document (which cannot
+  // generate a browser storage event) to simulate that lost notification.
+  // Each genuine return-to-page signal must proactively invalidate cut
+  // exports and Ctrl+P; load-latest then restores the new project.
+  const resumeCtx=await browser.newContext({viewport:{width:1130,height:790},acceptDownloads:true});
+  instrumentNetwork(resumeCtx,'resume-without-storage-event');
+  const resumed=await resumeCtx.newPage();
+  resumed.on('pageerror',e=>problems.push('Resumed project: '+e.message));
+  await hydrated(resumed,'/quilt-backing-calculator/');
+  const widthOnResume=resumed.getByLabel('Finished quilt width (in)',{exact:true});
+  await widthOnResume.fill('78');await widthOnResume.press('Tab');
+  for(const trigger of ['pageshow','focus','visibilitychange']){
+   const expected=await resumed.evaluate(()=>{
+    const stored=JSON.parse(localStorage.getItem('quilt-studio-v2'));
+    stored.quilt.finishedWidth+=1;
+    localStorage.setItem('quilt-studio-v2',JSON.stringify(stored));
+    return stored.quilt.finishedWidth;
+   });
+   // Same-document storage modifications do NOT fire window StorageEvent;
+   // until resumed, controls remain visually ready despite stale state.
+   check(await resumed.locator('[data-sync-warning]').isHidden() &&
+     await resumed.locator('[data-action="export-cut-csv"]').isEnabled(),
+     'Missing-event fixture must start with a superficially ready stale tab.');
+   await resumed.evaluate(eventName=>{
+    if(eventName==='visibilitychange')document.dispatchEvent(new Event('visibilitychange'));
+    else window.dispatchEvent(new Event(eventName));
+   },trigger);
+   check(!(await resumed.locator('[data-sync-warning]').isHidden()),
+     'Resumed '+trigger+' must show a project conflict without a StorageEvent.');
+   check(!(await resumed.locator('[data-action="export-cut-csv"]').isEnabled()) &&
+     !(await resumed.locator('[data-action="export-cut"]').isEnabled()) &&
+     !(await resumed.locator('[data-action="print"]').isEnabled()),
+     'Resumed '+trigger+' must proactively disable all outdated cut/print controls.');
+   check(await resumed.locator('[data-action="save"]').isEnabled() &&
+      await resumed.locator('[data-tool]').getAttribute('data-print-ready')==='false',
+     'Resumed '+trigger+' must preserve backup but prevent native Ctrl+P.');
+   await resumed.locator('[data-action="load-latest"]').click();
+   check(Number(await widthOnResume.inputValue())===expected &&
+     await resumed.locator('[data-sync-warning]').isHidden() &&
+     await resumed.locator('[data-action="export-cut-csv"]').isEnabled(),
+     'Loading latest after '+trigger+' must restore the new project and valid exports.');
+  }
+  await resumeCtx.close();
+  console.log('PASS restored BFCache/pageshow, focus and tab visibility detect missed storage events and block stale exports.');
+
   // Reset safety: one-step recovery preserves the last accepted project and
   // its local-storage backup. Any new accepted change invalidates Undo.
   const resetCtx=await browser.newContext({viewport:{width:1150,height:800},acceptDownloads:true});
