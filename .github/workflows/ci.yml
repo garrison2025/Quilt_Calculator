@@ -31,6 +31,11 @@ jobs:
       - name: Test real calculator interactions, downloads, mobile and print
         timeout-minutes: 6
         run: node scripts/browser-smoke.mjs
+      - name: Install WebKit for mobile Safari-engine emulation
+        run: npx playwright install --with-deps webkit
+      - name: Exercise touch and pan in simulated iPhone WebKit and Android Chrome
+        timeout-minutes: 5
+        run: node scripts/mobile-touch-smoke.mjs
       - name: Archive desktop, mobile and print smoke-test evidence
         if: always()
         uses: actions/upload-artifact@v4

@@ -46,6 +46,11 @@ export function attachCutWalkthrough(wrapper:HTMLElement,svg:SVGSVGElement):void
  if(!(stageNode instanceof HTMLElement)||!stageNode.classList.contains('cut-diagram-stage'))
   throw Error('Cut walkthrough requires a dedicated SVG scroll viewport.');
  const stage:HTMLElement=stageNode;
+ // The stage becomes keyboard-focusable only when the zoomed SVG actually
+ // overflows. Native touch panning remains handled by the browser so vertical
+ // page gestures and platform accessibility gestures are not hijacked.
+ stage.setAttribute('role','group');
+ stage.setAttribute('aria-label','Fabric cutting diagram viewport. When zoomed, swipe or use arrow keys to pan.');
  const zoom=document.createElement('div');
  zoom.className='cut-zoom-controls';
  zoom.dataset.cutZoomControls='';
@@ -61,7 +66,7 @@ export function attachCutWalkthrough(wrapper:HTMLElement,svg:SVGSVGElement):void
  zoom.append(zoomLabel,zoomOut,zoomValue,zoomIn,zoomReset,locate);
  const zoomHint=document.createElement('span');
  zoomHint.className='cut-zoom-hint';
- zoomHint.textContent='Swipe inside the magnified diagram to pan along the fabric roll.';
+ zoomHint.textContent='Swipe sideways or up and down inside this magnified diagram. Use Center selected cut to return to the highlighted piece.';
  zoomHint.hidden=true;
  zoom.append(zoomHint);
  const zoomSteps=[1,1.5,2,3];
@@ -79,7 +84,13 @@ export function attachCutWalkthrough(wrapper:HTMLElement,svg:SVGSVGElement):void
   zoomReset.disabled=zoomIndex===0;
   zoomHint.hidden=zoomIndex===0;
   stage.dataset.zoomed=zoomIndex===0?'false':'true';
-  if(zoomIndex===0)stage.scrollLeft=0;
+  if(zoomIndex===0){
+   stage.scrollLeft=0;
+   stage.scrollTop=0;
+   stage.removeAttribute('tabindex');
+  }else{
+   stage.tabIndex=0;
+  }
   locate.disabled=zoomIndex===0||showAll||current===0;
  }
  zoomOut.addEventListener('click',()=>{zoomIndex=Math.max(0,zoomIndex-1);applyZoom();centerCurrentCut();});
@@ -130,13 +141,17 @@ export function attachCutWalkthrough(wrapper:HTMLElement,svg:SVGSVGElement):void
  // Purely CSS-pixel viewport positioning: never mutate fabric geometry,
  // viewBox or SVG rectangle attributes. No implicit page scrolling.
  function centerCurrentCut():void{
-  if(showAll||current<1||zoomIndex===0||stage.scrollWidth<=stage.clientWidth)return;
+  if(showAll||current<1||zoomIndex===0)return;
   const cut=cuts[current-1];
   if(!cut)return;
   const box=cut.getBoundingClientRect();
   const viewport=stage.getBoundingClientRect();
-  const delta=(box.left+box.width/2)-(viewport.left+viewport.width/2);
-  if(Number.isFinite(delta)&&Math.abs(delta)>1)stage.scrollLeft+=delta;
+  const dx=(box.left+box.width/2)-(viewport.left+viewport.width/2);
+  const dy=(box.top+box.height/2)-(viewport.top+viewport.height/2);
+  if(stage.scrollWidth>stage.clientWidth&&Number.isFinite(dx)&&Math.abs(dx)>1)
+   stage.scrollLeft+=dx;
+  if(stage.scrollHeight>stage.clientHeight&&Number.isFinite(dy)&&Math.abs(dy)>1)
+   stage.scrollTop+=dy;
  }
  function inspectorFields(rect:SVGRectElement):void{
   inspectDetail.replaceChildren();
