@@ -3,6 +3,7 @@ import { sampleProject, validateProject, quiltTopReviewFingerprint, hasCurrentQu
 import { cutListCsv, physicalRollId, type MaterialCutPlan } from '../lib/quilt/cutlist';
 import { shoppingCsv, shoppingPriceSummary, hasIncompleteShopping, shoppingLineStatus, needsTopFabricPlan, type ShoppingLine } from '../lib/quilt/shopping';
 import type { ToolId } from './types';
+import {attachCutWalkthrough} from './diagram-playback';
 type Kind = 'length' | 'whole' | 'number' | 'pct' | 'check' | 'text';
 type Field = { label: string; path: string; kind?: Kind; note?: string };
 const num = (n: number, digits = 3): string => Number(n.toFixed(digits)).toLocaleString('en-US', {maximumFractionDigits: digits});
@@ -135,12 +136,14 @@ function diagram(parent:Element,layout:Layout,title:string,sku?:string,scope:'cu
    'data-cut-width-in':String(p.widthIn),'data-cut-height-in':String(p.heightIn),
    'data-grain-rotation':String(p.grainRotationDeg),'data-cut-label':p.label},svg);
   const tooltip=make('title',{},rect as SVGElement);tooltip.textContent=p.label+': roll (x '+num(p.xIn)+', y '+num(p.yIn)+') cut '+num(p.widthIn)+' × '+num(p.heightIn)+' in';
-  if(w>38&&h>19){const txt=make('text',{x:String(x+6),y:String(y+Math.min(18,h-3)),'font-size':'12',fill:'#264a3c'},svg);txt.textContent=String(i+1);}
+  if(w>38&&h>19){const txt=make('text',{x:String(x+6),y:String(y+Math.min(18,h-3)),'font-size':'12',fill:'#264a3c','data-preview-step':String(i+1)},svg);txt.textContent=String(i+1);}
  });
  const tx=make('text',{x:'40',y:'300','font-size':'12',fill:'#47695a'},svg);
  tx.textContent='Fabric roll length: '+num(layout.exactFabricRunLengthIn)+' in  →';
  const ty=make('text',{x:'44',y:'20','font-size':'11',fill:'#47695a'},svg);ty.textContent='Usable WOF: '+num(layout.usableWofIn)+' in';
- wrapper.appendChild(svg);wrapper.appendChild(node('p','diagram-note','Schematic, not to scale or a 1:1 pattern. Coordinates and dimensions are actual INCHES on the fabric roll. '+(totalCutCount>180?'First '+previewCutCount+' of '+totalCutCount+' cuts shown; the complete physical cut-list CSV includes every cut.':'')));
+ wrapper.appendChild(svg);
+ attachCutWalkthrough(wrapper,svg);
+ wrapper.appendChild(node('p','diagram-note','Schematic, not to scale or a 1:1 pattern. Coordinates and dimensions are actual INCHES on the fabric roll. '+(totalCutCount>180?'First '+previewCutCount+' of '+totalCutCount+' cuts shown; the complete physical cut-list CSV includes every cut.':'')));
  parent.appendChild(wrapper);
  section(parent,'Cut coordinates','First '+Math.min(layout.cutPieces.length,45)+' of '+layout.cutPieces.length);
  table(parent,['# / piece','x in','y in','width × height in','grain'],layout.cutPieces.slice(0,45).map((p,i)=>[String(i+1)+' · '+p.label,num(p.xIn),num(p.yIn),num(p.widthIn)+' × '+num(p.heightIn),String(p.grainRotationDeg)+'°']));
