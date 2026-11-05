@@ -81,7 +81,7 @@ try{
   assertThat(homeHtml.includes('data-task="'+id+'"'),'Missing public task-first calculator navigation '+id);
  for(const path of routes){
   const {html}=await get(path);
-  const scripts=[...html.matchAll(/<script type="application\\/ld\\+json">([\\s\\S]*?)<\\/script>/g)]
+  const scripts=[...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)]
     .map(m=>JSON.parse(m[1]));
   const app=scripts.find(x=>x['@type']==='WebApplication');
   assertThat(app?.offers?.price===0&&app?.isAccessibleForFree===true&&

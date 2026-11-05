@@ -33,7 +33,7 @@ for(let i=0;i<slugs.length;i++){
 // Google also requires real ratings/reviews for that specific display, which we lack.
 for(const slug of slugs){
  const html=fs.readFileSync('dist/'+(slug?slug+'/':'')+'index.html','utf8');
- const json=[...html.matchAll(/<script type="application\\/ld\\+json">([\\s\\S]*?)<\\/script>/g)]
+ const json=[...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)]
   .map(m=>{try{return JSON.parse(m[1]);}catch{return null;}});
  const app=json.find(x=>x?.['@type']==='WebApplication');
  if(!app||app.offers?.['@type']!=='Offer'||app.offers.price!==0||
