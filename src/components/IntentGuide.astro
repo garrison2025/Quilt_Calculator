@@ -2,6 +2,7 @@
 import type {ToolId} from '../client/types';
 import {guides, fractionRows} from '../data/intent-guides';
 import {byId} from '../data/routes';
+import {backingReference,bindingReference,yardageReference,formatEighthYards} from '../data/seo-reference';
 interface Props {tool:ToolId}
 const {tool}=Astro.props;
 const guide=guides[tool];
@@ -16,8 +17,33 @@ const clean=(n:number)=>Number(n.toFixed(4)).toLocaleString('en-US',{maximumFrac
       {item.paragraphs.map(p=><p>{p}</p>)}
     </article>
   )}</div>
+  {(tool==='backing'||tool==='binding'||tool==='yardage')&&
+  <div class="seo-reference" data-engine-reference={tool}>
+    <h3>{tool==='backing'?'Backing yardage: examples at 43-inch and 108-inch fabric widths':tool==='binding'?'Straight-grain binding: strip width and purchase yardage comparison':'Fabric yardage: practical rectangular cutting examples'}</h3>
+    {tool==='backing'&&<p>Illustrative finished sizes only, not universal size standards. Each calculation assumes <strong>4 in overage per edge</strong>, <strong>1 in take-up per backing join</strong>, both panel orientations permitted, no prewash length shrinkage, and upward <strong>⅛ yd</strong> shop rounding. Measure your own postwash usable WOF and check grain before cutting.</p>}
+    {tool==='binding'&&<p>All rows assume <strong>43 in usable WOF</strong>, <strong>12 in finishing tail</strong>, <strong>2.5 in loss per diagonal strip join</strong>, no prewash length shrinkage, and upward <strong>⅛ yd</strong> shop rounding. Only straight-grain strips are represented; bias binding is not supported.</p>}
+    {tool==='yardage'&&<p>Dimensions are literal <strong>cut-piece sizes</strong>, not finished patches. Purchases use physical roll placement, <strong>0% length shrinkage</strong> and upward <strong>⅛ yd</strong> rounding. A 90° turn is allowed only when print and grain permit it; alternate usable widths represent separate rolls.</p>}
+    <div class="table-scroll" role="region" aria-label="Engine-verified quilt reference examples" tabindex="0">
+      <table class="breakdown-table seo-reference-table">
+        <caption>Illustrative cutting and purchasing examples computed by this calculator engine</caption>
+        {tool==='backing'&&<>
+          <thead><tr><th scope="col">Quilt size (in)</th><th scope="col">Backing size (in)</th><th scope="col">Usable WOF</th><th scope="col">Seam direction</th><th scope="col">Panels</th><th scope="col">Cut run</th><th scope="col">Buy</th></tr></thead>
+          <tbody>{backingReference.map(x=><tr><th scope="row">{x.label}<small>{x.quilt}</small></th><td>{x.backing}</td><td>{x.wofIn} in</td><td>{x.direction}</td><td>{x.panels}</td><td>{x.runIn} in</td><td><strong>{formatEighthYards(x.yards)}</strong></td></tr>)}</tbody>
+        </>}
+        {tool==='binding'&&<>
+          <thead><tr><th scope="col">Quilt size (in)</th><th scope="col">Cut strip width</th><th scope="col">Binding needed</th><th scope="col">Strips</th><th scope="col">Cut run</th><th scope="col">Buy</th></tr></thead>
+          <tbody>{bindingReference.map(x=><tr><th scope="row">{x.label}<small>{x.quilt}</small></th><td>{x.stripWidthIn} in</td><td>{x.requiredIn} in</td><td>{x.strips}</td><td>{x.runIn} in</td><td><strong>{formatEighthYards(x.yards)}</strong></td></tr>)}</tbody>
+        </>}
+        {tool==='yardage'&&<>
+          <thead><tr><th scope="col">Cut pieces</th><th scope="col">Usable WOF</th><th scope="col">90° rotation</th><th scope="col">Per row</th><th scope="col">Rows</th><th scope="col">Cut run</th><th scope="col">Buy</th></tr></thead>
+          <tbody>{yardageReference.map(x=><tr><th scope="row">{x.label}</th><td>{x.wofIn} in</td><td>{x.rotation?'Allowed':'Not allowed'}</td><td>{x.across}</td><td>{x.rows}</td><td>{x.runIn} in</td><td><strong>{formatEighthYards(x.yards)}</strong></td></tr>)}</tbody>
+        </>}
+      </table>
+    </div>
+    <p class="seo-reference-disclaimer">Reference cases, not certified sewing or postwash fabric measurements. Actual seam method, WOF, grain, shrinkage and shop increment can change the answer. Adjust the calculator above before buying.</p>
+  </div>}
   {tool==='inches'&&
-  <div class="fraction-guide">
+  <div class="fraction-guide" id="fraction-reference">
     <h3>Yards to inches and centimeters: common fabric cuts</h3>
     <p>This is an exact length conversion, not a price chart or a promise of a particular bolt width. Centimeters use exactly 2.54 cm per inch.</p>
     <div class="table-scroll"><table class="breakdown-table fraction-reference-table">
@@ -31,6 +57,6 @@ const clean=(n:number)=>Number(n.toFixed(4)).toLocaleString('en-US',{maximumFrac
     <p class="fraction-footnote">Examples include 1/3 yard = 12 inches, 2/3 yard = 24 inches, 1½ yards = 54 inches and 4 yards = 144 inches. Fabric width must still be measured separately.</p>
   </div>}
   <nav class="intent-next" aria-label="Related fabric calculations"><h3>What to calculate next</h3><p>Use the specific calculator for the material you actually plan to cut:</p>
-    <div class="intent-next-links">{guide.related.map(id=><a href={'/'+byId(id).slug+'/'}>{byId(id).nav}<span aria-hidden="true"> ↗</span></a>)}</div>
+    <div class="intent-next-links">{guide.related.map(id=><a href={'/'+byId(id).slug+'/'}>{byId(id).h1.replace(/\.$/,'')}<span aria-hidden="true"> ↗</span></a>)}</div>
   </nav>
 </section>
