@@ -1,0 +1,49 @@
+name: Quilt dependency major-upgrade compatibility trial
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/dependency-upgrade-trial.yml"
+permissions:
+  contents: read
+jobs:
+  isolated-upgrade-trial:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install exact currently locked source
+        run: npm ci --no-audit --no-fund
+      - name: Try targeted patched majors in disposable runner only
+        run: |
+          npm install --save-exact --no-audit --no-fund astro@7.4.7 sharp@0.35.5
+          npm install --save-dev --save-exact --no-audit --no-fund vitest@5.1.0
+          npm ci --no-audit --no-fund
+          npm ls astro sharp vitest
+      - name: TypeScript and 198+ V2 calculations
+        run: |
+          npm run lint
+          npm test
+      - name: Build and static SEO/geometry release checks
+        run: |
+          npm run build
+          node scripts/check-build.mjs
+      - name: Audit candidate dependency tree
+        if: always()
+        run: |
+          mkdir -p artifacts/security
+          npm audit --json > artifacts/security/upgrade-trial-audit.json || true
+          node -e "const d=require('./artifacts/security/upgrade-trial-audit.json');console.log('TRIAL AUDIT COUNTS '+JSON.stringify(d.metadata?.vulnerabilities||d.error||{}))"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: quilt-major-upgrade-disposable-trial
+          path: |
+            artifacts/security/upgrade-trial-audit.json
+            package.json
+            package-lock.json
+          retention-days: 7
