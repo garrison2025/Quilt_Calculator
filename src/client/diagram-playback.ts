@@ -46,8 +46,10 @@ export function attachCutWalkthrough(wrapper:HTMLElement,svg:SVGSVGElement):void
  const id='cut-walkthrough-'+Math.random().toString(36).slice(2);
  label.htmlFor=id;label.textContent='Preview position';
  const range=document.createElement('input');
- range.type='range';range.id=id;range.min='0';range.max=String(count);range.step='1';
- range.value=String(count);range.className='cut-walkthrough-range';
+ range.type='range';range.id=id;range.min='0';range.max=String(count+1);range.step='1';
+ // 0 = no cuts highlighted; 1..N = one selected cut; N+1 = all visible.
+ // Distinct final states keep the last real cut accessible on touch/keyboard.
+ range.value=String(count+1);range.className='cut-walkthrough-range';
  range.setAttribute('aria-label','Cut-order preview position');
  const countText=document.createElement('output');
  countText.className='cut-walkthrough-count';
@@ -119,7 +121,7 @@ export function attachCutWalkthrough(wrapper:HTMLElement,svg:SVGSVGElement):void
    const i=Number(text.dataset.previewStep)-1;
    text.dataset.previewPhase=showAll?'all':i<current-1?'past':i===current-1?'current':'future';
   });
-  range.value=String(current);
+  range.value=String(showAll?count+1:current);
   countText.textContent=showAll?'All '+count+' cuts':current+' of '+count+' cuts';
   if(showAll){
    inspectTitle.textContent='Full cut layout · '+count+' displayed';
@@ -174,8 +176,10 @@ export function attachCutWalkthrough(wrapper:HTMLElement,svg:SVGSVGElement):void
   announce('All '+count+' cuts restored.');
  });
  range.addEventListener('input',()=>{
-  cancel();render(Number(range.value));
-  announce('Showing '+current+' of '+count+' cuts.');
+  cancel();
+  const raw=Number(range.value);
+  render(raw>count?count:raw,raw>count);
+  announce(showAll?'All '+count+' cuts visible.':'Showing '+current+' of '+count+' cuts.');
  });
  // Pointer shortcut uses the same semantic state as the keyboard-accessible
  // range and Next button; SVG geometry remains untouched.
