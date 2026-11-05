@@ -30,17 +30,17 @@ const groups: Record<ToolId, {title:string;fields:Field[]}[]> = {
   {title:'Your quilt',fields:fieldsBase},
   {title:'Backing & fabric roll',fields:[{label:'Backing extra per side',path:'options.overage',kind:'length'},{label:'Usable width of fabric (WOF)',path:'options.usableWof',kind:'length'},{label:'Seam join total take-up',path:'options.joinTakeup',kind:'length'},{label:'One-way fabric print',path:'options.oneWayPrint',kind:'check'}]},
   {title:'Binding & batting',fields:[{label:'Binding strip cut width',path:'options.stripWidth',kind:'length'},{label:'Batting roll width',path:'options.battingWof',kind:'length'},{label:'May rotate batting 90°',path:'options.allowRotate',kind:'check',note:'For one-piece batting only. Fabric-yardage and backing have separate grain settings.'}]},
-  {title:'Buying settings',fields:[{label:'Purchase step (yd)',path:'options.step',kind:'number'},{label:'Length shrinkage (%)',path:'options.lengthShrinkage',kind:'pct'}]}
+  {title:'Buying settings',fields:[{label:'Purchase step (yd)',path:'options.step',kind:'number'},{label:'Length shrinkage (%)',path:'options.lengthShrinkage',kind:'pct'},{label:'Backing price (USD/yd, optional)',path:'options.backingPricePerYard',kind:'number'},{label:'Batting price (USD/yd, optional)',path:'options.battingPricePerYard',kind:'number'},{label:'Binding price (USD/yd, optional)',path:'options.bindingPricePerYard',kind:'number'}]}
  ],
  backing:[
   {title:'Quilt top',fields:fieldsBase},
   {title:'Backing construction',fields:[{label:'Backing extra per edge',path:'options.overage',kind:'length'},{label:'Usable fabric WOF',path:'options.usableWof',kind:'length'},{label:'Total loss at one panel join',path:'options.joinTakeup',kind:'length'},{label:'Directional / one-way print',path:'options.oneWayPrint',kind:'check',note:'If checked, rotated assembly is excluded.'}]},
-  {title:'Shopping',fields:[{label:'Purchase step (yd)',path:'options.step',kind:'number'},{label:'Prewash length shrinkage (%)',path:'options.lengthShrinkage',kind:'pct'}]}
+  {title:'Shopping',fields:[{label:'Purchase step (yd)',path:'options.step',kind:'number'},{label:'Prewash length shrinkage (%)',path:'options.lengthShrinkage',kind:'pct'},{label:'Backing price (USD/yd, optional)',path:'options.backingPricePerYard',kind:'number'}]}
  ],
  binding:[
   {title:'Quilt top',fields:fieldsBase},
   {title:'Straight-grain strips',fields:[{label:'Cut strip width',path:'options.stripWidth',kind:'length'},{label:'Usable fabric WOF',path:'options.usableWof',kind:'length'},{label:'Extra tail / corners (total)',path:'options.tailAllowance',kind:'length'},{label:'Effective length lost per strip join',path:'options.stripJoinLoss',kind:'length'}]},
-  {title:'Shopping',fields:[{label:'Purchase step (yd)',path:'options.step',kind:'number'},{label:'Length shrinkage (%)',path:'options.lengthShrinkage',kind:'pct'}]}
+  {title:'Shopping',fields:[{label:'Purchase step (yd)',path:'options.step',kind:'number'},{label:'Length shrinkage (%)',path:'options.lengthShrinkage',kind:'pct'},{label:'Binding price (USD/yd, optional)',path:'options.bindingPricePerYard',kind:'number'}]}
  ],
  borders:[
   {title:'Quilt top',fields:[...fieldsBase,{label:'Seam allowance per edge',path:'options.seam',kind:'length'}]},
@@ -58,7 +58,7 @@ const groups: Record<ToolId, {title:string;fields:Field[]}[]> = {
  inches:[],
  batting:[
   {title:'Quilt top',fields:fieldsBase},
-  {title:'One-piece batting',fields:[{label:'Batting extra per edge',path:'options.battingOverage',kind:'length'},{label:'Actual roll width',path:'options.battingWof',kind:'length'},{label:'May rotate 90°',path:'options.allowRotate',kind:'check'},{label:'Purchase step (yd)',path:'options.step',kind:'number'}]}
+  {title:'One-piece batting',fields:[{label:'Batting extra per edge',path:'options.battingOverage',kind:'length'},{label:'Actual roll width',path:'options.battingWof',kind:'length'},{label:'May rotate 90°',path:'options.allowRotate',kind:'check'},{label:'Purchase step (yd)',path:'options.step',kind:'number'},{label:'Batting price (USD/yd, optional)',path:'options.battingPricePerYard',kind:'number'}]}
  ],
  sashing:[
   {title:'Block grid',fields:[{label:'Rows',path:'sashing.rows',kind:'whole'},{label:'Columns',path:'sashing.columns',kind:'whole'},{label:'Finished block width',path:'sashing.blockWidth',kind:'length'},{label:'Finished block height',path:'sashing.blockHeight',kind:'length'}]},
@@ -487,7 +487,7 @@ if(root){
  else storageState.textContent=sample?'Showing the example project. Edits are autosaved locally.':'Loaded your saved project from this browser.';
  function read(field:Field,value:string|boolean):unknown{
   if(field.kind==='check')return Boolean(value);
-  if(field.path==='pricePerYard' && String(value).trim()==='')return undefined;
+  if(field.path.toLowerCase().endsWith('priceperyard') && String(value).trim()==='')return undefined;
   if(field.kind==='text')return String(value);
   const n=parseMeasure(String(value));
   if(field.kind==='whole' && (!Number.isInteger(n)||n>2000))throw Error(field.label+' must be a whole number between 0 and 2000.');
@@ -786,8 +786,9 @@ if(root){
    fieldsRoot.appendChild(node('p','footer-note','Need fabric colors or additional borders? Edit them on the dedicated Quilt Fabric and Borders pages; your local project is shared across all tools.'));
   }
  }
- function purchasesTitle(result:HTMLElement,buy:{rawPurchaseYards:number;roundedPurchaseYards:number;purchaseRoundingExtraLengthIn:number},name:string){
+ function purchasesTitle(result:HTMLElement,buy:{rawPurchaseYards:number;roundedPurchaseYards:number;purchaseRoundingExtraLengthIn:number},name:string,unitPrice?:number){
   hero(result,yd(buy.roundedPurchaseYards),'ROUNDED PURCHASE · '+name,'Exact raw requirement: '+num(buy.rawPurchaseYards,4)+' yd. Purchase rounded upward to the chosen shop increment.');
+  if(unitPrice!==undefined)result.appendChild(node('p','shopping-price-summary','Your entered price: '+money(unitPrice)+'/yd · Estimated material cost: '+money(buy.roundedPurchaseYards*unitPrice)+'. Taxes, shipping and other materials excluded.'));
  }
  function layoutSummary(result:HTMLElement,layout:Layout){
   if(!layout.isCutFeasible){warning(result,layout.error||'FIT_IMPOSSIBLE',true);return;}
@@ -871,7 +872,7 @@ if(root){
    if(tool==='backing'){
     const b=calculateBacking({widthIn:outerW,heightIn:outerH,overageIn:o.overage,wofIn:o.usableWof,joinTakeupIn:o.joinTakeup,oneWayPrint:o.oneWayPrint,...buyArgs});
     const selected=b.options.find(v=>v.direction===selectedDirection)||b.recommended;
-    purchasesTitle(resultRoot,selected.purchase,'BACKING');
+    purchasesTitle(resultRoot,selected.purchase,'BACKING',o.backingPricePerYard);
     stats(resultRoot,[['Backing size',num(b.targetWidthIn)+' × '+num(b.targetHeightIn)+' in'],['Panels',String(selected.panelCount)],['Joined span before trim',num(selected.finishedJoinedSpanIn)+' in']]);
     section(resultRoot,'Joined seam positions',selected.direction==='vertical'?'Along joined width · before trimming':'Along joined height · before trimming');
     if(selected.joinedSeamPositionsIn.length){
@@ -887,7 +888,7 @@ if(root){
     plan={options:b.options,selected:selected.direction};
    }else if(tool==='binding'){
     const b=calculateStraightBinding({widthIn:outerW,heightIn:outerH,wofIn:o.usableWof,stripWidthIn:o.stripWidth,tailAllowanceIn:o.tailAllowance,joinLossIn:o.stripJoinLoss,...buyArgs});
-    purchasesTitle(resultRoot,b.purchase,'STRAIGHT BINDING');
+    purchasesTitle(resultRoot,b.purchase,'STRAIGHT BINDING',o.bindingPricePerYard);
     stats(resultRoot,[['Required binding',num(b.requiredLengthIn)+' in'],['Strips',String(b.stripCount)],['Length after joins',num(b.effectiveJoinedLengthIn)+' in']]);
     warning(resultRoot,'Straight-grain binding only. Bias binding is NOT calculated.');layout=b.layout;materialCuts=[{material:'Straight-grain binding',sku:'binding',layout:b.layout}];plan=b;
    }else if(tool==='yardage'){
@@ -920,7 +921,7 @@ if(root){
     plan={...r,comparison};
    }else if(tool==='batting'){
     const b=calculateBatting({widthIn:outerW,heightIn:outerH,overageIn:o.battingOverage,rollWidthIn:o.battingWof,rotate:o.allowRotate,step:o.step});
-    if(b.purchase){purchasesTitle(resultRoot,b.purchase,'ONE-PIECE BATTING');stats(resultRoot,[['Required width',num(outerW+2*o.battingOverage)+' in'],['Required height',num(outerH+2*o.battingOverage)+' in'],['Roll WOF',num(o.battingWof)+' in']]);}
+    if(b.purchase){purchasesTitle(resultRoot,b.purchase,'ONE-PIECE BATTING',o.battingPricePerYard);stats(resultRoot,[['Required width',num(outerW+2*o.battingOverage)+' in'],['Required height',num(outerH+2*o.battingOverage)+' in'],['Roll WOF',num(o.battingWof)+' in']]);}
     else warning(resultRoot,b.message,true);
     layout=b.layout;materialCuts=[{material:'One-piece batting',sku:'batting',layout:b.layout}];plan=b;
    }else if(tool==='sashing'){
@@ -977,13 +978,13 @@ if(root){
      {label:'Backing · '+backing.recommended.direction+' seams',rollId:'backing',hint:backing.recommended.panelCount+' full WOF panels',
       amount:backing.recommended.purchase.roundedPurchaseYards,rawYards:backing.recommended.purchase.rawPurchaseYards,
       offcutSqIn:backing.recommended.layout.physicalOffcutAreaSqIn,roundingExtraIn:backing.recommended.purchase.purchaseRoundingExtraLengthIn,
-      assemblyTrimSqIn:backing.recommended.postAssemblyTrimAreaSqIn},
+      assemblyTrimSqIn:backing.recommended.postAssemblyTrimAreaSqIn,unitPrice:o.backingPricePerYard},
      {label:'Batting · single piece only',rollId:'batting',hint:batting.message,amount:batting.purchase?.roundedPurchaseYards,
       rawYards:batting.purchase?.rawPurchaseYards,offcutSqIn:batting.isCutFeasible?batting.layout.physicalOffcutAreaSqIn:undefined,
-      roundingExtraIn:batting.purchase?.purchaseRoundingExtraLengthIn},
+      roundingExtraIn:batting.purchase?.purchaseRoundingExtraLengthIn,unitPrice:o.battingPricePerYard},
      {label:'Straight-grain binding',rollId:'binding',hint:binding.stripCount+' full WOF strips',amount:binding.purchase.roundedPurchaseYards,
       rawYards:binding.purchase.rawPurchaseYards,offcutSqIn:binding.layout.physicalOffcutAreaSqIn,
-      roundingExtraIn:binding.purchase.purchaseRoundingExtraLengthIn},
+      roundingExtraIn:binding.purchase.purchaseRoundingExtraLengthIn,unitPrice:o.bindingPricePerYard},
      ...border.layers.map((x,i)=>({label:x.label+' · '+x.sku,rollId:physicalRollId('border',x.sku),hint:'Butted borders',amount:x.purchase?.roundedPurchaseYards,
       rawYards:x.purchase?.rawPurchaseYards,offcutSqIn:x.layout.isCutFeasible?x.layout.physicalOffcutAreaSqIn:undefined,
       roundingExtraIn:x.purchase?.purchaseRoundingExtraLengthIn,unitPrice:p.borders[i].pricePerYard})),
