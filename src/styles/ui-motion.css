@@ -236,3 +236,32 @@
  .quilt-ui-v3 .diagram-wrap svg [data-preview-phase]{opacity:1!important;transition:none!important;animation:none!important}
  .quilt-ui-v3 .diagram-wrap svg rect[data-preview-phase="current"]{stroke-width:.7!important}
 }
+
+/* Cut inspection card: every datum is read from the same verified SVG/CSV
+ * coordinate source, not a second estimate or geometric reinterpretation. */
+@media screen{
+ .quilt-ui-v3 .cut-piece-inspector{border:1px solid #dce9dc;border-radius:10px;background:#fff;padding:12px;min-width:0}
+ .quilt-ui-v3 .cut-inspector-title{display:block;font:650 12px/1.45 system-ui,sans-serif;color:#274a37;overflow-wrap:anywhere}
+ .quilt-ui-v3 .cut-inspector-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;margin-top:10px;font-variant-numeric:tabular-nums;font-size:12px;color:#4a6651;overflow-wrap:anywhere}
+ .quilt-ui-v3 .cut-inspector-grid>div{border-left:2px solid #c3d9c5;padding-left:9px;min-width:0}
+ .quilt-ui-v3 .cut-inspector-grid span{display:block;font-size:10px;color:#526b58;line-height:1.45}
+ .quilt-ui-v3 .cut-inspector-grid b{display:block;font-size:12px;color:#285740;font-weight:750;margin-top:3px}
+ .quilt-ui-v3 .diagram-wrap svg rect[data-cut-index]{cursor:pointer}
+ .quilt-ui-v3 .result-change{display:block;margin:10px 0;padding:11px 14px;border:1px solid #c4ddc9;border-left:3px solid #2b7656;border-radius:8px;background:#ecf5ed;color:#26553e;font-size:12px;font-weight:650;line-height:1.6}
+ @media(max-width:700px){
+  .quilt-ui-v3 .cut-inspector-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .quilt-ui-v3 .cut-inspector-grid>div:last-child{grid-column:1/-1}
+ }
+ @media(prefers-color-scheme:dark){
+  .quilt-ui-v3 .cut-piece-inspector{background:#1b3023;border-color:#44674d}
+  .quilt-ui-v3 .cut-inspector-title,.quilt-ui-v3 .cut-inspector-grid b{color:#e4f3e8}
+  .quilt-ui-v3 .cut-inspector-grid,.quilt-ui-v3 .cut-inspector-grid span{color:#cde3d3}
+  .quilt-ui-v3 .cut-inspector-grid>div{border-color:#6a9375}
+  .quilt-ui-v3 .result-change{background:#25422e;border-color:#527d5b;border-left-color:#a3ddaf;color:#e6f4e9}
+ }
+}
+@media screen and (prefers-reduced-motion:no-preference){
+ @keyframes quilt-value-confirm{from{opacity:.75;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+ .quilt-ui-v3 .result-change{animation:quilt-value-confirm 170ms ease-out both}
+}
+@media print{.quilt-ui-v3 .result-change{display:none!important}}
