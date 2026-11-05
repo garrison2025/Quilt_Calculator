@@ -1207,8 +1207,8 @@ try{
   const keyboard=await keyboardCtx.newPage();
   keyboard.on('pageerror',err=>problems.push('Dynamic material keyboard: '+err.message));
   await hydrated(keyboard,'/quilt-fabric-calculator/');
-  const activeIs=async selector=>keyboard.locator(selector).evaluate(el=>document.activeElement===el);
-  const selectedAll=async selector=>keyboard.locator(selector).evaluate(el=>el instanceof HTMLInputElement &&
+  const activeIs=async selector=>keyboard.locator(selector).first().evaluate(el=>document.activeElement===el);
+  const selectedAll=async selector=>keyboard.locator(selector).first().evaluate(el=>el instanceof HTMLInputElement &&
     el.selectionStart===0&&el.selectionEnd===el.value.length);
   const addCut0=keyboard.locator('[data-fabric-index="0"] [data-add-cut]');
   await addCut0.focus();await addCut0.press('Enter');
