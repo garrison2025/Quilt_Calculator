@@ -510,7 +510,7 @@ try{
   await geometryPage.locator('[data-action="export-cut"]').click();
   const baseJson=JSON.parse(await fs.readFile(await (await initialExport).path(),'utf8'));
   check(baseJson.dimensions?.finalWidthIn===66&&baseJson.dimensions?.finalHeightIn===86&&
-    baseJson.result.backing.targetWidthIn===undefined &&
+    baseJson.result.backing.targetWidthIn===74 && baseJson.result.backing.targetHeightIn===94 &&
     baseJson.result.backing.recommended.purchase.roundedPurchaseYards===5.25&&
     baseJson.result.batting.purchase?.roundedPurchaseYards===2.625&&
     baseJson.result.binding.requiredLengthIn===316,
