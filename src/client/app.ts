@@ -324,8 +324,13 @@ if(root){
     onValue(value);
     try{validateProject(project);}catch(e){onValue(lastAccepted);throw e;}
     lastAccepted=value;
-    if(tool==='fabric' || field.path==='quilt.finishedWidth' || field.path==='quilt.finishedHeight')
+    if(tool==='fabric' || field.path==='quilt.finishedWidth' || field.path==='quilt.finishedHeight'){
      project.quilt.topCutsReviewed=false;
+     // Reconcile the visible manual-attestation control without rebuilding the
+     // editor and discarding a separate in-progress measurement draft.
+     const review=fieldsRoot.querySelector<HTMLInputElement>('#quilt-top-review');
+     if(review)review.checked=false;
+    }
     input.setAttribute('aria-invalid','false');fieldError.hidden=true;fieldError.textContent='';persist();update();
    }catch(e){
     const message=e instanceof Error?e.message:'This input is not valid.';
