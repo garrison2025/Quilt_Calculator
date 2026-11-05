@@ -1,11 +1,11 @@
 # Quilt Studio — verification evidence and release blockers
-Last verified: 2026-11-05 · browser Ctrl+P / Save as PDF print-safety CI `41944674495` · `noindex` engineering preview.
+Last verified: 2026-11-05 · quilt-top missing-cut completeness and JSON readiness CI `41946828113` · `noindex` engineering preview.
 
 ## What is actually verified
 | Check | Status | Evidence / reproducible action |
 |---|---|---|
 | TypeScript static typing | PASS | GitHub CI https://github.com/garrison2025/Quilt_Calculator/actions/runs/41931472782 · `npm run lint` |
-| Deterministic arithmetic, geometry and V2 import checks | PASS · 173 tests | Same CI · `npm test`; includes backing seam thresholds, binding strip thresholds and 2,000-piece roll-area conservation |
+| Deterministic arithmetic, geometry and V2 import checks | PASS · 175 tests | Same CI · `npm test`; includes backing seam thresholds, binding strip thresholds and 2,000-piece roll-area conservation |
 | Astro static build and route list | PASS | Same CI · `npm run build && node scripts/check-build.mjs` |
 | Original 218-keyword source appendices and canonical intent routing | PASS (engineering mapping only) | `docs/data/V2_Keyword_Appendix_218.csv`: 202 assigned to nine distinct tool intents; 16 HOLD; not search ranking evidence |
 | Published preview index protection | PASS | Static check ensures only `noindex,follow`; no preview sitemap or absolute canonical |
@@ -100,3 +100,9 @@ Only these are calculated with checked physical layouts: joined rectangular back
 - [CI 41944674495](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41944674495): TypeScript PASS, **173/173** unit/property tests PASS, Astro build and preview index protection PASS, Chromium browser regression PASS.
 - In browser **print media**, an infeasible 65-in batting roll without permitted rotation and a rejected draft measurement both set `data-print-ready=false` and the entire cutting/shopping result subtree computes to `display:none`; the print-only header states `NOT A CUT-READY PLAN`. The smoke test also creates a real PDF for the blocked state. A valid project still prints its coordinates, and the valid length-only yard conversion remains printable.
 - The site's disabled Print button alone is not treated as a Ctrl+P safeguard. This CSS rule is deliberately independent of the browser print event and applies before hydration. This is digital print safety evidence **not** an actual-size quilt pattern, physical paper calibration, or independent human construction audit.
+
+## Not-planned quilt-top materials vs impossible cuts · 2026-11-05
+- [CI 41946828113](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41946828113) confirms **175/175** automated tests and successful cross-route Chromium regression. An empty fabric SKU array is not mistaken for 0-yard total quilt-top fabric: the hub's shopping list explicitly says `NOT PLANNED`, retains partial backing/batting/binding estimates, and disables complete cut-list CSV and print actions (including browser Ctrl+P). A SKU with only zero-count cuts behaves likewise. A physically impossible cut is separately labeled `FIT IMPOSSIBLE`.
+- A diagnostic `INCOMPLETE` shopping CSV retains a missing-fabric row using `NOT_PLANNED_NO_CUT_PIECES`; each impossible roll instead uses `FIT_IMPOSSIBLE_NOT_PURCHASE_READY`. No made-up zero-yard purchase or total material cost is recorded.
+- The calculation JSON export includes explicit, test-verified `readiness` metadata and scopes, preserving full empty-fabric `result:[]` and flagging non-purchasable/incomplete projects. After real cut groups are entered, the status and normal export/print flags revert together. This verifies the **entered-material** model only; actual quilt-top completeness is user-provided and not inferred from the finished quilt width/height.
+- Original 39 reference fixtures, keyword routing and strict noindex preview policy were not changed. Independent fabric cutting, human printing measurements, accessibility/device testing, approved domain and advertising setup remain outstanding.
