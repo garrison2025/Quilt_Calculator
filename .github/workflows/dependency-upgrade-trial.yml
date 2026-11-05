@@ -23,7 +23,7 @@ jobs:
       - name: Try targeted patched majors in disposable runner only
         run: |
           npm install --save-exact --no-audit --no-fund astro@7.4.7 sharp@0.35.5
-          npm install --save-dev --save-exact --no-audit --no-fund vitest@5.1.0
+          npm install --save-dev --save-exact --no-audit --no-fund vitest@5.1.0 esbuild@0.28.1
           npm ci --no-audit --no-fund
           npm ls astro sharp vitest
       - name: TypeScript and 198+ V2 calculations
@@ -34,12 +34,17 @@ jobs:
         run: |
           npm run build
           node scripts/check-build.mjs
+      - name: Check real browser interactions against candidate majors
+        run: |
+          npm install --no-save --package-lock=false playwright axe-core
+          npx playwright install --with-deps chromium
+          node scripts/browser-smoke.mjs
       - name: Audit candidate dependency tree
         if: always()
         run: |
           mkdir -p artifacts/security
           npm audit --json > artifacts/security/upgrade-trial-audit.json || true
-          node -e "const d=require('./artifacts/security/upgrade-trial-audit.json');console.log('TRIAL AUDIT COUNTS '+JSON.stringify(d.metadata?.vulnerabilities||d.error||{}))"
+          node -e "const d=require('./artifacts/security/upgrade-trial-audit.json');const v=d.metadata?.vulnerabilities||{};console.log('TRIAL AUDIT COUNTS '+JSON.stringify(v));if(v.total!==0)process.exitCode=1"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
