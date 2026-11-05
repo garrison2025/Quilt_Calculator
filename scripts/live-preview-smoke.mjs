@@ -17,6 +17,22 @@ async function get(path){
  const response=await fetch(BASE+path,{redirect:'follow',cache:'no-store',signal:AbortSignal.timeout(20000),headers:{'Cache-Control':'no-cache'}});
  return {response,html:await response.text()};
 }
+// Pages can serve mixed deployment generations from different edge caches
+// briefly after the planner route becomes current. Every URL must still reach
+// the EXACT expected source stamp within a bounded retry window; never pass
+// tests simply because one URL has the new stamp.
+async function currentRoute(path){
+ let last='unavailable';
+ for(let attempt=0;attempt<12;attempt++){
+  try{
+   const got=await get(path);
+   last='HTTP '+got.response.status+'; SHA '+(stamp(got.html)||'absent');
+   if(got.response.status===200&&stamp(got.html)===sha)return got;
+  }catch(e){last=e instanceof Error?e.message:String(e);}
+  if(attempt<11)await sleep(3000);
+ }
+ throw Error('Stale or missing publicly deployed page '+path+' after 12 checks: '+last+'; expected '+sha);
+}
 async function waitForThisCommit(){
  let last='not checked';
  // A Pages push and a GitHub workflow are independent. Never claim the old
@@ -45,9 +61,9 @@ let browser;
 try{
  await waitForThisCommit();
  for(const path of routes){
-  const {response,html}=await get(path);
-  assert.equal(response.status,200,'Public HTTP error '+path);
-  assert.equal(stamp(html),sha,'Stale or unmarked public route '+path);
+  const {response,html}=await currentRoute(path);
+  assertThat(/\bnoindex\b/i.test(response.headers.get('x-robots-tag')||''),
+    'Cloudflare preview must apply an X-Robots-Tag noindex header even if future public HTML is indexable: '+path);
   assertThat(html.includes('name="robots" content="noindex,follow"'),'Live preview must be noindex: '+path);
   assertThat(!/<link\b[^>]*rel="canonical"/i.test(html),'Preview cannot publish a canonical '+path);
   assertThat(/<h1[\s>]/.test(html),'No unique H1 on public page: '+path);
@@ -58,7 +74,7 @@ try{
  assertThat(robotsText.includes('User-agent:')&&robotsText.includes('Allow: /'),'Preview robots file not readable.');
  const {response:sitemap}=await get('/sitemap.xml');
  assert.equal(sitemap.status,404,'No production sitemap should be emitted on preview.');
- const {response:qa,html:qaHtml}=await get('/qa/print-calibration/');
+ const {response:qa,html:qaHtml}=await currentRoute('/qa/print-calibration/');
  assert.equal(qa.status,200,'Public preview must serve its physical print-calibration worksheet.');
  assert.equal(stamp(qaHtml),sha,'Public physical QA worksheet must identify the exact Cloudflare commit.');
  assertThat(qaHtml.includes('noindex,follow')&&!qaHtml.includes('rel="canonical"')&&!qaHtml.includes('application/ld+json'),
@@ -69,7 +85,7 @@ try{
  const {response:lab,html:labHtml}=await get('/lab/square-in-square/');
  assert.equal(lab.status,200);
  assertThat(labHtml.includes('noindex,follow')&&!labHtml.includes('rel="canonical"'),'Lab must remain noindex with no canonical.');
- const {response:aboutResponse,html:aboutHtml}=await get('/about/');
+ const {response:aboutResponse,html:aboutHtml}=await currentRoute('/about/');
  assert.equal(aboutResponse.status,200,'Live About and source-method page must be accessible.');
  assert.equal(stamp(aboutHtml),sha,'Live About page must match exactly deployed code.');
  assertThat(aboutHtml.includes('name="robots" content="noindex,follow"')&&!aboutHtml.includes('rel="canonical"')&&

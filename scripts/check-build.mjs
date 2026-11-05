@@ -218,3 +218,19 @@ console.log('PASS: all 9 unique tool H1 headings state their respective primary 
 
 
 console.log('PASS: '+slugs.length+' approved routes, SEO metadata, '+(production?'production canonical/sitemap':'preview noindex')+', original preview images and HOLD exclusions.');
+
+// Cloudflare Pages _headers permits absolute https host rules, but only ONE
+// "*" wildcard per rule. Stage aliases use :version, not * in the host.
+const cfHeaders=fs.readFileSync('dist/_headers','utf8');
+for(const expected of [
+ 'https://quilt-calculator-566.pages.dev/*',
+ 'https://:version.quilt-calculator-566.pages.dev/*'
+]){
+ if(!cfHeaders.includes(expected+'\n  X-Robots-Tag: noindex'))
+  throw Error('Preview-specific Cloudflare noindex header rule missing: '+expected);
+}
+for(const line of cfHeaders.split(/\r?\n/)){
+ if(line.trim().startsWith('https://')&&(line.match(/\*/g)||[]).length>1)
+  throw Error('Cloudflare header URL cannot contain two wildcards: '+line);
+}
+console.log('PASS Cloudflare main and branch preview noindex response-header rules.');
