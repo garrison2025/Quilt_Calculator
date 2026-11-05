@@ -659,6 +659,30 @@ try{
   check(!(await undo.isEnabled()),'A committed edit after reset must invalidate the older Undo.');
   check((await resetPage.getByLabel('Finished quilt width (in)',{exact:true}).inputValue())==='82',
     'Newly committed work must remain after invalidating Undo.');
+  // A rejected measurement remains visible until corrected; project actions
+  // must not wipe it or replace the accepted autosave behind the user's back.
+  const draftWidth=resetPage.getByLabel('Finished quilt width (in)',{exact:true});
+  await draftWidth.fill('not-a-measurement');
+  await draftWidth.press('Tab');
+  check(await draftWidth.getAttribute('aria-invalid')==='true','Rejected input should be visibly invalid.');
+  const beforeGuard=await resetPage.evaluate(()=>localStorage.getItem('quilt-studio-v2'));
+  await resetPage.locator('[data-units]').selectOption('cm');
+  check((await resetPage.locator('[data-units]').inputValue())==='in','Unit switch must revert while a draft is invalid.');
+  await resetPage.locator('[data-action="reset"]').click();
+  check((await draftWidth.inputValue())==='not-a-measurement','Reset must not erase a rejected visible draft.');
+  check(await resetPage.evaluate(()=>localStorage.getItem('quilt-studio-v2'))===beforeGuard,
+   'Blocked reset must not mutate the stored project.');
+  await resetPage.locator('[data-action="import"]').click();
+  check((await draftWidth.inputValue())==='not-a-measurement','Import must not erase a rejected draft.');
+  await draftWidth.fill('90');
+  await draftWidth.press('Tab');
+  assert.equal(await resetPage.evaluate(()=>JSON.parse(localStorage.getItem('quilt-studio-v2')).quilt.finishedWidth),90,
+   'Correcting a rejected draft must restore normal autosave.');
+  await resetPage.locator('[data-action="reset"]').click();
+  check(await undo.isEnabled(),'Reset should be permitted after all fields validate.');
+  await undo.click();
+  check((await resetPage.getByLabel('Finished quilt width (in)',{exact:true}).inputValue())==='90',
+   'Undo after a valid reset must preserve the latest committed value.');
   await resetPage.screenshot({path:'artifacts/qa/safe-reset-undo.png',fullPage:true,animations:'disabled'});
   await resetCtx.close();
   console.log('PASS reset undo restores autosaved project; stale-tab reset is blocked and new edits invalidate old undo.');

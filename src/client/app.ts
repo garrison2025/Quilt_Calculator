@@ -236,6 +236,7 @@ if(root){
   if(event.key===STORAGE_KEY && event.newValue!==lastStoredJson)showStorageConflict();
  });
  root.querySelector('[data-action="load-latest"]')?.addEventListener('click',()=>{
+  if(!requireCommittedDraft('load another saved project'))return;
   try{
    const latest=localStorage.getItem(STORAGE_KEY);
    const loaded=latest?validateProject(JSON.parse(latest)):structuredClone(sampleProject);
@@ -267,6 +268,15 @@ if(root){
   const stale=node('div','warning-banner error-banner',message);
   stale.setAttribute('data-stale-warning','');
   resultRoot.prepend(stale);
+ }
+ // An uncommitted field is visible user work, not yet accepted Project V2.
+ // Never discard it from a secondary action that re-renders the form.
+ function requireCommittedDraft(action:string):boolean{
+  const draft=fieldsRoot.querySelector<HTMLInputElement>('[aria-invalid="true"],[data-pending-edit="true"]');
+  if(!draft)return true;
+  note('Cannot '+action+' while an input is unfinished. Correct or commit the highlighted field first.',true);
+  draft.focus();
+  return false;
  }
  function inputField(field:Field,current:unknown,onValue:(v:unknown)=>void):HTMLElement{
   let lastAccepted=current;
@@ -329,7 +339,7 @@ if(root){
   const shell=node('div');shell.appendChild(node('h3','group-title','Fabric colors / SKUs'));
   project.fabrics.forEach((fabric,i)=>{
    const card=node('div','dynamic-entry'),head=node('div','dynamic-head');
-   const del=node('button','','Remove SKU');del.type='button';del.addEventListener('click',()=>{project.fabrics.splice(i,1);persist();renderEditor();update();});
+   const del=node('button','','Remove SKU');del.type='button';del.addEventListener('click',()=>{if(!requireCommittedDraft('remove a fabric SKU'))return;project.fabrics.splice(i,1);persist();renderEditor();update();});
    append(head,node('strong','',fabric.label||'Fabric '+(i+1)),del);card.appendChild(head);
    card.appendChild(makeGroup('Fabric roll',[
     {label:'SKU (unique)',path:'id',kind:'text'},{label:'Fabric / color label',path:'label',kind:'text'},
@@ -339,7 +349,7 @@ if(root){
    ],fabric,(f,v)=>{if(f.path==='id'&&project.fabrics.some((g,j)=>j!==i&&g.id===v))throw Error('SKU IDs must be unique.');(fabric as unknown as Record<string,unknown>)[f.path]=v;}));
    fabric.pieces.forEach((piece,j)=>{
     const group=node('div','dynamic-entry'),h=node('div','dynamic-head');
-    const remove=node('button','','Remove cut group');remove.type='button';remove.addEventListener('click',()=>{fabric.pieces.splice(j,1);persist();renderEditor();update();});
+    const remove=node('button','','Remove cut group');remove.type='button';remove.addEventListener('click',()=>{if(!requireCommittedDraft('remove a cut group'))return;fabric.pieces.splice(j,1);persist();renderEditor();update();});
     append(h,node('strong','','Cut group '+(j+1)),remove);group.appendChild(h);
     group.appendChild(makeGroup('Rectangle CUT sizes',[
      {label:'Piece label',path:'label',kind:'text'},{label:'Cut width',path:'widthIn',kind:'length'},
@@ -349,6 +359,7 @@ if(root){
     card.appendChild(group);
    });
    const addPiece=node('button','dynamic-add','+ Add rectangle cut group');addPiece.type='button';addPiece.addEventListener('click',()=>{
+    if(!requireCommittedDraft('add a cut group'))return;
     if(fabric.pieces.length>=100){note('Maximum 100 piece groups per SKU.',true);return;}
     const newPiece={widthIn:5,heightIn:5,count:4,label:'New cut',allowRotate:false};
     fabric.pieces.push(newPiece);
@@ -357,6 +368,7 @@ if(root){
    });card.appendChild(addPiece);shell.appendChild(card);
   });
   const add=node('button','dynamic-add','+ Add fabric SKU');add.type='button';add.addEventListener('click',()=>{
+   if(!requireCommittedDraft('add a fabric SKU'))return;
    if(project.fabrics.length>=30){note('Maximum 30 fabric SKUs.',true);return;}
    const id='fabric-'+(project.fabrics.length+1)+'-'+Date.now().toString(36);
    project.fabrics.push({id,label:'New fabric',usableWidth:43,oneWayPrint:false,shrinkageLengthPct:0,pieces:[{widthIn:5,heightIn:5,count:4,label:'Cut square'}]});
@@ -368,7 +380,7 @@ if(root){
   const shell=node('div');shell.appendChild(node('h3','group-title','Butted border layers (maximum 5)'));
   project.borders.forEach((layer,i)=>{
    const card=node('div','dynamic-entry'),h=node('div','dynamic-head'),remove=node('button','','Remove layer');
-   remove.type='button';remove.addEventListener('click',()=>{project.borders.splice(i,1);persist();renderEditor();update();});
+   remove.type='button';remove.addEventListener('click',()=>{if(!requireCommittedDraft('remove a border layer'))return;project.borders.splice(i,1);persist();renderEditor();update();});
    append(h,node('strong','','Layer '+(i+1)),remove);card.appendChild(h);
    card.appendChild(makeGroup('Border fabric',[
     {label:'SKU',path:'sku',kind:'text'},{label:'Label / color',path:'label',kind:'text'},
@@ -377,6 +389,7 @@ if(root){
    ],layer,(f,v)=>{(layer as unknown as Record<string,unknown>)[f.path]=v;}));shell.appendChild(card);
   });
   const add=node('button','dynamic-add','+ Add border layer');add.type='button';add.addEventListener('click',()=>{
+   if(!requireCommittedDraft('add a border layer'))return;
    if(project.borders.length>=5){note('Maximum 5 border layers.',true);return;}
    project.borders.push({sku:'border-'+Date.now().toString(36),label:'New border',widthIn:2,wofIn:43,shrinkageLengthPct:0});persist();renderEditor();update();
   });shell.appendChild(add);fieldsRoot.appendChild(shell);
@@ -599,7 +612,7 @@ if(root){
    note('✓ Updated from the current project · '+new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}));
   }catch(err){cutExport=null;materialCuts=[];exportButton.disabled=true;cutCsvButton.disabled=true;printButton.disabled=true;warning(resultRoot,(err instanceof Error ? err.message : 'Unknown calculation error'),true);note('Cannot prove this cut is feasible. Review your measurements.',true);}
  }
- unitsSelect.addEventListener('change',()=>{project.units=unitsSelect.value==='cm'?'cm':'in';persist();renderEditor();update();});
+ unitsSelect.addEventListener('change',()=>{if(!requireCommittedDraft('change units')){unitsSelect.value=project.units;return;}project.units=unitsSelect.value==='cm'?'cm':'in';persist();renderEditor();update();});
  root.querySelector('[data-action="recalculate"]')?.addEventListener('click',()=>{
   update();
   // A keyboard or switch-control user must remain next to the exact field
@@ -618,6 +631,7 @@ if(root){
   }
  });
  root.querySelector('[data-action="reset"]')?.addEventListener('click',()=>{
+  if(!requireCommittedDraft('reset the project'))return;
   // Refuse to discard even this tab's unsaved edits when the shared storage
   // has changed in another tab. A user can first download a JSON backup or
   // deliberately load the newer saved project.
@@ -647,6 +661,7 @@ if(root){
   renderEditor();update();
  });
  undoResetButton.addEventListener('click',()=>{
+  if(!requireCommittedDraft('undo a reset'))return;
   const previous=resetSnapshot;
   if(!previous)return;
   clearResetSnapshot();
@@ -701,11 +716,21 @@ if(root){
  });
  printButton.addEventListener('click',()=>{if(cutExport)window.print();});
  const picker=root.querySelector<HTMLInputElement>('[data-file]')!;
- root.querySelector('[data-action="import"]')?.addEventListener('click',()=>picker.click());
- picker.addEventListener('change',async()=>{const file=picker.files?.[0];if(!file)return;try{
-  if(file.size>1024*1024)throw Error('Project JSON must be below 1 MB.');
-  project=validateProject(JSON.parse(await file.text()));persist();renderEditor();update();
- }catch(e){note('Could not import project: '+(e as Error).message,true);}picker.value='';});
+ root.querySelector('[data-action="import"]')?.addEventListener('click',()=>{
+  if(requireCommittedDraft('import a project'))picker.click();
+ });
+ picker.addEventListener('change',async()=>{
+  const file=picker.files?.[0];if(!file)return;
+  try{
+   if(!requireCommittedDraft('import a project'))return;
+   if(file.size>1024*1024)throw Error('Project JSON must be below 1 MB.');
+   const imported=validateProject(JSON.parse(await file.text()));
+   // The file read can overlap new typing: check again before replacing.
+   if(!requireCommittedDraft('import a project'))return;
+   project=imported;persist();renderEditor();update();
+  }catch(e){note('Could not import project: '+(e instanceof Error?e.message:'Invalid project file'),true);}
+  finally{picker.value='';}
+ });
  stateLabel.textContent=sample?'● Sample project':'● My local project';
  renderEditor();update();
 }
