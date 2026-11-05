@@ -310,9 +310,9 @@ try{
       assert.equal(await allMaterials.filter({hasText:'FIT IMPOSSIBLE'}).count(),0,'Example material roll should be feasible.');
       check(await allMaterials.first().getAttribute('open')!==null,'First material should show its real cut diagram.');
       await allMaterials.nth(4).locator('summary').click();
-      check(await allMaterials.nth(4).locator('svg[role="img"]').isVisible(),'Hub must provide separate first fabric SKU geometry.');
+      await allMaterials.nth(4).locator('svg[role="img"]').waitFor({state:'visible'});
       await allMaterials.nth(5).locator('summary').click();
-      check(await allMaterials.nth(5).locator('svg[role="img"]').isVisible(),'Hub must provide separate second fabric SKU geometry.');
+      await allMaterials.nth(5).locator('svg[role="img"]').waitFor({state:'visible'});
       check((await rows.first().innerText()).includes('Raw:'),'Shopping list missing exact raw purchase requirement.');
       check((await rows.first().innerText()).includes('Purchase rounding excess:'),'Shopping list missing purchase increment waste.');
       const downloadPromise=page.waitForEvent('download');
@@ -351,7 +351,7 @@ try{
       const safeCutContent=await fs.readFile(await safeCut.path(),'utf8');
       check(safeCutContent.includes("'=SUM(1,2)"),'Cut-list export must escape a formula-bearing material label.');
       await page.locator('details.sku-plan').nth(1).locator('summary').click();
-      check(await page.locator('details.sku-plan').nth(1).locator('svg[role="img"]').isVisible(),'Second fabric SKU diagram is not visible.');
+      await page.locator('details.sku-plan').nth(1).locator('svg[role="img"]').waitFor({state:'visible'});
     }
     if(path==='/fabric-yardage-calculator/'){
       const panel=page.locator('[data-width-comparison]');
@@ -425,7 +425,7 @@ try{
       await page.getByRole('button',{name:'+ Add border layer'}).click();
       assert.equal(await page.locator('details.sku-plan').count(),2,'New border layer needs its own cut diagram.');
       await page.locator('details.sku-plan').nth(1).locator('summary').click();
-      check(await page.locator('details.sku-plan').nth(1).locator('svg[role="img"]').isVisible(),'Second border layer diagram is not visible.');
+      await page.locator('details.sku-plan').nth(1).locator('svg[role="img"]').waitFor({state:'visible'});
     }
     console.log('PASS hydrated calculator '+path);
     if(path==='/quilt-backing-calculator/'){
