@@ -2093,25 +2093,25 @@ try{
   // both downloadable formats. Never mistake missing prices for $0 purchases.
   const priceCtx=await browser.newContext({viewport:{width:1180,height:900},acceptDownloads:true});
   instrumentNetwork(priceCtx,'optional-material-prices');
-  const pricePage=await priceCtx.newPage();
-  pricePage.on('pageerror',err=>problems.push('Material-prices UI JS exception: '+err.message));
-  await hydrated(pricePage,'/calculators/',{incomplete:true});
+  const materialPricePage=await priceCtx.newPage();
+  materialPricePage.on('pageerror',err=>problems.push('Material-prices UI JS exception: '+err.message));
+  await hydrated(materialPricePage,'/calculators/',{incomplete:true});
   for(const [label,value] of [
     ['Backing price (USD/yd, optional)','10'],
     ['Batting price (USD/yd, optional)','8'],
     ['Binding price (USD/yd, optional)','6']
   ]){
-    const input=pricePage.getByLabel(label,{exact:true});
+    const input=materialPricePage.getByLabel(label,{exact:true});
     check(await input.count()===1,'Missing independent user price field '+label);
     await input.fill(value);
     await input.press('Tab');
     check(await input.getAttribute('aria-invalid')==='false','Entered '+label+' price must be valid.');
   }
-  const priceSummary=pricePage.locator('[data-shopping-price-summary]');
+  const priceSummary=materialPricePage.locator('[data-shopping-price-summary]');
   check((await priceSummary.innerText()).includes('$77.25'),
     'Material subtotal must be backing 5.25×10 + batting 2.625×8 + binding 0.625×6, excluding unpriced sample SKU/borders.');
-  const priceCsvPending=pricePage.waitForEvent('download');
-  await pricePage.locator('[data-action="export-shopping"]').click();
+  const priceCsvPending=materialPricePage.waitForEvent('download');
+  await materialPricePage.locator('[data-action="export-shopping"]').click();
   const priceCsv=csvRecords(await fs.readFile(await (await priceCsvPending).path(),'utf8'));
   const pricedRows=[['Backing',10,52.5],['Batting',8,21],['Straight-grain binding',6,3.75]];
   for(const [label,unit,cost] of pricedRows){
@@ -2120,15 +2120,15 @@ try{
     check(Number(row[7])===unit && nearly(Number(row[8]),cost),
       'CSV must report only user-entered price × independently rounded purchase for '+label);
   }
-  const priceJsonPending=pricePage.waitForEvent('download');
-  await pricePage.locator('[data-action="save"]').click();
+  const priceJsonPending=materialPricePage.waitForEvent('download');
+  await materialPricePage.locator('[data-action="save"]').click();
   const projectBackup=JSON.parse(await fs.readFile(await (await priceJsonPending).path(),'utf8'));
   check(projectBackup.quilt.sizeBasis==='before-borders','New JSON backup must retain explicit border dimension basis.');
   check(projectBackup.options.backingPricePerYard===10 &&
         projectBackup.options.battingPricePerYard===8 &&
         projectBackup.options.bindingPricePerYard===6,
     'JSON export must preserve the three independent USD-per-yard prices.');
-  const battingPrice=pricePage.getByLabel('Batting price (USD/yd, optional)');
+  const battingPrice=materialPricePage.getByLabel('Batting price (USD/yd, optional)');
   await battingPrice.fill('');
   await battingPrice.press('Tab');
   check((await priceSummary.innerText()).includes('$56.25') &&
