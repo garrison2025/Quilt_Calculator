@@ -73,6 +73,14 @@ function download(filename:string,payload:unknown):void{
  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
  const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);
 }
+/** Preserve the exact browser-stored project text, including malformed JSON,
+ * rather than JSON.stringify-ing it into a different, misleading file. */
+function downloadRawBackup(filename:string,contents:string):void{
+ const blob=new Blob([contents],{type:'text/plain;charset=utf-8'});
+ const url=URL.createObjectURL(blob),a=document.createElement('a');
+ a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),2000);
+}
 function section(parent:Element,heading:string,helper=''):HTMLElement{
  const h=node('div','results-section-title');
  append(h,node('h3','',heading),node('span','',helper));
@@ -225,10 +233,13 @@ if(root){
  const STORAGE_KEY='quilt-studio-v2';
  let lastStoredJson:string|null=null;
  let startupStorageError=false;
+ // An unreadable existing autosave must NEVER be silently replaced by the
+ // sample on the first keystroke. It could contain recoverable user data.
+ let unreadableSavedJson:string|null=null;
  try{
   lastStoredJson=localStorage.getItem(STORAGE_KEY);
   if(lastStoredJson){try{project=validateProject(JSON.parse(lastStoredJson));sample=false;}
-   catch{startupStorageError=true;}}
+   catch{startupStorageError=true;unreadableSavedJson=lastStoredJson;}}
  }catch{startupStorageError=true;}
  function note(msg:string,err=false){status.textContent=msg;status.classList.toggle('status-error',err);}
  function storageUnavailable():void{
@@ -251,6 +262,11 @@ if(root){
   blockConflictedOutputs();
  }
  function requireCurrentOutput(action:string):boolean{
+  if(unreadableSavedJson!==null){
+   blockConflictedOutputs();
+   note('Cannot '+action+': an unreadable original autosave is protected. Download its raw backup and explicitly start a new project first.',true);
+   return false;
+  }
   // Storage events are asynchronous: recheck source state at export time.
   try{
    if(localStorage.getItem(STORAGE_KEY)!==lastStoredJson)showStorageConflict();
@@ -265,6 +281,13 @@ if(root){
   // supersedes the undo point. A later Undo must never erase newer work.
   clearResetSnapshot();
   sample=false;
+  if(unreadableSavedJson!==null){
+   blockConflictedOutputs();
+   storageState.textContent='UNSAVED: unreadable original autosave is protected. Download its raw backup before explicitly starting fresh.';
+   stateLabel.textContent='● Protected unreadable autosave';
+   note('Your changes remain in this tab only. No damaged or incompatible saved project was overwritten.',true);
+   return;
+  }
   try{
    const actual=localStorage.getItem(STORAGE_KEY);
    if(actual!==lastStoredJson){showStorageConflict();return;}
@@ -303,6 +326,10 @@ if(root){
   }
  },true);
  root.querySelector('[data-action="load-latest"]')?.addEventListener('click',()=>{
+  if(unreadableSavedJson!==null){
+   note('The original saved project is unreadable. Download the raw backup, then explicitly start fresh before loading.',true);
+   return;
+  }
   if(!requireCommittedDraft('load another saved project'))return;
   try{
    const latest=localStorage.getItem(STORAGE_KEY);
@@ -315,7 +342,50 @@ if(root){
    renderEditor();update();
   }catch(e){note('Cannot load another tab\'s project: '+(e instanceof Error?e.message:'Invalid stored data'),true);}
  });
- if(startupStorageError)storageState.textContent='The previously saved project could not be read. A sample is loaded; save a JSON backup before editing.';
+ if(unreadableSavedJson!==null){
+  syncWarning.hidden=false;
+  const savedWarning=syncWarning.querySelector('p');
+  if(savedWarning)savedWarning.textContent='Your browser contains an unreadable saved project. We have NOT deleted or overwritten it. A sample is displayed only for reference. Download the original raw data first, then explicitly choose to replace it. Your ordinary Save project button saves only the displayed sample or edits.';
+  const latestButton=syncWarning.querySelector<HTMLButtonElement>('[data-action="load-latest"]');
+  if(latestButton)latestButton.hidden=true;
+  const rawDownload=node('button','action-secondary','Download original raw backup');
+  rawDownload.type='button';rawDownload.dataset.downloadUnreadableBackup='';
+  const discard=node('button','action-secondary','Replace unreadable autosave with current project');
+  discard.type='button';discard.dataset.replaceUnreadableBackup='';
+  discard.disabled=true;
+  rawDownload.addEventListener('click',()=>{
+   if(unreadableSavedJson===null)return;
+   downloadRawBackup('quilt-unreadable-original-autosave.txt',unreadableSavedJson);
+   discard.disabled=false;
+   storageState.textContent='Raw backup download started. The original remains protected until you explicitly replace it.';
+  });
+  discard.addEventListener('click',()=>{
+   if(unreadableSavedJson===null || discard.disabled || !requireCommittedDraft('replace the unreadable autosave'))return;
+   try{
+    const current=localStorage.getItem(STORAGE_KEY);
+    if(current!==unreadableSavedJson){
+     note('Replacement canceled: another tab changed the saved data. Reload this page to review the newest project.',true);
+     return;
+    }
+    const next=JSON.stringify(project);
+    // Only one explicit replacement write. If it fails, keep the original
+    // protected and let users download their current sample-project backup.
+    localStorage.setItem(STORAGE_KEY,next);
+    lastStoredJson=next;
+    unreadableSavedJson=null;
+    syncWarning.hidden=true;
+    if(latestButton)latestButton.hidden=false;
+    storageState.textContent='Original raw backup downloaded; current project explicitly saved as the new autosave.';
+    stateLabel.textContent='● My local project';
+    renderEditor();update();
+   }catch(e){
+    note('Could not replace saved project. The old data is still protected: '+(e instanceof Error?e.message:'Storage error'),true);
+   }
+  });
+  append(syncWarning,rawDownload,discard);
+  storageState.textContent='UNREADABLE AUTOSAVE PROTECTED — original data has not been overwritten. Download its raw text before choosing to replace it.';
+  stateLabel.textContent='● Protected unreadable autosave';
+ }else if(startupStorageError)storageState.textContent='Browser storage could not be read. Work in this tab and download your project JSON backup.';
  else storageState.textContent=sample?'Showing the example project. Edits are autosaved locally.':'Loaded your saved project from this browser.';
  function read(field:Field,value:string|boolean):unknown{
   if(field.kind==='check')return Boolean(value);
@@ -830,7 +900,9 @@ if(root){
    // another tab holds a newer saved project. Save project remains enabled.
    if(!syncWarning.hidden){
     blockConflictedOutputs();
-    note('This tab has unsaved edits and another tab saved a different project. Save a JSON backup, then load the newest project before exporting.',true);
+    note(unreadableSavedJson!==null
+     ?'Unreadable original autosave remains protected. Download its raw backup before explicitly replacing it. The displayed project is not saved.'
+     :'This tab has unsaved edits and another tab saved a different project. Save a JSON backup, then load the newest project before exporting.',true);
    }
   }catch(err){root!.dataset.printReady='false';cutExport=null;materialCuts=[];exportButton.disabled=true;cutCsvButton.disabled=true;printButton.disabled=true;warning(resultRoot,(err instanceof Error ? err.message : 'Unknown calculation error'),true);note('Cannot prove this cut is feasible. Review your measurements.',true);}
  }
@@ -853,6 +925,10 @@ if(root){
   }
  });
  root.querySelector('[data-action="reset"]')?.addEventListener('click',()=>{
+  if(unreadableSavedJson!==null){
+   note('Reset blocked: download the original raw autosave and explicitly replace it before resetting a project.',true);
+   return;
+  }
   if(!requireCommittedDraft('reset the project'))return;
   // Refuse to discard even this tab's unsaved edits when the shared storage
   // has changed in another tab. A user can first download a JSON backup or
@@ -979,6 +1055,6 @@ if(root){
   }catch(e){note('Could not import project: '+(e instanceof Error?e.message:'Invalid project file'),true);}
   finally{picker.value='';}
  });
- stateLabel.textContent=sample?'● Sample project':'● My local project';
+ if(unreadableSavedJson===null)stateLabel.textContent=sample?'● Sample project':'● My local project';
  renderEditor();update();
 }
