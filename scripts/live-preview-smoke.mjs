@@ -182,6 +182,41 @@ try{
  assert.equal(conflicts.length,0,'Public conflicting browser JS errors: '+conflicts.join('; '));
  console.log('PASS public Cloudflare two-tab stale-cut/shopping/print lock, safe project backup and latest reload.');
 
+ // A BFCache-restored tab can miss its StorageEvent. Prove the *deployed*
+ // app catches a changed shared project as soon as pageshow fires, even
+ // before the user attempts a new cutting export.
+ const resumedContext=await browser.newContext({viewport:{width:1100,height:800}});
+ const restoredTab=await resumedContext.newPage();
+ const restoreErrors=[];
+ restoredTab.on('pageerror',e=>restoreErrors.push(e.message));
+ await restoredTab.goto(BASE+'/quilt-backing-calculator/',{waitUntil:'domcontentloaded',timeout:20000});
+ await restoredTab.waitForFunction(()=>document.querySelector('[data-status]')?.textContent?.includes('Updated from the current project'),null,{timeout:20000});
+ const restoreWidth=restoredTab.getByLabel('Finished quilt width (in)',{exact:true});
+ await restoreWidth.fill('83');await restoreWidth.press('Tab');
+ await restoredTab.evaluate(()=>{
+  const latest=JSON.parse(localStorage.getItem('quilt-studio-v2'));
+  latest.quilt.finishedWidth=84;
+  // Same-document localStorage changes never deliver a StorageEvent.
+  localStorage.setItem('quilt-studio-v2',JSON.stringify(latest));
+ });
+ assertThat(await restoredTab.locator('[data-sync-warning]').isHidden() &&
+     await restoredTab.locator('[data-action="export-cut-csv"]').isEnabled(),
+  'Live missing-event fixture must start with visually ready older project.');
+ await restoredTab.evaluate(()=>window.dispatchEvent(new Event('pageshow')));
+ assertThat(!(await restoredTab.locator('[data-sync-warning]').isHidden()) &&
+     !(await restoredTab.locator('[data-action="export-cut-csv"]').isEnabled()) &&
+     !(await restoredTab.locator('[data-action="print"]').isEnabled()) &&
+     await restoredTab.locator('[data-action="save"]').isEnabled(),
+  'Live restored page must proactively prevent stale exports and retain JSON backup.');
+ assert.equal(await restoredTab.locator('[data-tool]').getAttribute('data-print-ready'),'false');
+ await restoredTab.locator('[data-action="load-latest"]').click();
+ assert.equal(await restoreWidth.inputValue(),'84');
+ assertThat(await restoredTab.locator('[data-action="export-cut-csv"]').isEnabled(),
+  'Live load-latest must restore current cut exports after a resumed-page conflict.');
+ assert.equal(restoreErrors.length,0,'Public resumed-page JS errors: '+restoreErrors.join('; '));
+ await resumedContext.close();
+ console.log('PASS public Cloudflare pageshow catches missing storage events before cut export and restores latest project.');
+
  // Verify that the live Cloudflare bundle (not only the local CI preview)
  // preserves keyboard focus after replacing dynamic material controls.
  const focusContext=await browser.newContext({viewport:{width:1100,height:820}});
