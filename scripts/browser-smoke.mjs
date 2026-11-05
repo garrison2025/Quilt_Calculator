@@ -1742,20 +1742,25 @@ try{
     }
     console.log('PASS responsive layouts at '+width+'px');
   }
-  // A 320 CSS-pixel viewport is the WCAG 1.4.10 reflow proxy for
-  // a 1280 CSS-pixel browser viewport at 400% text/browser zoom.
-  // It is NOT a substitute for manual real-zoom and screen-reader testing.
+  // Test EVERY approved tool, not just the previous five representatives.
+  // 320 CSS pixels are a WCAG 1.4.10 reflow proxy for 1280 px at 400%.
+  // This is not proof of physical screen-reader, native zoom or mobile touch QA.
   await small.setViewportSize({width:320,height:720});
-  for(const path of ['/','/calculators/','/quilt-backing-calculator/',
-    '/quilt-fabric-calculator/','/fabric-yards-to-inches/']){
+  for(const path of routes){
     await hydrated(small,path,{incomplete:path==='/'||path==='/calculators/'});
-    const overflow=await small.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
-    check(overflow<=2,'WCAG 1.4.10 reflow overflow at 320 CSS px: '+path+' ('+overflow+'px)');
+    const metrics=await small.evaluate(()=>({
+      overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth,
+      activeWidth:document.documentElement.clientWidth
+    }));
+    check(metrics.activeWidth===320,'Expected 320 CSS-pixel reflow viewport: '+path);
+    check(metrics.overflow<=2,'WCAG 1.4.10 reflow overflow at 320 CSS px: '+path+' ('+metrics.overflow+'px)');
     check(await small.locator('[data-action="recalculate"]').isVisible(),
-      'Primary calculator action must be visible at 320 CSS px: '+path);
+      'Primary calculator action must remain visible at 320 CSS px: '+path);
+    check(await small.locator('[data-action="export-cut-csv"]').count()===1,
+      'Physical cut export must remain available (or explicitly disabled) at 320 CSS px: '+path);
   }
-  await small.screenshot({path:'artifacts/qa/320px-reflow-proxy.png',fullPage:true,animations:'disabled'});
-  console.log('PASS narrow 320 CSS-pixel reflow proxy across 5 routes.');
+  await small.screenshot({path:'artifacts/qa/320px-reflow-all-approved-routes.png',fullPage:true,animations:'disabled'});
+  console.log('PASS narrow 320 CSS-pixel reflow proxy across all '+routes.length+' approved routes.');
   await small.setViewportSize({width:375,height:812});
   await hydrated(small,'/quilt-backing-calculator/');
   await small.getByRole('button',{name:'Update cutting plan'}).click();
