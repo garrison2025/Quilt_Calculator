@@ -300,8 +300,13 @@ if(root){
    input.value=field.kind==='length'?num(fromInches(Number(current)||0,project.units),4):String(current??'');
    append(wrap,label,input);
   }
-  if(field.note){
-   const hint=node('span','hint',field.note);hint.id=id+'-hint';
+  // WOF must already reflect any planned prewash. Compensating purchasing
+  // length alone cannot guarantee the cut still fits the fabric width.
+  const widthField=['options.usableWof','yardage.alternateWof','usableWidth','wofIn'].includes(field.path);
+  const wofHint='Use the actual usable WOF AFTER planned prewash and removing selvedges. Length shrinkage % adjusts bolt length only; this calculator cannot infer fabric width shrinkage.';
+  const fieldNote=widthField?(field.note?field.note+' '+wofHint:wofHint):field.note;
+  if(fieldNote){
+   const hint=node('span','hint',fieldNote);hint.id=id+'-hint';
    wrap.appendChild(hint);
    input.setAttribute('aria-describedby',hint.id+' '+fieldError.id);
   }
