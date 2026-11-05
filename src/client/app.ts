@@ -234,6 +234,10 @@ if(root){
  let sample=true,conv='1/4',selectedDirection:'vertical'|'horizontal'|null=null;
  let cutExport:unknown=null;
  let materialCuts:MaterialCutPlan[]=[];
+ // Keep the last accepted headline across an in-progress input draft, so a
+ // committed edit can show an accurate before/after without treating stale
+ // DOM output as an approved purchase estimate.
+ let lastAcceptedFigure:{label:string;value:string}|null=null;
  const STORAGE_KEY='quilt-studio-v2';
  let lastStoredJson:string|null=null;
  let startupStorageError=false;
@@ -260,6 +264,7 @@ if(root){
    .forEach(button=>button.disabled=true);
  }
  function showStorageConflict():void{
+  lastAcceptedFigure=null;
   syncWarning.hidden=false;
   storageState.textContent='Another tab saved a different project. Cutting and shopping exports are blocked. Save this tab as a JSON backup, then load the newest project.';
   stateLabel.textContent='● Unsaved · another tab changed';
@@ -714,12 +719,7 @@ if(root){
    note('Correct invalid input before updating the plan.',true);
    return;
   }
-  // Only compare previously accepted, non-stale result figures. Do not show
-  // an optimistic "improved" estimate while a conflict or invalid input exists.
-  const oldHero=!status.classList.contains('status-error')&&syncWarning.hidden&&
-    !resultRoot.querySelector('[data-stale-warning]')?resultRoot.querySelector('.result-hero'):null;
-  const oldKicker=oldHero?.querySelector('.result-kicker')?.textContent||'';
-  const oldFigure=oldHero?.querySelector('.result-big')?.textContent||'';
+  const priorAcceptedFigure=lastAcceptedFigure;
   resultRoot.replaceChildren();cutExport=null;materialCuts=[];
   saveButton.disabled=false;
   exportButton.disabled=true;cutCsvButton.disabled=true;printButton.disabled=true;
@@ -911,11 +911,14 @@ if(root){
    const currentKicker=currentHero?.querySelector('.result-kicker')?.textContent||'';
    const currentFigure=currentHero?.querySelector('.result-big')?.textContent||'';
    const estimateSafe=!anyInfeasible&&!topFabricMissing&&!topCutListNotReviewed&&syncWarning.hidden;
-   if(estimateSafe&&oldFigure&&currentFigure&&oldKicker===currentKicker&&oldFigure!==currentFigure){
-    const changed=node('p','result-change','Updated estimate: '+oldFigure+' → '+currentFigure+'. Recheck layout, rounding and fabric assumptions before purchasing.');
+   if(estimateSafe&&priorAcceptedFigure?.value&&currentFigure&&
+      priorAcceptedFigure.label===currentKicker&&priorAcceptedFigure.value!==currentFigure){
+    const changed=node('p','result-change','Updated estimate: '+priorAcceptedFigure.value+' → '+currentFigure+'. Recheck layout, rounding and fabric assumptions before purchasing.');
     changed.dataset.resultChange='';
     currentHero?.after(changed);
    }
+   if(estimateSafe&&currentFigure&&currentKicker)
+    lastAcceptedFigure={label:currentKicker,value:currentFigure};
    resultRoot.appendChild(node('p','footer-note','Cut lengths and coordinates are calculated in inches. Purchase rounding applied once. Source project hash '+record.sourceProjectHash+'. Export JSON to review complete values. Print is a schematic, not an actual-size template.'));
    const incompleteProject=anyInfeasible || topFabricMissing || topCutListNotReviewed;
    note((incompleteProject?'⚠ Incomplete material plan · check review, missing cuts or infeasible rolls · ':'✓ Updated from the current project · ')+new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}),incompleteProject);
