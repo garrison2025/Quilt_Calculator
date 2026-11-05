@@ -8,6 +8,11 @@ const pageDescription=description||route?.meta||'Free quilting cutting calculato
 const candidate=import.meta.env.PUBLIC_SITE_URL||'';
 const approved=!noIndex&&import.meta.env.PUBLIC_INDEXABLE==='1'&&/^https:\/\/[^/]+$/i.test(candidate)&&!/\.pages\.dev$|localhost|127\.0\.0\.1/i.test(candidate);
 const canonical=approved ? candidate+Astro.url.pathname : undefined;
+// Use an existing, publicly reachable image on the same preview/production site;
+// never change noindex or canonical eligibility just to render a social preview.
+const mediaOrigin=approved?candidate.replace(/\/$/,''):'https://quilt-calculator-566.pages.dev';
+const socialImage=mediaOrigin+'/images/'+(route?.id||'hub')+'.webp';
+const socialAlt=(route?.nav||'Quilt Studio')+' example fabric cutting diagram illustration';
 // Public build provenance; Cloudflare supplies its actual git commit SHA.
 // This is not a user identifier and does not bypass the preview noindex gate.
 const buildCommit=(process.env.CF_PAGES_COMMIT_SHA||process.env.GITHUB_SHA||'').toLowerCase();
@@ -26,6 +31,14 @@ const auditCommit=/^[0-9a-f]{40}$/.test(buildCommit)?buildCommit:undefined;
 <link rel="icon" href="/favicon.svg" type="image/svg+xml"/>
 <title>{pageTitle}</title>
 <meta property="og:title" content={pageTitle}/><meta property="og:description" content={pageDescription}/><meta property="og:type" content="website"/>
+{!noIndex&&<>
+<meta property="og:image" content={socialImage}/>
+<meta property="og:image:width" content="640"/>
+<meta property="og:image:height" content="420"/>
+<meta property="og:image:alt" content={socialAlt}/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content={socialImage}/>
+</>}
 {!noIndex && <script type="application/ld+json" set:html={JSON.stringify({'@context':'https://schema.org','@type':'WebApplication',name:pageTitle,description:pageDescription,applicationCategory:'UtilitiesApplication',operatingSystem:'Any modern browser',isAccessibleForFree:true,...(canonical?{url:canonical}:{})})}/>}
 {approved && route && <script type="application/ld+json" set:html={JSON.stringify({'@context':'https://schema.org','@type':'BreadcrumbList',itemListElement:[{'@type':'ListItem',position:1,name:'Home',item:candidate+'/'},{'@type':'ListItem',position:2,name:route.nav,item:canonical}]})}/>}
 </head>
