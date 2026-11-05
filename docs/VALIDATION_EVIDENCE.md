@@ -1,11 +1,11 @@
 # Quilt Studio — verification evidence and release blockers
-Last verified: 2026-11-05 · standalone physical print-test sheet verified in source/browser/public Cloudflare (41953819230 / 41953819293); real paper signoff NOT_RUN.
+Last verified: 2026-11-05 · 184/184 tests + local Chromium 41967645708; public exact-SHA Cloudflare pageshow 41967645681; real physical ruler/paper validation remains NOT_RUN.
 
 ## What is actually verified
 | Check | Status | Evidence / reproducible action |
 |---|---|---|
 | TypeScript static typing | PASS | GitHub CI https://github.com/garrison2025/Quilt_Calculator/actions/runs/41931472782 · `npm run lint` |
-| Deterministic arithmetic, geometry and V2 import checks | PASS · 178 tests | Same CI · `npm test`; includes backing seam thresholds, binding strip thresholds and 2,000-piece roll-area conservation |
+| Deterministic arithmetic, geometry and V2 import checks | PASS · 184 tests | [Latest CI 41967645708](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41967645708) · `npm test`; includes backing seams, binding, shrinkage/WOF matrix, 2,000-piece roll conservation and versioned import |
 | Astro static build and route list | PASS | Same CI · `npm run build && node scripts/check-build.mjs` |
 | Original 218-keyword source appendices and canonical intent routing | PASS (engineering mapping only) | `docs/data/V2_Keyword_Appendix_218.csv`: 202 assigned to nine distinct tool intents; 16 HOLD; not search ranking evidence |
 | Published preview index protection | PASS | Static check ensures only `noindex,follow`; no preview sitemap or absolute canonical |
@@ -158,3 +158,8 @@ Only these are calculated with checked physical layouts: joined rectangular back
 - Cross-tab data ownership is now a gate for all **physical cutting JSON/CSV, shopping CSV and browser print** (including Ctrl+P), while an outdated tab retains a project JSON backup escape route. Detection occurs both through the browser `storage` event and synchronously on action invocation; valid recalculation in the stale tab cannot re-enable outputs. This closes the previously unguarded difference between preventing a stale save and preventing a stale **export**.
 - [Source CI 41966154999](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41966154999) passed all 184 tests and actual Chromium tab collision cases for Backing and Project Planner plus backup/load-latest recovery. [Public exact-commit CI 41966155069](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41966155069) passed; the public verification script now includes a separate live two-tab regression to check deployed behavior on future commits.
 - This is an evidence-backed client-side freshness guard, not cryptographic tamperproofing or a multiuser sync service. Local project JSON may still be explicitly backed up for recovery; physical signoff gates remain open.
+
+## Resumed-page cross-tab data consistency (2026-11-05)
+- [184/184 + Chromium CI 41967645708](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41967645708) checks that background tabs revalidate their last accepted shared-project snapshot on `pageshow`, focus and visibility restoration. The browser fixture deliberately changes `localStorage` without a StorageEvent and verifies immediate conflict warning, blocked JSON/CSV cut exports, `data-print-ready=false` and enabled project JSON backup. Load latest then restores correct new measurements and cuts on every path.
+- [Public CI 41967645681](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41967645681) confirms the exact Cloudflare deployment and directly exercises a public `pageshow` missed-event scenario. The existing direct export and print guards also check on use, independently of resume events.
+- The original G2 release-state classification remains conservative; this does not attest printer paper, sewn output, domain indexing, AdSense or Google Search Console metrics.
