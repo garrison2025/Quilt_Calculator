@@ -4,6 +4,8 @@ on:
   push:
     paths:
       - ".github/workflows/dependency-upgrade-trial.yml"
+      - "package.json"
+      - "package-lock.json"
 permissions:
   contents: read
 jobs:
