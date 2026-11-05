@@ -1675,6 +1675,15 @@ try{
    name:'quilt-collision-valid-skus.json',mimeType:'application/json',
    buffer:Buffer.from(JSON.stringify(idFixture))
   });
+  // File.text() is asynchronous. Wait for the specific imported SKU
+  // ownership snapshot instead of navigating away while import is pending:
+  // this used to make the roll-collision regression intermittently false.
+  await idsPage.waitForFunction(()=>{
+   const raw=localStorage.getItem('quilt-studio-v2');
+   if(!raw)return false;
+   const p=JSON.parse(raw);
+   return p.fabrics?.[0]?.id==='backing'&&p.borders?.[0]?.sku==='batting';
+  },null,{timeout:15000});
   await hydrated(idsPage,'/calculators/',{incomplete:true});
   await idsPage.getByLabel('I reviewed every quilt-top color, cut size and piece quantity.').check();
   const namedRolls=await assertSvgCorrespondsToCutCsv(idsPage,'/calculators/ [user roll IDs collide with system names]');
