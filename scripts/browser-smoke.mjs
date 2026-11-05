@@ -162,15 +162,18 @@ async function ready(){
   throw Error('Astro preview never became ready: '+serverLog);
 }
 function check(condition,msg){assert.ok(condition,msg);}
-async function hydrated(page,path){
+async function hydrated(page,path,{incomplete=false,noHero=false}={}){
   const response=await page.goto(ROOT+path,{waitUntil:'domcontentloaded',timeout:30000});
   assert.equal(response.status(),200,'Page HTTP status: '+path);
-  await page.waitForFunction(()=>document.querySelector('[data-status]')?.textContent?.includes('Updated from the current project'),null,{timeout:20000});
+  const expected=incomplete?'Incomplete material plan':'Updated from the current project';
+  await page.waitForFunction(expectedStatus=>document.querySelector('[data-status]')?.textContent?.includes(expectedStatus),expected,{timeout:20000});
   const status=(await page.locator('[data-status]').innerText()).trim();
-  check(status.includes('Updated'),path+' failed to hydrate: '+status);
+  check(status.includes(expected),path+' failed to hydrate: '+status);
   const hero=page.locator('[data-results] .result-big');
-  await hero.waitFor({state:'visible'});
-  check((await hero.innerText()).length>0,'Empty headline: '+path);
+  if(!noHero){
+    await hero.waitFor({state:'visible'});
+    check((await hero.innerText()).length>0,'Empty headline: '+path);
+  }
   return hero;
 }
 try{
@@ -493,7 +496,7 @@ try{
     'A fabric tool without SKUs must not print a complete cut plan.');
   check(await topPage.getByRole('button',{name:'Download INCOMPLETE shopping CSV'}).count()===1,
     'No-SKU top should still provide a clearly labeled partial diagnostic shopping CSV.');
-  await hydrated(topPage,'/calculators/');
+  await hydrated(topPage,'/calculators/',{incomplete:true});
   const missingSummary=await topPage.locator('[data-results]').innerText();
   check(missingSummary.includes('QUILT TOP NOT PLANNED')&&missingSummary.includes('INCOMPLETE SHOPPING LIST'),
     'Project planner must disclose missing top fabric separately from its valid backing estimate.');
@@ -518,7 +521,7 @@ try{
   const emptyTopCsv=await fs.readFile(await emptyTopFile.path(),'utf8');
   check(emptyTopCsv.includes('NOT_PLANNED_NO_CUT_PIECES')&&emptyTopCsv.includes('Quilt-top fabric'),
     'Incomplete CSV must include an explicit zero-SKU top-fabric row, not omit it or suggest zero-yard purchase.');
-  await hydrated(topPage,'/quilt-fabric-calculator/');
+  await hydrated(topPage,'/quilt-fabric-calculator/',{incomplete:true,noHero:true});
   await topPage.getByRole('button',{name:'+ Add fabric SKU'}).click();
   const quantity=topPage.getByLabel('Count',{exact:true}).first();
   await quantity.fill('0');await quantity.press('Tab');
@@ -532,10 +535,10 @@ try{
   const zeroCsv=await fs.readFile(await (await zeroCsvPending).path(),'utf8');
   check(zeroCsv.includes('NOT_PLANNED_NO_CUT_PIECES'),
     'Positive SKU count with zero real cuts must remain NOT PLANNED in the shopping CSV.');
-  await hydrated(topPage,'/calculators/');
+  await hydrated(topPage,'/calculators/',{incomplete:true});
   check(!(await topPage.locator('[data-action="export-cut-csv"]').isEnabled()),
     'Hub must persist missing piece-count readiness across calculator navigation.');
-  await hydrated(topPage,'/quilt-fabric-calculator/');
+  await hydrated(topPage,'/quilt-fabric-calculator/',{incomplete:true});
   const restoredQuantity=topPage.getByLabel('Count',{exact:true}).first();
   await restoredQuantity.fill('4');await restoredQuantity.press('Tab');
   check(await topPage.locator('[data-action="print"]').isEnabled(),
