@@ -1,6 +1,6 @@
 # Quilt Studio — verified release status
 
-Updated: 2026-11-05 (source/browser CI 41957276599 and exact-commit public Cloudflare CI 41957276591; physical cutting, printing and owned domain remain unsigned).
+Updated: 2026-11-05 (source/browser CI 41959078555, exact-commit public Cloudflare CI 41959078573; real fabric and paper signoff remain NOT_RUN).
 
 ## Verified in the repository
 
@@ -192,3 +192,10 @@ Only **straight binding, butted borders, one-piece batting and explicitly feasib
 - Additional regression verifies *per-SKU* separation when a directional fabric cannot fit but a permitted rotated fabric can; a narrower real postwash WOF then invalidates only its own SKU. Backing and straight-grain binding tests demonstrate that longitudinal prewash compensation leaves panel/strip counts and their cut coordinates untouched.
 - [Local CI 41957276599](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41957276599): **181/181** tests and full Chromium smoke/axe/print/cross-tool verification. [Public Cloudflare CI 41957276591](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41957276591): exact `356b55b5` commit, all 10 online routes, current planner interactions and noindex. Cloudflare Pages deployment check was `success`.
 - This strengthens G1 directional and length-shrinkage coverage but **does not close physical cutting or actual measurement gates**: unmeasured postwash width, grain behavior of real fabric and actual printer/ruler tests remain human assumptions. Original release gate #18 remains **PARTIAL**.
+
+## Partial-price material reconciliation and 2,000-piece multi-SKU stress (2026-11-05)
+- Removed a real optional-border edge case: on the Border Calculator, deleting every border layer formerly left a live shopping CSV button that invoked `shoppingCsv([])` and threw. Empty optional border configurations now show a specific no-material message with **no CSV button**. The user can re-add a layer to restore the normal shopping list and physical cut.
+- Added one pure, shared `shoppingPriceSummary` that validates finite/nonnegative yardage, unit prices, roll offcuts, rounding extras and trim areas before rendering or exporting. It computes an **entered-price subtotal only for material lines with a user-entered price and a feasible layout or a clearly preliminary, unreviewed top-fabric estimate**. Separate counts disclose unpriced feasible lines and material lines not ready for purchase. Missing prices are not treated as 0 USD; impossible/unplanned rolls cannot contribute guessed costs. The screen and CSV line totals are reconciled using the same inputs.
+- [CI 41959078555](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41959078555) passed **184/184** Vitest unit/property checks and full real Chromium; browser fills three genuine per-SKU prices, checks the partial subtotal against downloaded CSV rows, ensures the three other materials remain unpriced/blank, removes the last border layer, checks cut/CSV controls, and re-adds a border layer. Dedicated tests also reject NaN/±Infinity/negative optional numeric purchasing fields and cost overflow.
+- Stress regression constructs 30 isolated material SKUs containing **exactly 2,000 total nonoverlapping fabric cuts** and exports all 2,000 independent row coordinates plus a header. This proves bounded functional behavior in Node tests, **not an end-user performance SLA**. Independent Cloudflare Pages deployment + public planner smoke for commit `7ba134af` passed [CI 41959078573](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41959078573).
+- Original physical-sewing, print-scale, manual accessibility and domain/ads/GSC release gates are **not** converted to PASS by this software test.
