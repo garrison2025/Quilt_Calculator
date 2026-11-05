@@ -604,6 +604,12 @@ try{
         readyJson.readiness.topFabricMissing===false&&
         readyJson.readiness.cutCsvReady===true&&readyJson.readiness.printReady===true,
     'Restoring real top fabric cuts must make the JSON readiness match the user-facing controls.');
+  const reviewedBackupPromise=topPage.waitForEvent('download');
+  await topPage.locator('[data-action="save"]').click();
+  const reviewedBackup=JSON.parse(await fs.readFile(await (await reviewedBackupPromise).path(),'utf8'));
+  check(reviewedBackup.quilt.topCutsReviewed===true &&
+    /^[0-9a-f]{8}$/.test(reviewedBackup.quilt.topCutsReviewFingerprint),
+    'Reviewed V2 project must record an eight-digit source-cut fingerprint.');
   await topPage.screenshot({path:'artifacts/qa/quilt-top-material-completeness.png',fullPage:true,animations:'disabled'});
   // Any accepted finished-size or quilt-top cut edit invalidates the user's
   // previous completeness review; other material buying settings do not.
@@ -626,6 +632,33 @@ try{
     'Editing top-fabric piece counts must revoke the previously checked whole-project completeness claim.');
   check(!(await topPage.locator('[data-action="print"]').isEnabled()),
     'An edited fabric SKU must not inherit stale whole-project print authorisation.');
+  // A stale manually-reviewed flag in an imported project is not a valid
+  // acknowledgment of newly edited physical cuts.
+  const editedReviewed=structuredClone(reviewedBackup);
+  editedReviewed.fabrics[0].pieces[0].count+=1;
+  await topPage.locator('[data-file]').setInputFiles({
+    name:'stale-reviewed-project.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(editedReviewed))
+  });
+  await topPage.waitForFunction(()=>document.querySelector('[data-results]')?.textContent?.includes('QUILT TOP NOT REVIEWED'));
+  check(!(await topPage.getByLabel('I reviewed every quilt-top color, cut size and piece quantity.').isChecked()),
+    'Imported old confirmation must be unchecked after the top cut-list changed.');
+  check(!(await topPage.locator('[data-action="export-cut-csv"]').isEnabled()),
+    'Stale reviewed import cannot grant a complete cut CSV.');
+  const legacyFlag=structuredClone(reviewedBackup);
+  delete legacyFlag.quilt.topCutsReviewFingerprint;
+  await topPage.locator('[data-file]').setInputFiles({
+    name:'legacy-reviewed-flag-only.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(legacyFlag))
+  });
+  await topPage.waitForFunction(()=>document.querySelector('[data-results]')?.textContent?.includes('QUILT TOP NOT REVIEWED'));
+  check(!(await topPage.getByLabel('I reviewed every quilt-top color, cut size and piece quantity.').isChecked()),
+    'Imported V2 review without a bound fingerprint must require new confirmation.');
+  await topPage.locator('[data-file]').setInputFiles({
+    name:'matching-reviewed-project.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(reviewedBackup))
+  });
+  await topPage.waitForFunction(()=>document.querySelector('[data-status]')?.textContent?.includes('Updated from the current project'));
+  check(await topPage.getByLabel('I reviewed every quilt-top color, cut size and piece quantity.').isChecked() &&
+     await topPage.locator('[data-action="export-cut-csv"]').isEnabled(),
+    'A matching saved V2 review fingerprint should restore the confirmed project.');
   await topContext.close();
   console.log('PASS empty/zero-quantity top-fabric planning, incomplete CSV reasons, no-print safety and restored complete project.');
   // Isolated Square-in-a-Square lab must stay off approved SEO routes.
