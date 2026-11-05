@@ -1,6 +1,8 @@
 import fs from 'node:fs';
 const slugs=['','calculators','quilt-backing-calculator','quilt-binding-calculator','quilt-border-calculator','fabric-yardage-calculator','quilt-fabric-calculator','fabric-yards-to-inches','quilt-batting-calculator','quilt-sashing-calculator'];
 const site=process.env.PUBLIC_SITE_URL||'';
+const githubSha=process.env.GITHUB_SHA?.toLowerCase();
+if(githubSha && !/^[0-9a-f]{40}$/.test(githubSha))throw Error('Invalid GITHUB_SHA used for provenance verification.');
 const production=process.env.PUBLIC_INDEXABLE==='1'&&/^https:\/\/[a-z0-9.-]+$/i.test(site)&&!/\.pages\.dev$|localhost$|127\.0\.0\.1$/.test(site.toLowerCase());
 for(const slug of slugs){
  const file='dist/'+(slug?slug+'/':'')+'index.html';
@@ -10,6 +12,8 @@ for(const slug of slugs){
   if(!html.includes(pattern))throw Error('Missing '+pattern+' on '+file);
  }
  if(production && !html.includes('rel="canonical"'))throw Error('Missing canonical: '+file);
+ if(githubSha && !html.includes('name="quilt-build-commit" content="'+githubSha+'"'))
+  throw Error('Static build does not identify its exact source commit: '+file);
 }
 for(const slug of ['diagonal-quilt-backing-calculator','rag-quilt-calculator','quilt-block-calculator','square-in-a-square-calculator','fabric-width-yardage-converter']){
  if(fs.existsSync('dist/'+slug+'/index.html'))throw Error('HOLD route published: '+slug);

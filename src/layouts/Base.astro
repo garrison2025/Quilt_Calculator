@@ -8,6 +8,10 @@ const pageDescription=description||route?.meta||'Free quilting cutting calculato
 const candidate=import.meta.env.PUBLIC_SITE_URL||'';
 const approved=!noIndex&&import.meta.env.PUBLIC_INDEXABLE==='1'&&/^https:\/\/[^/]+$/i.test(candidate)&&!/\.pages\.dev$|localhost|127\.0\.0\.1/i.test(candidate);
 const canonical=approved ? candidate+Astro.url.pathname : undefined;
+// Public build provenance; Cloudflare supplies its actual git commit SHA.
+// This is not a user identifier and does not bypass the preview noindex gate.
+const buildCommit=(process.env.CF_PAGES_COMMIT_SHA||process.env.GITHUB_SHA||'').toLowerCase();
+const auditCommit=/^[0-9a-f]{40}$/.test(buildCommit)?buildCommit:undefined;
 ---
 <!doctype html>
 <html lang="en">
@@ -15,6 +19,7 @@ const canonical=approved ? candidate+Astro.url.pathname : undefined;
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <meta name="description" content={pageDescription}/>
+{auditCommit&&<meta name="quilt-build-commit" content={auditCommit}/>}
 <meta name="robots" content={approved?'index,follow,max-image-preview:large':'noindex,follow'}/>
 <meta name="theme-color" content="#f8f6f1"/>
 {canonical&&<link rel="canonical" href={canonical}/>}

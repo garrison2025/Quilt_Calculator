@@ -1,0 +1,123 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import {chromium} from 'playwright';
+
+const BASE=(process.env.QUILT_PREVIEW_URL||'https://quilt-calculator-566.pages.dev').replace(/\/+$/,'');
+const sha=(process.env.GITHUB_SHA||'').toLowerCase();
+if(!/^[0-9a-f]{40}$/.test(sha))throw Error('Expected a full GITHUB_SHA for independently verifiable public Pages testing.');
+const assertThat=(v,message)=>assert.ok(v,message);
+const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+const routes=[
+ '/', '/calculators/', '/quilt-backing-calculator/', '/quilt-binding-calculator/',
+ '/quilt-border-calculator/', '/fabric-yardage-calculator/', '/quilt-fabric-calculator/',
+ '/fabric-yards-to-inches/', '/quilt-batting-calculator/', '/quilt-sashing-calculator/'
+];
+const stamp=html=>html.match(/<meta\b[^>]*name="quilt-build-commit"[^>]*content="([0-9a-f]{40})"/i)?.[1]?.toLowerCase();
+async function get(path){
+ const response=await fetch(BASE+path,{redirect:'follow',cache:'no-store',signal:AbortSignal.timeout(20000),headers:{'Cache-Control':'no-cache'}});
+ return {response,html:await response.text()};
+}
+async function waitForThisCommit(){
+ let last='not checked';
+ // A Pages push and a GitHub workflow are independent. Never claim the old
+ // public deployment is this commit just because the current repo built.
+ for(let attempt=1;attempt<=30;attempt++){
+  try{
+   const {response,html}=await get('/calculators/');
+   last='HTTP '+response.status+'; public SHA '+(stamp(html)||'missing');
+   if(response.status===200&&stamp(html)===sha){
+    console.log('PASS public Cloudflare deployment at exact git commit '+sha);
+    return;
+   }
+  }catch(e){last=e instanceof Error?e.message:String(e);}
+  console.log('WAIT Pages commit sync '+attempt+'/30: '+last);
+  if(attempt<30)await sleep(10000);
+ }
+ throw Error('Cloudflare Pages did not publish the exact tested commit '+sha+'. Last evidence: '+last);
+}
+async function downloadText(page,selector){
+ const pending=page.waitForEvent('download',{timeout:20000});
+ await page.locator(selector).click();
+ const file=await pending;
+ return {name:file.suggestedFilename(),content:await fs.readFile(await file.path(),'utf8')};
+}
+let browser;
+try{
+ await waitForThisCommit();
+ for(const path of routes){
+  const {response,html}=await get(path);
+  assert.equal(response.status,200,'Public HTTP error '+path);
+  assert.equal(stamp(html),sha,'Stale or unmarked public route '+path);
+  assertThat(html.includes('name="robots" content="noindex,follow"'),'Live preview must be noindex: '+path);
+  assertThat(!/<link\b[^>]*rel="canonical"/i.test(html),'Preview cannot publish a canonical '+path);
+  assertThat(/<h1[\s>]/.test(html),'No unique H1 on public page: '+path);
+ }
+ console.log('PASS all ten deployed HTML routes, exact build SHA, noindex, no premature canonicals.');
+ const {response:robots,html:robotsText}=await get('/robots.txt');
+ assert.equal(robots.status,200);
+ assertThat(robotsText.includes('User-agent:')&&robotsText.includes('Allow: /'),'Preview robots file not readable.');
+ const {response:sitemap}=await get('/sitemap.xml');
+ assert.equal(sitemap.status,404,'No production sitemap should be emitted on preview.');
+ const {response:lab,html:labHtml}=await get('/lab/square-in-square/');
+ assert.equal(lab.status,200);
+ assertThat(labHtml.includes('noindex,follow')&&!labHtml.includes('rel="canonical"'),'Lab must remain noindex with no canonical.');
+ console.log('PASS robots, suppressed sitemap and intentionally unindexed experimental lab.');
+
+ browser=await chromium.launch({headless:true});
+ const context=await browser.newContext({viewport:{width:1280,height:850},acceptDownloads:true});
+ const page=await context.newPage();
+ const errors=[];
+ page.on('pageerror',e=>errors.push(e.message));
+ const response=await page.goto(BASE+'/calculators/',{waitUntil:'domcontentloaded',timeout:25000});
+ assert.equal(response.status(),200);
+ await page.waitForFunction(()=>document.querySelector('[data-status]')?.textContent?.includes('Incomplete material plan'),null,{timeout:30000});
+ const review=page.getByLabel('I reviewed every quilt-top color, cut size and piece quantity.',{exact:true});
+ assertThat(await review.count()===1,'Latest public JS is missing the quilt-top review confirmation.');
+ assertThat(!(await review.isChecked()),'Default sample cannot be pre-reviewed.');
+ assertThat(!(await page.locator('[data-action="export-cut-csv"]').isEnabled()),'Unreviewed sample offered full cut CSV.');
+ assertThat(!(await page.locator('[data-action="print"]').isEnabled()),'Unreviewed sample offered complete print.');
+ const before=await downloadText(page,'[data-action="export-shopping"]');
+ assertThat(before.name.includes('INCOMPLETE')&&before.content.includes('TOP_CUT_LIST_NOT_REVIEWED'),
+  'Public partial shopping CSV fails review-safety gate.');
+ console.log('PASS public JS hydration, unchecked sample, blocked print/cut export and incomplete shopping CSV.');
+
+ await review.check();
+ await page.waitForFunction(()=>document.querySelector('[data-status]')?.textContent?.includes('Updated from the current project'),null,{timeout:15000});
+ assertThat(await page.locator('[data-action="export-cut-csv"]').isEnabled(),'Review did not enable public cutting CSV.');
+ assertThat(await page.locator('[data-action="print"]').isEnabled(),'Review did not enable public cut print.');
+ const fullCsv=await downloadText(page,'[data-action="export-cut-csv"]');
+ assertThat(fullCsv.content.includes('"sky-blue"')&&fullCsv.content.includes('"sand"') &&
+  fullCsv.content.includes('"batting"'),'Public verified CSV excludes actual sample material rolls.');
+ assert.equal(fullCsv.content.split('\r\n').filter(Boolean).length,36,
+  'Physical public cut CSV should have 35 sample cuts + header.');
+ const backup=await downloadText(page,'[data-action="save"]');
+ const saved=JSON.parse(backup.content);
+ assert.equal(saved.quilt.topCutsReviewed,true);
+ assertThat(/^[a-f0-9]{8}$/.test(saved.quilt.topCutsReviewFingerprint||''),
+  'Public source-bound manual review fingerprint was not persisted to V2 JSON.');
+ console.log('PASS public review approval, 35 real cuts, print gate and saved V2 fingerprint.');
+
+ const width=page.getByLabel('Finished quilt width (in)',{exact:true});
+ await width.fill('61');await width.press('Tab');
+ assertThat(!(await review.isChecked()),'Public review checkbox not revoked after size change.');
+ assertThat(!(await page.locator('[data-action="export-cut-csv"]').isEnabled()),'Stale top review incorrectly allows full cut export.');
+ await page.emulateMedia({media:'print'});
+ assert.equal(await page.locator('[data-results]').evaluate(el=>getComputedStyle(el).display),'none',
+  'Browser Ctrl+P must hide unreviewed full project quantities.');
+ await page.emulateMedia({media:'screen'});
+ console.log('PASS public review revoked on geometry edit and browser print suppressed.');
+
+ const changed=structuredClone(saved);
+ changed.fabrics[0].pieces[0].count+=1;
+ await page.locator('[data-file]').setInputFiles({name:'stale-reviewed.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(changed))});
+ await page.waitForFunction(()=>document.querySelector('[data-status]')?.textContent?.includes('Incomplete material plan'),null,{timeout:15000});
+ assertThat(!(await review.isChecked())&&!(await page.locator('[data-action="export-cut-csv"]').isEnabled()),
+  'Public import accepted changed top cuts with a stale review fingerprint.');
+ await page.locator('[data-file]').setInputFiles({name:'original-reviewed.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(saved))});
+ await page.waitForFunction(()=>document.querySelector('[data-status]')?.textContent?.includes('Updated from the current project'),null,{timeout:15000});
+ assertThat(await review.isChecked()&&await page.locator('[data-action="export-cut-csv"]').isEnabled(),
+  'Exact matching V2 review fingerprint failed to restore public cut-plan status.');
+ assert.equal(errors.length,0,'Public browser JS exceptions: '+errors.join('; '));
+ console.log('PASS public import rejects stale reviewed JSON and accepts exact matching reviewed backup.');
+ console.log('LIVE DEPLOYMENT SMOKE PASS — '+sha+' · '+BASE+' · 10 routes · SEO gates · actual Chromium interactions.');
+}finally{if(browser)await browser.close();}
