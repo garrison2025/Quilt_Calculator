@@ -1,6 +1,6 @@
 # Quilt Studio — verified release status
 
-Updated: 2026-11-05 (source and browser CI 41962447854; exact-commit Cloudflare public verification CI 41962448008; physical cutting and actual printer signoff remain pending).
+Updated: 2026-11-05 (lazy material rendering: full Chromium CI 41963871015; exact-commit Cloudflare public CI 41963871059; real fabric/paper signoff still NOT_RUN).
 
 ## Verified in the repository
 
@@ -213,3 +213,10 @@ Only **straight binding, butted borders, one-piece batting and explicitly feasib
 - [CI 41962447854](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41962447854): **184/184** Vitest checks, full keyboard/a11y/local Chromium, plus independent 30-SKU/2,000-cut and single-SKU/2,000-cut import–SVG–CSV exercises. In the dense case Chromium verified 180 drawn SVG rectangles, 45 numeric preview rows and **2,000 CSV cut rows** on the same SKU. No specific rendering speed for older devices was certified.
 - [Public CI 41962448008](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41962448008): exact deployment SHA `10591fb8`, 10 live calculator routes, noindex protections and public user workflow passed. Cloudflare deployment check also returned success.
 - Original V2 physical printer, sewing fabric, manual assistive technology and production domain/ads/GSC release gates **remain open**. This change improves the reliability and disclosure of a schematic preview, not the physical cutting algorithm.
+
+## Lazy SKU drawing, eager physical calculation, synchronous print reconciliation (2026-11-05)
+- Fixed a real large-project DOM workload: previously every closed `details.sku-plan` eagerly generated SVG rectangles and 45 coordinate table rows after every accepted edit. A 30-roll project therefore created at least **1,350 hidden preview table rows**, plus 30 SVGs, despite only the first disclosure being open. Now each plan carries a `data-preview-state` and generates its preview once only when first expanded. **All physical geometry and procurement calculations remain eager and fully checked**, so cut CSV/JSON values do not depend on disclosure state.
+- The existing beforeprint/afterprint mechanism now **synchronously** signals each material plan to create its preview before the print snapshot, expands every plan and restores the prior open/closed state afterward. This synchronization is necessary because native `details` toggle events can be asynchronous. The incomplete/stale `data-print-ready=false` print CSS guard remains in force.
+- [CI 41963871015](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41963871015): **184/184** unit/property checks plus full Chromium, SVG-to-complete-CSV coordinate reconciliation on approved calculator routes, all-material PDF print, a 30-SKU/2,000-cut browser stress test that starts with 29 unrendered plans and only 45 table rows, print-time generation of all 30 plans followed by collapse restoration, and one-SKU/2,000-cut export.
+- [Public Pages CI 41963871059](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41963871059): exact deployed SHA `8f8e1d3d`, ten live calculator routes, safe project interaction, print limits and `noindex` preview behavior passed. Cloudflare Pages source deployment check succeeded.
+- The work reduces **initial hidden DOM generation**; it does not prove a per-device time threshold, real paper scale, sewn fabric accuracy, or assistive technology manual acceptance. No new external APIs.
