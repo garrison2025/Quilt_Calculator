@@ -75,6 +75,19 @@ async function assertSvgCorrespondsToCutCsv(page,route){
   if(!bySku.has(sku))bySku.set(sku,[]);
   bySku.get(sku).push(row);
  }
+ // Browser must exercise a real expand/collapse: lazy closed rolls should
+ // materialize on demand without changing the full physical export.
+ const plans=page.locator('details.sku-plan');
+ for(let i=0;i<await plans.count();i++){
+  const plan=plans.nth(i);
+  if(await plan.getAttribute('data-preview-state')==='pending'){
+   await plan.locator('summary').click();
+   await plan.locator('svg[data-export-scope="current"]').waitFor({state:'attached'});
+   await plan.locator('summary').click();
+   check(await plan.getAttribute('data-preview-state')==='rendered',
+    'Opened roll must cache its complete preview while collapsed.');
+  }
+ }
  const diagramData=await page.locator('[data-results] .diagram-wrap svg[data-export-scope="current"]').evaluateAll(svgs=>svgs.map(svg=>({
    sku:svg.dataset.rollSku,
    count:Number(svg.dataset.cutCount),
@@ -949,11 +962,15 @@ try{
   await hydrated(page,'/calculators/',{incomplete:true});
   await page.getByLabel('I reviewed every quilt-top color, cut size and piece quantity.').check();
   check(await page.locator('details.sku-plan').count()===6,'Project print must contain all six material plans.');
+  check(await page.locator('details.sku-plan[data-preview-state="pending"]').count()===5,
+    'Project print test must begin with 5 unrendered closed materials to prove print-time materialization.');
   await page.evaluate(()=>{window.__prePrintPlanCount=0;window.addEventListener('beforeprint',()=>{
     window.__prePrintPlanCount=document.querySelectorAll('details.sku-plan[open]').length;
   });});
   await page.pdf({path:'artifacts/qa/all-materials-print.pdf',printBackground:true,format:'A4'});
   check(await page.evaluate(()=>window.__prePrintPlanCount)===6,'Printing must expand every material plan, not just backing.');
+  check(await page.locator('details.sku-plan[data-preview-state="pending"]').count()===0,
+    'Print must materialize all 6 previously hidden roll previews before the PDF snapshot.');
   await page.waitForFunction(()=>document.querySelectorAll('details.sku-plan[open]').length===1);
   console.log('PASS all-materials print includes every fabric roll and restores collapsed plan state.');
   await hydrated(page,'/quilt-backing-calculator/');
@@ -1302,13 +1319,24 @@ try{
   await keyboard.waitForFunction(()=>document.querySelectorAll('details.sku-plan').length===30,null,{timeout:30000});
   check(await keyboard.locator('[data-fabric-index]').count()===30,
     'Upper-capacity project must display 30 editable fabric SKU groups.');
+  check(await keyboard.locator('details.sku-plan[data-preview-state="pending"]').count()===29 &&
+    await keyboard.locator('details.sku-plan svg[data-export-scope="current"]').count()===1,
+    '30-roll initial render must generate only the first visible SVG, not 29 hidden roll previews.');
+  check((await keyboard.locator('details.sku-plan .breakdown-table tbody tr').count())===45,
+    'Initial 30-roll screen must render only 45 visible preview-coordinate rows.');
+  // Print must synchronously build every hidden preview before capturing the
+  // page, even when all 29 remaining rolls have never been opened.
+  await keyboard.evaluate(()=>window.dispatchEvent(new Event('beforeprint')));
   const svgCounts=await keyboard.locator('details.sku-plan svg[data-export-scope="current"]').evaluateAll(
     svgs=>svgs.map(svg=>Number(svg.dataset.cutCount))
   );
   check(svgCounts.length===30&&svgCounts.reduce((a,b)=>a+b,0)===2000,
-    '30 independently indexed cutting SVGs must account for all 2,000 cut pieces.');
+    'Print preparation must synchronously render every roll and preserve all 2,000 cut counts.');
   check((await keyboard.locator('details.sku-plan .breakdown-table tbody tr').count())===30*45,
-    'UI should render bounded 45-row coordinate previews per roll rather than 2,000 full table rows.');
+    'Printed roll coordinate previews should stay bounded to 45 rows per roll.');
+  await keyboard.evaluate(()=>window.dispatchEvent(new Event('afterprint')));
+  check(await keyboard.locator('details.sku-plan[open]').count()===1,
+    'After printing, all initially collapsed material rolls must return to their prior state.');
   check(await keyboard.locator('[data-action="export-cut-csv"]').isEnabled(),
     'All 2,000 feasible cuts should remain exportable independently of preview limits.');
   const stressDownload=keyboard.waitForEvent('download');

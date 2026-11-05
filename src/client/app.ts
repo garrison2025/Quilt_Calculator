@@ -551,9 +551,24 @@ if(root){
   append(summary,node('span','sku-plan-label',label+' · '+sku),
    node('strong','',noPieces?'NOT PLANNED':purchaseYards===undefined?'FIT IMPOSSIBLE':yd(purchaseYards)+' yd'));
   item.appendChild(summary);
-  if(noPieces)warning(item,'No positive-count cut pieces are entered for this fabric SKU. This is not a zero-yard purchasing recommendation.');
-  else if(layout.isCutFeasible){layoutSummary(item,layout);diagram(item,layout,'Cut plan · '+label,exportSku);}
-  else warning(item,layout.error||'FIT_IMPOSSIBLE: no valid cut layout for this fabric.',true);
+  // Only the first (open) roll is rendered at startup. Up to 30 rolls and
+  // 2,000 pieces may be imported: allocating every closed SVG/table on each
+  // calculator edit wastes DOM work and can cause long input latency.
+  // CSV/export still operates exclusively on the complete verified Layouts.
+  item.dataset.previewState='pending';
+  const ensurePreview=()=>{
+   if(item.dataset.previewState==='rendered')return;
+   item.dataset.previewState='rendered';
+   if(noPieces)warning(item,'No positive-count cut pieces are entered for this fabric SKU. This is not a zero-yard purchasing recommendation.');
+   else if(layout.isCutFeasible){layoutSummary(item,layout);diagram(item,layout,'Cut plan · '+label,exportSku);}
+   else warning(item,layout.error||'FIT_IMPOSSIBLE: no valid cut layout for this fabric.',true);
+  };
+  item.addEventListener('toggle',()=>{if(item.open)ensurePreview();});
+  // beforeprint fires before the browser snapshots print styles. It must
+  // synchronously materialize ALL roll previews: the async toggle event alone
+  // can be too late and would leave printed materials blank.
+  item.addEventListener('quilt-preview-for-print',ensurePreview);
+  if(item.open)ensurePreview();
   parent.appendChild(item);
  }
  function topFabricShoppingLine(x:ReturnType<typeof calculateQuiltFabric>[number],unitPrice?:number,reviewed=true):ShoppingLine {
@@ -864,7 +879,12 @@ if(root){
  window.addEventListener('beforeprint',()=>{
   if(printingExpanded)return;
   printingExpanded=true;
-  collapsedForPrint=[...resultRoot.querySelectorAll<HTMLDetailsElement>('details.sku-plan:not([open])')];
+  const plans=[...resultRoot.querySelectorAll<HTMLDetailsElement>('details.sku-plan')];
+  // Never accidentally populate incomplete/stale print content. When valid,
+  // create the hidden preview tables synchronously before the print snapshot.
+  if(root!.dataset.printReady==='true')
+   plans.forEach(el=>el.dispatchEvent(new Event('quilt-preview-for-print')));
+  collapsedForPrint=plans.filter(el=>!el.open);
   collapsedForPrint.forEach(el=>el.open=true);
  });
  window.addEventListener('afterprint',()=>{
