@@ -539,8 +539,8 @@ try{
   // Changing the finished width of an existing border must revoke quilt-top
   // review and update all materials, not just the border fabric SKU.
   await hydrated(geometryPage,'/quilt-border-calculator/');
-  const borderWidth=geometryPage.getByLabel('Finished border width (in)',{exact:true}).first();
-  await borderWidth.fill('4');await borderWidth.press('Tab');
+  const geometryBorderWidth=geometryPage.getByLabel('Finished border width (in)',{exact:true}).first();
+  await geometryBorderWidth.fill('4');await geometryBorderWidth.press('Tab');
   await hydrated(geometryPage,'/calculators/',{incomplete:true});
   check((await geometryPage.locator('[data-final-quilt-dimensions]').innerText()).includes('Final outside: 68 × 88') &&
     !(await geometryPage.getByLabel('I reviewed every quilt-top color, cut size and piece quantity.').isChecked()) &&
@@ -990,7 +990,7 @@ try{
   await page.waitForFunction(()=>document.querySelector('[data-status]')?.textContent?.includes('Updated'));
   check((await page.getByLabel('Quilt width (in)',{exact:true}).inputValue())==='90','Persisted width not restored after reload.');
   await page.locator('[data-units]').selectOption('cm');
-  const cmField=page.getByLabel('Finished quilt width (cm)',{exact:true});
+  const cmField=page.getByLabel('Quilt width (cm)',{exact:true});
   check(Math.abs(Number(await cmField.inputValue())-228.6)<.01,'Inch-to-cm display conversion is incorrect.');
   await cmField.fill('0');
   await cmField.press('Tab');
@@ -1707,16 +1707,16 @@ try{
   check((await cross.getByLabel('Quilt height (in)',{exact:true}).inputValue())==='84',
     'P21 binding must restore backing height.');
   await cross.locator('[data-units]').selectOption('cm');
-  const actualCM=Number(await cross.getByLabel('Finished quilt width (cm)',{exact:true}).inputValue());
+  const actualCM=Number(await cross.getByLabel('Quilt width (cm)',{exact:true}).inputValue());
   check(Math.abs(actualCM-182.88)<.01,'P21 native 72 inches must display 182.88 cm in binding.');
   crossStored=await cross.evaluate(()=>JSON.parse(localStorage.getItem('quilt-studio-v2')));
   check(crossStored.quilt.finishedWidth===72&&crossStored.quilt.finishedHeight===84&&crossStored.units==='cm',
     'P21 changing display units must not convert stored native-inch geometry twice.');
   await hydrated(cross,'/quilt-batting-calculator/');
-  check(Math.abs(Number(await cross.getByLabel('Finished quilt width (cm)',{exact:true}).inputValue())-182.88)<.01,
+  check(Math.abs(Number(await cross.getByLabel('Quilt width (cm)',{exact:true}).inputValue())-182.88)<.01,
     'P21 batting must share cm display without changing stored inches.');
   await hydrated(cross,'/calculators/',{incomplete:true});
-  check(Math.abs(Number(await cross.getByLabel('Finished quilt width (cm)',{exact:true}).inputValue())-182.88)<.01,
+  check(Math.abs(Number(await cross.getByLabel('Quilt width (cm)',{exact:true}).inputValue())-182.88)<.01,
     'P21 main project hub must retain same native geometry and chosen display units.');
   await cross.locator('[data-units]').selectOption('in');
   check((await cross.getByLabel('Quilt width (in)',{exact:true}).inputValue())==='72',
