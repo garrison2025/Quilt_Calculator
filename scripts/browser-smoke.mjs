@@ -507,7 +507,7 @@ try{
   const battingRoll=batPage.getByLabel('Batting roll width (in)',{exact:true});
   await battingRoll.fill('65');await battingRoll.press('Tab');
   const battingRow=batPage.locator('.shopping-item').filter({hasText:'Batting · single piece only'});
-  check((await battingRow.innerText()).includes('FIT IMPOSSIBLE'),'Unrotated 108 × 58 batting cannot fit a 65-inch roll.');
+  check((await battingRow.innerText()).includes('FIT IMPOSSIBLE'),'Unrotated 114 × 64 batting cannot fit a 65-inch roll.');
   check((await batPage.locator('[data-results]').innerText()).includes('INCOMPLETE SHOPPING LIST'),
     'Incomplete project must warn users before buying materials.');
   check(!(await batPage.locator('[data-action="print"]').isEnabled()),
@@ -536,7 +536,7 @@ try{
   const rotateBatting=batPage.getByLabel('May rotate batting 90°',{exact:true});
   check(!(await rotateBatting.isChecked()),'Sample project must start with unrotated batting.');
   await rotateBatting.check();
-  check((await battingRow.innerText()).includes('3 yd'),'Rotated 58-in-wide × 108-in-long batting must fit for 3 yd.');
+  check((await battingRow.innerText()).includes('3 ¼ yd'),'Rotated 64-in-wide × 114-in-long batting must fit at 3.25 yd for final quilt size including borders.');
   check(!(await batPage.locator('[data-action="print"]').isEnabled()),
     'Correct batting fit alone does not confirm every quilt-top cutting piece.');
   await batPage.getByLabel('I reviewed every quilt-top color, cut size and piece quantity.').check();
@@ -550,17 +550,17 @@ try{
   await batPage.getByRole('button',{name:'Download cut list CSV'}).click();
   const hubCut=csvRecords(await fs.readFile(await (await hubCutPromise).path(),'utf8'));
   const hubBatting=hubCut.slice(1).filter(row=>row[1]==='batting');
-  check(hubBatting.length===1&&hubBatting[0][8]==='90'&&hubBatting[0][6]==='58'&&hubBatting[0][7]==='108',
+  check(hubBatting.length===1&&hubBatting[0][8]==='90'&&hubBatting[0][6]==='64'&&hubBatting[0][7]==='114',
     'Hub cut list must physically represent one permitted 90° batting rotation.');
   await hydrated(batPage,'/quilt-batting-calculator/');
   check(await batPage.getByLabel('May rotate 90°',{exact:true}).isChecked(),
     'Standalone batting page must use the same saved rotation setting.');
-  check((await batPage.locator('[data-results] .result-big').innerText()).includes('3'),
-    'Standalone batting must agree with 3-yard hub purchasing estimate.');
+  check((await batPage.locator('[data-results] .result-big').innerText()).includes('3 ¼'),
+    'Standalone batting must agree with the border-inclusive 3.25-yard hub purchasing estimate.');
   const battingCutPromise=batPage.waitForEvent('download');
   await batPage.getByRole('button',{name:'Download cut list CSV'}).click();
   const battingCut=csvRecords(await fs.readFile(await (await battingCutPromise).path(),'utf8'));
-  check(battingCut.length===2&&battingCut[1][8]==='90'&&battingCut[1][6]==='58'&&battingCut[1][7]==='108',
+  check(battingCut.length===2&&battingCut[1][8]==='90'&&battingCut[1][6]==='64'&&battingCut[1][7]==='114',
     'Standalone batting physical cut must match the project planner CSV.');
   await hydrated(batPage,'/quilt-fabric-calculator/');
   const firstFabricWof=batPage.getByLabel('Usable WOF (in)',{exact:true}).first();

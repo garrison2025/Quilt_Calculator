@@ -559,7 +559,7 @@ if(root){
     onValue(value);
     try{validateProject(project);}catch(e){onValue(lastAccepted);throw e;}
     lastAccepted=value;
-    if(tool==='fabric' || field.path==='quilt.finishedWidth' || field.path==='quilt.finishedHeight'){
+    if(tool==='fabric' || tool==='borders' || field.path==='options.seam' || field.path==='quilt.finishedWidth' || field.path==='quilt.finishedHeight'){
      project.quilt.topCutsReviewed=false;
      project.quilt.topCutsReviewFingerprint=undefined;
      // Reconcile the visible manual-attestation control without rebuilding the
@@ -1088,7 +1088,9 @@ if(root){
      ?'Unreadable original autosave remains protected. Download its raw backup before explicitly replacing it. The displayed project is not saved.'
      :'This tab has unsaved edits and another tab saved a different project. Save a JSON backup, then load the newest project before exporting.',true);
    }
-  }catch(err){root!.dataset.printReady='false';cutExport=null;materialCuts=[];exportButton.disabled=true;cutCsvButton.disabled=true;printButton.disabled=true;warning(resultRoot,(err instanceof Error ? err.message : 'Unknown calculation error'),true);note('Cannot prove this cut is feasible. Review your measurements.',true);}
+  }catch(err){root!.dataset.printReady='false';cutExport=null;materialCuts=[];exportButton.disabled=true;cutCsvButton.disabled=true;printButton.disabled=true;warning(resultRoot,(err instanceof Error ? err.message : 'Unknown calculation error'),true);
+    const detail=err instanceof Error?err.message:'';
+    note(detail.includes('SIZE BASIS NOT CONFIRMED')?'Choose how the saved quilt measurements relate to the border layers before estimating materials.':detail.includes('BORDER FIT IMPOSSIBLE')?'The border widths cannot fit inside the entered finished size; correct the dimensions before exporting.':'Cannot prove this cut is feasible. Review your measurements.',true);}
  }
  unitsSelect.addEventListener('change',()=>{if(!requireCommittedDraft('change units')){unitsSelect.value=project.units;return;}project.units=unitsSelect.value==='cm'?'cm':'in';persist();renderEditor();update();});
  root.querySelector('[data-action="recalculate"]')?.addEventListener('click',()=>{
