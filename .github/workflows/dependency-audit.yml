@@ -1,0 +1,35 @@
+name: Quilt dependency vulnerability inventory
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - package.json
+      - package-lock.json
+      - scripts/security-audit-summary.mjs
+      - .github/workflows/dependency-audit.yml
+  schedule:
+    - cron: '0 3 * * 1'
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Query npm advisory database (read-only)
+        run: |
+          mkdir -p artifacts/security
+          npm audit --json > artifacts/security/audit-all.json || true
+          npm audit --omit=dev --json > artifacts/security/audit-production.json || true
+          node scripts/security-audit-summary.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: quilt-npm-security-inventory
+          path: artifacts/security/
+          retention-days: 14
