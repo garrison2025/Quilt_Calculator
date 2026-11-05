@@ -368,11 +368,30 @@ if(root){
    const current=f.path==='yardage.alternateWof'?(get(source,f.path)??project.options.usableWof):f.path==='yardage.allowRotate'?(get(source,f.path)??project.options.allowRotate):get(source,f.path);grp.appendChild(inputField(f,current,v=>{if(onChange)onChange(f,v);else set(project,f.path,v);}));
   }frag.appendChild(grp);return frag;
  }
+ // When a dynamic input collection is replaced, the clicked control is
+ // detached. Restore keyboard focus to the new/adjacent control after both
+ // form and result updates. Do not rerender a rejected in-progress draft.
+ function rebuildDynamicEditor(focusSelector:string,selectText=false):void{
+  renderEditor();update();
+  const target=fieldsRoot.querySelector<HTMLInputElement|HTMLButtonElement>(focusSelector);
+  if(!target)throw Error('Dynamic material editor lost its expected keyboard focus target.');
+  target.focus();
+  if(selectText && target instanceof HTMLInputElement && target.type==='text')target.select();
+ }
  function renderFabricEditor():void{
   const shell=node('div');shell.appendChild(node('h3','group-title','Fabric colors / SKUs'));
   project.fabrics.forEach((fabric,i)=>{
    const card=node('div','dynamic-entry'),head=node('div','dynamic-head');
-   const del=node('button','','Remove SKU');del.type='button';del.addEventListener('click',()=>{if(!requireCommittedDraft('remove a fabric SKU'))return;project.fabrics.splice(i,1);project.quilt.topCutsReviewed=false;project.quilt.topCutsReviewFingerprint=undefined;persist();renderEditor();update();});
+   card.dataset.fabricIndex=String(i);
+   const del=node('button','','Remove SKU');del.type='button';del.dataset.removeSku='';
+   del.addEventListener('click',()=>{
+    if(!requireCommittedDraft('remove a fabric SKU'))return;
+    project.fabrics.splice(i,1);
+    project.quilt.topCutsReviewed=false;project.quilt.topCutsReviewFingerprint=undefined;
+    persist();
+    const neighbor=Math.min(i,project.fabrics.length-1);
+    rebuildDynamicEditor(neighbor<0?'[data-add-sku]':`[data-fabric-index="${neighbor}"] [data-remove-sku]`);
+   });
    append(head,node('strong','',fabric.label||'Fabric '+(i+1)),del);card.appendChild(head);
    card.appendChild(makeGroup('Fabric roll',[
     {label:'SKU (unique)',path:'id',kind:'text'},{label:'Fabric / color label',path:'label',kind:'text'},
@@ -382,7 +401,18 @@ if(root){
    ],fabric,(f,v)=>{if(f.path==='id'&&project.fabrics.some((g,j)=>j!==i&&g.id===v))throw Error('SKU IDs must be unique.');(fabric as unknown as Record<string,unknown>)[f.path]=v;}));
    fabric.pieces.forEach((piece,j)=>{
     const group=node('div','dynamic-entry'),h=node('div','dynamic-head');
-    const remove=node('button','','Remove cut group');remove.type='button';remove.addEventListener('click',()=>{if(!requireCommittedDraft('remove a cut group'))return;fabric.pieces.splice(j,1);project.quilt.topCutsReviewed=false;project.quilt.topCutsReviewFingerprint=undefined;persist();renderEditor();update();});
+    group.dataset.cutIndex=String(j);
+    const remove=node('button','','Remove cut group');remove.type='button';remove.dataset.removeCut='';
+    remove.addEventListener('click',()=>{
+     if(!requireCommittedDraft('remove a cut group'))return;
+     fabric.pieces.splice(j,1);
+     project.quilt.topCutsReviewed=false;project.quilt.topCutsReviewFingerprint=undefined;
+     persist();
+     const neighbor=Math.min(j,fabric.pieces.length-1);
+     rebuildDynamicEditor(neighbor<0
+      ?`[data-fabric-index="${i}"] [data-add-cut]`
+      :`[data-fabric-index="${i}"] [data-cut-index="${neighbor}"] [data-remove-cut]`);
+    });
     append(h,node('strong','','Cut group '+(j+1)),remove);group.appendChild(h);
     group.appendChild(makeGroup('Rectangle CUT sizes',[
      {label:'Piece label',path:'label',kind:'text'},{label:'Cut width',path:'widthIn',kind:'length'},
@@ -391,13 +421,15 @@ if(root){
     ],piece,(f,v)=>{(piece as unknown as Record<string,unknown>)[f.path]=v;}));
     card.appendChild(group);
    });
-   const addPiece=node('button','dynamic-add','+ Add rectangle cut group');addPiece.type='button';addPiece.addEventListener('click',()=>{
+   const addPiece=node('button','dynamic-add','+ Add rectangle cut group');addPiece.type='button';addPiece.dataset.addCut='';
+   addPiece.addEventListener('click',()=>{
     if(!requireCommittedDraft('add a cut group'))return;
     if(fabric.pieces.length>=100){note('Maximum 100 piece groups per SKU.',true);return;}
     const newPiece={widthIn:5,heightIn:5,count:4,label:'New cut',allowRotate:false};
     fabric.pieces.push(newPiece);
     try{validateProject(project);}catch(e){fabric.pieces.pop();note((e as Error).message,true);return;}
-    project.quilt.topCutsReviewed=false;project.quilt.topCutsReviewFingerprint=undefined;persist();renderEditor();update();
+    project.quilt.topCutsReviewed=false;project.quilt.topCutsReviewFingerprint=undefined;persist();
+    rebuildDynamicEditor(`[data-fabric-index="${i}"] [data-cut-index="${fabric.pieces.length-1}"] .field-control`,true);
    });card.appendChild(addPiece);shell.appendChild(card);
   });
   const add=node('button','dynamic-add','+ Add fabric SKU');add.type='button';add.addEventListener('click',()=>{
@@ -406,14 +438,22 @@ if(root){
    const id='fabric-'+(project.fabrics.length+1)+'-'+Date.now().toString(36);
    project.fabrics.push({id,label:'New fabric',usableWidth:43,oneWayPrint:false,shrinkageLengthPct:0,pieces:[{widthIn:5,heightIn:5,count:4,label:'Cut square'}]});
    try{validateProject(project);}catch(e){project.fabrics.pop();note((e as Error).message,true);return;}
-   project.quilt.topCutsReviewed=false;project.quilt.topCutsReviewFingerprint=undefined;persist();renderEditor();update();
-  });shell.appendChild(add);fieldsRoot.appendChild(shell);
+   project.quilt.topCutsReviewed=false;project.quilt.topCutsReviewFingerprint=undefined;persist();
+   rebuildDynamicEditor(`[data-fabric-index="${project.fabrics.length-1}"] .field-control`,true);
+  });add.dataset.addSku='';shell.appendChild(add);fieldsRoot.appendChild(shell);
  }
  function renderBorderEditor():void{
   const shell=node('div');shell.appendChild(node('h3','group-title','Butted border layers (maximum 5)'));
   project.borders.forEach((layer,i)=>{
    const card=node('div','dynamic-entry'),h=node('div','dynamic-head'),remove=node('button','','Remove layer');
-   remove.type='button';remove.addEventListener('click',()=>{if(!requireCommittedDraft('remove a border layer'))return;project.borders.splice(i,1);persist();renderEditor();update();});
+   card.dataset.borderIndex=String(i);
+   remove.type='button';remove.dataset.removeBorder='';
+   remove.addEventListener('click',()=>{
+    if(!requireCommittedDraft('remove a border layer'))return;
+    project.borders.splice(i,1);persist();
+    const neighbor=Math.min(i,project.borders.length-1);
+    rebuildDynamicEditor(neighbor<0?'[data-add-border]':`[data-border-index="${neighbor}"] [data-remove-border]`);
+   });
    append(h,node('strong','','Layer '+(i+1)),remove);card.appendChild(h);
    card.appendChild(makeGroup('Border fabric',[
     {label:'SKU',path:'sku',kind:'text'},{label:'Label / color',path:'label',kind:'text'},
@@ -424,8 +464,9 @@ if(root){
   const add=node('button','dynamic-add','+ Add border layer');add.type='button';add.addEventListener('click',()=>{
    if(!requireCommittedDraft('add a border layer'))return;
    if(project.borders.length>=5){note('Maximum 5 border layers.',true);return;}
-   project.borders.push({sku:'border-'+Date.now().toString(36),label:'New border',widthIn:2,wofIn:43,shrinkageLengthPct:0});persist();renderEditor();update();
-  });shell.appendChild(add);fieldsRoot.appendChild(shell);
+   project.borders.push({sku:'border-'+Date.now().toString(36),label:'New border',widthIn:2,wofIn:43,shrinkageLengthPct:0});persist();
+   rebuildDynamicEditor(`[data-border-index="${project.borders.length-1}"] .field-control`,true);
+  });add.dataset.addBorder='';shell.appendChild(add);fieldsRoot.appendChild(shell);
  }
  function renderEditor():void{
   fieldsRoot.replaceChildren();
