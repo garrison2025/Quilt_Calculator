@@ -15,6 +15,19 @@ for(const slug of slugs){
  if(githubSha && !html.includes('name="quilt-build-commit" content="'+githubSha+'"'))
   throw Error('Static build does not identify its exact source commit: '+file);
 }
+// Social images are verifiable first-party assets; preview canonical stays absent.
+const imageIds=['hub','hub','backing','binding','borders','yardage','fabric','inches','batting','sashing'];
+const socialOrigin=production?site:'https://quilt-calculator-566.pages.dev';
+for(let i=0;i<slugs.length;i++){
+ const slug=slugs[i],id=imageIds[i],html=fs.readFileSync('dist/'+(slug?slug+'/':'')+'index.html','utf8');
+ const img=socialOrigin+'/images/'+id+'.webp';
+ if(!html.includes('property="og:image" content="'+img+'"')||
+    !html.includes('name="twitter:image" content="'+img+'"')||
+    !html.includes('property="og:image:alt"'))
+  throw Error('Tool needs working first-party OG/Twitter image and alt: '+slug);
+ if(!fs.existsSync('dist/images/'+id+'.webp'))throw Error('Missing social preview image: '+id);
+ if(!production&&html.includes('rel="canonical"'))throw Error('Preview canonical must remain absent: '+slug);
+}
 for(const slug of ['diagonal-quilt-backing-calculator','rag-quilt-calculator','quilt-block-calculator','square-in-a-square-calculator','fabric-width-yardage-converter']){
  if(fs.existsSync('dist/'+slug+'/index.html'))throw Error('HOLD route published: '+slug);
 }
@@ -73,6 +86,55 @@ for(const row of lines.slice(1)){
  if(['WOF','SQUARE'].includes(group)&&path)throw Error('Unvalidated WOF or square intent cannot be published: '+keyword);
 }
 if(mapped!==202||hold!==16||support!==107)throw Error('V2 keyword allocation changed without updated evidence and intentional review.');
+// Independent operational keyword decisions; source Semrush CSV is never modified.
+const operationRows=fs.readFileSync('docs/data/V2_SEO_Operational_Keywords_218.csv','utf8').trim().split(/\r?\n/);
+if(operationRows.length!==lines.length)throw Error('Operational keyword sheet needs all original 218 rows.');
+const parseRow=row=>[...row.matchAll(/"((?:[^"]|"")*)"/g)].map(m=>m[1].replace(/""/g,'"'));
+let activeCount=0,reviewCount=0,brandCount=0,holdCount=0;
+for(let i=1;i<lines.length;i++){
+ const original=parseRow(lines[i]),operational=parseRow(operationRows[i]);
+ if(operational.length!==7||operational[0]!==original[0]||
+    operational[1]!==original[1]||operational[2]!==original[2]||
+    operational[3]!==original[5]||operational[4]!==original[6])
+  throw Error('Operational SEO source mismatch or fabricated metric at row '+i);
+ const [keyword,,,,path,status]=operational;
+ if(keyword==='robert kaufman calculator'){
+  if(status!=='EXCLUDE_OTHER_BRAND')throw Error('Competitor brand cannot be active keyword');
+  brandCount++;
+ }else if(['how much is 1 yard','quilting calculator app'].includes(keyword)){
+  if(status!=='REVIEW_US_SERP_INTENT')throw Error('Ambiguous search intent must retain review gate');
+  reviewCount++;
+ }else if(!path){
+  if(status!=='HOLD_UNVALIDATED_METHOD')throw Error('HOLD keyword must remain unindexed');
+  holdCount++;
+ }else{
+  if(status!=='ACTIVE_NONBRAND_INTENT')throw Error('Approved mapped keyword missing operational target: '+keyword);
+  activeCount++;
+ }
+}
+if(activeCount!==199||reviewCount!==2||brandCount!==1||holdCount!==16)
+ throw Error('Operational keyword decision counts are inconsistent.');
+console.log('PASS: 199 active mapped intent terms, 2 US-SERP reviews, 1 other-brand exclusion, 16 original HOLD; source 218 unchanged.');
+// Important static content must be genuinely inspectable without JavaScript.
+const seoTables=[['quilt-backing-calculator','backing',8],
+ ['quilt-binding-calculator','binding',6],['fabric-yardage-calculator','yardage',5]];
+for(const [slug,id,expectedRows] of seoTables){
+ const html=fs.readFileSync('dist/'+slug+'/index.html','utf8');
+ const part=html.split('data-engine-reference="'+id+'"')[1]?.split('</table>')[0]||'';
+ if(!part.includes('<caption>Illustrative cutting')||
+    (part.match(/<tr>/g)||[]).length!==expectedRows+1)
+  throw Error('Engine-derived static SEO examples missing or incomplete: '+slug);
+ if(!part.includes('scope="row"')||!html.includes('Reference cases, not certified sewing'))
+  throw Error('Example assumptions or row semantics missing: '+slug);
+}
+const direct=fs.readFileSync('dist/fabric-yards-to-inches/index.html','utf8');
+if(!direct.includes('data-seo-direct-answer')||
+   !direct.includes('One linear yard of fabric is exactly 36 inches (91.44 centimeters) long.')||
+   !direct.includes('four yards is')||
+   !direct.includes('href="#fraction-reference"')||
+   !direct.includes('id="fraction-reference"'))
+ throw Error('Converter must give high-intent yard conversion answer in raw HTML.');
+
 for(const slug of slugs.filter(Boolean)){
  const html=fs.readFileSync('dist/'+slug+'/index.html','utf8');
  if(!html.includes('data-content-guide=')||!html.includes('PRACTICAL MEASUREMENT GUIDE')||!html.includes('What to calculate next')){
