@@ -138,3 +138,17 @@ LIVE：每页 `lang=en`，`og:title`/`og:description` 存在，`og:image` 不存
 Implemented from the above audit: (1) 218-row derived operational keyword sheet retaining 199 mapped nonbrand target terms, 2 intentional search-intent reviews, 1 other-brand exclusion and 16 unchanged HOLD terms; (2) engine-derived factual example tables on backing/binding/yardage; (3) prominent `1 yd = 36 in` answer without cloning fractional URLs; (4) per-page OG/Twitter preview images and more specific related links; (5) static/regression/browser checks covering provenance, content integrity and WCAG contrast. See [source-keyword matrix](../SEO_CONTENT_MATRIX.md).
 
 Performance: a separate [mobile Lighthouse CI workflow](../../.github/workflows/lighthouse.yml) now measures simulated lab LCP/CLS/TBT and preserves JSON evidence. Its results must be read from the particular run, not inferred from this paragraph. **Field INP, Google CrUX, GSC and search ranking remain NOT_RUN**. A future approved domain must still pass true host-level pages.dev vs production index/canonical/sitemap isolation checks. No production indexing has been enabled.
+
+## Lighthouse mobile lab measurements — 2026-11-05, simulated conditions
+
+Source: [GitHub Actions run 41986463784](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41986463784), job passed. The `quilt-seo-lighthouse-lab` artifact contains all three raw Lighthouse JSON reports and the summary, retained for 14 days.
+
+| Tested route | Lab performance | Lighthouse SEO category | Lab LCP | Lab CLS | Lab TBT |
+|---|---:|---:|---:|---:|---:|
+| `/quilt-backing-calculator/` | 100/100 | 66/100 | 1,259 ms | 0.000 | 0 ms |
+| `/quilt-binding-calculator/` | 100/100 | 66/100 | 1,211 ms | 0.000 | 1 ms |
+| `/fabric-yards-to-inches/` | 100/100 | 66/100 | 1,208 ms | 0.000 | 0 ms |
+
+**Scope and interpretation:** These are real Chrome Lighthouse **simulated mobile lab measurements of the local-built static preview**, not field CrUX results. INP was **NOT MEASURED**; TBT is not INP. No production-domain field CWV scores, long-tail SEO results, or indexed rankings may be inferred. The preview deliberately renders `noindex,follow`, which directly affects Lighthouse's SEO checks; **66/100 must not be mislabeled as an approved production SEO score**. The precise per-audit diagnostics remain in the retained raw JSON files; do not assert all 34 lost points have a single cause without inspecting them. Once an owner-approved domain is live, repeat the audit on that actual hostname and inspect all SEO audit findings independently.
+
+Live user-visible QA after deployment: 2026-11-05 public fetch of the backing, binding, yardage and conversion pages confirmed the engine-generated reference tables, correct values, directly crawlable quick answer, per-page `og:image`, `noindex,follow`, and exact published git SHA `923a8d6b41ea83b7daae025ab5cac232eaf37a3d`. The full engineering QA for that SHA [passed](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41986617658).
