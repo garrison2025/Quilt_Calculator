@@ -1,5 +1,5 @@
 # Quilt Studio — verification evidence and release blockers
-Last verified: 2026-11-05 · review-fingerprint and V2 JSON import CI `41950121030` · `noindex` engineering preview.
+Last verified: 2026-11-05 · standalone physical print-test sheet verified in source/browser/public Cloudflare (41953819230 / 41953819293); real paper signoff NOT_RUN.
 
 ## What is actually verified
 | Check | Status | Evidence / reproducible action |
@@ -117,3 +117,8 @@ Only these are calculated with checked physical layouts: joined rectangular back
 - [CI 41950121030](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41950121030) verifies TypeScript, static Astro/noindex/keyword checks, **178 unit and property checks** and full Chromium. An optional, non-cryptographic eight-hex-digit `quilt.topCutsReviewFingerprint` now accompanies manual coverage confirmation in V2 project JSON.
 - Calculated `hasCurrentQuiltTopReview` compares the saved fingerprint to the current entered finished top size and all top-fabric SKUs, dimensions and cutting quantities. A plain true flag from a legacy export or a stale file with mutated cuts no longer unlocks full project purchase/print. A matching reviewed import correctly restores export readiness. Unrelated backing/batting/shop rounding or measurement display-unit changes do not revoke an otherwise unchanged top.
 - Original V2 schema version and golden numeric reference data remain unchanged, with the fingerprint strictly optional for backward compatibility. This covers **accidental staleness**, not malicious JSON tampering; the human attestation and actual quilt completeness are not mathematically proven by any fingerprint.
+
+## Physical print-calibration worksheet (2026-11-05)
+- A dedicated non-indexed /qa/print-calibration/ page provides (i) a **25.4 × 25.4 mm** square, (ii) a **100-mm** horizontal gauge, (iii) a **6-in / 152.4-mm** horizontal gauge, and a writable measurement record. Only human ruler measurements can close the G2 physical signoff.
+- The static QA page is explicitly excluded from the approved SEO route list, site map and canonical graph. Static checks verify noindex and real-length markup, while [local CI 41953819230](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41953819230) tests the nominal 96px/in CSS print box and nominal 100mm and six-inch physical CSS widths and generates an A4 browser-PDF artifact. [Public deployment CI 41953819293](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41953819293) tests the same deployed output at the exact live build SHA.
+- Manual work remains open: print one sheet on an actual printer at 100% / Actual Size, physically measure both square axes and both horizontal lines, record printer/driver/paper/settings and actual values in `docs/qa/PRINT_SCALE_PHYSICAL_SIGNOFF.md`. Do not treat browser-generated PDF output as successful paper calibration.

@@ -1,6 +1,6 @@
 # Quilt Studio — verified release status
 
-Updated: 2026-11-05 (verified code/browser CI 41950121030). Cloudflare preview remains `noindex`; production domain and deployment not independently signed off.
+Updated: 2026-11-05 (engineering CI 41953819230; public deployment CI 41953819293; real-paper manual validation still NOT_RUN).
 
 ## Verified in the repository
 
@@ -171,3 +171,11 @@ Only **straight binding, butted borders, one-piece batting and explicitly feasib
 - Added **optional V2** `quilt.topCutsReviewFingerprint` (eight lowercase hex characters) to the TypeScript project model, validator, JSON Schema, local storage and portable JSON. The fingerprint covers only finished quilt-top dimensions and the entered top-fabric SKU/cutting-list data; backing, batting, display units, and shop-rounding settings are independent. The value is **non-cryptographic change detection**, not tamper resistance, a signature, or evidence of a completed physical quilt.
 - The user's checkbox now saves the fingerprint when confirming and clears it on unreview or relevant edits. All purchase/print readiness uses `hasCurrentQuiltTopReview` which requires both `topCutsReviewed=true` and a matching fingerprint. A legacy V2 file with no fingerprint remains fully importable but **not reviewed** even if it has a true review boolean; the user must explicitly recheck. A reviewed JSON file with unmodified matching fabric geometry remains reviewed.
 - [CI 41950121030](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41950121030) passed **178/178** unit/property tests, lint, build/index gates, Chromium downloads and import journeys: stale imported cut quantity, legacy unbound review flag, exact matching reviewed import. Full cut CSV/print stay blocked for unbound/stale cuts. Real-world fabric/paper scale, manual accessibility, owned domain and AdSense remain **NOT_RUN/WAIT**.
+
+## Independent physical print-calibration worksheet — deployed, not yet measured (2026-11-05)
+- Added a dedicated **noindex** print-calibration worksheet at `/qa/print-calibration/`, linked from the site footer. The QA-only page deliberately sits outside all ten approved SEO tool routes, adds **no** sitemap/canonical/JSON-LD search entitlement, and keeps the same `noindex` on the Cloudflare preview.
+- The worksheet includes a one-inch square, a 100-mm line and an independent six-inch / 152.4-mm reference, all defined in CSS physical units. It includes the actual-size printing instructions, a writable record of printer/paper/scaling/actual measurements, provisional suggested tolerances and an explicit warning that screenshots and browser PDF output cannot certify real paper.
+- The separate source-controlled manual record template is `docs/qa/PRINT_SCALE_PHYSICAL_SIGNOFF.md`, with actual width/height/line measurements recorded as `NOT_MEASURED` and signoff `MANUAL_NOT_RUN`. **No printer or ruler was physically used in this verification.** The Square-in-a-Square sewn-sample gate is independent and remains unverified.
+- [Local quality CI 41953819230](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41953819230): 178/178 Vitest tests, approved SEO routes, intentionally noindex QA route, Chromium print emulation of all three CSS physical gauges and generated QA PDF, plus all existing calculator/mobile/print regression.
+- [Real Cloudflare Pages CI 41953819293](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41953819293): verifies exact commit `f2b89050` and the actual public calibration page's presence, SEO restrictions and all three CSS dimensional references. Cloudflare Pages deployment check also succeeded.
+- Original G2 print gate remains **MANUAL_NOT_RUN** until a person prints at Actual Size (100%), measures with a physical ruler and records all four values. This change makes the independent physical test easier to perform; it does not satisfy it.
