@@ -45,3 +45,7 @@ The full P21 engineering scenario is now executed in an isolated Chromium browse
 
 ### Reviewed cut-list fingerprint and import staleness (2026-11-05)
 - [CI 41950121030](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41950121030) adds import/property coverage: a saved `topCutsReviewed` flag without a matching fingerprint is not treated as current, while a fingerprint-matching reviewed project is. Changing the referenced size, fabric SKU, print orientation or cut count invalidates the imported review without deleting the usable project data. Source golden math fixtures were not altered. **178/178** automated tests pass; original real-fabric and physical print measurement gates remain open.
+
+### P06 / P09 / P11 / P14 / P22 supplementary cross-product coverage (2026-11-05)
+- [CI 41957276599](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41957276599) adds deterministic model-independent width/grain/shrinkage checks: 192 physical fit scenarios, SKU isolation under a dynamically narrowed prewashed roll, and invariant cut geometry for backing and straight-grain binding across length-only prewash compensation. **181/181** unit tests pass.
+- This validates engine behavior under the explicit *postwash usable WOF as input* assumption. Actual fabric wash shrinkage across width is not inferred or measured by the software; original P24 remains dependent on real physical paper printing. Nothing here implies all original 24 properties are 24/24 proven in real life.
