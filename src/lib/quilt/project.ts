@@ -1,6 +1,6 @@
 import { MAX_PIECES, hashProject, type FabricSku, type BorderLayer } from './math';
 export type Project = { schemaVersion: 2; units: 'in' | 'cm'; quilt: { finishedWidth: number; finishedHeight: number; sizeBasis?: 'before-borders' | 'includes-borders'; topCutsReviewed?: boolean; topCutsReviewFingerprint?: string };
-  options: { overage: number; usableWof: number; battingWof: number; joinTakeup: number; stripWidth: number; tailAllowance: number; stripJoinLoss: number; step: number; lengthShrinkage: number; oneWayPrint: boolean; seam: number; battingOverage: number; allowRotate: boolean };
+  options: { overage: number; usableWof: number; battingWof: number; joinTakeup: number; stripWidth: number; tailAllowance: number; stripJoinLoss: number; step: number; lengthShrinkage: number; oneWayPrint: boolean; seam: number; battingOverage: number; allowRotate: boolean; backingPricePerYard?: number; battingPricePerYard?: number; bindingPricePerYard?: number };
   yardage: { pieceWidth: number; pieceHeight: number; count: number; alternateWof?: number; allowRotate?: boolean; oneWayPrint?: boolean };
   sashing: { rows: number; columns: number; blockWidth: number; blockHeight: number; width: number };
   borders: BorderLayer[]; fabrics: FabricSku[] };
@@ -83,11 +83,13 @@ export function validateProject(data: unknown): Project {
     (typeof quilt.topCutsReviewFingerprint!=='string' || !/^[0-9a-f]{8}$/.test(quilt.topCutsReviewFingerprint)))
   throw Error('quilt.topCutsReviewFingerprint must be an eight-character lowercase hex fingerprint.');
  const opts = object(root.options, 'options');
- onlyKeys(opts,'options',['overage','usableWof','battingWof','joinTakeup','stripWidth','tailAllowance','stripJoinLoss','step','lengthShrinkage','oneWayPrint','seam','battingOverage','allowRotate']);
+ onlyKeys(opts,'options',['overage','usableWof','battingWof','joinTakeup','stripWidth','tailAllowance','stripJoinLoss','step','lengthShrinkage','oneWayPrint','seam','battingOverage','allowRotate','backingPricePerYard','battingPricePerYard','bindingPricePerYard']);
  for (const name of ['overage','joinTakeup','tailAllowance','stripJoinLoss','seam','battingOverage'])
   numeric(opts,name,'options');
  for (const name of ['usableWof','battingWof','stripWidth','step'])
   numeric(opts,name,'options',0,100000,false,true);
+ for (const name of ['backingPricePerYard','battingPricePerYard','bindingPricePerYard'])
+  if (opts[name]!==undefined) numeric(opts,name,'options');
  shrink(opts,'lengthShrinkage','options');
  if((opts.joinTakeup as number)>=(opts.usableWof as number))throw Error('Backing join take-up must be smaller than usable WOF.');
  if((opts.stripJoinLoss as number)>=(opts.usableWof as number))throw Error('Binding strip join loss must be smaller than usable WOF.');
