@@ -222,6 +222,10 @@ try{
         'Readiness should give exactly three actionable steps.');
       check(await checklist.locator('a[href="#quilt-top-review"]').count()===1,
         'Review step must link directly to the real quilt-top confirmation checkbox.');
+      check(await page.locator('[data-results] [data-calculation-audit]').count()===1,
+        'Source hash should remain available inside a focused diagnostics disclosure.');
+      check(!(await page.locator('[data-results] .calculation-context').innerText()).includes('source hash'),
+        'Default results should not foreground an opaque internal hash above the main answer.');
       check(await page.locator('[data-results] .error-banner').count()===0,
         'Review-pending project should not repeat the same warning as multiple red error boxes.');
       check(!(await page.locator('[data-status]').getAttribute('class')).includes('status-error'),
@@ -679,6 +683,8 @@ try{
   check(!(await topPage.locator('[data-results]').innerText()).includes('INCOMPLETE SHOPPING LIST') &&
     await topPage.locator('[data-plan-readiness="ready"]').count()===1,
     'Reviewed, feasible material plan must switch to ready state and clear partial-shop messaging.');
+  check(await topPage.locator('[data-plan-readiness="ready"] [data-print-calibration-link]').count()===1,
+    'Reviewed project should present a truthful physical print-scale QA link, not a certification.');
   const readyJsonPending=topPage.waitForEvent('download');
   await topPage.locator('[data-action="export-cut"]').click();
   const readyJson=JSON.parse(await fs.readFile(await (await readyJsonPending).path(),'utf8'));

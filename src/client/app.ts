@@ -288,6 +288,12 @@ function projectReadinessPanel(missingTop:boolean,topReviewed:boolean,unfitRolls
  footer.textContent=ready?'Full cut-list CSV and print are enabled for the entered material plan. Check real fabric, seam allowance and print scale before cutting.':
   'INCOMPLETE SHOPPING LIST · Partial shopping CSV remains available with per-material reasons. Full cut-list CSV and print stay disabled until the checklist is complete.';
  panel.appendChild(footer);
+ if(ready){
+  const printQa=node('a','project-readiness-link','Check physical print scale before cutting');
+  printQa.href='/qa/print-calibration/';
+  printQa.dataset.printCalibrationLink='';
+  panel.appendChild(printQa);
+ }
  return panel;
 }
 
@@ -993,7 +999,7 @@ if(root){
     if(topCutListNotReviewed)warning(resultRoot,'WHOLE-PROJECT EXPORT BLOCKED: your entered quilt-top cuts have not been manually checked for coverage. Confirm the cutting list before printing or exporting a complete project CSV.',true);
     else if(tool!=='inches' && !hasPhysicalCuts)warning(resultRoot,'There are no physical cut pieces in this plan. Print and cut-list CSV are disabled until a material has real cuts.');
    }
-   resultRoot.prepend(node('p','calculation-context','Current project · '+num(w)+' × '+num(h)+' in quilt · '+(project.units==='cm'?'cm display':'in display')+' · source hash '+record.sourceProjectHash));
+   resultRoot.prepend(node('p','calculation-context','Project · '+num(w)+' × '+num(h)+' in quilt · '+(project.units==='cm'?'cm display':'inch display')));
    // Visual feedback announces an actual primary-value change without
    // interpolating, re-rounding or altering the real calculated number.
    // It is suppressed for incomplete and conflicted plans.
@@ -1009,7 +1015,12 @@ if(root){
    }
    if(estimateSafe&&currentFigure&&currentKicker)
     lastAcceptedFigure={label:currentKicker,value:currentFigure};
-   resultRoot.appendChild(node('p','footer-note','Cut lengths and coordinates are calculated in inches. Purchase rounding applied once. Source project hash '+record.sourceProjectHash+'. Export JSON to review complete values. Print is a schematic, not an actual-size template.'));
+   resultRoot.appendChild(node('p','footer-note','Cut lengths and coordinates use inches. Purchase rounding is applied once. Print diagrams are schematic, not actual-size templates.'));
+   const audit=node('details','calculation-audit');
+   audit.dataset.calculationAudit='';
+   audit.appendChild(node('summary','','Calculation source and version'));
+   audit.appendChild(node('p','', 'Source project hash: '+record.sourceProjectHash+' · Calculator '+VERSION+' · Calculated at '+record.calculatedAt+'. Export JSON for full machine-readable values.'));
+   resultRoot.appendChild(audit);
    const incompleteProject=anyInfeasible || topFabricMissing || topCutListNotReviewed;
    const time=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
    note(tool==='hub'

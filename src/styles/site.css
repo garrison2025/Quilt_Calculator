@@ -448,3 +448,15 @@
  .project-readiness-footnote{border-color:#55745c}
 }
 @media print{.project-readiness{display:none!important}}
+
+/* Keep the main results legible, while preserving source integrity in a
+ * keyboard-reachable disclosure for users who need diagnostic provenance. */
+.calculation-audit{margin:10px 0 16px;padding:9px 12px;border:1px solid #d7e3d7;border-radius:9px;background:#fafcf9}
+.calculation-audit summary{font-weight:750;color:#365d44;font-size:11px;cursor:pointer;min-height:25px}
+.calculation-audit p{font-size:11px;color:#4b6854;line-height:1.6;margin:9px 0 3px;overflow-wrap:anywhere}
+.project-readiness>a.project-readiness-link{display:inline-block;margin-top:12px}
+@media screen and (prefers-color-scheme:dark){
+ .calculation-audit{background:#20372a;border-color:#4c6d54}
+ .calculation-audit summary,.calculation-audit p{color:#d6edda}
+}
+@media print{.calculation-audit{display:none!important}}
