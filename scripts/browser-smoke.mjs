@@ -302,7 +302,7 @@ try{
       const cutCsv=await fs.readFile(await cutFile.path(),'utf8');
       check(cutCsv.charCodeAt(0)===0xFEFF,'Cut CSV must include UTF-8 BOM.');
       check(cutCsv.includes('Roll X (in)')&&cutCsv.includes('Grain rotation (degrees)'),'Cut CSV must include exact coordinates and grain orientation.');
-      for(const material of ['backing','binding','batting','border:indigo','fabric:sky-blue','fabric:sand']){
+      for(const material of ['backing','binding','batting','border:border-indigo','fabric:sky-blue','fabric:sand']){
         check(cutCsv.includes('"'+material+'"'),'Cut CSV missing fabric roll / SKU: '+material);
       }
       check(cutCsv.split('\r\n').filter(Boolean).length===36,'Sample project should yield 35 exact cut pieces plus one header row.');
