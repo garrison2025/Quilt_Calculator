@@ -30,3 +30,13 @@ Do not create a separate doorway page for each fraction. The 107 related convers
 - Further work: real-world cutting certification, original 39 golden CSV/24-property/47-gate source files, live SERP audits and full keyboard/screen-reader review.
 
 - All nine tool page H1 headings now state their primary distinct calculator intent, rather than relying on generic promotional slogans. This is a clarity improvement; it is not proof of any SERP position.
+
+
+## SEO implementation update — 2026-11-05
+
+- **Preserved provenance:** `218` original US Semrush rows, `202` historical page mappings, `16` HOLD, `9` distinct tool intents. The original CSV was not rewritten.
+- **Operational targeting:** `199` mapped non-brand active; `2` ambiguous US SERP intents for review; `1` competing-brand search intent excluded; `16` HOLD. [Full 218-row operational CSV](data/V2_SEO_Operational_Keywords_218.csv).
+- **Search-intent depth:** Backing has eight engine-computed 43/108-in WOF examples; straight binding has six strip-width examples; yardage has five real cut-piece/WOF/rotation examples. Assumptions, nonoptimality and no real-fabric sign-off are disclosed.
+- **Quick answer:** The existing `/fabric-yards-to-inches/` renders `1 yd = 36 in` plus concrete quarter/half/1.5/4-yard conversions before the calculator, still sharing one page across its 107 conversions.
+- **Media/navigation:** real matching page-level `og:image`/`twitter:image` and more specific contextual link labels; no artificial extra pages or fake author/date tags.
+- **Evidence:** Dedicated [4-case SEO-reference regression](../tests/seo-reference.test.ts), full static source and social-image checks, mobile Chromium QA, independent [Lighthouse lab workflow](../.github/workflows/lighthouse.yml). Lab is not CrUX/field INP and indexed rankings are still unknown.

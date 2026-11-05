@@ -131,3 +131,10 @@ LIVE：每页 `lang=en`，`og:title`/`og:description` 存在，`og:image` 不存
 - 官方规范：https://developers.google.com/search/docs/fundamentals/seo-starter-guide 、https://developers.google.com/search/docs/appearance/google-images 、https://developers.google.com/search/docs/appearance/core-web-vitals 、https://developers.google.com/search/docs/crawling-indexing/block-indexing 。
 
 **最终判定：SEO 基础建设适合当前 noindex 预览，但存在可执行的内容/品牌意图修正以及正式域名启用时的主机级索引安全门槛；未实测的性能、GSC、真人/实物数据不得以 PASS 表述。**
+
+
+## Implementation closure notes — 2026-11-05
+
+Implemented from the above audit: (1) 218-row derived operational keyword sheet retaining 199 mapped nonbrand target terms, 2 intentional search-intent reviews, 1 other-brand exclusion and 16 unchanged HOLD terms; (2) engine-derived factual example tables on backing/binding/yardage; (3) prominent `1 yd = 36 in` answer without cloning fractional URLs; (4) per-page OG/Twitter preview images and more specific related links; (5) static/regression/browser checks covering provenance, content integrity and WCAG contrast. See [source-keyword matrix](../SEO_CONTENT_MATRIX.md).
+
+Performance: a separate [mobile Lighthouse CI workflow](../../.github/workflows/lighthouse.yml) now measures simulated lab LCP/CLS/TBT and preserves JSON evidence. Its results must be read from the particular run, not inferred from this paragraph. **Field INP, Google CrUX, GSC and search ranking remain NOT_RUN**. A future approved domain must still pass true host-level pages.dev vs production index/canonical/sitemap isolation checks. No production indexing has been enabled.

@@ -25,3 +25,10 @@ HOLD: WOF width-equivalence converter, square-in-a-square, diagonal backing, rag
 - Do not set PUBLIC_INDEXABLE=1 until explicit production domain approval, mathematical gates, browser and physical-print QA.
 - No fabricated ratings, reviews, paid products or claimed earnings.
 - Appendix A does not include the original 300 competitor URL rows. These are not invented or represented as already migrated.
+
+
+## Post-audit operational mapping (2026-11-05)
+
+The original 218-row Semrush source CSV and its historical 202 approved-path mappings remain **unchanged**. A new [218-row operational worklist](data/V2_SEO_Operational_Keywords_218.csv) classifies 199 active non-brand intent mappings, **2 `REVIEW_US_SERP_INTENT`** (`how much is 1 yard` and `quilting calculator app`), **1 `EXCLUDE_OTHER_BRAND`** (`robert kaufman calculator`), and the 16 existing `HOLD_UNVALIDATED_METHOD` terms. Do not equate 202 route assignments with 202 suitable non-brand ranking targets.
+
+Priority content now includes engine-calculated tables for backing (eight cases), straight-grain binding (six cases), and fabric-yardage WOF/rotation (five cases), plus a crawlable one-yard direct answer and 14-row fractions table. Each table clearly states sample cut dimensions and buying assumptions. No new indexed URL, untested sewing method, invented source metric, or new runtime API was introduced. Per-route social previews reuse first-party images. The preview remains noindex; production host separation and performance/field checks still require actual launch evidence.

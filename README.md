@@ -64,6 +64,8 @@ The fabric roll SVG is a schematic with actual rectangle coordinates, not an act
 ## Sources and checks
 
 - docs/data/V2_Keyword_Appendix_218.csv — all 218 source-grounded V2 keyword candidates and route decisions.
+- docs/data/V2_SEO_Operational_Keywords_218.csv — derived SEO worklist: 199 active nonbrand mappings, 2 search-intent reviews, 1 other-brand exclusion, 16 original HOLD; historical Semrush source unchanged.
+- docs/qa/SEO_COMPREHENSIVE_AUDIT_20261105.md — 10-route live SEO audit, fixed items, outstanding hostname/indexing and performance launch checks.
 - docs/SEO_KEYWORD_ROUTING.md — unique intent ownership and HOLD constraints.
 - docs/schemas/Project_V2.schema.json — JSON project import structure.
 - docs/RELEASE_STATUS.md — documented real QA evidence and missing acceptance work.
@@ -147,3 +149,6 @@ Different material categories can reuse the same user SKU name. For example, a t
 - Original user labels and imported/saved Project V2 JSON **are not renamed**; the namespacing is for physical roll identity in the export/diagram, not a new JSON schema. Dedicated fabric and border tools use the same scoped export identifier as Project Planner. CSV exports also fail closed on a duplicate physical-roll ID in the same cutting plan instead of combining it.
 
 [186 passing unit/property tests and real collision-injection Chromium](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41970521774) and [public exact-commit Cloudflare QA](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41970521840) passed. **Migration note:** integrations that previously matched the raw CSV `Fabric SKU / roll` value for editable top fabric or Border need to recognize the new `fabric:` or `border:` prefix. Static built-in roll IDs are unchanged. This improves roll identity, not physical fabric/print calibration.
+
+### SEO content and metadata improvements (2026-11-05)
+Three high-intent tools (backing, straight-grain binding, rectangular fabric yardage) now render independent comparison tables calculated directly from the same cutting engine as the interface, with explicit fabric-width, join, grain and purchase-rounding assumptions. The length converter provides a static 36-inch-per-yard answer before its interactive calculator. Each approved route has a first-party WebP social image with OG/Twitter tags and specific related-tool link anchors. Preview remains **noindex**. See [source-keyword matrix](docs/SEO_CONTENT_MATRIX.md) for honest source/operational distinctions. New [simulated mobile Lighthouse lab](.github/workflows/lighthouse.yml) records LCP, CLS and total blocking time for priority routes; it does **not** claim measured field INP, SEO rankings or production release.
