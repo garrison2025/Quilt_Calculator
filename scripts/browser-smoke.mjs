@@ -1653,6 +1653,52 @@ try{
   await cross.screenshot({path:'artifacts/qa/p21-cross-tool-project-retention.png',fullPage:true,animations:'disabled'});
   await crossCtx.close();
   console.log('PASS P21 cross-tool native-inch geometry, reversible unit display, SKU persistence and unsaved-draft protection.');
+
+  // Collision previously merged physically different roll rows when a user
+  // called their top fabric 'backing', or a border 'batting'. Verify real
+  // Project Planner and dedicated tools use stable distinct CSV/SVG roll IDs,
+  // without changing the user's original SKU labels in Project V2 JSON.
+  const idsCtx=await browser.newContext({viewport:{width:1220,height:900},acceptDownloads:true});
+  instrumentNetwork(idsCtx,'physical-roll-id-namespaces');
+  const idsPage=await idsCtx.newPage();
+  idsPage.on('pageerror',err=>problems.push('Physical roll IDs: '+err.message));
+  await hydrated(idsPage,'/quilt-fabric-calculator/');
+  const makeSavedProject=idsPage.getByLabel('Fabric / color label',{exact:true}).first();
+  await makeSavedProject.fill('Collision test fabric');
+  await makeSavedProject.press('Tab');
+  const idFixture=await idsPage.evaluate(()=>JSON.parse(localStorage.getItem('quilt-studio-v2')));
+  idFixture.fabrics[0].id='backing';
+  idFixture.borders[0].sku='batting';
+  idFixture.quilt.topCutsReviewed=false;
+  delete idFixture.quilt.topCutsReviewFingerprint;
+  await idsPage.locator('[data-file]').setInputFiles({
+   name:'quilt-collision-valid-skus.json',mimeType:'application/json',
+   buffer:Buffer.from(JSON.stringify(idFixture))
+  });
+  await hydrated(idsPage,'/calculators/',{incomplete:true});
+  await idsPage.getByLabel('I reviewed every quilt-top color, cut size and piece quantity.').check();
+  const namedRolls=await assertSvgCorrespondsToCutCsv(idsPage,'/calculators/ [user roll IDs collide with system names]');
+  check(namedRolls.rolls===6,'A collision fixture should retain every one of the six physical rolls.');
+  const collisionDownload=idsPage.waitForEvent('download');
+  await idsPage.locator('[data-action="export-cut-csv"]').click();
+  const collidingRows=csvRecords(await fs.readFile(await (await collisionDownload).path(),'utf8'));
+  const exportIds=new Set(collidingRows.slice(1).map(row=>row[1]));
+  for(const sku of ['backing','binding','batting','border:batting','fabric:backing','fabric:sand'])
+   check(exportIds.has(sku),'Every system and user roll needs its distinct physical identity: '+sku);
+  check(exportIds.size===6,
+   'Six separate real material rolls must never collapse into one CSV SKU group.');
+  await hydrated(idsPage,'/quilt-fabric-calculator/');
+  check(await idsPage.locator('details.sku-plan svg[data-roll-sku="fabric:backing"]').count()===1,
+   'Fabric calculator must use the same scoped physical roll ID as Project Planner.');
+  await hydrated(idsPage,'/quilt-border-calculator/');
+  check(await idsPage.locator('details.sku-plan svg[data-roll-sku="border:batting"]').count()===1,
+   'Border calculator must use the same scoped physical roll ID as Project Planner.');
+  const retainedIds=await idsPage.evaluate(()=>JSON.parse(localStorage.getItem('quilt-studio-v2')));
+  check(retainedIds.fabrics[0].id==='backing'&&retainedIds.borders[0].sku==='batting',
+   'Physical export namespaces must not rename or mutate user-defined Project V2 SKU fields.');
+  await idsCtx.close();
+  console.log('PASS physical roll ID collisions across top fabric/backing and border/batting, CSV/SVG and shared project.');
+
   const mobile=await browser.newContext({viewport:{width:375,height:812},isMobile:true,hasTouch:true});
   instrumentNetwork(mobile,'mobile');
   const small=await mobile.newPage();
