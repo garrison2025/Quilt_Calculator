@@ -1,0 +1,3 @@
+/* AA text contrast */
+@media screen{body.quilt-ui-v3 .stat-grid .stat span{color:#3c5643}body.quilt-ui-v3 .cut-inspector-grid{color:#395340}body.quilt-ui-v3 .cut-inspector-grid span{color:#38513f}}
+@media screen and (prefers-color-scheme:dark){body.quilt-ui-v3 .stat-grid .stat span,body.quilt-ui-v3 .cut-inspector-grid,body.quilt-ui-v3 .cut-inspector-grid span{color:#e1f1e4}}
