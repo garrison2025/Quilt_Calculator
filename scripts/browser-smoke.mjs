@@ -1829,8 +1829,8 @@ try{
     ['x','y','width','height','data-roll-x-in','data-roll-y-in','data-cut-width-in','data-cut-height-in']
       .map(k=>el.getAttribute(k)).join('|')));
   const slider=walkthrough.getByRole('slider',{name:'Cut-order preview position'});
-  check(await slider.getAttribute('max')===String(totalSequence),
-    'Preview slider must match only the displayed cut count, never hidden exports.');
+  check(await slider.getAttribute('max')===String(totalSequence+1),
+    'Slider must distinguish N real cut steps from the final Show-all state.');
   check(await walkthrough.locator('[data-play-state="playing"]').count()===0,
     'Cut-order animation must never autoplay without explicit user action.');
   await slider.focus();
@@ -1858,14 +1858,16 @@ try{
     'Printing must show ALL actual cut rectangles, never hide a partial animated sequence.');
   await visual.emulateMedia({media:'screen'});
   await walkthrough.getByRole('button',{name:'Show all cuts'}).click();
-  check(await slider.inputValue()===String(totalSequence) &&
+  check(await slider.inputValue()===String(totalSequence+1) &&
     await visualDiagram.locator('svg rect[data-preview-phase="all"]').count()===totalSequence,
     'Show all cuts must fully restore the original diagram.');
   // Every displayed cut, INCLUDING the last one, must be individually
   // inspectable; "all visible" is distinct from step N.
   await slider.focus();
   await slider.press('End');
-  check(await visualDiagram.locator('svg rect[data-preview-phase="current"]').count()===1 &&
+  await slider.press('ArrowLeft');
+  check(await slider.inputValue()===String(totalSequence) &&
+    await visualDiagram.locator('svg rect[data-preview-phase="current"]').count()===1 &&
     await visualDiagram.locator('svg rect[data-preview-phase="all"]').count()===0,
     'The final displayed cut must be focusable via slider instead of being merged with Show all.');
   const lastSource=await sequenceCuts.last().evaluate(el=>({
