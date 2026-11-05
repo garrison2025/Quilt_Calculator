@@ -100,7 +100,11 @@ function diagram(parent:Element,layout:Layout,title:string,sku?:string,scope:'cu
  const wrapper=node('div','diagram-wrap');
  const ns='http://www.w3.org/2000/svg',svg=document.createElementNS(ns,'svg');
  svg.setAttribute('viewBox','0 0 780 320');svg.setAttribute('role','img');
- svg.setAttribute('aria-label','Schematic fabric roll layout with '+layout.cutPieces.length+' nonoverlapping rectangles. Numeric coordinates are below.');
+ const totalCutCount=layout.cutPieces.length;
+ const previewCutCount=Math.min(totalCutCount,180);
+ svg.setAttribute('aria-label',totalCutCount>180
+  ?'Schematic fabric roll preview showing the first '+previewCutCount+' of '+totalCutCount+' cuts. The complete physical coordinate list is in the downloadable cut-list CSV.'
+  :'Schematic fabric roll layout showing '+totalCutCount+' nonoverlapping rectangles. Numeric coordinates are below.');
  // Exact structured source dimensions, not rounded screen labels. Browser QA
  // compares these to the separately exported physical cutting CSV, and also
  // independently recomputes every displayed SVG rectangle's drawn position.
@@ -108,14 +112,15 @@ function diagram(parent:Element,layout:Layout,title:string,sku?:string,scope:'cu
  svg.dataset.exportScope=scope;
  svg.dataset.rollWofIn=String(layout.usableWofIn);
  svg.dataset.rollRunIn=String(layout.exactFabricRunLengthIn);
- svg.dataset.cutCount=String(layout.cutPieces.length);
+ svg.dataset.cutCount=String(totalCutCount);
+ svg.dataset.renderedCutCount=String(previewCutCount);
  const make=(tag:string,attrs:Record<string,string>,parentNode:SVGElement)=>{
   const e=document.createElementNS(ns,tag);Object.entries(attrs).forEach(([k,v])=>e.setAttribute(k,v));parentNode.appendChild(e);return e;
  };
  make('rect',{x:'38',y:'30',width:'713',height:'244',rx:'8',fill:'#fffdf6',stroke:'#b9d0c2'},svg);
  const usable=Math.max(layout.usableWofIn,0.00001),len=Math.max(layout.exactFabricRunLengthIn,0.00001);
  const colors=['#8ec1b0','#c8d9bb','#dbbd88','#aabbb3','#d1b1b0','#b8d3c5'];
- layout.cutPieces.slice(0,180).forEach((p,i)=>{
+ layout.cutPieces.slice(0,previewCutCount).forEach((p,i)=>{
   const x=40+(p.yIn/len)*709,y=32+(p.xIn/usable)*240,w=Math.max(.5,p.heightIn/len*709-1),h=Math.max(.5,p.widthIn/usable*240-1);
   const rect=make('rect',{x:String(x),y:String(y),width:String(w),height:String(h),rx:'2',fill:colors[i%colors.length],stroke:'#426f5e','stroke-width':'.7',
    'data-cut-index':String(i+1),'data-roll-x-in':String(p.xIn),'data-roll-y-in':String(p.yIn),
@@ -127,7 +132,7 @@ function diagram(parent:Element,layout:Layout,title:string,sku?:string,scope:'cu
  const tx=make('text',{x:'40',y:'300','font-size':'12',fill:'#47695a'},svg);
  tx.textContent='Fabric roll length: '+num(layout.exactFabricRunLengthIn)+' in  →';
  const ty=make('text',{x:'44',y:'20','font-size':'11',fill:'#47695a'},svg);ty.textContent='Usable WOF: '+num(layout.usableWofIn)+' in';
- wrapper.appendChild(svg);wrapper.appendChild(node('p','diagram-note','Schematic, not to scale or a 1:1 pattern. Coordinates and dimensions are actual INCHES on the fabric roll. '+(layout.cutPieces.length>180?'First 180 shown; export JSON for all.':'')));
+ wrapper.appendChild(svg);wrapper.appendChild(node('p','diagram-note','Schematic, not to scale or a 1:1 pattern. Coordinates and dimensions are actual INCHES on the fabric roll. '+(totalCutCount>180?'First '+previewCutCount+' of '+totalCutCount+' cuts shown; the complete physical cut-list CSV includes every cut.':'')));
  parent.appendChild(wrapper);
  section(parent,'Cut coordinates','First '+Math.min(layout.cutPieces.length,45)+' of '+layout.cutPieces.length);
  table(parent,['# / piece','x in','y in','width × height in','grain'],layout.cutPieces.slice(0,45).map((p,i)=>[String(i+1)+' · '+p.label,num(p.xIn),num(p.yIn),num(p.widthIn)+' × '+num(p.heightIn),String(p.grainRotationDeg)+'°']));
@@ -383,7 +388,10 @@ if(root){
   project.fabrics.forEach((fabric,i)=>{
    const card=node('div','dynamic-entry'),head=node('div','dynamic-head');
    card.dataset.fabricIndex=String(i);
+   const fabricTitle=node('strong','',fabric.label||'Fabric '+(i+1));
+   fabricTitle.id='fabric-editor-label-'+i;
    const del=node('button','','Remove SKU');del.type='button';del.dataset.removeSku='';
+   del.setAttribute('aria-describedby',fabricTitle.id);
    del.addEventListener('click',()=>{
     if(!requireCommittedDraft('remove a fabric SKU'))return;
     project.fabrics.splice(i,1);
@@ -392,17 +400,24 @@ if(root){
     const neighbor=Math.min(i,project.fabrics.length-1);
     rebuildDynamicEditor(neighbor<0?'[data-add-sku]':`[data-fabric-index="${neighbor}"] [data-remove-sku]`);
    });
-   append(head,node('strong','',fabric.label||'Fabric '+(i+1)),del);card.appendChild(head);
+   append(head,fabricTitle,del);card.appendChild(head);
    card.appendChild(makeGroup('Fabric roll',[
     {label:'SKU (unique)',path:'id',kind:'text'},{label:'Fabric / color label',path:'label',kind:'text'},
     {label:'Usable WOF',path:'usableWidth',kind:'length'},{label:'Length shrinkage (%)',path:'shrinkageLengthPct',kind:'pct'},
     {label:'Price per yard (optional)',path:'pricePerYard',kind:'number'},
     {label:'One-way print',path:'oneWayPrint',kind:'check'}
-   ],fabric,(f,v)=>{if(f.path==='id'&&project.fabrics.some((g,j)=>j!==i&&g.id===v))throw Error('SKU IDs must be unique.');(fabric as unknown as Record<string,unknown>)[f.path]=v;}));
+   ],fabric,(f,v)=>{
+    if(f.path==='id'&&project.fabrics.some((g,j)=>j!==i&&g.id===v))throw Error('SKU IDs must be unique.');
+    (fabric as unknown as Record<string,unknown>)[f.path]=v;
+    if(f.path==='label')fabricTitle.textContent=String(v)||'Fabric '+(i+1);
+   }));
    fabric.pieces.forEach((piece,j)=>{
     const group=node('div','dynamic-entry'),h=node('div','dynamic-head');
     group.dataset.cutIndex=String(j);
+    const cutTitle=node('strong','','Cut group '+(j+1));
+    cutTitle.id='fabric-cut-label-'+i+'-'+j;
     const remove=node('button','','Remove cut group');remove.type='button';remove.dataset.removeCut='';
+    remove.setAttribute('aria-describedby',fabricTitle.id+' '+cutTitle.id);
     remove.addEventListener('click',()=>{
      if(!requireCommittedDraft('remove a cut group'))return;
      fabric.pieces.splice(j,1);
@@ -413,7 +428,7 @@ if(root){
       ?`[data-fabric-index="${i}"] [data-add-cut]`
       :`[data-fabric-index="${i}"] [data-cut-index="${neighbor}"] [data-remove-cut]`);
     });
-    append(h,node('strong','','Cut group '+(j+1)),remove);group.appendChild(h);
+    append(h,cutTitle,remove);group.appendChild(h);
     group.appendChild(makeGroup('Rectangle CUT sizes',[
      {label:'Piece label',path:'label',kind:'text'},{label:'Cut width',path:'widthIn',kind:'length'},
      {label:'Cut height',path:'heightIn',kind:'length'},{label:'Count',path:'count',kind:'whole'},
@@ -422,6 +437,7 @@ if(root){
     card.appendChild(group);
    });
    const addPiece=node('button','dynamic-add','+ Add rectangle cut group');addPiece.type='button';addPiece.dataset.addCut='';
+   addPiece.setAttribute('aria-describedby',fabricTitle.id);
    addPiece.addEventListener('click',()=>{
     if(!requireCommittedDraft('add a cut group'))return;
     if(fabric.pieces.length>=100){note('Maximum 100 piece groups per SKU.',true);return;}
@@ -447,19 +463,25 @@ if(root){
   project.borders.forEach((layer,i)=>{
    const card=node('div','dynamic-entry'),h=node('div','dynamic-head'),remove=node('button','','Remove layer');
    card.dataset.borderIndex=String(i);
+   const borderTitle=node('strong','','Layer '+(i+1)+' · '+(layer.label||'Unnamed border'));
+   borderTitle.id='border-editor-label-'+i;
    remove.type='button';remove.dataset.removeBorder='';
+   remove.setAttribute('aria-describedby',borderTitle.id);
    remove.addEventListener('click',()=>{
     if(!requireCommittedDraft('remove a border layer'))return;
     project.borders.splice(i,1);persist();
     const neighbor=Math.min(i,project.borders.length-1);
     rebuildDynamicEditor(neighbor<0?'[data-add-border]':`[data-border-index="${neighbor}"] [data-remove-border]`);
    });
-   append(h,node('strong','','Layer '+(i+1)),remove);card.appendChild(h);
+   append(h,borderTitle,remove);card.appendChild(h);
    card.appendChild(makeGroup('Border fabric',[
     {label:'SKU',path:'sku',kind:'text'},{label:'Label / color',path:'label',kind:'text'},
     {label:'Finished border width',path:'widthIn',kind:'length'},{label:'Usable WOF',path:'wofIn',kind:'length'},
     {label:'Length shrinkage (%)',path:'shrinkageLengthPct',kind:'pct'},{label:'Price per yard (optional)',path:'pricePerYard',kind:'number'}
-   ],layer,(f,v)=>{(layer as unknown as Record<string,unknown>)[f.path]=v;}));shell.appendChild(card);
+   ],layer,(f,v)=>{
+    (layer as unknown as Record<string,unknown>)[f.path]=v;
+    if(f.path==='label')borderTitle.textContent='Layer '+(i+1)+' · '+(String(v)||'Unnamed border');
+   }));shell.appendChild(card);
   });
   const add=node('button','dynamic-add','+ Add border layer');add.type='button';add.addEventListener('click',()=>{
    if(!requireCommittedDraft('add a border layer'))return;
