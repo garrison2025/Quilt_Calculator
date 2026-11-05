@@ -377,6 +377,80 @@ try{
       await page.screenshot({path:'artifacts/qa/backing-desktop.png',fullPage:true,animations:'disabled'});
     }
   }
+  // Independent one-piece batting roll must have the same fit and grain
+  // orientation on the project hub and on the dedicated batting calculator.
+  const crossBatting=await browser.newContext({viewport:{width:1200,height:900},acceptDownloads:true});
+  instrumentNetwork(crossBatting,'hub-batting-fit');
+  const batPage=await crossBatting.newPage();
+  batPage.on('pageerror',err=>problems.push('Hub/batting parity: '+err.message));
+  await hydrated(batPage,'/calculators/');
+  const hubWidth=batPage.getByLabel('Finished quilt width (in)',{exact:true});
+  const hubHeight=batPage.getByLabel('Finished quilt height (in)',{exact:true});
+  await hubWidth.fill('100');await hubWidth.press('Tab');
+  await hubHeight.fill('50');await hubHeight.press('Tab');
+  const battingRoll=batPage.getByLabel('Batting roll width (in)',{exact:true});
+  await battingRoll.fill('65');await battingRoll.press('Tab');
+  const battingRow=batPage.locator('.shopping-item').filter({hasText:'Batting · single piece only'});
+  check((await battingRow.innerText()).includes('FIT IMPOSSIBLE'),'Unrotated 108 × 58 batting cannot fit a 65-inch roll.');
+  check((await batPage.locator('[data-results]').innerText()).includes('INCOMPLETE SHOPPING LIST'),
+    'Incomplete project must warn users before buying materials.');
+  check(!(await batPage.locator('[data-action="print"]').isEnabled()),
+    'Do not offer a complete cut-plan print for an impossible batting roll.');
+  check(!(await batPage.locator('[data-action="export-cut-csv"]').isEnabled()),
+    'Incomplete material plans must block a purchase-ready physical cut CSV.');
+  check(await batPage.locator('[data-action="export-cut"]').isEnabled(),
+    'Keep detailed JSON diagnostics available even when the cut list is impossible.');
+  const partialPromise=batPage.waitForEvent('download');
+  await batPage.getByRole('button',{name:'Download INCOMPLETE shopping CSV'}).click();
+  const partialFile=await partialPromise;
+  check(partialFile.suggestedFilename().includes('INCOMPLETE'),'A partial shopping sheet needs an unmistakable filename.');
+  const partialCsv=await fs.readFile(await partialFile.path(),'utf8');
+  check(partialCsv.includes('"FIT_IMPOSSIBLE_NOT_PURCHASE_READY"')&&partialCsv.includes('Batting'),
+    'Partial shopping sheet must explicitly flag the impossible batting purchase.');
+  const rotateBatting=batPage.getByLabel('May rotate batting 90°',{exact:true});
+  check(!(await rotateBatting.isChecked()),'Sample project must start with unrotated batting.');
+  await rotateBatting.check();
+  check((await battingRow.innerText()).includes('3 yd'),'Rotated 58-in-wide × 108-in-long batting must fit for 3 yd.');
+  check(await batPage.locator('[data-action="print"]').isEnabled(),
+    'A fully feasible cross-tool plan should restore print.');
+  check(await batPage.locator('[data-action="export-cut-csv"]').isEnabled(),
+    'A fully feasible cross-tool plan should restore current-roll cut CSV.');
+  const hubCutPromise=batPage.waitForEvent('download');
+  await batPage.getByRole('button',{name:'Download cut list CSV'}).click();
+  const hubCut=csvRecords(await fs.readFile(await (await hubCutPromise).path(),'utf8'));
+  const hubBatting=hubCut.slice(1).filter(row=>row[1]==='batting');
+  check(hubBatting.length===1&&hubBatting[0][8]==='90'&&hubBatting[0][6]==='58'&&hubBatting[0][7]==='108',
+    'Hub cut list must physically represent one permitted 90° batting rotation.');
+  await hydrated(batPage,'/quilt-batting-calculator/');
+  check(await batPage.getByLabel('May rotate 90°',{exact:true}).isChecked(),
+    'Standalone batting page must use the same saved rotation setting.');
+  check((await batPage.locator('[data-results] .result-big').innerText()).includes('3'),
+    'Standalone batting must agree with 3-yard hub purchasing estimate.');
+  const battingCutPromise=batPage.waitForEvent('download');
+  await batPage.getByRole('button',{name:'Download cut list CSV'}).click();
+  const battingCut=csvRecords(await fs.readFile(await (await battingCutPromise).path(),'utf8'));
+  check(battingCut.length===2&&battingCut[1][8]==='90'&&battingCut[1][6]==='58'&&battingCut[1][7]==='108',
+    'Standalone batting physical cut must match the project planner CSV.');
+  await hydrated(batPage,'/quilt-fabric-calculator/');
+  const firstFabricWof=batPage.getByLabel('Usable WOF (in)',{exact:true}).first();
+  await firstFabricWof.fill('3');await firstFabricWof.press('Tab');
+  check((await batPage.locator('[data-results]').innerText()).includes('INCOMPLETE SHOPPING LIST'),
+    'Unfit fabric color must label shopping results as incomplete.');
+  check(!(await batPage.locator('[data-action="print"]').isEnabled()),
+    'Unfit fabric SKU must disable complete-plan print.');
+  const fabricPartialPromise=batPage.waitForEvent('download');
+  await batPage.getByRole('button',{name:'Download INCOMPLETE shopping CSV'}).click();
+  const fabricPartialFile=await fabricPartialPromise;
+  check(fabricPartialFile.suggestedFilename().includes('INCOMPLETE'),'Unfit fabric CSV filename must be explicit.');
+  const fabricPartial=await fs.readFile(await fabricPartialFile.path(),'utf8');
+  check(fabricPartial.includes('Sky blue')&&fabricPartial.includes('FIT_IMPOSSIBLE_NOT_PURCHASE_READY'),
+    'Unfit color must retain its own material line in the incomplete CSV.');
+  await firstFabricWof.fill('43');await firstFabricWof.press('Tab');
+  check(await batPage.locator('[data-action="print"]').isEnabled(),'Corrected fabric roll must restore print.');
+  await batPage.screenshot({path:'artifacts/qa/hub-batting-fit-parity.png',fullPage:true,animations:'disabled'});
+  await crossBatting.close();
+  console.log('PASS hub/batting 90° parity, impossible roll purchase warnings, print gating and partial CSV safety.');
+
   // Isolated Square-in-a-Square lab must stay off approved SEO routes.
   const labReply=await page.goto(ROOT+'/lab/square-in-square/',{waitUntil:'domcontentloaded'});
   assert.equal(labReply.status(),200,'Square laboratory route missing.');

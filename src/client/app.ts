@@ -1,6 +1,7 @@
 import { VERSION, calculateBacking, calculateStraightBinding, calculateYardage, compareYardageWidths, calculateQuiltFabric, calculateBatting, calculateBorders, calculateSashing, layoutRectangles, verifyLayout, parseMeasure, fromInches, toInches, yardsToInches, purchase, hashProject, type Layout, type PieceRequest } from '../lib/quilt/math';
 import { sampleProject, validateProject, type Project } from '../lib/quilt/project';
-import { csvDocument, cutListCsv, type MaterialCutPlan } from '../lib/quilt/cutlist';
+import { cutListCsv, type MaterialCutPlan } from '../lib/quilt/cutlist';
+import { shoppingCsv, hasIncompleteShopping, type ShoppingLine } from '../lib/quilt/shopping';
 import type { ToolId } from './types';
 type Kind = 'length' | 'whole' | 'number' | 'pct' | 'check' | 'text';
 type Field = { label: string; path: string; kind?: Kind; note?: string };
@@ -26,7 +27,7 @@ const groups: Record<ToolId, {title:string;fields:Field[]}[]> = {
  hub:[
   {title:'Your quilt',fields:fieldsBase},
   {title:'Backing & fabric roll',fields:[{label:'Backing extra per side',path:'options.overage',kind:'length'},{label:'Usable width of fabric (WOF)',path:'options.usableWof',kind:'length'},{label:'Seam join total take-up',path:'options.joinTakeup',kind:'length'},{label:'One-way fabric print',path:'options.oneWayPrint',kind:'check'}]},
-  {title:'Binding & batting',fields:[{label:'Binding strip cut width',path:'options.stripWidth',kind:'length'},{label:'Batting roll width',path:'options.battingWof',kind:'length'}]},
+  {title:'Binding & batting',fields:[{label:'Binding strip cut width',path:'options.stripWidth',kind:'length'},{label:'Batting roll width',path:'options.battingWof',kind:'length'},{label:'May rotate batting 90°',path:'options.allowRotate',kind:'check',note:'For one-piece batting only. Fabric-yardage and backing have separate grain settings.'}]},
   {title:'Buying settings',fields:[{label:'Purchase step (yd)',path:'options.step',kind:'number'},{label:'Length shrinkage (%)',path:'options.lengthShrinkage',kind:'pct'}]}
  ],
  backing:[
@@ -132,25 +133,20 @@ function diagram(parent:Element,layout:Layout,title:string,sku?:string,scope:'cu
  table(parent,['# / piece','x in','y in','width × height in','grain'],layout.cutPieces.slice(0,45).map((p,i)=>[String(i+1)+' · '+p.label,num(p.xIn),num(p.yIn),num(p.widthIn)+' × '+num(p.heightIn),String(p.grainRotationDeg)+'°']));
 }
 function details(parent:Element,items:[string,string][]):void{stats(parent,items);}
-type ShoppingLine={
- label:string;hint:string;amount?:number;rawYards?:number;offcutSqIn?:number;
- roundingExtraIn?:number;unitPrice?:number;assemblyTrimSqIn?:number;
-};
 function downloadShoppingCsv(lines:ShoppingLine[]):void{
- const headers=['Material / SKU','Notes','Exact raw yards','Rounded purchase yards','Roll offcut sq in','Purchase rounding excess in','Post-assembly trim sq in','User entered price USD per yd','Estimated cost USD'];
- const rows=lines.map(line=>{
-  const estimated=line.amount!==undefined&&line.unitPrice!==undefined ? line.amount*line.unitPrice:undefined;
-  return [line.label,line.hint,line.rawYards,line.amount,line.offcutSqIn,line.roundingExtraIn,line.assemblyTrimSqIn,line.unitPrice,estimated];
- });
- const payload=csvDocument([headers,...rows]);
+ const payload=shoppingCsv(lines);
  const blob=new Blob([payload],{type:'text/csv;charset=utf-8'});
  const url=URL.createObjectURL(blob),a=document.createElement('a');
- a.href=url;a.download='quilt-studio-shopping-list.csv';document.body.appendChild(a);a.click();a.remove();
+ a.href=url;
+ a.download=hasIncompleteShopping(lines)?'quilt-studio-INCOMPLETE-shopping-list.csv':'quilt-studio-shopping-list.csv';
+ document.body.appendChild(a);a.click();a.remove();
  setTimeout(()=>URL.revokeObjectURL(url),2000);
 }
 function shopping(parent:Element,lines:ShoppingLine[]):void{
  section(parent,'Material shopping list','Each material is purchased independently');
- const tools=node('div','shopping-toolbar'),button=node('button','action-secondary','Download shopping CSV');
+ const unfit=lines.filter(line=>line.amount===undefined).length;
+ if(unfit)warning(parent,'INCOMPLETE SHOPPING LIST: '+unfit+' material roll(s) cannot be cut at their current usable width. Do not buy from this list as a complete project. The CSV marks each infeasible material and is named INCOMPLETE.',true);
+ const tools=node('div','shopping-toolbar'),button=node('button','action-secondary',unfit?'Download INCOMPLETE shopping CSV':'Download shopping CSV');
  button.type='button';button.dataset.action='export-shopping';
  button.addEventListener('click',()=>downloadShoppingCsv(lines));
  append(tools,node('p','footer-note','Exact raw amount, rounded purchase, fabric-roll offcut and shop rounding are different measurements.'),button);
@@ -168,7 +164,7 @@ function shopping(parent:Element,lines:ShoppingLine[]):void{
    metrics.appendChild(node('span','shopping-cost','Est. '+money(line.amount*line.unitPrice)));
   }
   left.appendChild(metrics);
-  append(item,left,node('strong','shopping-amount',line.amount===undefined?'Not planned':yd(line.amount)+' yd'));
+  append(item,left,node('strong','shopping-amount',line.amount===undefined?'FIT IMPOSSIBLE':yd(line.amount)+' yd'));
   list.appendChild(item);
  }
  parent.appendChild(list);
@@ -548,7 +544,7 @@ if(root){
    }else if(tool==='hub'){
     const backing=calculateBacking({widthIn:w,heightIn:h,overageIn:o.overage,wofIn:o.usableWof,joinTakeupIn:o.joinTakeup,oneWayPrint:o.oneWayPrint,...buyArgs});
     const binding=calculateStraightBinding({widthIn:w,heightIn:h,wofIn:o.usableWof,stripWidthIn:o.stripWidth,tailAllowanceIn:o.tailAllowance,joinLossIn:o.stripJoinLoss,...buyArgs});
-    const batting=calculateBatting({widthIn:w,heightIn:h,overageIn:o.battingOverage,rollWidthIn:o.battingWof,step:o.step});
+    const batting=calculateBatting({widthIn:w,heightIn:h,overageIn:o.battingOverage,rollWidthIn:o.battingWof,rotate:o.allowRotate,step:o.step});
     const border=calculateBorders({widthIn:w,heightIn:h,seamIn:o.seam,layers:p.borders,step:o.step});
     const fabric=calculateQuiltFabric(p.fabrics,o.step);
     hero(resultRoot,yd(backing.recommended.purchase.roundedPurchaseYards),'BACKING FABRIC (RECOMMENDED)','One quilt top: '+num(w)+' × '+num(h)+' in. See all materials below; each remains its own cutting plan.');
@@ -606,11 +602,17 @@ if(root){
    }
    const record={tool,sourceProjectHash:hashProject(project),calculationVersion:VERSION,calculatedAt:new Date().toISOString(),projectUnits:project.units,result:plan};
    cutExport=record;
-   exportButton.disabled=false;printButton.disabled=false;
-   cutCsvButton.disabled=materialCuts.length===0 || !materialCuts.every(x=>x.layout.isCutFeasible) || !materialCuts.some(x=>x.layout.cutPieces.length>0);
+   exportButton.disabled=false;
+   const anyInfeasible=materialCuts.some(x=>!x.layout.isCutFeasible);
+   const hasPhysicalCuts=materialCuts.some(x=>x.layout.cutPieces.length>0);
+   const readyPhysicalPlan=materialCuts.length>0 && !anyInfeasible && hasPhysicalCuts;
+   printButton.disabled=tool!=='inches' && !readyPhysicalPlan;
+   cutCsvButton.disabled=!readyPhysicalPlan;
+   if(anyInfeasible)warning(resultRoot,'PRINT BLOCKED: at least one current material roll cannot fit its required cut. The JSON calculation export remains available for diagnosis, but this is not a complete cut-ready plan.',true);
+   else if(tool!=='inches' && !hasPhysicalCuts)warning(resultRoot,'There are no physical cut pieces in this plan. Print and cut-list CSV are disabled until a material has real cuts.');
    resultRoot.prepend(node('p','calculation-context','Current project · '+num(w)+' × '+num(h)+' in quilt · '+(project.units==='cm'?'cm display':'in display')+' · source hash '+record.sourceProjectHash));
    resultRoot.appendChild(node('p','footer-note','Cut lengths and coordinates are calculated in inches. Purchase rounding applied once. Source project hash '+record.sourceProjectHash+'. Export JSON to review complete values. Print is a schematic, not an actual-size template.'));
-   note('✓ Updated from the current project · '+new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}));
+   note((materialCuts.some(x=>!x.layout.isCutFeasible)?'⚠ Incomplete material plan · review impossible rolls · ':'✓ Updated from the current project · ')+new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}),materialCuts.some(x=>!x.layout.isCutFeasible));
   }catch(err){cutExport=null;materialCuts=[];exportButton.disabled=true;cutCsvButton.disabled=true;printButton.disabled=true;warning(resultRoot,(err instanceof Error ? err.message : 'Unknown calculation error'),true);note('Cannot prove this cut is feasible. Review your measurements.',true);}
  }
  unitsSelect.addEventListener('change',()=>{if(!requireCommittedDraft('change units')){unitsSelect.value=project.units;return;}project.units=unitsSelect.value==='cm'?'cm':'in';persist();renderEditor();update();});
