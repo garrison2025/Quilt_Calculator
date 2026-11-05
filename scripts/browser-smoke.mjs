@@ -683,6 +683,38 @@ try{
   await undo.click();
   check((await resetPage.getByLabel('Finished quilt width (in)',{exact:true}).inputValue())==='90',
    'Undo after a valid reset must preserve the latest committed value.');
+  // Material editors must preserve invalid drafts before add/remove actions.
+  await hydrated(resetPage,'/quilt-fabric-calculator/');
+  const fabricLabel=resetPage.getByLabel('Fabric / color label',{exact:true}).first();
+  await fabricLabel.fill('');
+  await fabricLabel.press('Tab');
+  check(await fabricLabel.getAttribute('aria-invalid')==='true','Blank required fabric label must be invalid.');
+  const fabricBefore=await resetPage.evaluate(()=>localStorage.getItem('quilt-studio-v2'));
+  await resetPage.getByRole('button',{name:'+ Add fabric SKU'}).click();
+  await resetPage.getByRole('button',{name:'Remove SKU'}).first().click();
+  check((await fabricLabel.inputValue())==='','Fabric add/remove must not clear an invalid draft.');
+  check(await resetPage.evaluate(()=>localStorage.getItem('quilt-studio-v2'))===fabricBefore,
+   'Fabric material actions cannot mutate autosave when a draft is rejected.');
+  await fabricLabel.fill('Sky blue checked');
+  await fabricLabel.press('Tab');
+  check(await resetPage.evaluate(()=>JSON.parse(localStorage.getItem('quilt-studio-v2')).fabrics[0].label)==='Sky blue checked',
+   'Corrected SKU label must persist after rejected material actions.');
+
+  await hydrated(resetPage,'/quilt-border-calculator/');
+  const borderWidth=resetPage.getByLabel('Finished border width (in)',{exact:true}).first();
+  await borderWidth.fill('0');
+  await borderWidth.press('Tab');
+  check(await borderWidth.getAttribute('aria-invalid')==='true','Zero-width border draft must be invalid.');
+  const borderBefore=await resetPage.evaluate(()=>localStorage.getItem('quilt-studio-v2'));
+  await resetPage.getByRole('button',{name:'+ Add border layer'}).click();
+  await resetPage.getByRole('button',{name:'Remove layer'}).first().click();
+  check((await borderWidth.inputValue())==='0','Border add/remove must preserve rejected widths.');
+  check(await resetPage.evaluate(()=>localStorage.getItem('quilt-studio-v2'))===borderBefore,
+   'Border material actions cannot overwrite accepted project with a rejected draft.');
+  await borderWidth.fill('2.75');
+  await borderWidth.press('Tab');
+  check(await resetPage.evaluate(()=>JSON.parse(localStorage.getItem('quilt-studio-v2')).borders[0].widthIn)===2.75,
+   'Valid repaired border must autosave normally.');
   await resetPage.screenshot({path:'artifacts/qa/safe-reset-undo.png',fullPage:true,animations:'disabled'});
   await resetCtx.close();
   console.log('PASS reset undo restores autosaved project; stale-tab reset is blocked and new edits invalidate old undo.');
