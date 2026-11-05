@@ -265,3 +265,39 @@
  .quilt-ui-v3 .result-change{animation:quilt-value-confirm 170ms ease-out both}
 }
 @media print{.quilt-ui-v3 .result-change{display:none!important}}
+
+// Diagram zoom stays inside a dedicated scroll viewport. Never rescale
+// coordinates, export SVG source dimensions or the 1:1 print calibration.
+@media screen{
+ .quilt-ui-v3 .cut-diagram-stage{width:100%;max-width:100%;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;border:1px solid #c9dccd;border-radius:10px;background:#fffdf8;scrollbar-color:#86a894 #edf3ec}
+ .quilt-ui-v3 .cut-diagram-stage>svg{display:block;height:auto;max-width:none;min-width:0;vertical-align:middle}
+ .quilt-ui-v3 .cut-zoom-controls{display:flex;align-items:center;flex-wrap:wrap;gap:7px 9px;padding:9px 0;border-block:1px solid #dce8dc}
+ .quilt-ui-v3 .cut-zoom-label{font-size:11px;font-weight:700;color:#355943;margin-right:auto}
+ .quilt-ui-v3 .cut-zoom-value{min-width:43px;text-align:center;font-size:12px;font-weight:800;font-variant-numeric:tabular-nums;color:#244d37}
+ .quilt-ui-v3 .cut-zoom-controls button{min-height:38px;padding:8px 10px;font-size:11px}
+ .quilt-ui-v3 .cut-coordinate-link{display:inline-block;text-align:left;border:1px solid transparent;border-radius:5px;padding:6px 7px;color:#22563d;background:transparent;font-size:inherit;font-weight:650;cursor:pointer;max-width:100%}
+ .quilt-ui-v3 .cut-coordinate-link:hover{background:#e8f4ea;border-color:#b0cdb7}
+ .quilt-ui-v3 .cut-coordinate-link:focus-visible{outline:3px solid #589875;outline-offset:1px}
+ .quilt-ui-v3 .cut-coordinate-selected td{background:#e3f2e6}
+ .quilt-ui-v3 .cut-coordinate-selected .cut-coordinate-link{border-color:#55926b;background:#d6ebdc}
+ @media(max-width:570px){
+  .quilt-ui-v3 .cut-zoom-label{flex:1 0 100%}
+  .quilt-ui-v3 .cut-zoom-controls button{flex:1 1 72px;min-width:0}
+ }
+ @media(prefers-color-scheme:dark){
+  .quilt-ui-v3 .cut-diagram-stage{border-color:#63876c;background:#eaeedf}
+  .quilt-ui-v3 .cut-zoom-controls{border-color:#526f58}
+  .quilt-ui-v3 .cut-zoom-label,.quilt-ui-v3 .cut-zoom-value{color:#dbf1e1}
+  .quilt-ui-v3 .cut-coordinate-link{color:#d7f2df}
+  .quilt-ui-v3 .cut-coordinate-link:hover{background:#345843;border-color:#74a182}
+  .quilt-ui-v3 .cut-coordinate-selected td{background:#365a43}
+  .quilt-ui-v3 .cut-coordinate-selected .cut-coordinate-link{background:#416a4b;border-color:#91c5a0;color:#f2fff4}
+ }
+}
+@media print{
+ .quilt-ui-v3 .cut-diagram-stage{overflow:visible!important;width:100%!important;max-width:100%!important;border:0!important;background:transparent!important}
+ .quilt-ui-v3 .cut-diagram-stage>svg{width:100%!important;max-width:100%!important;height:auto!important}
+ .quilt-ui-v3 .cut-zoom-controls{display:none!important}
+ .quilt-ui-v3 .cut-coordinate-link{padding:0!important;background:transparent!important;border:0!important;color:#222!important}
+ .quilt-ui-v3 .cut-coordinate-selected td{background:transparent!important}
+}

@@ -1785,6 +1785,14 @@ try{
   check(phoneOverflow<=2,
     'Cut playback controls cause mobile horizontal overflow: '+phoneOverflow+'px');
   await phoneWalk.getByRole('button',{name:'Show all cuts'}).click();
+  await phoneWalk.getByRole('button',{name:'Zoom in'}).click();
+  await phoneWalk.getByRole('button',{name:'Zoom in'}).click();
+  const phoneStage=small.locator('[data-results] [data-cut-stage]').first();
+  check(await phoneStage.evaluate(el=>el.scrollWidth>el.clientWidth),
+    'Phone must allow panning across a zoomed fabric roll without clipping it.');
+  check(await small.evaluate(()=>document.documentElement.scrollWidth-innerWidth)<=2,
+    'Zoomed cut diagram must not introduce document-level phone overflow.');
+  await phoneWalk.getByRole('button',{name:'Reset zoom'}).click();
   await small.getByRole('button',{name:'Update cutting plan'}).click();
   check(await small.locator('#results').evaluate(el=>el===document.activeElement),
     'On narrow mobile, successful manual recalculation should focus the results landmark.');
@@ -1822,9 +1830,25 @@ try{
   const visualDiagram=visual.locator('[data-results] .diagram-wrap:has([data-cut-walkthrough])').first();
   check(await visualDiagram.count()===1,'Physical SVG needs an interactive, opt-in cut walkthrough.');
   const walkthrough=visualDiagram.locator('[data-cut-walkthrough]');
+  const stage=visualDiagram.locator('[data-cut-stage]');
   const sequenceCuts=visualDiagram.locator('svg rect[data-cut-index]');
   const totalSequence=await sequenceCuts.count();
   check(totalSequence>=2,'Backing sample should have multiple drawable cut pieces.');
+  check(await stage.count()===1,'Cut diagram must stay inside its own horizontal scroll viewport.');
+  const cutTableLinks=visual.locator('[data-results] button[data-cut-row]');
+  check(await cutTableLinks.count()===Math.min(totalSequence,45),
+    'Every visible cut row must provide one independently focusable diagram-selection action.');
+  const zoomIn=walkthrough.getByRole('button',{name:'Zoom in'});
+  await zoomIn.click();await zoomIn.click();
+  check(await stage.locator('svg').getAttribute('data-preview-zoom')==='2',
+    'Zoom should offer a true 200% display-only view.');
+  const zoomExtent=await stage.evaluate(el=>({scroll:el.scrollWidth,client:el.clientWidth,
+    overflow:document.documentElement.scrollWidth-innerWidth}));
+  check(zoomExtent.scroll>zoomExtent.client&&zoomExtent.overflow<=2,
+    'Zoom must allow pan within the diagram, not create page-level horizontal overflow.');
+  await walkthrough.getByRole('button',{name:'Reset zoom'}).click();
+  check(await stage.locator('svg').getAttribute('data-preview-zoom')==='1',
+    'Reset zoom must restore exact default viewport scale.');
   const originalSvgGeometry=await sequenceCuts.evaluateAll(items=>items.map(el=>
     ['x','y','width','height','data-roll-x-in','data-roll-y-in','data-cut-width-in','data-cut-height-in']
       .map(k=>el.getAttribute(k)).join('|')));
@@ -1854,8 +1878,13 @@ try{
     future:[...el.querySelectorAll('svg rect[data-preview-phase="future"]')]
       .map(rect=>getComputedStyle(rect).opacity)
   }));
-  check(printDiagram.controls==='none'&&printDiagram.future.every(v=>Number(v)===1),
-    'Printing must show ALL actual cut rectangles, never hide a partial animated sequence.');
+  const printZoom=await stage.evaluate(el=>({
+    stageWidth:el.getBoundingClientRect().width,
+    svgWidth:el.querySelector('svg').getBoundingClientRect().width
+  }));
+  check(printDiagram.controls==='none'&&printDiagram.future.every(v=>Number(v)===1)&&
+    printZoom.svgWidth<=printZoom.stageWidth+2,
+    'Printing must restore ALL rectangles and original fit-to-print diagram width despite any zoom.');
   await visual.emulateMedia({media:'screen'});
   await walkthrough.getByRole('button',{name:'Show all cuts'}).click();
   check(await slider.inputValue()===String(totalSequence+1) &&
@@ -1886,7 +1915,15 @@ try{
   check(await slider.inputValue()==='1' &&
     (await inspect.innerText()).includes('Cut 1 / '+totalSequence),
     'Pointer selection must use same cut-order state as accessible range slider.');
+  await cutTableLinks.nth(Math.min(1,totalSequence-1)).click();
+  const expectedCut=Math.min(2,totalSequence);
+  check(await slider.inputValue()===String(expectedCut) &&
+    (await inspect.innerText()).includes('Cut '+expectedCut+' / '+totalSequence) &&
+    await cutTableLinks.nth(expectedCut-1).getAttribute('aria-current')==='step',
+    'Selecting a coordinate-table row must highlight the matching physical SVG rectangle and inspector.');
   await walkthrough.getByRole('button',{name:'Show all cuts'}).click();
+  check(await visual.locator('[data-results] button[data-cut-row][aria-current]').count()===0,
+    'Full view must clear selected table-row state.');
   const finalSvgGeometry=await sequenceCuts.evaluateAll(items=>items.map(el=>
     ['x','y','width','height','data-roll-x-in','data-roll-y-in','data-cut-width-in','data-cut-height-in']
       .map(k=>el.getAttribute(k)).join('|')));

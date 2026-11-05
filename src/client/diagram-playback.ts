@@ -40,6 +40,40 @@ export function attachCutWalkthrough(wrapper:HTMLElement,svg:SVGSVGElement):void
  }
  actions.append(play,next,reset);
 
+ // Zoom is display-only. Width scales the identical viewBox within a
+ // horizontally scrollable viewport; exact SVG coordinates remain immutable.
+ const stage=svg.parentElement;
+ if(!(stage instanceof HTMLElement)||!stage.classList.contains('cut-diagram-stage'))
+  throw Error('Cut walkthrough requires a dedicated SVG scroll viewport.');
+ const zoom=document.createElement('div');
+ zoom.className='cut-zoom-controls';
+ zoom.dataset.cutZoomControls='';
+ const zoomLabel=document.createElement('span');
+ zoomLabel.className='cut-zoom-label';zoomLabel.textContent='Diagram view';
+ const zoomOut=button('diagram-zoom-out','Zoom out');
+ const zoomIn=button('diagram-zoom-in','Zoom in');
+ const zoomReset=button('diagram-zoom-reset','Reset zoom');
+ const zoomValue=document.createElement('output');zoomValue.className='cut-zoom-value';
+ zoomValue.setAttribute('aria-label','Current diagram zoom');
+ zoom.append(zoomLabel,zoomOut,zoomValue,zoomIn,zoomReset);
+ const zoomSteps=[1,1.5,2,3];
+ let zoomIndex=0;
+ function applyZoom():void{
+  const factor=zoomSteps[zoomIndex];
+  svg.style.width=String(factor*100)+'%';
+  svg.style.maxWidth='none';
+  svg.dataset.previewZoom=String(factor);
+  zoomValue.textContent=String(Math.round(factor*100))+'%';
+  zoomOut.disabled=zoomIndex===0;
+  zoomIn.disabled=zoomIndex===zoomSteps.length-1;
+  zoomReset.disabled=zoomIndex===0;
+  if(zoomIndex===0)stage.scrollLeft=0;
+ }
+ zoomOut.addEventListener('click',()=>{zoomIndex=Math.max(0,zoomIndex-1);applyZoom();});
+ zoomIn.addEventListener('click',()=>{zoomIndex=Math.min(zoomSteps.length-1,zoomIndex+1);applyZoom();});
+ zoomReset.addEventListener('click',()=>{zoomIndex=0;applyZoom();});
+ applyZoom();
+
  const progress=document.createElement('div');
  progress.className='cut-walkthrough-progress';
  const label=document.createElement('label');
@@ -62,7 +96,7 @@ export function attachCutWalkthrough(wrapper:HTMLElement,svg:SVGSVGElement):void
  status.setAttribute('aria-live','polite');
  status.textContent=reduceMotion?'Manual cut-by-cut inspection is available.':'All planned cuts are visible.';
  progress.append(label,range,countText,status);
- toolbar.append(intro,actions,progress);
+ toolbar.append(intro,actions,zoom,progress);
  // Selectable geometric inspection reads existing SVG attributes, never
  // re-runs or rewrites the independently verified layout.
  const inspector=document.createElement('div');
@@ -135,6 +169,11 @@ export function attachCutWalkthrough(wrapper:HTMLElement,svg:SVGSVGElement):void
    inspectorFields(cut);
   }
   next.disabled=playing;
+  // Coordinate table rows subscribe to this local SVG event. There is no
+  // global document handler, so separate fabric SKUs remain isolated.
+  svg.dispatchEvent(new CustomEvent('quilt-cut-selected',{
+   detail:{position:current,all:showAll}
+  }));
  }
  function announce(message:string):void{status.textContent=message;}
  function tick(now:number):void{
@@ -183,6 +222,12 @@ export function attachCutWalkthrough(wrapper:HTMLElement,svg:SVGSVGElement):void
  });
  // Pointer shortcut uses the same semantic state as the keyboard-accessible
  // range and Next button; SVG geometry remains untouched.
+ svg.addEventListener('quilt-select-cut',event=>{
+  const index=Number((event as CustomEvent<number>).detail);
+  if(!Number.isInteger(index)||index<1||index>count)return;
+  cancel();render(index);
+  announce('Showing cut '+index+' of '+count+' cuts, selected from the coordinate table.');
+ });
  svg.addEventListener('click',event=>{
   const target=event.target;
   if(!(target instanceof SVGRectElement))return;

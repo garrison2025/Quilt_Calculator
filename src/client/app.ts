@@ -96,12 +96,13 @@ function hero(parent:Element,value:string,label:string,description:string,unit='
  const h=node('div','result-hero');append(h,node('div','result-kicker',label),node('div','result-big',value+' '+unit),node('p','result-sub',description));parent.appendChild(h);
 }
 function warning(parent:Element,message:string,error=false):void{parent.appendChild(node('div',error?'warning-banner error-banner':'warning-banner',message));}
-function table(parent:Element,headers:string[],rows:string[][]):void{
+function table(parent:Element,headers:string[],rows:string[][]):HTMLElement{
  const shell=node('div','table-scroll'),t=node('table','breakdown-table'),head=node('thead'),tr=node('tr');
  for(const x of headers)tr.appendChild(node('th','',x));head.appendChild(tr);t.appendChild(head);
  const body=node('tbody');
  for(const row of rows){const r=node('tr');for(const cell of row)r.appendChild(node('td','',cell));body.appendChild(r);}
  t.appendChild(body);shell.appendChild(t);parent.appendChild(shell);
+ return shell;
 }
 function diagram(parent:Element,layout:Layout,title:string,sku?:string,scope:'current'|'comparison'='current'):void{
  section(parent,title,'Roll coordinates');
@@ -141,12 +142,41 @@ function diagram(parent:Element,layout:Layout,title:string,sku?:string,scope:'cu
  const tx=make('text',{x:'40',y:'300','font-size':'12',fill:'#47695a'},svg);
  tx.textContent='Fabric roll length: '+num(layout.exactFabricRunLengthIn)+' in  →';
  const ty=make('text',{x:'44',y:'20','font-size':'11',fill:'#47695a'},svg);ty.textContent='Usable WOF: '+num(layout.usableWofIn)+' in';
- wrapper.appendChild(svg);
+ const stage=node('div','cut-diagram-stage');
+ stage.dataset.cutStage='';
+ stage.appendChild(svg);
+ wrapper.appendChild(stage);
  attachCutWalkthrough(wrapper,svg);
  wrapper.appendChild(node('p','diagram-note','Schematic, not to scale or a 1:1 pattern. Coordinates and dimensions are actual INCHES on the fabric roll. '+(totalCutCount>180?'First '+previewCutCount+' of '+totalCutCount+' cuts shown; the complete physical cut-list CSV includes every cut.':'')));
  parent.appendChild(wrapper);
  section(parent,'Cut coordinates','First '+Math.min(layout.cutPieces.length,45)+' of '+layout.cutPieces.length);
- table(parent,['# / piece','x in','y in','width × height in','grain'],layout.cutPieces.slice(0,45).map((p,i)=>[String(i+1)+' · '+p.label,num(p.xIn),num(p.yIn),num(p.widthIn)+' × '+num(p.heightIn),String(p.grainRotationDeg)+'°']));
+ const cutTable=table(parent,['# / piece','x in','y in','width × height in','grain'],layout.cutPieces.slice(0,45).map((p,i)=>[String(i+1)+' · '+p.label,num(p.xIn),num(p.yIn),num(p.widthIn)+' × '+num(p.heightIn),String(p.grainRotationDeg)+'°']));
+ // The first 45 rows form a keyboard-accessible counterpart to the SVG.
+ // Row clicks only select a preview index; they never alter physical cuts.
+ const cutRows=[...cutTable.querySelectorAll<HTMLTableRowElement>('tbody tr')];
+ cutRows.forEach((row,i)=>{
+  const first=row.querySelector('td');
+  if(!first)return;
+  const button=node('button','cut-coordinate-link',first.textContent||String(i+1));
+  button.type='button';button.dataset.cutRow=String(i+1);
+  button.setAttribute('aria-label','Inspect cut '+(i+1)+' on diagram: '+layout.cutPieces[i].label);
+  first.replaceChildren(button);
+  button.addEventListener('click',()=>{
+   svg.dispatchEvent(new CustomEvent<number>('quilt-select-cut',{detail:i+1}));
+  });
+ });
+ svg.addEventListener('quilt-cut-selected',event=>{
+  const detail=(event as CustomEvent<{position:number;all:boolean}>).detail;
+  cutRows.forEach((row,i)=>{
+   const selected=!detail.all&&detail.position===i+1;
+   row.classList.toggle('cut-coordinate-selected',selected);
+   const button=row.querySelector<HTMLButtonElement>('button[data-cut-row]');
+   if(button){
+    if(selected)button.setAttribute('aria-current','step');
+    else button.removeAttribute('aria-current');
+   }
+  });
+ });
 }
 function details(parent:Element,items:[string,string][]):void{stats(parent,items);}
 function downloadShoppingCsv(lines:ShoppingLine[]):void{
