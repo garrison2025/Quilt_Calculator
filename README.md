@@ -2,6 +2,17 @@
 
 Free US-English quilting tools built with Astro static pages and a browser-based TypeScript cutting engine. No account, database, paid API or required cloud back end.
 
+## Project acceptance / current deployment
+
+**Software engineering complete for the nine approved calculator intents; automated preview acceptance PASSED (2026-11-05). Physical validation and production release remain PENDING.** This is a development freeze for the accepted preview scope, not a claim that all 47 original production gates are closed.
+
+- [Official acceptance decision and evidence](docs/qa/PREVIEW_ENGINEERING_ACCEPTANCE_20261105.md) — 187/187 unit/property checks, all 10 approved page reflow checks at 320 CSS px, browser import/export, automated accessibility checks and print/preview protection.
+- [Quality CI](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41978590893) and [exact-revision Cloudflare CI](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41978590943) — both PASS for code revision `4b4f290`; later acceptance documentation only does not change the calculator.
+- [Current Cloudflare noindex preview](https://quilt-calculator-566.pages.dev/) — leave `PUBLIC_INDEXABLE=0`/unset and `PUBLIC_SITE_URL` unset until an approved owned domain and separate launch authorization.
+- [Physical printer calibration worksheet](docs/qa/PRINT_SCALE_PHYSICAL_SIGNOFF.md) — real printed measurements **MANUAL_NOT_RUN**; sewn fabric/Square-in-a-Square evidence, screen-reader/human hardware review **NOT_SIGNED_OFF**.
+- AdSense, production sitemap/canonicals and Google Search Console are **NOT_CONFIGURED**. Unproved methods stay HOLD. Reopen development only for a reproducible defect, new specification or user-approved production launch.
+
+
 ## Local development (Node.js 22+)
 
     npm ci
