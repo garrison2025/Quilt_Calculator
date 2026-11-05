@@ -26,6 +26,10 @@
           "exclusiveMinimum": 0,
           "maximum": 100000
         },
+        "sizeBasis": {
+          "enum": ["before-borders", "includes-borders"],
+          "description": "Optional for legacy V2 projects. Bordered projects without this value cannot produce a purchase-ready plan until dimensions are explicitly confirmed."
+        },
         "topCutsReviewed": {
           "type": "boolean",
           "description": "Optional manual confirmation: user checked that all intended quilt-top fabric SKU colors and cut pieces were entered. The calculator cannot verify design completeness. Omitted in older V2 imports means not reviewed."
@@ -105,6 +109,18 @@
         },
         "allowRotate": {
           "type": "boolean"
+        },
+        "backingPricePerYard": {
+          "type": "number", "minimum": 0, "maximum": 100000,
+          "description": "Optional user-entered USD per yard; missing values are unpriced, not free."
+        },
+        "battingPricePerYard": {
+          "type": "number", "minimum": 0, "maximum": 100000,
+          "description": "Optional user-entered USD per yard; missing values are unpriced, not free."
+        },
+        "bindingPricePerYard": {
+          "type": "number", "minimum": 0, "maximum": 100000,
+          "description": "Optional user-entered USD per yard for straight-grain binding; missing values are unpriced."
         }
       },
       "required": [
