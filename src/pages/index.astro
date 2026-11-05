@@ -6,17 +6,20 @@ import {calculatorTasks} from '../data/calculator-tasks';
 ---
 <Base home title="Quilt Studio — Better Quilt & Fabric Calculators with Cut Plans" description="Plan a quilt in one place. Calculate backing, straight binding, batting and materials from real cutting diagrams, with printable shopping lists and free local project files.">
 <div class="page-shell">
-<section class="page-intro">
+<section class="page-intro page-intro--home" data-ui-hero>
  <div class="page-heading">
   <span class="eyebrow-with-line">— THE MAKER'S TOOLKIT</span>
-  <h1>Less guessing.<br/>More making.</h1>
+  <h1>Less guessing.<br/><span class="hero-emphasis">More making.</span></h1>
   <p>Every quilting project begins with a little math. Bring together your fabric, finished dimensions, overage and seam requirements in one thoughtful, free planning workspace.</p>
   <div class="feature-pills"><span>✓ Physical cutting plans</span><span>✓ No account</span><span>✓ Local project files</span></div>
-  <p><a class="header-cta" href="/calculators/">See the complete project planner ↗</a></p>
+  <div class="hero-actions"><a class="hero-main-cta" href="#calculator-workspace">Start with your quilt <span aria-hidden="true">↗</span></a><a class="hero-sub-cta" href="/calculators/">Explore the full planner</a></div>
+  <p class="hero-reassurance">Free tools · No sign-up · Your measurements stay on this device</p>
  </div>
- <div class="mini-feature"><div class="mini-top"><span>MEASURE TWICE, CUT ONCE</span><span>QUILT STUDIO / 2026</span></div><img src="/images/hub.webp" width="640" height="420" alt="Original illustration of patterned fabric squares arranged in a quilting cutting workspace" loading="eager"/><div class="mini-bottom"><b>Make room for the joy.</b><span>✳ Made to measure</span></div></div>
+ <div class="mini-feature mini-feature--crafted"><div class="mini-top"><span>MEASURE TWICE, CUT ONCE</span><span>QUILT STUDIO / 2026</span></div><img src="/images/hub.webp" width="640" height="420" alt="Original illustration of patterned fabric squares arranged in a quilting cutting workspace" fetchpriority="high" loading="eager"/>
+  <svg class="hero-thread" viewBox="0 0 580 280" preserveAspectRatio="none" aria-hidden="true"><path d="M-12 185 Q 75 95, 154 156 T 321 144 T 598 70" pathLength="100" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="1.2 1.2" stroke-linecap="round"/></svg>
+  <span class="hero-fabric-seal" aria-hidden="true">MADE<br/>TO<br/>MEASURE</span><div class="mini-bottom"><b>Make room for the joy.</b><span>✳ Made to measure</span></div></div>
 </section>
-<section class="content-block" style="margin-top:22px">
+<section class="content-block home-workspace-section" style="margin-top:22px">
  <div class="editorial-head"><span class="eyebrow-with-line">— START RIGHT HERE</span><h2>Your next quilt, in one place.</h2><p>Try the 60 × 80 inch sample project below. Adjust the dimensions and get a physically checked fabric plan, not an area-only estimate.</p></div>
  <Calculator tool="hub" sample={byId('hub').sample}/>
 </section>

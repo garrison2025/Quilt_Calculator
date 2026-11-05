@@ -3,7 +3,8 @@ import type {ToolId} from '../client/types';
 interface Props {tool:ToolId;sample:string}
 const {tool,sample}=Astro.props;
 ---
-<section class="calculator-wrap" data-tool={tool} data-print-ready="false" aria-label="Interactive cutting calculator">
+<section class="calculator-wrap" id="calculator-workspace" data-tool={tool} data-print-ready="false" aria-label="Interactive cutting calculator">
+<div class="workspace-steps" aria-label="How to use this calculator"><span><b>01</b> Measure</span><span><b>02</b> Calculate</span><span><b>03</b> Review &amp; export</span></div>
 <div class="workspace">
 <aside class="input-card">
 <div class="card-heading"><span class="eyebrow-with-dot">● YOUR CUTTING WORKSPACE</span><h2>Project measurements</h2><p>Adjust the sample to fit your real materials.</p></div>
