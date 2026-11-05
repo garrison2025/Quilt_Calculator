@@ -235,10 +235,30 @@ if(root){
   storageState.textContent='Browser storage unavailable. Use Save project to download a JSON backup.';
   stateLabel.textContent='● Unsaved in browser';
  }
+ function blockConflictedOutputs():void{
+  // An older tab may keep a project as a downloadable JSON backup, but must
+  // never present its superseded cut sheets as current purchasing instructions.
+  root!.dataset.printReady='false';
+  cutExport=null;materialCuts=[];
+  exportButton.disabled=true;cutCsvButton.disabled=true;printButton.disabled=true;
+  resultRoot.querySelectorAll<HTMLButtonElement>('[data-action="export-shopping"]')
+   .forEach(button=>button.disabled=true);
+ }
  function showStorageConflict():void{
   syncWarning.hidden=false;
-  storageState.textContent='Newer saved data exists in another tab. Changes here will not overwrite it.';
+  storageState.textContent='Another tab saved a different project. Cutting and shopping exports are blocked. Save this tab as a JSON backup, then load the newest project.';
   stateLabel.textContent='● Unsaved · another tab changed';
+  blockConflictedOutputs();
+ }
+ function requireCurrentOutput(action:string):boolean{
+  // Storage events are asynchronous: recheck source state at export time.
+  try{
+   if(localStorage.getItem(STORAGE_KEY)!==lastStoredJson)showStorageConflict();
+  }catch{/* Blocked browser storage: local calculations still function. */}
+  if(syncWarning.hidden)return true;
+  blockConflictedOutputs();
+  note('Cannot '+action+': another tab saved a different project. Download this tab\'s JSON backup, then load the newest saved project before exporting or printing.',true);
+  return false;
  }
  function persist():void{
   // Any successfully accepted edit, import, SKU operation or unit change
@@ -259,6 +279,14 @@ if(root){
  window.addEventListener('storage',event=>{
   if(event.key===STORAGE_KEY && event.newValue!==lastStoredJson)showStorageConflict();
  });
+ // Shopping buttons are regenerated on each calculation: one capture-phase
+ // gate runs before any individual shopping download click handler.
+ resultRoot.addEventListener('click',event=>{
+  if((event.target as Element|null)?.closest('[data-action="export-shopping"]') &&
+     !requireCurrentOutput('download a shopping list')){
+   event.preventDefault();event.stopImmediatePropagation();
+  }
+ },true);
  root.querySelector('[data-action="load-latest"]')?.addEventListener('click',()=>{
   if(!requireCommittedDraft('load another saved project'))return;
   try{
@@ -783,6 +811,12 @@ if(root){
    resultRoot.appendChild(node('p','footer-note','Cut lengths and coordinates are calculated in inches. Purchase rounding applied once. Source project hash '+record.sourceProjectHash+'. Export JSON to review complete values. Print is a schematic, not an actual-size template.'));
    const incompleteProject=anyInfeasible || topFabricMissing || topCutListNotReviewed;
    note((incompleteProject?'⚠ Incomplete material plan · check review, missing cuts or infeasible rolls · ':'✓ Updated from the current project · ')+new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}),incompleteProject);
+   // Recalculating a valid local edit must not re-enable outputs while
+   // another tab holds a newer saved project. Save project remains enabled.
+   if(!syncWarning.hidden){
+    blockConflictedOutputs();
+    note('This tab has unsaved edits and another tab saved a different project. Save a JSON backup, then load the newest project before exporting.',true);
+   }
   }catch(err){root!.dataset.printReady='false';cutExport=null;materialCuts=[];exportButton.disabled=true;cutCsvButton.disabled=true;printButton.disabled=true;warning(resultRoot,(err instanceof Error ? err.message : 'Unknown calculation error'),true);note('Cannot prove this cut is feasible. Review your measurements.',true);}
  }
  unitsSelect.addEventListener('change',()=>{if(!requireCommittedDraft('change units')){unitsSelect.value=project.units;return;}project.units=unitsSelect.value==='cm'?'cm':'in';persist();renderEditor();update();});
@@ -864,9 +898,12 @@ if(root){
   }
   download('quilt-studio-project-v2.json',project);
  });
- exportButton.addEventListener('click',()=>{if(cutExport)download('quilt-studio-cut-plan-v2.json',cutExport);});
+ exportButton.addEventListener('click',()=>{
+  if(cutExport && requireCurrentOutput('download cutting-plan JSON'))
+   download('quilt-studio-cut-plan-v2.json',cutExport);
+ });
  cutCsvButton.addEventListener('click',()=>{
-  if(!cutExport || cutCsvButton.disabled)return;
+  if(!cutExport || cutCsvButton.disabled || !requireCurrentOutput('download a cut list'))return;
   try{
    const blob=new Blob([cutListCsv(materialCuts)],{type:'text/csv;charset=utf-8'});
    const url=URL.createObjectURL(blob),a=document.createElement('a');
@@ -878,6 +915,9 @@ if(root){
  let collapsedForPrint:HTMLDetailsElement[]=[];
  window.addEventListener('beforeprint',()=>{
   if(printingExpanded)return;
+  // The browser menu/Ctrl+P bypasses the disabled Print button entirely.
+  if(!requireCurrentOutput('print a cutting plan'))return;
+  if(root!.dataset.printReady!=='true')return;
   printingExpanded=true;
   const plans=[...resultRoot.querySelectorAll<HTMLDetailsElement>('details.sku-plan')];
   // Never accidentally populate incomplete/stale print content. When valid,
@@ -892,7 +932,9 @@ if(root){
   collapsedForPrint.forEach(el=>el.open=false);
   collapsedForPrint=[];printingExpanded=false;
  });
- printButton.addEventListener('click',()=>{if(cutExport)window.print();});
+ printButton.addEventListener('click',()=>{
+  if(cutExport && requireCurrentOutput('print a cutting plan'))window.print();
+ });
  const picker=root.querySelector<HTMLInputElement>('[data-file]')!;
  root.querySelector('[data-action="import"]')?.addEventListener('click',()=>{
   if(requireCommittedDraft('import a project'))picker.click();
