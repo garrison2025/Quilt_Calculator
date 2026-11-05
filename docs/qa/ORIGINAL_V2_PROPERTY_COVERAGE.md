@@ -25,3 +25,7 @@ Source and line-by-line pixel placement were cross-checked in real Chromium agai
 
 ### P21 (2026-11-05): across-tool project data continuity
 The full P21 engineering scenario is now executed in an isolated Chromium browser context across backing → binding → batting → hub → fabric → yardage → backing → hub. Native-inch dimensions, reversible cm/in display, fabric SKU label, cut quantity, unsaved edit protection and final downloaded Project V2 JSON must agree with the one locally saved project. The original manual/full cross-tool signoff remains separately identifiable; this strengthens the automated P21 evidence rather than proving every UI journey.
+
+### Single-material fabric rotation semantics (2026-11-05)
+- The original V2 directional grain constraint is now enforced within `calculateYardage` and `compareYardageWidths` for both current and hypothetical alternative usable fabric widths. Project V2 stores independent optional `yardage.oneWayPrint` and `yardage.allowRotate`; legacy V2 imports remain valid.
+- [CI 41940484000](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41940484000) verifies the unrestricted 25-in vs one-way 30-in cut run, no 90-degree current-roll cut CSV entries when one-way print is selected, cross-route isolation from batting rotation, and the original 39 reference cases. This is additional automated P05/P07 directionality coverage, not a new physical cut or manual print acceptance. The original 24 property statuses and 47 release gates are not rewritten as complete.

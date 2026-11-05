@@ -40,7 +40,7 @@ Then redeploy. The production build generates canonical URLs and a sitemap conta
 - /quilt-backing-calculator/ : panel counts, orientations and true roll lengths
 - /quilt-binding-calculator/ : straight-grain strips and effective joined length
 - /quilt-border-calculator/ : butted side-first border layers
-- /fabric-yardage-calculator/ : repeated rectangles with optional permitted rotation
+- /fabric-yardage-calculator/ : repeated rectangles with optional permitted rotation; independent one-way/directional print constraint forbids 90° rotation
 - /quilt-fabric-calculator/ : SKU-separated multicolor cut groups
 - /fabric-yards-to-inches/ : exact fabric fractions and metric conversion
 - /quilt-batting-calculator/ : single-piece batting roll-fit check
@@ -67,3 +67,6 @@ The cutting laboratory is at /lab/square-in-square/. It is intentionally not par
 
 ## Original V2 source-workbook acceptance
 The source XLSX's 39 Golden examples, 24 property requirements and 47 release gates have been recovered and committed to [`docs/data/reference/`](docs/data/reference/ORIGINAL_SOURCE.md). Current-engine reference replay is in [`tests/original-v2-golden.test.ts`](tests/original-v2-golden.test.ts), dedicated 20-ID property coverage in [`tests/original-v2-properties.test.ts`](tests/original-v2-properties.test.ts), and the 47-gate review is at [`docs/qa/ORIGINAL_V2_RELEASE_GATES_47_CURRENT.md`](docs/qa/ORIGINAL_V2_RELEASE_GATES_47_CURRENT.md). No original NOT_RUN source value was rewritten to imply independent physical testing.
+
+### Directional fabric safety (2026-11-05)
+The Fabric Yardage tool now independently stores its 90° rotation permission and one-way fabric-print flag. When a one-way print is selected, the engine refuses rotated cuts on both the current roll and the hypothetical alternate width and exports only actual permitted grain angles. Existing V2 JSON without these optional flags remains importable. [Verification: 169 unit/property tests and Chromium](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41940484000). This is an engineering QA result, not real-fabric certification.

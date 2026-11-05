@@ -1,11 +1,11 @@
 # Quilt Studio — verification evidence and release blockers
-Last verified: 2026-11-05 · draft-loss and material-action browser regression CI `41939510752` · `noindex` engineering preview.
+Last verified: 2026-11-05 · independent fabric grain/rotation CI `41940484000` · `noindex` engineering preview.
 
 ## What is actually verified
 | Check | Status | Evidence / reproducible action |
 |---|---|---|
 | TypeScript static typing | PASS | GitHub CI https://github.com/garrison2025/Quilt_Calculator/actions/runs/41931472782 · `npm run lint` |
-| Deterministic arithmetic, geometry and V2 import checks | PASS · 167 tests | Same CI · `npm test`; includes backing seam thresholds, binding strip thresholds and 2,000-piece roll-area conservation |
+| Deterministic arithmetic, geometry and V2 import checks | PASS · 169 tests | Same CI · `npm test`; includes backing seam thresholds, binding strip thresholds and 2,000-piece roll-area conservation |
 | Astro static build and route list | PASS | Same CI · `npm run build && node scripts/check-build.mjs` |
 | Original 218-keyword source appendices and canonical intent routing | PASS (engineering mapping only) | `docs/data/V2_Keyword_Appendix_218.csv`: 202 assigned to nine distinct tool intents; 16 HOLD; not search ranking evidence |
 | Published preview index protection | PASS | Static check ensures only `noindex,follow`; no preview sitemap or absolute canonical |
@@ -85,3 +85,8 @@ Only these are calculated with checked physical layouts: joined rectangular back
 ## Project editor draft preservation · 2026-11-05
 - A text/number field that has changed but not been accepted (or has failed V2 validation) must not disappear when the user clicks Reset, Undo reset, switches units, loads the saved project, imports JSON, or adds/deletes a fabric SKU, cut group or border layer. The first invalid/pending input is focused and the accepted browser project remains intact. The import handler rechecks after awaiting file contents.
 - Actual Chromium regression in [CI 41939510752](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41939510752) verifies invalid draft retention and unchanged localStorage for reset, cm/in selection, import attempt, fabric SKU add/remove and border add/remove; then it verifies corrected values autosave again and that reset/undo remains reversible. Unit tests and the original source workbooks were not modified. This is UI safety evidence, not completion of all manual cross-browser accessibility gates.
+
+## One-way directional fabric and rotation independence · 2026-11-05
+- The approved Fabric Yardage route now has distinct optional `yardage.allowRotate` and `yardage.oneWayPrint` constraints in Project V2. A directional material cannot be rotated for purchasing, even if its stored allow-rotation setting is checked; both current and alternate WOF scenarios enforce the same rule in the shared math engine.
+- Existing exported Project V2 JSON files lacking these optional fields still import with their legacy `options.allowRotate` fallback. Fabric-specific rotation changes no longer alter the one-piece batting rotation setting; backing orientation retains its separate `options.oneWayPrint` setting.
+- [CI 41940484000](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41940484000): **169/169 Vitest assertions** across nine suites plus browser screenshots/network, exported CSV grain rotation 90° vs 0°, 25 in vs 30 in actual-current-roll comparison, persistence across page navigation and the existing noindex and 218-keyword gates. This is automated geometry/grain logic evidence, **not** independent proof that printed fabric motifs are visually aligned during real sewing.
