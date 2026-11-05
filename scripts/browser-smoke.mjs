@@ -493,6 +493,87 @@ try{
    'Adding a border layer should restore a valid shopping CSV.');
   await priceContext.close();
   console.log('PASS shopping subtotal/CSV reconciliation and empty border material guard.');
+
+  // Whole-quilt cross-module regression: actual center 60×80 + one 3-in
+  // finished border MUST produce 66×86 outside and reconciled purchases.
+  const geometryCtx=await browser.newContext({viewport:{width:1190,height:920},acceptDownloads:true});
+  instrumentNetwork(geometryCtx,'whole-quilt-border-contract');
+  const geometryPage=await geometryCtx.newPage();
+  geometryPage.on('pageerror',err=>problems.push('Whole-quilt dimensions: '+err.message));
+  await hydrated(geometryPage,'/calculators/',{incomplete:true});
+  const baseSummary=await geometryPage.locator('[data-final-quilt-dimensions]').innerText();
+  check(baseSummary.includes('Center before borders: 60 × 80') &&
+    baseSummary.includes('Final outside: 66 × 86') &&
+    await geometryPage.getByLabel('What do your quilt measurements include?').inputValue()==='before-borders',
+    'Default example must explicitly treat 60×80 as quilt center and derive finished 66×86.');
+  const initialExport=geometryPage.waitForEvent('download');
+  await geometryPage.locator('[data-action="export-cut"]').click();
+  const baseJson=JSON.parse(await fs.readFile(await (await initialExport).path(),'utf8'));
+  check(baseJson.dimensions?.finalWidthIn===66&&baseJson.dimensions?.finalHeightIn===86&&
+    baseJson.result.backing.targetWidthIn===undefined &&
+    baseJson.result.backing.recommended.purchase.roundedPurchaseYards===5.25&&
+    baseJson.result.batting.purchase?.roundedPurchaseYards===2.625&&
+    baseJson.result.binding.requiredLengthIn===316,
+    'JSON must carry the same border-inclusive final-size contract into backing, batting and binding.');
+  await geometryPage.getByLabel('I reviewed every quilt-top color, cut size and piece quantity.').check();
+  check(await geometryPage.locator('[data-action="export-cut-csv"]').isEnabled(),
+    'Reviewed, feasible border-inclusive project should allow a cut CSV.');
+  const shoppingPromise=geometryPage.waitForEvent('download');
+  await geometryPage.getByRole('button',{name:'Download shopping CSV',exact:true}).click();
+  const shopRows=csvRecords(await fs.readFile(await (await shoppingPromise).path(),'utf8'));
+  const findShopping=name=>shopRows.slice(1).find(r=>r[0].startsWith(name));
+  check(Number(findShopping('Backing ·')[3])===5.25&&Number(findShopping('Batting ·')[3])===2.625&&
+    Number(findShopping('Straight-grain binding')[3])>=0.125,
+    'Shopping CSV amounts must reconcile to 66×86 finished exterior, not old 60×80 center.');
+  const physicalPromise=geometryPage.waitForEvent('download');
+  await geometryPage.locator('[data-action="export-cut-csv"]').click();
+  const physicalRows=csvRecords(await fs.readFile(await (await physicalPromise).path(),'utf8'));
+  check(physicalRows.slice(1).some(r=>r[1]==='backing')&&
+    physicalRows.slice(1).some(r=>r[1]==='batting'),
+    'Cutting CSV must include externally sized backing and batting rolls.');
+  await geometryPage.emulateMedia({media:'print'});
+  check((await geometryPage.locator('[data-final-quilt-dimensions]').innerText()).includes('Final outside: 66 × 86'),
+    'Printed material plan must preserve the same final exterior dimensions.');
+  await geometryPage.emulateMedia({media:'screen'});
+
+  // Changing the finished width of an existing border must revoke quilt-top
+  // review and update all materials, not just the border fabric SKU.
+  await hydrated(geometryPage,'/quilt-border-calculator/');
+  const borderWidth=geometryPage.getByLabel('Finished border width (in)',{exact:true}).first();
+  await borderWidth.fill('4');await borderWidth.press('Tab');
+  await hydrated(geometryPage,'/calculators/',{incomplete:true});
+  check((await geometryPage.locator('[data-final-quilt-dimensions]').innerText()).includes('Final outside: 68 × 88') &&
+    !(await geometryPage.getByLabel('I reviewed every quilt-top color, cut size and piece quantity.').isChecked()) &&
+    !(await geometryPage.locator('[data-action="export-cut-csv"]').isEnabled()),
+    'Any border geometry change must recalculate final dimensions and invalidate stale whole-project review.');
+
+  // A legacy V2 save without sizeBasis must be preserved, not silently
+  // reinterpreted as center measurements after this important behavior fix.
+  const savedPromise=geometryPage.waitForEvent('download');
+  await geometryPage.locator('[data-action="save"]').click();
+  const oldV2=JSON.parse(await fs.readFile(await (await savedPromise).path(),'utf8'));
+  delete oldV2.quilt.sizeBasis;
+  oldV2.quilt.topCutsReviewed=true;
+  oldV2.quilt.topCutsReviewFingerprint='12345678';
+  await geometryPage.locator('[data-file]').setInputFiles({
+    name:'legacy-quilt-size-ambiguous.json',mimeType:'application/json',
+    buffer:Buffer.from(JSON.stringify(oldV2))
+  });
+  await geometryPage.waitForFunction(()=>document.querySelector('[data-status]')?.textContent?.includes('Choose how the saved quilt measurements'));
+  check(!(await geometryPage.locator('[data-action="export-cut"]').isEnabled()) &&
+    !(await geometryPage.locator('[data-action="print"]').isEnabled()) &&
+    !(await geometryPage.locator('[data-action="export-cut-csv"]').isEnabled()),
+    'Legacy ambiguous size must not present any purchase-ready export or printed plan.');
+  const basisSelect=geometryPage.getByLabel('What do your quilt measurements include?');
+  check(await basisSelect.inputValue()==='',
+    'Older saved measurement meaning must require an explicit dropdown selection.');
+  await basisSelect.selectOption('includes-borders');
+  check((await geometryPage.locator('[data-final-quilt-dimensions]').innerText()).includes('Final outside: 60 × 80') &&
+    !(await geometryPage.getByLabel('I reviewed every quilt-top color, cut size and piece quantity.').isChecked()),
+    'Choosing old dimensions as final must preserve external 60×80 and invalidate old review.');
+  await geometryCtx.close();
+  console.log('PASS whole-quilt border-linked shopping/CSV/JSON/print parity, review revocation and explicit legacy-size migration.');
+
   // Independent one-piece batting roll must have the same fit and grain
   // orientation on the project hub and on the dedicated batting calculator.
   const crossBatting=await browser.newContext({viewport:{width:1200,height:900},acceptDownloads:true});
