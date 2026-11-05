@@ -266,8 +266,8 @@
 }
 @media print{.quilt-ui-v3 .result-change{display:none!important}}
 
-// Diagram zoom stays inside a dedicated scroll viewport. Never rescale
-// coordinates, export SVG source dimensions or the 1:1 print calibration.
+/* Diagram zoom stays inside a dedicated scroll viewport. Never rescale
+   coordinates, export SVG source dimensions or the 1:1 print calibration. */
 @media screen{
  .quilt-ui-v3 .cut-diagram-stage{width:100%;max-width:100%;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;border:1px solid #c9dccd;border-radius:10px;background:#fffdf8;scrollbar-color:#86a894 #edf3ec}
  .quilt-ui-v3 .cut-diagram-stage>svg{display:block;height:auto;max-width:none;min-width:0;vertical-align:middle}

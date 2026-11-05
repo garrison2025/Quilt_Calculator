@@ -124,7 +124,7 @@ try{
   'Public source-bound manual review fingerprint was not persisted to V2 JSON.');
  console.log('PASS public review approval, 35 real cuts, print gate and saved V2 fingerprint.');
 
- const width=page.getByLabel('Finished quilt width (in)',{exact:true});
+ const width=page.getByLabel('Quilt width (in)',{exact:true});
  await width.fill('61');await width.press('Tab');
  assertThat(!(await review.isChecked()),'Public review checkbox not revoked after size change.');
  assertThat(!(await page.locator('[data-action="export-cut-csv"]').isEnabled()),'Stale top review incorrectly allows full cut export.');
@@ -160,7 +160,7 @@ try{
  }
  assertThat(await oldBacking.locator('[data-action="export-cut-csv"]').isEnabled(),
   'Live backing cut CSV must initially be enabled before conflict.');
- const liveWidth=newBacking.getByLabel('Finished quilt width (in)',{exact:true});
+ const liveWidth=newBacking.getByLabel('Quilt width (in)',{exact:true});
  await liveWidth.fill('75');await liveWidth.press('Tab');
  await oldBacking.locator('[data-sync-warning]').waitFor({state:'visible',timeout:15000});
  assertThat(!(await oldBacking.locator('[data-action="export-cut-csv"]').isEnabled()) &&
@@ -176,7 +176,7 @@ try{
  assert.equal(JSON.parse(retained.content).quilt.finishedWidth,60,
   'A conflicting old tab should still allow downloading its in-memory JSON backup.');
  await oldBacking.locator('[data-action="load-latest"]').click();
- assert.equal(await oldBacking.getByLabel('Finished quilt width (in)',{exact:true}).inputValue(),'75');
+ assert.equal(await oldBacking.getByLabel('Quilt width (in)',{exact:true}).inputValue(),'75');
  assertThat(await oldBacking.locator('[data-action="export-cut-csv"]').isEnabled(),
   'Loading the latest public project must restore correct cutting export.');
  await conflictContext.close();
@@ -189,7 +189,7 @@ try{
  await newShopping.waitForFunction(()=>document.querySelector('[data-status]')?.textContent?.includes('Updated from the current project'),null,{timeout:20000});
  const shopButton=oldShopping.locator('[data-results] [data-action="export-shopping"]');
  assertThat(await shopButton.isEnabled(),'Live combined shopping list should be downloadable before a conflict.');
- const newWidth=newShopping.getByLabel('Finished quilt width (in)',{exact:true});
+ const newWidth=newShopping.getByLabel('Quilt width (in)',{exact:true});
  await newWidth.fill('79');await newWidth.press('Tab');
  await oldShopping.locator('[data-sync-warning]').waitFor({state:'visible',timeout:15000});
  assertThat(!(await shopButton.isEnabled())&&await oldShopping.locator('[data-action="save"]').isEnabled(),
@@ -210,7 +210,7 @@ try{
  restoredTab.on('pageerror',e=>restoreErrors.push(e.message));
  await restoredTab.goto(BASE+'/quilt-backing-calculator/',{waitUntil:'domcontentloaded',timeout:20000});
  await restoredTab.waitForFunction(()=>document.querySelector('[data-status]')?.textContent?.includes('Updated from the current project'),null,{timeout:20000});
- const restoreWidth=restoredTab.getByLabel('Finished quilt width (in)',{exact:true});
+ const restoreWidth=restoredTab.getByLabel('Quilt width (in)',{exact:true});
  await restoreWidth.fill('83');await restoreWidth.press('Tab');
  await restoredTab.evaluate(()=>{
   const latest=JSON.parse(localStorage.getItem('quilt-studio-v2'));
@@ -253,7 +253,7 @@ try{
    !(await corruptPage.locator('[data-action="export-cut-csv"]').isEnabled()) &&
    !(await corruptPage.locator('[data-action="print"]').isEnabled()),
   'Live unreadable autosave must be protected before edits or print.');
- const corruptWidth=corruptPage.getByLabel('Finished quilt width (in)',{exact:true});
+ const corruptWidth=corruptPage.getByLabel('Quilt width (in)',{exact:true});
  await corruptWidth.fill('86');await corruptWidth.press('Tab');
  assert.equal(await corruptPage.evaluate(()=>localStorage.getItem('quilt-studio-v2')),originalRaw,
   'Live first edit must not erase incompatible saved project data.');
@@ -271,7 +271,7 @@ try{
  assert.equal(await corruptPage.evaluate(()=>JSON.parse(localStorage.getItem('quilt-studio-v2')).quilt.finishedWidth),86);
  await corruptPage.reload({waitUntil:'domcontentloaded'});
  await corruptPage.waitForFunction(()=>document.querySelector('[data-status]')?.textContent?.includes('Updated from the current project'),null,{timeout:15000});
- assert.equal(await corruptPage.getByLabel('Finished quilt width (in)',{exact:true}).inputValue(),'86');
+ assert.equal(await corruptPage.getByLabel('Quilt width (in)',{exact:true}).inputValue(),'86');
  assert.equal(corruptErrors.length,0,'Public unreadable-autosave JS errors: '+corruptErrors.join('; '));
  await corruptContext.close();
  console.log('PASS public Cloudflare unreadable autosave protects raw data, blocks accidental replacement and restores on explicit backup recovery.');

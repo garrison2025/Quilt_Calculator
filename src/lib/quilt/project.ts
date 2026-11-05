@@ -1,11 +1,11 @@
 import { MAX_PIECES, hashProject, type FabricSku, type BorderLayer } from './math';
-export type Project = { schemaVersion: 2; units: 'in' | 'cm'; quilt: { finishedWidth: number; finishedHeight: number; topCutsReviewed?: boolean; topCutsReviewFingerprint?: string };
+export type Project = { schemaVersion: 2; units: 'in' | 'cm'; quilt: { finishedWidth: number; finishedHeight: number; sizeBasis?: 'before-borders' | 'includes-borders'; topCutsReviewed?: boolean; topCutsReviewFingerprint?: string };
   options: { overage: number; usableWof: number; battingWof: number; joinTakeup: number; stripWidth: number; tailAllowance: number; stripJoinLoss: number; step: number; lengthShrinkage: number; oneWayPrint: boolean; seam: number; battingOverage: number; allowRotate: boolean };
   yardage: { pieceWidth: number; pieceHeight: number; count: number; alternateWof?: number; allowRotate?: boolean; oneWayPrint?: boolean };
   sashing: { rows: number; columns: number; blockWidth: number; blockHeight: number; width: number };
   borders: BorderLayer[]; fabrics: FabricSku[] };
 export const sampleProject: Project = {
-  schemaVersion: 2, units: 'in', quilt: { finishedWidth: 60, finishedHeight: 80, topCutsReviewed: false },
+  schemaVersion: 2, units: 'in', quilt: { finishedWidth: 60, finishedHeight: 80, sizeBasis: 'before-borders', topCutsReviewed: false },
   options: { overage: 4, usableWof: 43, battingWof: 96, joinTakeup: 1, stripWidth: 2.5,
     tailAllowance: 12, stripJoinLoss: 2.5, step: .125, lengthShrinkage: 0, oneWayPrint: false,
     seam: .25, battingOverage: 4, allowRotate: false },
@@ -17,16 +17,21 @@ export const sampleProject: Project = {
     { id: 'sand', label: 'Sand', usableWidth: 43, oneWayPrint: false, shrinkageLengthPct: 0,
     pieces: [{ widthIn: 4.5, heightIn: 8.5, count: 8, label: 'Sand blocks', allowRotate: false }] }]
 };
-/** Change detection, not a cryptographic assertion or physical quilt approval.
- * Scope: finished quilt top dimensions and each fabric SKU/cut request.
- * Backing, batting, display units and shop rounding are independent.
+/** Change detection, not cryptographic proof. Manual quilt-top review includes
+ * center/outer dimension meaning, border geometry and fabric cut coverage.
+ * Previous V2 fingerprints are intentionally invalidated by this safety fix.
  */
 export function quiltTopReviewFingerprint(p:Project):string {
- return hashProject({finishedWidth:p.quilt.finishedWidth,finishedHeight:p.quilt.finishedHeight,fabrics:p.fabrics});
+ return hashProject({
+  widthIn:p.quilt.finishedWidth,heightIn:p.quilt.finishedHeight,
+  sizeBasis:p.quilt.sizeBasis??(p.borders.length?'UNCONFIRMED_LEGACY':'before-borders'),
+  borders:p.borders.map(b=>({sku:b.sku,widthIn:b.widthIn})),
+  borderSeamIn:p.options.seam,fabrics:p.fabrics
+ });
 }
 export function hasCurrentQuiltTopReview(p:Project):boolean {
- return p.quilt.topCutsReviewed===true &&
-  p.quilt.topCutsReviewFingerprint===quiltTopReviewFingerprint(p);
+ return Boolean((p.quilt.sizeBasis||p.borders.length===0)&&p.quilt.topCutsReviewed===true &&
+  p.quilt.topCutsReviewFingerprint===quiltTopReviewFingerprint(p));
 }
 function object(value: unknown, name: string): Record<string, unknown> {
  if (!value || typeof value !== 'object' || Array.isArray(value)) throw Error(name + ' must be a JSON object.');
@@ -68,9 +73,11 @@ export function validateProject(data: unknown): Project {
  if (root.schemaVersion !== 2 || (root.units !== 'in' && root.units !== 'cm'))
   throw Error('Expected schemaVersion 2 and units "in" or "cm".');
  const quilt = object(root.quilt, 'quilt');
- onlyKeys(quilt,'quilt',['finishedWidth','finishedHeight','topCutsReviewed','topCutsReviewFingerprint']);
+ onlyKeys(quilt,'quilt',['finishedWidth','finishedHeight','sizeBasis','topCutsReviewed','topCutsReviewFingerprint']);
  numeric(quilt, 'finishedWidth', 'quilt', 0, 100000, false, true);
  numeric(quilt, 'finishedHeight', 'quilt', 0, 100000, false, true);
+ if(quilt.sizeBasis!==undefined&&quilt.sizeBasis!=='before-borders'&&quilt.sizeBasis!=='includes-borders')
+  throw Error('quilt.sizeBasis must be "before-borders" or "includes-borders".');
  if(quilt.topCutsReviewed!==undefined)bool(quilt,'topCutsReviewed','quilt');
  if(quilt.topCutsReviewFingerprint!==undefined &&
     (typeof quilt.topCutsReviewFingerprint!=='string' || !/^[0-9a-f]{8}$/.test(quilt.topCutsReviewFingerprint)))

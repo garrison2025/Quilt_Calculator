@@ -500,8 +500,8 @@ try{
   const batPage=await crossBatting.newPage();
   batPage.on('pageerror',err=>problems.push('Hub/batting parity: '+err.message));
   await hydrated(batPage,'/calculators/',{incomplete:true});
-  const hubWidth=batPage.getByLabel('Finished quilt width (in)',{exact:true});
-  const hubHeight=batPage.getByLabel('Finished quilt height (in)',{exact:true});
+  const hubWidth=batPage.getByLabel('Quilt width (in)',{exact:true});
+  const hubHeight=batPage.getByLabel('Quilt height (in)',{exact:true});
   await hubWidth.fill('100');await hubWidth.press('Tab');
   await hubHeight.fill('50');await hubHeight.press('Tab');
   const battingRoll=batPage.getByLabel('Batting roll width (in)',{exact:true});
@@ -701,7 +701,7 @@ try{
   await topPage.screenshot({path:'artifacts/qa/quilt-top-material-completeness.png',fullPage:true,animations:'disabled'});
   // Any accepted finished-size or quilt-top cut edit invalidates the user's
   // previous completeness review; other material buying settings do not.
-  const reviewedWidth=topPage.getByLabel('Finished quilt width (in)',{exact:true});
+  const reviewedWidth=topPage.getByLabel('Quilt width (in)',{exact:true});
   await reviewedWidth.fill('61');await reviewedWidth.press('Tab');
   check(!(await topReview.isChecked()),'Changing quilt top dimensions must revoke any old review acknowledgement.');
   check(!(await topPage.locator('[data-action="export-cut-csv"]').isEnabled()),
@@ -854,7 +854,7 @@ try{
   // Error reporting must be bound to the actual field, not only to a distant
   // result status. Recalculate should focus the invalid field, never stale PDF.
   await hydrated(page,'/quilt-backing-calculator/');
-  const a11yField=page.getByLabel('Finished quilt width (in)',{exact:true});
+  const a11yField=page.getByLabel('Quilt width (in)',{exact:true});
   await a11yField.fill('not a number');
   await page.getByRole('button',{name:'Update cutting plan'}).click();
   check(await a11yField.evaluate(el=>document.activeElement===el),
@@ -878,8 +878,8 @@ try{
     'Field-specific help and errors must both be discoverable via aria-describedby.');
   console.log('PASS input error focus, live error description and associated help; recovery restores exports.');
   await hydrated(page,'/quilt-backing-calculator/');
-  const changeWidth=page.getByLabel('Finished quilt width (in)',{exact:true});
-  const changeHeight=page.getByLabel('Finished quilt height (in)',{exact:true});
+  const changeWidth=page.getByLabel('Quilt width (in)',{exact:true});
+  const changeHeight=page.getByLabel('Quilt height (in)',{exact:true});
   await changeWidth.fill('80');await changeWidth.press('Tab');
   await changeHeight.fill('60');await changeHeight.press('Tab');
   const directions=page.locator('.option-buttons button');
@@ -888,7 +888,7 @@ try{
   await directions.nth(0).click();
   check((await directions.nth(0).getAttribute('aria-pressed'))==='true','Users must be able to override recommended seam direction.');
   await page.locator('[data-action="reset"]').click();
-  const width=page.getByLabel('Finished quilt width (in)',{exact:true});
+  const width=page.getByLabel('Quilt width (in)',{exact:true});
   const initial=await page.locator('[data-results] .result-big').innerText();
   const storedBeforeDraft=await page.evaluate(()=>localStorage.getItem('quilt-studio-v2'));
   await width.fill('90');
@@ -907,7 +907,7 @@ try{
   assert.equal(saved,90,'Changes must persist in browser localStorage.');
   await page.reload();
   await page.waitForFunction(()=>document.querySelector('[data-status]')?.textContent?.includes('Updated'));
-  check((await page.getByLabel('Finished quilt width (in)',{exact:true}).inputValue())==='90','Persisted width not restored after reload.');
+  check((await page.getByLabel('Quilt width (in)',{exact:true}).inputValue())==='90','Persisted width not restored after reload.');
   await page.locator('[data-units]').selectOption('cm');
   const cmField=page.getByLabel('Finished quilt width (cm)',{exact:true});
   check(Math.abs(Number(await cmField.inputValue())-228.6)<.01,'Inch-to-cm display conversion is incorrect.');
@@ -930,7 +930,7 @@ try{
   check(payload.tool==='backing' && payload.calculationVersion && payload.result,'Downloaded cutting-plan JSON has missing data.');
   console.log('PASS editing, units, validation, persistence and JSON export.');
   await page.locator('[data-action="reset"]').click();
-  check((await page.getByLabel('Finished quilt width (in)',{exact:true}).inputValue())==='60','Reset must restore original sample.');
+  check((await page.getByLabel('Quilt width (in)',{exact:true}).inputValue())==='60','Reset must restore original sample.');
   await page.emulateMedia({media:'print'});
   check(await page.locator('.input-card').evaluate(el=>getComputedStyle(el).display)==='none','Print view still includes editable form.');
   const printScale=page.locator('[data-print-scale-audit]');
@@ -1003,22 +1003,22 @@ try{
   validProject.quilt.finishedWidth=74;
   await page.locator('[data-file]').setInputFiles({name:'valid-quilt-project.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(validProject))});
   await page.waitForFunction(()=>JSON.parse(localStorage.getItem('quilt-studio-v2')||'{}').quilt?.finishedWidth===74);
-  assert.equal(await page.getByLabel('Finished quilt width (in)',{exact:true}).inputValue(),'74','Valid JSON import must restore measurements.');
+  assert.equal(await page.getByLabel('Quilt width (in)',{exact:true}).inputValue(),'74','Valid JSON import must restore measurements.');
   const rejectedProject={...validProject,schemaVersion:1};
   await page.locator('[data-file]').setInputFiles({name:'invalid-quilt-project.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(rejectedProject))});
   await page.waitForFunction(()=>document.querySelector('[data-status]')?.textContent?.includes('Could not import project'));
-  assert.equal(await page.getByLabel('Finished quilt width (in)',{exact:true}).inputValue(),'74','Bad JSON import must preserve current project.');
+  assert.equal(await page.getByLabel('Quilt width (in)',{exact:true}).inputValue(),'74','Bad JSON import must preserve current project.');
   const excessProject=structuredClone(validProject);
   excessProject.fabrics[0].pieces[0].count=1990;
   excessProject.fabrics[1].pieces[0].count=20;
   await page.locator('[data-file]').setInputFiles({name:'oversized-quilt-project.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(excessProject))});
   await page.waitForFunction(()=>document.querySelector('[data-status]')?.textContent?.includes('Maximum 2,000'));
-  assert.equal(await page.getByLabel('Finished quilt width (in)',{exact:true}).inputValue(),'74','Too-large imported project must leave existing valid project unchanged.');
+  assert.equal(await page.getByLabel('Quilt width (in)',{exact:true}).inputValue(),'74','Too-large imported project must leave existing valid project unchanged.');
   const invalidJoin=structuredClone(validProject);
   invalidJoin.options.joinTakeup=invalidJoin.options.usableWof;
   await page.locator('[data-file]').setInputFiles({name:'invalid-join.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(invalidJoin))});
   await page.waitForFunction(()=>document.querySelector('[data-status]')?.textContent?.includes('Backing join take-up'));
-  assert.equal(await page.getByLabel('Finished quilt width (in)',{exact:true}).inputValue(),'74','Invalid join input must preserve current project.');
+  assert.equal(await page.getByLabel('Quilt width (in)',{exact:true}).inputValue(),'74','Invalid join input must preserve current project.');
   console.log('PASS valid JSON import and rejections of schema, quantity and join-width errors.');
 
   // Asynchronous File.text() must not overwrite edits accepted after the import
@@ -1042,7 +1042,7 @@ try{
       });
     };
   });
-  const raceWidth=race.getByLabel('Finished quilt width (in)',{exact:true});
+  const raceWidth=race.getByLabel('Quilt width (in)',{exact:true});
   raceProject.quilt.finishedWidth=89;
   const importedRaceBuffer=()=>Buffer.from(JSON.stringify(raceProject));
   await race.locator('[data-file]').setInputFiles({
@@ -1081,7 +1081,7 @@ try{
     name:'delayed-import-cross-tab.json',mimeType:'application/json',buffer:importedRaceBuffer()
   });
   await race.waitForFunction(()=>window.__raceFileReading===true);
-  const otherWidth=raceOther.getByLabel('Finished quilt width (in)',{exact:true});
+  const otherWidth=raceOther.getByLabel('Quilt width (in)',{exact:true});
   await otherWidth.fill('92');await otherWidth.press('Tab');
   await race.locator('[data-sync-warning]').waitFor({state:'visible'});
   await race.evaluate(()=>window.__raceResumeImport());
@@ -1102,8 +1102,8 @@ try{
   tabB.on('pageerror',e=>problems.push('Multi-tab B: '+e.message));
   await hydrated(tabA,'/quilt-backing-calculator/');
   await hydrated(tabB,'/quilt-backing-calculator/');
-  const aWidth=tabA.getByLabel('Finished quilt width (in)',{exact:true});
-  const bWidth=tabB.getByLabel('Finished quilt width (in)',{exact:true});
+  const aWidth=tabA.getByLabel('Quilt width (in)',{exact:true});
+  const bWidth=tabB.getByLabel('Quilt width (in)',{exact:true});
   await aWidth.fill('72');await aWidth.press('Tab');
   await tabB.locator('[data-sync-warning]').waitFor({state:'visible'});
   check(!(await tabB.locator('[data-action="export-cut-csv"]').isEnabled()) &&
@@ -1138,21 +1138,21 @@ try{
   check(await tabB.locator('[data-action="export-cut-csv"]').isEnabled() &&
         await tabB.locator('[data-action="print"]').isEnabled(),
    'Loading the newest saved project must restore legitimate cutting and printing exports.');
-  assert.equal(await tabB.getByLabel('Finished quilt width (in)',{exact:true}).inputValue(),'72',
+  assert.equal(await tabB.getByLabel('Quilt width (in)',{exact:true}).inputValue(),'72',
    'Load latest must retrieve the other tab\'s saved measurements.');
-  await tabB.getByLabel('Finished quilt width (in)',{exact:true}).fill('75');
-  await tabB.getByLabel('Finished quilt width (in)',{exact:true}).press('Tab');
+  await tabB.getByLabel('Quilt width (in)',{exact:true}).fill('75');
+  await tabB.getByLabel('Quilt width (in)',{exact:true}).press('Tab');
   await tabA.locator('[data-sync-warning]').waitFor({state:'visible'});
-  const staleBeforeReset=await tabA.getByLabel('Finished quilt width (in)',{exact:true}).inputValue();
+  const staleBeforeReset=await tabA.getByLabel('Quilt width (in)',{exact:true}).inputValue();
   await tabA.locator('[data-action="reset"]').click();
-  assert.equal(await tabA.getByLabel('Finished quilt width (in)',{exact:true}).inputValue(),staleBeforeReset,
+  assert.equal(await tabA.getByLabel('Quilt width (in)',{exact:true}).inputValue(),staleBeforeReset,
     'Reset on stale tab must not discard unsaved local project edits.');
   check((await tabA.locator('[data-status]').innerText()).includes('Reset canceled'),
     'Stale tab must clearly explain why reset was blocked.');
   assert.equal(await tabA.evaluate(()=>JSON.parse(localStorage.getItem('quilt-studio-v2')).quilt.finishedWidth),75,
    'Reset from stale tab must not delete newer saved data.');
   await tabA.locator('[data-action="load-latest"]').click();
-  assert.equal(await tabA.getByLabel('Finished quilt width (in)',{exact:true}).inputValue(),'75',
+  assert.equal(await tabA.getByLabel('Quilt width (in)',{exact:true}).inputValue(),'75',
    'Stale tab failed to recover the saved project after reset.');
   await tabA.close();await tabB.close();
   console.log('PASS two-tab conflict warning, safe JSON backup, reload and reset protection.');
@@ -1171,7 +1171,7 @@ try{
   const shopButton=shoppingTab.locator('[data-results] [data-action="export-shopping"]');
   check(await shopButton.count()===1 && await shopButton.isEnabled(),
     'Combined shopping CSV must be available before a shared-storage conflict.');
-  const newestWidth=editingTab.getByLabel('Finished quilt width (in)',{exact:true});
+  const newestWidth=editingTab.getByLabel('Quilt width (in)',{exact:true});
   await newestWidth.fill('74');await newestWidth.press('Tab');
   await shoppingTab.locator('[data-sync-warning]').waitFor({state:'visible'});
   check(!(await shopButton.isEnabled()),
@@ -1181,7 +1181,7 @@ try{
   await shoppingTab.locator('[data-action="load-latest"]').click();
   check(await shoppingTab.locator('[data-results] [data-action="export-shopping"]').isEnabled(),
     'Loading the latest project must restore its shopping download.');
-  check((await shoppingTab.getByLabel('Finished quilt width (in)',{exact:true}).inputValue())==='74',
+  check((await shoppingTab.getByLabel('Quilt width (in)',{exact:true}).inputValue())==='74',
     'Recovered shopping planner must use the newest saved quilt measurements.');
   await shopCtx.close();
   console.log('PASS two-tab project shopping CSV blocked on conflict, JSON backup preserved and latest data recovery works.');
@@ -1196,7 +1196,7 @@ try{
   const resumed=await resumeCtx.newPage();
   resumed.on('pageerror',e=>problems.push('Resumed project: '+e.message));
   await hydrated(resumed,'/quilt-backing-calculator/');
-  const widthOnResume=resumed.getByLabel('Finished quilt width (in)',{exact:true});
+  const widthOnResume=resumed.getByLabel('Quilt width (in)',{exact:true});
   await widthOnResume.fill('78');await widthOnResume.press('Tab');
   for(const trigger of ['pageshow','focus','visibilitychange']){
    const expected=await resumed.evaluate(()=>{
@@ -1241,32 +1241,32 @@ try{
   await hydrated(resetPage,'/quilt-backing-calculator/');
   const undo=resetPage.locator('[data-action="undo-reset"]');
   check(!(await undo.isEnabled()),'Undo reset must initially be disabled.');
-  const resetWidth=resetPage.getByLabel('Finished quilt width (in)',{exact:true});
+  const resetWidth=resetPage.getByLabel('Quilt width (in)',{exact:true});
   await resetWidth.fill('87');await resetWidth.press('Tab');
   assert.equal(await resetPage.evaluate(()=>JSON.parse(localStorage.getItem('quilt-studio-v2')).quilt.finishedWidth),87,
     'Undo fixture must start from a persisted, user-edited project.');
   await resetPage.locator('[data-action="reset"]').click();
   check(await undo.isEnabled(),'Reset should enable one-step restoration.');
-  check((await resetPage.getByLabel('Finished quilt width (in)',{exact:true}).inputValue())==='60',
+  check((await resetPage.getByLabel('Quilt width (in)',{exact:true}).inputValue())==='60',
     'Reset must show the sample project.');
   check(await resetPage.evaluate(()=>localStorage.getItem('quilt-studio-v2'))===null,
     'Normal Reset should clear only this tab’s current autosaved project.');
   await undo.click();
-  check((await resetPage.getByLabel('Finished quilt width (in)',{exact:true}).inputValue())==='87',
+  check((await resetPage.getByLabel('Quilt width (in)',{exact:true}).inputValue())==='87',
     'Undo reset must restore the previous native-inch project.');
   assert.equal(await resetPage.evaluate(()=>JSON.parse(localStorage.getItem('quilt-studio-v2')).quilt.finishedWidth),87,
     'Undo reset must restore the previous valid browser backup.');
   check(!(await undo.isEnabled()),'Undo reset must be one-time only.');
   await resetPage.locator('[data-action="reset"]').click();
   check(await undo.isEnabled(),'Second reset must expose a new recovery point.');
-  await resetPage.getByLabel('Finished quilt width (in)',{exact:true}).fill('82');
-  await resetPage.getByLabel('Finished quilt width (in)',{exact:true}).press('Tab');
+  await resetPage.getByLabel('Quilt width (in)',{exact:true}).fill('82');
+  await resetPage.getByLabel('Quilt width (in)',{exact:true}).press('Tab');
   check(!(await undo.isEnabled()),'A committed edit after reset must invalidate the older Undo.');
-  check((await resetPage.getByLabel('Finished quilt width (in)',{exact:true}).inputValue())==='82',
+  check((await resetPage.getByLabel('Quilt width (in)',{exact:true}).inputValue())==='82',
     'Newly committed work must remain after invalidating Undo.');
   // A rejected measurement remains visible until corrected; project actions
   // must not wipe it or replace the accepted autosave behind the user's back.
-  const draftWidth=resetPage.getByLabel('Finished quilt width (in)',{exact:true});
+  const draftWidth=resetPage.getByLabel('Quilt width (in)',{exact:true});
   await draftWidth.fill('not-a-measurement');
   await draftWidth.press('Tab');
   check(await draftWidth.getAttribute('aria-invalid')==='true','Rejected input should be visibly invalid.');
@@ -1293,7 +1293,7 @@ try{
   await resetPage.locator('[data-action="reset"]').click();
   check(await undo.isEnabled(),'Reset should be permitted after all fields validate.');
   await undo.click();
-  check((await resetPage.getByLabel('Finished quilt width (in)',{exact:true}).inputValue())==='90',
+  check((await resetPage.getByLabel('Quilt width (in)',{exact:true}).inputValue())==='90',
    'Undo after a valid reset must preserve the latest committed value.');
   await resetPage.screenshot({path:'artifacts/qa/safe-reset-undo.png',fullPage:true,animations:'disabled'});
   // Material editors must preserve invalid drafts before add/remove actions.
@@ -1507,7 +1507,7 @@ try{
   const privatePage=await noStorage.newPage();
   privatePage.on('pageerror',e=>problems.push('Storage blocked: '+e.message));
   await hydrated(privatePage,'/quilt-backing-calculator/');
-  const unsavedWidth=privatePage.getByLabel('Finished quilt width (in)',{exact:true});
+  const unsavedWidth=privatePage.getByLabel('Quilt width (in)',{exact:true});
   await unsavedWidth.fill('69');await unsavedWidth.press('Tab');
   check((await privatePage.locator('[data-persist-state]').innerText()).includes('unavailable'),
    'Unavailable localStorage must show an explicit unsaved warning.');
@@ -1540,7 +1540,7 @@ try{
    'Unreadable startup autosave must block cutting and PDF outputs before any edit.');
   check(!(await brokenPage.locator('[data-replace-unreadable-backup]').isEnabled()),
    'Replacing original unreadable data must require first downloading its raw backup.');
-  const brokenWidth=brokenPage.getByLabel('Finished quilt width (in)',{exact:true});
+  const brokenWidth=brokenPage.getByLabel('Quilt width (in)',{exact:true});
   await brokenWidth.fill('88');await brokenWidth.press('Tab');
   check((await brokenWidth.inputValue())==='88' &&
     (await brokenPage.evaluate(()=>localStorage.getItem('quilt-studio-v2')))===rawInvalid,
@@ -1575,7 +1575,7 @@ try{
    'Explicit replacement must save the accepted current project and not the invalid original.');
   await brokenPage.reload({waitUntil:'domcontentloaded'});
   await brokenPage.waitForFunction(()=>document.querySelector('[data-status]')?.textContent?.includes('Updated from the current project'));
-  check(await brokenPage.getByLabel('Finished quilt width (in)',{exact:true}).inputValue()==='88',
+  check(await brokenPage.getByLabel('Quilt width (in)',{exact:true}).inputValue()==='88',
    'A recovered original project must survive a full page reload.');
 
   // Even with a raw backup in hand, a different tab's new stored version
@@ -1613,17 +1613,17 @@ try{
   const cross=await crossCtx.newPage();
   cross.on('pageerror',e=>problems.push('Cross-tool project: '+e.message));
   await hydrated(cross,'/quilt-backing-calculator/');
-  await cross.getByLabel('Finished quilt width (in)',{exact:true}).fill('72');
-  await cross.getByLabel('Finished quilt width (in)',{exact:true}).press('Tab');
-  await cross.getByLabel('Finished quilt height (in)',{exact:true}).fill('84');
-  await cross.getByLabel('Finished quilt height (in)',{exact:true}).press('Tab');
+  await cross.getByLabel('Quilt width (in)',{exact:true}).fill('72');
+  await cross.getByLabel('Quilt width (in)',{exact:true}).press('Tab');
+  await cross.getByLabel('Quilt height (in)',{exact:true}).fill('84');
+  await cross.getByLabel('Quilt height (in)',{exact:true}).press('Tab');
   let crossStored=await cross.evaluate(()=>JSON.parse(localStorage.getItem('quilt-studio-v2')));
   check(crossStored.quilt.finishedWidth===72&&crossStored.quilt.finishedHeight===84,
     'P21 current backing dimensions must enter the shared native-inch project.');
   await hydrated(cross,'/quilt-binding-calculator/');
-  check((await cross.getByLabel('Finished quilt width (in)',{exact:true}).inputValue())==='72',
+  check((await cross.getByLabel('Quilt width (in)',{exact:true}).inputValue())==='72',
     'P21 binding must restore backing width rather than revert to sample.');
-  check((await cross.getByLabel('Finished quilt height (in)',{exact:true}).inputValue())==='84',
+  check((await cross.getByLabel('Quilt height (in)',{exact:true}).inputValue())==='84',
     'P21 binding must restore backing height.');
   await cross.locator('[data-units]').selectOption('cm');
   const actualCM=Number(await cross.getByLabel('Finished quilt width (cm)',{exact:true}).inputValue());
@@ -1638,7 +1638,7 @@ try{
   check(Math.abs(Number(await cross.getByLabel('Finished quilt width (cm)',{exact:true}).inputValue())-182.88)<.01,
     'P21 main project hub must retain same native geometry and chosen display units.');
   await cross.locator('[data-units]').selectOption('in');
-  check((await cross.getByLabel('Finished quilt width (in)',{exact:true}).inputValue())==='72',
+  check((await cross.getByLabel('Quilt width (in)',{exact:true}).inputValue())==='72',
     'P21 switching back to inches must not introduce measurement drift.');
   await hydrated(cross,'/quilt-fabric-calculator/');
   const firstColor=cross.getByLabel('Fabric / color label',{exact:true}).first();
@@ -1651,10 +1651,10 @@ try{
   await qty.fill('37');
   await qty.press('Tab');
   await hydrated(cross,'/quilt-backing-calculator/');
-  check((await cross.getByLabel('Finished quilt width (in)',{exact:true}).inputValue())==='72',
+  check((await cross.getByLabel('Quilt width (in)',{exact:true}).inputValue())==='72',
     'P21 editing another tool must not overwrite the original backing measurements.');
   // Typing an unfinished draft and navigating away must keep the last valid project.
-  await cross.getByLabel('Finished quilt width (in)',{exact:true}).fill('999');
+  await cross.getByLabel('Quilt width (in)',{exact:true}).fill('999');
   check(!(await cross.locator('[data-action="export-cut"]').isEnabled()),
     'P21 a draft input must immediately disable export before commitment.');
   await hydrated(cross,'/calculators/',{incomplete:true});
@@ -1987,7 +1987,7 @@ try{
   console.log('PASS opt-in SVG cut-order play/pause/step/reset, unchanged geometry and full-print restoration.');
   await visual.screenshot({path:'artifacts/qa/quilt-ui-v3-backing-desktop.png',fullPage:true,animations:'disabled'});
   const oldPurchase=await visual.locator('.result-hero .result-big').innerText();
-  const widthInput=visual.getByLabel('Finished quilt width (in)');
+  const widthInput=visual.getByLabel('Quilt width (in)');
   await widthInput.fill('125');
   await widthInput.press('Tab');
   const changed=visual.locator('[data-result-change]');

@@ -1,5 +1,6 @@
 import { VERSION, calculateBacking, calculateStraightBinding, calculateYardage, compareYardageWidths, calculateQuiltFabric, calculateBatting, calculateBorders, calculateSashing, layoutRectangles, verifyLayout, parseMeasure, fromInches, toInches, yardsToInches, purchase, hashProject, type Layout, type PieceRequest } from '../lib/quilt/math';
 import { sampleProject, validateProject, quiltTopReviewFingerprint, hasCurrentQuiltTopReview, type Project } from '../lib/quilt/project';
+import { resolveQuiltDimensions, type QuiltDimensions } from '../lib/quilt/dimensions';
 import { cutListCsv, physicalRollId, type MaterialCutPlan } from '../lib/quilt/cutlist';
 import { shoppingCsv, shoppingPriceSummary, hasIncompleteShopping, shoppingLineStatus, needsTopFabricPlan, type ShoppingLine } from '../lib/quilt/shopping';
 import type { ToolId } from './types';
@@ -21,8 +22,8 @@ function node<K extends keyof HTMLElementTagNameMap>(tag:K, cls='', content=''):
 function append(parent:Element,...kids:(Node|undefined)[]){for(const child of kids)if(child)parent.appendChild(child);}
 function text(t:string):Text{return document.createTextNode(t);}
 const fieldsBase:Field[]=[
- {label:'Finished quilt width',path:'quilt.finishedWidth',kind:'length'},
- {label:'Finished quilt height',path:'quilt.finishedHeight',kind:'length'}
+ {label:'Quilt width',path:'quilt.finishedWidth',kind:'length'},
+ {label:'Quilt height',path:'quilt.finishedHeight',kind:'length'}
 ];
 const groups: Record<ToolId, {title:string;fields:Field[]}[]> = {
  hub:[
@@ -703,6 +704,45 @@ if(root){
  function renderEditor():void{
   fieldsRoot.replaceChildren();
   unitsSelect.value=project.units;
+  if(['hub','backing','binding','batting','borders','fabric'].includes(tool)){
+   // Existing V2 JSON has ambiguous entered dimensions when borders exist.
+   // A real user selection is mandatory: never silently migrate saved data.
+   const box=node('section','dimension-basis-choice');
+   box.dataset.dimensionBasisChoice='';
+   const label=node('label','dimension-basis-label','What do your quilt measurements include?');
+   const select=node('select','field-control');
+   select.id='quilt-dimension-basis';label.htmlFor=select.id;
+   for(const [value,title] of [
+    ['','Choose for this saved project'],
+    ['before-borders','Center size BEFORE adding borders'],
+    ['includes-borders','Final size INCLUDING all borders']
+   ]){
+    const option=node('option','',title);option.value=value;select.appendChild(option);
+   }
+   select.value=project.quilt.sizeBasis??(project.borders.length===0?'before-borders':'');
+   const help=node('p','dimension-basis-help',project.quilt.sizeBasis==='before-borders'
+    ?'Enter the center width and height in the quilt fields below. Each border layer adds twice its finished width to the outside. Backing, batting and binding use that final outside size.'
+    :project.quilt.sizeBasis==='includes-borders'
+    ?'Enter the already-finished outside width and height below. Border widths are subtracted to derive the center; backing, batting and binding use the entered outside size.'
+    :'Older projects did not record whether dimensions included borders. No purchase-ready cutting or shopping estimate can be shown until you choose. Your original JSON and measurements are preserved.');
+   box.append(label,select,help);fieldsRoot.appendChild(box);
+   select.addEventListener('change',()=>{
+    if(!requireCommittedDraft('confirm size basis')){select.value=project.quilt.sizeBasis||'';return;}
+    const chosen=select.value;
+    if(chosen!=='before-borders'&&chosen!=='includes-borders')return;
+    const previous=project.quilt.sizeBasis;
+    project.quilt.sizeBasis=chosen;
+    try{resolveQuiltDimensions(project);}catch(err){
+     project.quilt.sizeBasis=previous;
+     select.value=previous||'';
+     note(err instanceof Error?err.message:'Invalid finished quilt dimensions.',true);
+     return;
+    }
+    project.quilt.topCutsReviewed=false;
+    project.quilt.topCutsReviewFingerprint=undefined;
+    persist();renderEditor();update();
+   });
+  }
   for(const group of groups[tool])fieldsRoot.appendChild(makeGroup(group.title,group.fields));
   if(tool==='fabric')renderFabricEditor();
   if(tool==='borders')renderBorderEditor();
@@ -729,7 +769,7 @@ if(root){
    const review=node('section','top-cut-review'),heading=node('h3','','Confirm quilt-top cutting coverage');
    const label=node('label','top-cut-review-label'),control=node('input');
    control.type='checkbox';control.id='quilt-top-review';control.checked=hasCurrentQuiltTopReview(project);
-   control.disabled=needsTopFabricPlan(project.fabrics);
+   control.disabled=needsTopFabricPlan(project.fabrics)||(!project.quilt.sizeBasis&&project.borders.length>0);
    const words=node('span','','I reviewed every quilt-top color, cut size and piece quantity.');
    label.htmlFor=control.id;append(label,control,words);
    review.appendChild(heading);review.appendChild(label);
@@ -813,12 +853,23 @@ if(root){
   exportButton.disabled=true;cutCsvButton.disabled=true;printButton.disabled=true;
   try{
    const p=project,o=p.options,w=p.quilt.finishedWidth,h=p.quilt.finishedHeight;
+   const needsDimensions=['hub','backing','binding','batting','borders'].includes(tool);
+   const dimensions:QuiltDimensions|undefined=needsDimensions?resolveQuiltDimensions(p):undefined;
+   const outerW=dimensions?.finalWidthIn??w,outerH=dimensions?.finalHeightIn??h;
+   if(dimensions){
+    const summary=node('p','dimension-result-context',
+      'Center before borders: '+num(dimensions.centerWidthIn)+' × '+num(dimensions.centerHeightIn)+
+      ' in · Final outside: '+num(outerW)+' × '+num(outerH)+' in · Finished border width per side: '+
+      num(dimensions.borderPerSideIn)+' in.');
+    summary.dataset.finalQuiltDimensions='';
+    resultRoot.appendChild(summary);
+   }
    const buyArgs={step:o.step,shrinkageLengthPct:o.lengthShrinkage};
    let plan:unknown={};
    let layout:Layout|undefined,alternateLayout:Layout|undefined;
    let topFabricMissing=false;
    if(tool==='backing'){
-    const b=calculateBacking({widthIn:w,heightIn:h,overageIn:o.overage,wofIn:o.usableWof,joinTakeupIn:o.joinTakeup,oneWayPrint:o.oneWayPrint,...buyArgs});
+    const b=calculateBacking({widthIn:outerW,heightIn:outerH,overageIn:o.overage,wofIn:o.usableWof,joinTakeupIn:o.joinTakeup,oneWayPrint:o.oneWayPrint,...buyArgs});
     const selected=b.options.find(v=>v.direction===selectedDirection)||b.recommended;
     purchasesTitle(resultRoot,selected.purchase,'BACKING');
     stats(resultRoot,[['Backing size',num(b.targetWidthIn)+' × '+num(b.targetHeightIn)+' in'],['Panels',String(selected.panelCount)],['Joined span before trim',num(selected.finishedJoinedSpanIn)+' in']]);
@@ -835,7 +886,7 @@ if(root){
     warning(resultRoot,'The fabric-roll offcut shown does not include trimming the panel assembly after sewing. Assembly trim: '+num(selected.postAssemblyTrimAreaSqIn)+' in². Do not add it to roll offcuts.');
     plan={options:b.options,selected:selected.direction};
    }else if(tool==='binding'){
-    const b=calculateStraightBinding({widthIn:w,heightIn:h,wofIn:o.usableWof,stripWidthIn:o.stripWidth,tailAllowanceIn:o.tailAllowance,joinLossIn:o.stripJoinLoss,...buyArgs});
+    const b=calculateStraightBinding({widthIn:outerW,heightIn:outerH,wofIn:o.usableWof,stripWidthIn:o.stripWidth,tailAllowanceIn:o.tailAllowance,joinLossIn:o.stripJoinLoss,...buyArgs});
     purchasesTitle(resultRoot,b.purchase,'STRAIGHT BINDING');
     stats(resultRoot,[['Required binding',num(b.requiredLengthIn)+' in'],['Strips',String(b.stripCount)],['Length after joins',num(b.effectiveJoinedLengthIn)+' in']]);
     warning(resultRoot,'Straight-grain binding only. Bias binding is NOT calculated.');layout=b.layout;materialCuts=[{material:'Straight-grain binding',sku:'binding',layout:b.layout}];plan=b;
@@ -868,8 +919,8 @@ if(root){
     layout=r.layout;materialCuts=[{material:'Rectangle fabric — CURRENT WOF only',sku:'yardage',layout:r.layout}];
     plan={...r,comparison};
    }else if(tool==='batting'){
-    const b=calculateBatting({widthIn:w,heightIn:h,overageIn:o.battingOverage,rollWidthIn:o.battingWof,rotate:o.allowRotate,step:o.step});
-    if(b.purchase){purchasesTitle(resultRoot,b.purchase,'ONE-PIECE BATTING');stats(resultRoot,[['Required width',num(w+2*o.battingOverage)+' in'],['Required height',num(h+2*o.battingOverage)+' in'],['Roll WOF',num(o.battingWof)+' in']]);}
+    const b=calculateBatting({widthIn:outerW,heightIn:outerH,overageIn:o.battingOverage,rollWidthIn:o.battingWof,rotate:o.allowRotate,step:o.step});
+    if(b.purchase){purchasesTitle(resultRoot,b.purchase,'ONE-PIECE BATTING');stats(resultRoot,[['Required width',num(outerW+2*o.battingOverage)+' in'],['Required height',num(outerH+2*o.battingOverage)+' in'],['Roll WOF',num(o.battingWof)+' in']]);}
     else warning(resultRoot,b.message,true);
     layout=b.layout;materialCuts=[{material:'One-piece batting',sku:'batting',layout:b.layout}];plan=b;
    }else if(tool==='sashing'){
@@ -877,7 +928,7 @@ if(root){
     if(r.purchase)purchasesTitle(resultRoot,r.purchase,'SASHING FABRIC');else warning(resultRoot,r.layout.error||'FIT_IMPOSSIBLE',true);
     stats(resultRoot,[['Vertical strips',String(r.vertical)],['Horizontal strips',String(r.horizontal)],['Cornerstones',String(r.cornerstones)],['Finished grid',num(r.finishedWidthIn)+' × '+num(r.finishedHeightIn)+' in']]);layout=r.layout;materialCuts=[{material:'Sashing and cornerstones',sku:'sashing',layout:r.layout}];plan=r;
    }else if(tool==='borders'){
-    const b=calculateBorders({widthIn:w,heightIn:h,seamIn:o.seam,layers:p.borders,step:o.step});
+    const b=calculateBorders({widthIn:dimensions!.centerWidthIn,heightIn:dimensions!.centerHeightIn,seamIn:o.seam,layers:p.borders,step:o.step});
     hero(resultRoot,String(b.layers.length),'BUTTED BORDER LAYERS','Final quilt '+num(b.finishedWidthIn)+' × '+num(b.finishedHeightIn)+' in. Side strips are attached before top and bottom strips.',b.layers.length===1?'layer':'layers');
     shopping(resultRoot,b.layers.map((x,i)=>({
      label:x.label+' · '+x.sku,rollId:physicalRollId('border',x.sku),hint:'Sides '+num(x.sideCutLengthIn)+' in; top/bottom '+num(x.topCutLengthIn)+' in',
@@ -909,13 +960,15 @@ if(root){
      plan=f;
     }
    }else if(tool==='hub'){
-    const backing=calculateBacking({widthIn:w,heightIn:h,overageIn:o.overage,wofIn:o.usableWof,joinTakeupIn:o.joinTakeup,oneWayPrint:o.oneWayPrint,...buyArgs});
-    const binding=calculateStraightBinding({widthIn:w,heightIn:h,wofIn:o.usableWof,stripWidthIn:o.stripWidth,tailAllowanceIn:o.tailAllowance,joinLossIn:o.stripJoinLoss,...buyArgs});
-    const batting=calculateBatting({widthIn:w,heightIn:h,overageIn:o.battingOverage,rollWidthIn:o.battingWof,rotate:o.allowRotate,step:o.step});
-    const border=calculateBorders({widthIn:w,heightIn:h,seamIn:o.seam,layers:p.borders,step:o.step});
+    const border=calculateBorders({widthIn:dimensions!.centerWidthIn,heightIn:dimensions!.centerHeightIn,seamIn:o.seam,layers:p.borders,step:o.step});
+    if(Math.abs(border.finishedWidthIn-outerW)>1e-7||Math.abs(border.finishedHeightIn-outerH)>1e-7)
+     throw Error('Internal project dimensions disagree with finished border geometry; no purchase can be reported.');
+    const backing=calculateBacking({widthIn:outerW,heightIn:outerH,overageIn:o.overage,wofIn:o.usableWof,joinTakeupIn:o.joinTakeup,oneWayPrint:o.oneWayPrint,...buyArgs});
+    const binding=calculateStraightBinding({widthIn:outerW,heightIn:outerH,wofIn:o.usableWof,stripWidthIn:o.stripWidth,tailAllowanceIn:o.tailAllowance,joinLossIn:o.stripJoinLoss,...buyArgs});
+    const batting=calculateBatting({widthIn:outerW,heightIn:outerH,overageIn:o.battingOverage,rollWidthIn:o.battingWof,rotate:o.allowRotate,step:o.step});
     const fabric=calculateQuiltFabric(p.fabrics,o.step);
     topFabricMissing=needsTopFabricPlan(p.fabrics);
-    hero(resultRoot,yd(backing.recommended.purchase.roundedPurchaseYards),'BACKING FABRIC (RECOMMENDED)','One quilt top: '+num(w)+' × '+num(h)+' in. This is the backing amount, not a total for all quilt materials.');
+    hero(resultRoot,yd(backing.recommended.purchase.roundedPurchaseYards),'BACKING FABRIC (RECOMMENDED)','Outside quilt: '+num(outerW)+' × '+num(outerH)+' in (center '+num(dimensions!.centerWidthIn)+' × '+num(dimensions!.centerHeightIn)+' in). Backing is one material, not the full shopping total.');
     const reviewedTop=hasCurrentQuiltTopReview(p);
     // A single readiness checklist is placed directly after the result hero
     // after all material roll feasibility checks have run, rather than
@@ -949,7 +1002,7 @@ if(root){
      ...border.layers.map(x=>({material:x.label+' · border',sku:physicalRollId('border',x.sku),layout:x.layout})),
      ...fabric.map(x=>({material:x.label,sku:physicalRollId('fabric',x.fabricSku),layout:x.layout}))
     ];
-    plan={backing,binding,batting,border,fabric};
+    plan={dimensions,backing,binding,batting,border,fabric};
     if(sample)resultRoot.appendChild(node('p','footer-note','Sample project: fabric and border colors are examples. Replace all sample values before purchasing. Material quantities remain separate by roll and SKU.'));
    }else if(tool==='inches'){
     const value=parseMeasure(conv),inches=yardsToInches(value),cm=inches*2.54;
@@ -981,7 +1034,7 @@ if(root){
     hasInfeasibleMaterial:anyInfeasible,physicalCutPieceCount,
     cutCsvReady:readyPhysicalPlan,printReady:printable
    };
-   const record={tool,sourceProjectHash:hashProject(project),calculationVersion:VERSION,calculatedAt:new Date().toISOString(),projectUnits:project.units,readiness,result:plan};
+   const record={tool,sourceProjectHash:hashProject(project),calculationVersion:VERSION,calculatedAt:new Date().toISOString(),projectUnits:project.units,dimensions,readiness,result:plan};
    cutExport=record;
    exportButton.disabled=false;
    printButton.disabled=!printable;
@@ -999,7 +1052,7 @@ if(root){
     if(topCutListNotReviewed)warning(resultRoot,'WHOLE-PROJECT EXPORT BLOCKED: your entered quilt-top cuts have not been manually checked for coverage. Confirm the cutting list before printing or exporting a complete project CSV.',true);
     else if(tool!=='inches' && !hasPhysicalCuts)warning(resultRoot,'There are no physical cut pieces in this plan. Print and cut-list CSV are disabled until a material has real cuts.');
    }
-   resultRoot.prepend(node('p','calculation-context','Project · '+num(w)+' × '+num(h)+' in quilt · '+(project.units==='cm'?'cm display':'inch display')));
+   resultRoot.prepend(node('p','calculation-context','Project · '+(dimensions?'final '+num(outerW)+' × '+num(outerH)+' in':'entered '+num(w)+' × '+num(h)+' in')+' · '+(project.units==='cm'?'cm display':'inch display')));
    // Visual feedback announces an actual primary-value change without
    // interpolating, re-rounding or altering the real calculated number.
    // It is suppressed for incomplete and conflicted plans.
