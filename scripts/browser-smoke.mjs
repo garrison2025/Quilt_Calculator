@@ -683,6 +683,7 @@ try{
   await undo.click();
   check((await resetPage.getByLabel('Finished quilt width (in)',{exact:true}).inputValue())==='90',
    'Undo after a valid reset must preserve the latest committed value.');
+  await resetPage.screenshot({path:'artifacts/qa/safe-reset-undo.png',fullPage:true,animations:'disabled'});
   // Material editors must preserve invalid drafts before add/remove actions.
   await hydrated(resetPage,'/quilt-fabric-calculator/');
   const fabricLabel=resetPage.getByLabel('Fabric / color label',{exact:true}).first();
@@ -715,7 +716,7 @@ try{
   await borderWidth.press('Tab');
   check(await resetPage.evaluate(()=>JSON.parse(localStorage.getItem('quilt-studio-v2')).borders[0].widthIn)===2.75,
    'Valid repaired border must autosave normally.');
-  await resetPage.screenshot({path:'artifacts/qa/safe-reset-undo.png',fullPage:true,animations:'disabled'});
+  await resetPage.screenshot({path:'artifacts/qa/draft-material-guard.png',fullPage:true,animations:'disabled'});
   await resetCtx.close();
   console.log('PASS reset undo restores autosaved project; stale-tab reset is blocked and new edits invalidate old undo.');
 

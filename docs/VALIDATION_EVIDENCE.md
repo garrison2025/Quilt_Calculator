@@ -1,5 +1,5 @@
 # Quilt Studio — verification evidence and release blockers
-Last verified: 2026-11-05 · reversible reset and cross-tab preservation verified through CI `41936960193` · `noindex` engineering preview.
+Last verified: 2026-11-05 · draft-loss and material-action browser regression CI `41939510752` · `noindex` engineering preview.
 
 ## What is actually verified
 | Check | Status | Evidence / reproducible action |
@@ -81,3 +81,7 @@ Only these are calculated with checked physical layouts: joined rectangular back
 - [Source commit 72ad7f0](https://github.com/garrison2025/Quilt_Calculator/commit/72ad7f06b7120685626e13326a32262005267392), [CI 41934908400](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41934908400) passed the 167 core checks and the updated Chromium suite. An invalid edit plus Update now focuses the affected input, exposes an associated live field error and inline help, keeps old exports disabled, and re-enables exports only after the value is committed and valid.
 - Reflow assertions at **320 CSS px** passed on five representative pages without document-level horizontal overflow; mobile Update focuses the `#results` landmark on successful recalculation. These are browser-automated acceptance cases and do not prove native OS/browser 400% zoom, touch hardware use or NVDA/VoiceOver behavior.
 - Previous 15 axe-core WCAG A/AA scans remained passing. Original 47-gate current status group counts have **not** been upgraded; manual accessibility signoff remains PARTIAL.
+
+## Project editor draft preservation · 2026-11-05
+- A text/number field that has changed but not been accepted (or has failed V2 validation) must not disappear when the user clicks Reset, Undo reset, switches units, loads the saved project, imports JSON, or adds/deletes a fabric SKU, cut group or border layer. The first invalid/pending input is focused and the accepted browser project remains intact. The import handler rechecks after awaiting file contents.
+- Actual Chromium regression in [CI 41939510752](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41939510752) verifies invalid draft retention and unchanged localStorage for reset, cm/in selection, import attempt, fabric SKU add/remove and border add/remove; then it verifies corrected values autosave again and that reset/undo remains reversible. Unit tests and the original source workbooks were not modified. This is UI safety evidence, not completion of all manual cross-browser accessibility gates.
