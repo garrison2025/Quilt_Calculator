@@ -54,3 +54,13 @@ The final public smoke step may require CI's deployment credentials/availability
 ## Recommended next decision
 
 Keep this build as an engineering-accepted **noindex preview**. For an eventual public launch, separately complete physical paper scale, sewn/fabric method confirmation where claimed, human accessibility review, then register a domain and run production SEO/consent/AdSense checks. None of those uncompleted steps is implicitly accepted by this document.
+
+## Expanded all-route reflow acceptance (subsequent commit, 2026-11-05)
+
+- The follow-up `4b4f29075b207a370534894f737fe601151d7ecc` changes the Chromium QA **only**; it does not modify the mathematics, source project schema, public SEO contract, or user-entered data.
+- [Full quality workflow 41978590893](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41978590893) **PASS**: 187/187 unit/property tests, TypeScript, Astro static/preview index gates, full browser QA and automated axe A/AA checks.
+- The 320-CSS-pixel WCAG 1.4.10 **reflow proxy now tests all 10 approved pages**, not the old five-page representative sample; every tested page avoided whole-page horizontal overflow and retained its main calculator action and explicit cut-export control.
+- [Exact-commit Cloudflare workflow 41978590943](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41978590943) **PASS**, confirming deployment and real public interactions at `4b4f29075b207a370534894f737fe601151d7ecc`.
+- This is **not** a test of physical phone hardware, a human using native 400% browser zoom, any screen reader, a real printer or sewn fabric. Physical and future domain/advertising/GSC gates remain outstanding as described above.
+
+**Current approval remains: PREVIEW ENGINEERING ACCEPTED; PRODUCTION RELEASE NOT APPROVED.**
