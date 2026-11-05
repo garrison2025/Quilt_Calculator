@@ -1804,6 +1804,56 @@ try{
   await hydrated(visual,'/quilt-backing-calculator/');
   check(await visual.locator('.workspace-steps>span').count()===3,'Three readable plan-workflow steps missing.');
   check(await visual.locator('.page-intro--tool .hero-main-cta').count()===1,'Tool-page calculator CTA missing.');
+  // Optional cut-order walkthrough must never change a single physical
+  // rectangle coordinate, SVG export mapping or printing geometry.
+  const visualDiagram=visual.locator('[data-results] .diagram-wrap:has([data-cut-walkthrough])').first();
+  check(await visualDiagram.count()===1,'Physical SVG needs an interactive, opt-in cut walkthrough.');
+  const walkthrough=visualDiagram.locator('[data-cut-walkthrough]');
+  const sequenceCuts=visualDiagram.locator('svg rect[data-cut-index]');
+  const totalSequence=await sequenceCuts.count();
+  check(totalSequence>=2,'Backing sample should have multiple drawable cut pieces.');
+  const originalSvgGeometry=await sequenceCuts.evaluateAll(items=>items.map(el=>
+    ['x','y','width','height','data-roll-x-in','data-roll-y-in','data-cut-width-in','data-cut-height-in']
+      .map(k=>el.getAttribute(k)).join('|')));
+  const slider=walkthrough.getByRole('slider',{name:'Cut-order preview position'});
+  check(await slider.getAttribute('max')===String(totalSequence),
+    'Preview slider must match only the displayed cut count, never hidden exports.');
+  check(await walkthrough.locator('[data-play-state="playing"]').count()===0,
+    'Cut-order animation must never autoplay without explicit user action.');
+  await slider.focus();
+  await slider.press('Home');
+  check(await visualDiagram.locator('svg rect[data-preview-phase="future"]').count()===totalSequence,
+    'Zero-position preview should show future cuts as muted, not delete them.');
+  await walkthrough.getByRole('button',{name:'Next cut'}).click();
+  check(await slider.inputValue()==='1','Manual Next must advance exactly one cut.');
+  check(await visualDiagram.locator('svg rect[data-preview-phase="current"]').count()===1,
+    'Exact one active cut should be emphasized.');
+  await walkthrough.getByRole('button',{name:'Play sequence'}).click();
+  check(await walkthrough.getByRole('button',{name:'Pause sequence'}).count()===1,
+    'Play sequence should become an accessible Pause control.');
+  await walkthrough.getByRole('button',{name:'Pause sequence'}).click();
+  check(await walkthrough.getAttribute('data-play-state')==='paused',
+    'Pausing the walkthrough must preserve the current cut position.');
+  await visualDiagram.screenshot({path:'artifacts/qa/cut-order-walkthrough-active.png',animations:'disabled'});
+  await visual.emulateMedia({media:'print'});
+  const printDiagram=await visualDiagram.evaluate(el=>({
+    controls:getComputedStyle(el.querySelector('[data-cut-walkthrough]')).display,
+    future:[...el.querySelectorAll('svg rect[data-preview-phase="future"]')]
+      .map(rect=>getComputedStyle(rect).opacity)
+  }));
+  check(printDiagram.controls==='none'&&printDiagram.future.every(v=>Number(v)===1),
+    'Printing must show ALL actual cut rectangles, never hide a partial animated sequence.');
+  await visual.emulateMedia({media:'screen'});
+  await walkthrough.getByRole('button',{name:'Show all cuts'}).click();
+  check(await slider.inputValue()===String(totalSequence) &&
+    await visualDiagram.locator('svg rect[data-preview-phase="all"]').count()===totalSequence,
+    'Show all cuts must fully restore the original diagram.');
+  const finalSvgGeometry=await sequenceCuts.evaluateAll(items=>items.map(el=>
+    ['x','y','width','height','data-roll-x-in','data-roll-y-in','data-cut-width-in','data-cut-height-in']
+      .map(k=>el.getAttribute(k)).join('|')));
+  assert.deepEqual(finalSvgGeometry,originalSvgGeometry,
+    'Cut-order visuals must NEVER edit drawing geometry or physical export source coordinates.');
+  console.log('PASS opt-in SVG cut-order play/pause/step/reset, unchanged geometry and full-print restoration.');
   await visual.screenshot({path:'artifacts/qa/quilt-ui-v3-backing-desktop.png',fullPage:true,animations:'disabled'});
   await visualCtx.close();
   console.log('PASS UI v3 home + tool hierarchy, active stitch animation, nine task links and desktop screenshot evidence.');
@@ -1845,6 +1895,20 @@ try{
   check(heroReduced==='none','Reduced motion preference must disable decorative stitch animation.');
   const headingReduced=await reducedPage.locator('.page-intro .page-heading').evaluate(el=>getComputedStyle(el).animationName);
   check(headingReduced==='none','Reduced motion preference must keep hero heading still.');
+  // Reduced-motion visitors retain exact manual controls but no automatic
+  // cut playback; disabled controls include an explanatory accessible label.
+  const reducedWalkthrough=reducedPage.locator('[data-results] [data-cut-walkthrough]').first();
+  check(await reducedWalkthrough.count()===1,'Reduced-motion view must keep manual cut inspection.');
+  check(await reducedWalkthrough.getByRole('button',{name:'Auto-play unavailable'}).isDisabled(),
+    'Reduced-motion preference must disable continuous SVG playback.');
+  const reducedNext=reducedWalkthrough.getByRole('button',{name:'Next cut'});
+  await reducedNext.click();
+  check(await reducedWalkthrough.locator('input[type="range"]').inputValue()==='1',
+    'Reduced-motion users must be able to manually inspect individual cuts.');
+  const reducedRect=reducedPage.locator('[data-results] svg rect[data-preview-phase="current"]').first();
+  check(await reducedRect.evaluate(el=>getComputedStyle(el).transitionDuration)==='0s',
+    'Reduced-motion cut inspection must not animate opacity.');
+  await reducedWalkthrough.getByRole('button',{name:'Show all cuts'}).click();
   console.log('PASS reduced-motion accessibility preference.');
   await reduced.close();
   await fs.writeFile('artifacts/qa/axe-wcag2a-aa-audit.json',JSON.stringify(wcagReport,null,2));
