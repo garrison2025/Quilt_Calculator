@@ -451,7 +451,7 @@ try{
   check(missingPrices.length===3&&missingPrices.every(row=>row[8]===''),
    'Unpriced SKU costs must remain blank, not invented as free.');
   await hydrated(pricePage,'/quilt-border-calculator/');
-  await pricePage.getByRole('button',{name:'Remove border layer'}).first().click();
+  await pricePage.getByRole('button',{name:'Remove layer',exact:true}).first().click();
   check(await pricePage.locator('details.sku-plan').count()===0,
    'Removing the last border must remove all border cuts.');
   check(await pricePage.locator('[data-action="export-shopping"]').count()===0,
