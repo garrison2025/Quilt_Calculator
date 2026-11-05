@@ -28,9 +28,9 @@ describe('V2 project price inputs and published JSON Schema contract', () => {
       withPrice.options[field] = 0;
       expect(validateProject(JSON.parse(JSON.stringify(withPrice))).options[field]).toBe(0);
       for (const invalid of [-0.01, 100001, null, '12', Number.NaN, Number.POSITIVE_INFINITY]) {
-        const bad: Record<string, unknown> = copy().options;
-        bad[field] = invalid;
-        expect(() => validateProject({...copy(), options: bad}), String(field) + ': ' + String(invalid)).toThrow();
+        const bad = copy();
+        (bad.options as unknown as Record<string, unknown>)[field] = invalid;
+        expect(() => validateProject(bad), String(field) + ': ' + String(invalid)).toThrow();
       }
     }
   });
