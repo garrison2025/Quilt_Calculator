@@ -555,6 +555,7 @@ if(root){
     warning(resultRoot,'Continuous, lengthwise-grain butted strips only. Do not use this result for mitered or separately pieced borders.');
    }else if(tool==='fabric'){
     const f=calculateQuiltFabric(p.fabrics,o.step);
+    plan=f;
     topFabricMissing=needsTopFabricPlan(p.fabrics);
     if(!f.length){
      warning(resultRoot,'Quilt-top fabric is NOT PLANNED. Add a fabric SKU and positive-count cut pieces to generate a purchase plan.');
@@ -626,13 +627,21 @@ if(root){
     diagram(alternatePanel,alternateLayout,'Alternate roll / not the selected purchase',undefined,'comparison');
     resultRoot.appendChild(alternatePanel);
    }
-   const record={tool,sourceProjectHash:hashProject(project),calculationVersion:VERSION,calculatedAt:new Date().toISOString(),projectUnits:project.units,result:plan};
+   const anyInfeasible=materialCuts.some(x=>!x.layout.isCutFeasible);
+   const physicalCutPieceCount=materialCuts.reduce((total,x)=>total+x.layout.cutPieces.length,0);
+   const hasPhysicalCuts=physicalCutPieceCount>0;
+   const readyPhysicalPlan=materialCuts.length>0 && !anyInfeasible && hasPhysicalCuts && !topFabricMissing;
+   const printable=tool==='inches' || readyPhysicalPlan;
+   const readiness={
+    scope:tool==='hub'?'entered-project-materials':tool==='fabric'?'entered-top-fabric-skus':tool==='inches'?'length-conversion':'single-material',
+    status:tool==='inches'?'LENGTH_CONVERSION':topFabricMissing?'TOP_FABRIC_NOT_PLANNED':anyInfeasible?'FIT_IMPOSSIBLE':readyPhysicalPlan?'LISTED_CUTS_FEASIBLE':'NO_PHYSICAL_CUTS',
+    topFabricMissing,hasInfeasibleMaterial:anyInfeasible,physicalCutPieceCount,
+    cutCsvReady:readyPhysicalPlan,printReady:printable
+   };
+   const record={tool,sourceProjectHash:hashProject(project),calculationVersion:VERSION,calculatedAt:new Date().toISOString(),projectUnits:project.units,readiness,result:plan};
    cutExport=record;
    exportButton.disabled=false;
-   const anyInfeasible=materialCuts.some(x=>!x.layout.isCutFeasible);
-   const hasPhysicalCuts=materialCuts.some(x=>x.layout.cutPieces.length>0);
-   const readyPhysicalPlan=materialCuts.length>0 && !anyInfeasible && hasPhysicalCuts && !topFabricMissing;
-   printButton.disabled=tool!=='inches' && !readyPhysicalPlan;
+   printButton.disabled=!printable;
    cutCsvButton.disabled=!readyPhysicalPlan;
    root!.dataset.printReady=printButton.disabled?'false':'true';
    if(anyInfeasible)warning(resultRoot,'PRINT BLOCKED: at least one current material roll cannot fit its required cut. The JSON calculation export remains available for diagnosis, but this is not a complete cut-ready plan.',true);

@@ -508,6 +508,15 @@ try{
     'Project hub must not export a misleading full-material cutting CSV without top fabric.');
   check(await topPage.locator('[data-action="export-cut"]').isEnabled(),
     'Incomplete hub should retain JSON diagnostics.');
+  const missingJsonPending=topPage.waitForEvent('download');
+  await topPage.locator('[data-action="export-cut"]').click();
+  const missingJson=JSON.parse(await fs.readFile(await (await missingJsonPending).path(),'utf8'));
+  check(missingJson.readiness.scope==='entered-project-materials'&&missingJson.readiness.status==='TOP_FABRIC_NOT_PLANNED',
+    'Hub JSON should identify missing top fabric and distinguish the overall project scope.');
+  check(missingJson.readiness.topFabricMissing===true&&missingJson.readiness.cutCsvReady===false&&missingJson.readiness.printReady===false,
+    'Incomplete JSON diagnostics must reflect disabled complete cut-list and print actions.');
+  check(Array.isArray(missingJson.result.fabric)&&missingJson.result.fabric.length===0,
+    'Empty quilt-top fabric must be explicitly represented as an empty material list, not silently omitted.');
   await topPage.emulateMedia({media:'print'});
   check(await topPage.locator('[data-tool]').getAttribute('data-print-ready')==='false',
     'Ctrl+P must hide the incomplete full project when top fabric is missing.');
@@ -522,6 +531,13 @@ try{
   check(emptyTopCsv.includes('NOT_PLANNED_NO_CUT_PIECES')&&emptyTopCsv.includes('Quilt-top fabric'),
     'Incomplete CSV must include an explicit zero-SKU top-fabric row, not omit it or suggest zero-yard purchase.');
   await hydrated(topPage,'/quilt-fabric-calculator/',{incomplete:true,noHero:true});
+  const noSkuJsonPending=topPage.waitForEvent('download');
+  await topPage.locator('[data-action="export-cut"]').click();
+  const noSkuJson=JSON.parse(await fs.readFile(await (await noSkuJsonPending).path(),'utf8'));
+  check(noSkuJson.readiness.scope==='entered-top-fabric-skus'&&noSkuJson.readiness.topFabricMissing===true,
+    'Fabric calculator JSON must explicitly name its incomplete top-only scope.');
+  check(Array.isArray(noSkuJson.result)&&noSkuJson.result.length===0,
+    'Zero-SKU standalone fabric JSON must export an empty SKU array, not an unexplained empty object.');
   await topPage.getByRole('button',{name:'+ Add fabric SKU'}).click();
   const quantity=topPage.getByLabel('Count',{exact:true}).first();
   await quantity.fill('0');await quantity.press('Tab');
@@ -550,6 +566,12 @@ try{
     'Restored top-fabric cuts should re-enable full-project cutting CSV.');
   check(!(await topPage.locator('[data-results]').innerText()).includes('INCOMPLETE SHOPPING LIST'),
     'The missing-top warning must clear after positive-count cuts are entered.');
+  const readyJsonPending=topPage.waitForEvent('download');
+  await topPage.locator('[data-action="export-cut"]').click();
+  const readyJson=JSON.parse(await fs.readFile(await (await readyJsonPending).path(),'utf8'));
+  check(readyJson.readiness.status==='LISTED_CUTS_FEASIBLE'&&readyJson.readiness.topFabricMissing===false&&
+        readyJson.readiness.cutCsvReady===true&&readyJson.readiness.printReady===true,
+    'Restoring real top fabric cuts must make the JSON readiness match the user-facing controls.');
   await topPage.screenshot({path:'artifacts/qa/quilt-top-material-completeness.png',fullPage:true,animations:'disabled'});
   await topContext.close();
   console.log('PASS empty/zero-quantity top-fabric planning, incomplete CSV reasons, no-print safety and restored complete project.');
