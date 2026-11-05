@@ -1,0 +1,46 @@
+name: Stage tested Quilt security dependency upgrade
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/stage-security-upgrade.yml"
+permissions:
+  contents: write
+jobs:
+  prepare-upgrade-branch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Build a reproducible patched lock in an isolated candidate branch
+        run: |
+          git checkout -b security/quilt-patched-toolchain-20261106
+          npm ci --no-audit --no-fund
+          npm install --save-exact --no-audit --no-fund astro@7.4.7 sharp@0.35.5
+          npm install --save-dev --save-exact --no-audit --no-fund vitest@5.1.0 esbuild@0.28.1
+          npm ci --no-audit --no-fund
+          npm ls astro sharp vitest esbuild
+          npm run lint
+          npm test
+          npm run build
+          node scripts/check-build.mjs
+          npm audit --audit-level=low
+      - name: Confirm the exact branch candidate in Chromium
+        run: |
+          npm install --no-save --package-lock=false playwright axe-core
+          npx playwright install --with-deps chromium
+          node scripts/browser-smoke.mjs
+      - name: Write only validated package manifest and lock to isolated branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          git diff --cached --exit-code && { echo "No upgrade changes generated"; exit 1; } || true
+          git commit -m "fix(security): lock patched Astro Sharp Vitest esbuild after full browser QA"
+          git push --set-upstream origin security/quilt-patched-toolchain-20261106
