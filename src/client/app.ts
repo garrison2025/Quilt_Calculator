@@ -714,6 +714,12 @@ if(root){
    note('Correct invalid input before updating the plan.',true);
    return;
   }
+  // Only compare previously accepted, non-stale result figures. Do not show
+  // an optimistic "improved" estimate while a conflict or invalid input exists.
+  const oldHero=!status.classList.contains('status-error')&&syncWarning.hidden&&
+    !resultRoot.querySelector('[data-stale-warning]')?resultRoot.querySelector('.result-hero'):null;
+  const oldKicker=oldHero?.querySelector('.result-kicker')?.textContent||'';
+  const oldFigure=oldHero?.querySelector('.result-big')?.textContent||'';
   resultRoot.replaceChildren();cutExport=null;materialCuts=[];
   saveButton.disabled=false;
   exportButton.disabled=true;cutCsvButton.disabled=true;printButton.disabled=true;
@@ -898,6 +904,18 @@ if(root){
    if(topCutListNotReviewed)warning(resultRoot,'WHOLE-PROJECT EXPORT BLOCKED: your entered quilt-top cuts have not been manually checked for coverage. Confirm the cutting list before printing or exporting a complete project CSV.',true);
    else if(tool!=='inches' && !hasPhysicalCuts)warning(resultRoot,'There are no physical cut pieces in this plan. Print and cut-list CSV are disabled until a material has real cuts.');
    resultRoot.prepend(node('p','calculation-context','Current project · '+num(w)+' × '+num(h)+' in quilt · '+(project.units==='cm'?'cm display':'in display')+' · source hash '+record.sourceProjectHash));
+   // Visual feedback announces an actual primary-value change without
+   // interpolating, re-rounding or altering the real calculated number.
+   // It is suppressed for incomplete and conflicted plans.
+   const currentHero=resultRoot.querySelector('.result-hero');
+   const currentKicker=currentHero?.querySelector('.result-kicker')?.textContent||'';
+   const currentFigure=currentHero?.querySelector('.result-big')?.textContent||'';
+   const estimateSafe=!anyInfeasible&&!topFabricMissing&&!topCutListNotReviewed&&syncWarning.hidden;
+   if(estimateSafe&&oldFigure&&currentFigure&&oldKicker===currentKicker&&oldFigure!==currentFigure){
+    const changed=node('p','result-change','Updated estimate: '+oldFigure+' → '+currentFigure+'. Recheck layout, rounding and fabric assumptions before purchasing.');
+    changed.dataset.resultChange='';
+    currentHero?.after(changed);
+   }
    resultRoot.appendChild(node('p','footer-note','Cut lengths and coordinates are calculated in inches. Purchase rounding applied once. Source project hash '+record.sourceProjectHash+'. Export JSON to review complete values. Print is a schematic, not an actual-size template.'));
    const incompleteProject=anyInfeasible || topFabricMissing || topCutListNotReviewed;
    note((incompleteProject?'⚠ Incomplete material plan · check review, missing cuts or infeasible rolls · ':'✓ Updated from the current project · ')+new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}),incompleteProject);
