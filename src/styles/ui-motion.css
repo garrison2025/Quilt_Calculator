@@ -310,3 +310,18 @@
  .quilt-ui-v3 .cut-diagram-stage>svg{max-height:none}
 }
 @media print{.quilt-ui-v3 .diagram-wrap{overflow:visible!important;max-width:none!important}}
+
+/* Mobile magnification remains inside the cut stage; controls are accessible. */
+@media screen{
+ .quilt-ui-v3 .cut-zoom-hint{flex:1 0 100%;font-size:11px;line-height:1.5;color:#456550;background:#eaf4eb;padding:7px 10px;border-radius:7px}
+ .quilt-ui-v3 .cut-zoom-hint[hidden]{display:none}
+ .quilt-ui-v3 .cut-diagram-stage{touch-action:pan-x pan-y}
+ .quilt-ui-v3 .cut-zoom-controls button[data-action="diagram-locate"]{border-color:#8bb69b;background:#e9f4ed;color:#25583c;font-weight:750}
+ .quilt-ui-v3 .cut-zoom-controls button[data-action="diagram-locate"]:disabled{opacity:.57}
+ @media(max-width:570px){.quilt-ui-v3 .cut-zoom-controls button[data-action="diagram-locate"]{flex:1 0 100%;min-height:44px}}
+ @media(prefers-color-scheme:dark){
+  .quilt-ui-v3 .cut-zoom-hint{background:#2c4935;color:#d6eddb}
+  .quilt-ui-v3 .cut-zoom-controls button[data-action="diagram-locate"]{background:#365a44;border-color:#83b595;color:#e5f5e9}
+ }
+}
+@media print{.quilt-ui-v3 .cut-zoom-hint{display:none!important}}

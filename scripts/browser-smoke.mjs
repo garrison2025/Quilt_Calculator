@@ -1792,6 +1792,18 @@ try{
     'Phone must allow panning across a zoomed fabric roll without clipping it.');
   check(await small.evaluate(()=>document.documentElement.scrollWidth-innerWidth)<=2,
     'Zoomed cut diagram must not introduce document-level phone overflow.');
+  await phoneWalk.getByRole('button',{name:'Next cut'}).click();
+  const phoneLocate=phoneWalk.getByRole('button',{name:'Center selected cut'});
+  const phoneTarget=await phoneLocate.boundingBox();
+  check(await phoneLocate.isEnabled()&&Boolean(phoneTarget&&phoneTarget.height>=42),
+    'Zoomed phone cut recenter control needs an accessible >=42px touch target.');
+  await phoneLocate.click();
+  check(await phoneStage.evaluate(el=>{
+    const r=el.querySelector('rect[data-preview-phase="current"]');
+    if(!r)return false;
+    const a=el.getBoundingClientRect(),b=r.getBoundingClientRect();
+    return b.right>a.left+3&&b.left<a.right-3;
+  }),'Touch recentering must reveal the selected piece in the zoom viewport.');
   await phoneWalk.getByRole('button',{name:'Reset zoom'}).click();
   await small.getByRole('button',{name:'Update cutting plan'}).click();
   check(await small.locator('#results').evaluate(el=>el===document.activeElement),
@@ -1847,8 +1859,9 @@ try{
   check(zoomExtent.scroll>zoomExtent.client&&zoomExtent.overflow<=2,
     'Zoom must allow pan within the diagram, not create page-level horizontal overflow: '+JSON.stringify(zoomExtent));
   await walkthrough.getByRole('button',{name:'Reset zoom'}).click();
-  check(await stage.locator('svg').getAttribute('data-preview-zoom')==='1',
-    'Reset zoom must restore exact default viewport scale.');
+  check(await stage.locator('svg').getAttribute('data-preview-zoom')==='1' &&
+    await walkthrough.getByRole('button',{name:'Center selected cut'}).isDisabled(),
+    'Reset zoom must restore viewport scale and disable unnecessary recentering.');
   const originalSvgGeometry=await sequenceCuts.evaluateAll(items=>items.map(el=>
     ['x','y','width','height','data-roll-x-in','data-roll-y-in','data-cut-width-in','data-cut-height-in']
       .map(k=>el.getAttribute(k)).join('|')));
@@ -1915,8 +1928,29 @@ try{
   check(await slider.inputValue()==='1' &&
     (await inspect.innerText()).includes('Cut 1 / '+totalSequence),
     'Pointer selection must use same cut-order state as accessible range slider.');
+  await walkthrough.getByRole('button',{name:'Zoom in'}).click();
+  await walkthrough.getByRole('button',{name:'Zoom in'}).click();
+  await walkthrough.getByRole('button',{name:'Zoom in'}).click();
+  await stage.evaluate(el=>{el.scrollLeft=0;});
   await cutTableLinks.nth(Math.min(1,totalSequence-1)).click();
   const expectedCut=Math.min(2,totalSequence);
+  const isCutVisible=await stage.evaluate(el=>{
+    const selected=el.querySelector('rect[data-preview-phase="current"]');
+    if(!selected)return false;
+    const a=el.getBoundingClientRect(),b=selected.getBoundingClientRect();
+    return b.right>a.left+3&&b.left<a.right-3;
+  });
+  check(isCutVisible,
+    'Selecting a coordinate row must bring its cut into the magnified SVG viewport.');
+  const locate=walkthrough.getByRole('button',{name:'Center selected cut'});
+  check(await locate.isEnabled(),'Selected and zoomed cut must support an explicit recenter action.');
+  await stage.evaluate(el=>{el.scrollLeft=0;});
+  await locate.click();
+  check(await stage.evaluate(el=>{
+    const r=el.querySelector('rect[data-preview-phase="current"]'),a=el.getBoundingClientRect(),b=r.getBoundingClientRect();
+    return b.right>a.left+3&&b.left<a.right-3;
+  }),'Center-selected must locate a cut after manual panning.');
+  await walkthrough.getByRole('button',{name:'Reset zoom'}).click();
   check(await slider.inputValue()===String(expectedCut) &&
     (await inspect.innerText()).includes('Cut '+expectedCut+' / '+totalSequence) &&
     await cutTableLinks.nth(expectedCut-1).getAttribute('aria-current')==='step',

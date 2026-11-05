@@ -54,11 +54,20 @@ export function attachCutWalkthrough(wrapper:HTMLElement,svg:SVGSVGElement):void
  const zoomOut=button('diagram-zoom-out','Zoom out');
  const zoomIn=button('diagram-zoom-in','Zoom in');
  const zoomReset=button('diagram-zoom-reset','Reset zoom');
+ const locate=button('diagram-locate','Center selected cut');
+ locate.disabled=true;
  const zoomValue=document.createElement('output');zoomValue.className='cut-zoom-value';
  zoomValue.setAttribute('aria-label','Current diagram zoom');
- zoom.append(zoomLabel,zoomOut,zoomValue,zoomIn,zoomReset);
+ zoom.append(zoomLabel,zoomOut,zoomValue,zoomIn,zoomReset,locate);
+ const zoomHint=document.createElement('span');
+ zoomHint.className='cut-zoom-hint';
+ zoomHint.textContent='Swipe inside the magnified diagram to pan along the fabric roll.';
+ zoomHint.hidden=true;
+ zoom.append(zoomHint);
  const zoomSteps=[1,1.5,2,3];
  let zoomIndex=0;
+ let current=count;
+ let showAll=true;
  function applyZoom():void{
   const factor=zoomSteps[zoomIndex];
   svg.style.width=String(factor*100)+'%';
@@ -68,11 +77,15 @@ export function attachCutWalkthrough(wrapper:HTMLElement,svg:SVGSVGElement):void
   zoomOut.disabled=zoomIndex===0;
   zoomIn.disabled=zoomIndex===zoomSteps.length-1;
   zoomReset.disabled=zoomIndex===0;
+  zoomHint.hidden=zoomIndex===0;
+  stage.dataset.zoomed=zoomIndex===0?'false':'true';
   if(zoomIndex===0)stage.scrollLeft=0;
+  locate.disabled=zoomIndex===0||showAll||current===0;
  }
- zoomOut.addEventListener('click',()=>{zoomIndex=Math.max(0,zoomIndex-1);applyZoom();});
- zoomIn.addEventListener('click',()=>{zoomIndex=Math.min(zoomSteps.length-1,zoomIndex+1);applyZoom();});
+ zoomOut.addEventListener('click',()=>{zoomIndex=Math.max(0,zoomIndex-1);applyZoom();centerCurrentCut();});
+ zoomIn.addEventListener('click',()=>{zoomIndex=Math.min(zoomSteps.length-1,zoomIndex+1);applyZoom();centerCurrentCut();});
  zoomReset.addEventListener('click',()=>{zoomIndex=0;applyZoom();});
+ locate.addEventListener('click',()=>{centerCurrentCut();});
  applyZoom();
 
  const progress=document.createElement('div');
@@ -114,6 +127,17 @@ export function attachCutWalkthrough(wrapper:HTMLElement,svg:SVGSVGElement):void
   if(raw===undefined||!Number.isFinite(Number(raw)))return '—';
   return Number(raw).toLocaleString('en-US',{maximumFractionDigits:4})+' in';
  }
+ // Purely CSS-pixel viewport positioning: never mutate fabric geometry,
+ // viewBox or SVG rectangle attributes. No implicit page scrolling.
+ function centerCurrentCut():void{
+  if(showAll||current<1||zoomIndex===0||stage.scrollWidth<=stage.clientWidth)return;
+  const cut=cuts[current-1];
+  if(!cut)return;
+  const box=cut.getBoundingClientRect();
+  const viewport=stage.getBoundingClientRect();
+  const delta=(box.left+box.width/2)-(viewport.left+viewport.width/2);
+  if(Number.isFinite(delta)&&Math.abs(delta)>1)stage.scrollLeft+=delta;
+ }
  function inspectorFields(rect:SVGRectElement):void{
   inspectDetail.replaceChildren();
   const rows=[
@@ -131,8 +155,6 @@ export function attachCutWalkthrough(wrapper:HTMLElement,svg:SVGSVGElement):void
   }
  }
 
- let current=count;
- let showAll=true;
  let playing=false;
  let frame=0;
  let lastTick=0;
@@ -170,6 +192,9 @@ export function attachCutWalkthrough(wrapper:HTMLElement,svg:SVGSVGElement):void
    inspectorFields(cut);
   }
   next.disabled=playing;
+  locate.disabled=zoomIndex===0||showAll||current===0;
+  if(!playing&&!showAll&&current>0)centerCurrentCut();
+  range.setAttribute('aria-valuetext',showAll?'All '+count+' cuts':current===0?'Start, no cuts highlighted':'Cut '+current+' of '+count);
   // Coordinate table rows subscribe to this local SVG event. There is no
   // global document handler, so separate fabric SKUs remain isolated.
   svg.dispatchEvent(new CustomEvent('quilt-cut-selected',{
