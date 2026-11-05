@@ -1,0 +1,42 @@
+name: Prepare security dependency upgrade branch
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/prepare-security-upgrade.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  create-tested-upgrade-branch:
+    if: github.repository == 'garrison2025/Quilt_Calculator' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Prepare patched package-lock on a new branch only
+        run: |
+          set -euo pipefail
+          if git ls-remote --exit-code --heads origin security/astro7-sharp-vitest5; then
+            echo 'Security upgrade branch already exists; nothing to overwrite.'
+            exit 0
+          fi
+          npm ci --no-audit --no-fund
+          npm install --save-exact --no-audit --no-fund astro@7.4.7 sharp@0.35.5
+          npm install --save-dev --save-exact --no-audit --no-fund vitest@5.1.0 esbuild@0.28.1
+          npm ci --no-audit --no-fund
+          npm run check
+          npm audit --audit-level=low
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -c security/astro7-sharp-vitest5
+          git add package.json package-lock.json
+          git commit -m 'fix(security): use tested patched Astro Sharp Vitest and esbuild versions'
+          git push origin HEAD:refs/heads/security/astro7-sharp-vitest5
+          echo 'Created isolated security branch; production main is unchanged.'
