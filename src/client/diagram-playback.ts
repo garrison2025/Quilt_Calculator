@@ -61,9 +61,41 @@ export function attachCutWalkthrough(wrapper:HTMLElement,svg:SVGSVGElement):void
  status.textContent=reduceMotion?'Manual cut-by-cut inspection is available.':'All planned cuts are visible.';
  progress.append(label,range,countText,status);
  toolbar.append(intro,actions,progress);
+ // Selectable geometric inspection reads existing SVG attributes, never
+ // re-runs or rewrites the independently verified layout.
+ const inspector=document.createElement('div');
+ inspector.className='cut-piece-inspector';
+ inspector.dataset.cutInspector='';
+ const inspectTitle=document.createElement('strong');
+ inspectTitle.className='cut-inspector-title';
+ const inspectDetail=document.createElement('div');
+ inspectDetail.className='cut-inspector-grid';
+ inspector.append(inspectTitle,inspectDetail);
+ toolbar.append(inspector);
  wrapper.append(toolbar);
+ function formatInches(raw:string|undefined):string{
+  if(raw===undefined||!Number.isFinite(Number(raw)))return '—';
+  return Number(raw).toLocaleString('en-US',{maximumFractionDigits:4})+' in';
+ }
+ function inspectorFields(rect:SVGRectElement):void{
+  inspectDetail.replaceChildren();
+  const rows=[
+   ['Roll X',formatInches(rect.dataset.rollXIn)],
+   ['Roll Y',formatInches(rect.dataset.rollYIn)],
+   ['Cut width',formatInches(rect.dataset.cutWidthIn)],
+   ['Cut height',formatInches(rect.dataset.cutHeightIn)],
+   ['Grain rotation',(rect.dataset.grainRotation||'0')+'°']
+  ];
+  for(const [name,value] of rows){
+   const item=document.createElement('div');
+   const dt=document.createElement('span');dt.textContent=name;
+   const dd=document.createElement('b');dd.textContent=value;
+   item.append(dt,dd);inspectDetail.append(item);
+  }
+ }
 
  let current=count;
+ let showAll=true;
  let playing=false;
  let frame=0;
  let lastTick=0;
@@ -74,20 +106,32 @@ export function attachCutWalkthrough(wrapper:HTMLElement,svg:SVGSVGElement):void
   lastTick=0;
   play.textContent=reduceMotion?'Auto-play unavailable':'Play sequence';
  }
- function render(position:number):void{
+ function render(position:number,all=false):void{
   current=Math.max(0,Math.min(count,Math.round(position)));
-  toolbar.dataset.playState=current===count?'all':playing?'playing':'paused';
+  showAll=all;
+  toolbar.dataset.playState=showAll?'all':playing?'playing':'paused';
   svg.dataset.previewPosition=String(current);
   // Never modify x/y/width/height or exported material coordinates.
   cuts.forEach((rect,i)=>{
-   rect.dataset.previewPhase=current===count?'all':i<current-1?'past':i===current-1?'current':'future';
+   rect.dataset.previewPhase=showAll?'all':i<current-1?'past':i===current-1?'current':'future';
   });
   labels.forEach(text=>{
    const i=Number(text.dataset.previewStep)-1;
-   text.dataset.previewPhase=current===count?'all':i<current-1?'past':i===current-1?'current':'future';
+   text.dataset.previewPhase=showAll?'all':i<current-1?'past':i===current-1?'current':'future';
   });
   range.value=String(current);
-  countText.textContent=current===count?'All '+count+' cuts':current+' of '+count+' cuts';
+  countText.textContent=showAll?'All '+count+' cuts':current+' of '+count+' cuts';
+  if(showAll){
+   inspectTitle.textContent='Full cut layout · '+count+' displayed';
+   inspectDetail.textContent='Select a cut on the diagram, use Next cut, or move the slider to inspect its measured position. Full-precision values remain available in the cut-list CSV.';
+  }else if(current===0){
+   inspectTitle.textContent='Start of cut order';
+   inspectDetail.textContent='No cuts highlighted yet. Move to step 1 to see the first piece.';
+  }else{
+   const cut=cuts[current-1];
+   inspectTitle.textContent='Cut '+current+' / '+count+' · '+(cut.dataset.cutLabel||'unnamed piece');
+   inspectorFields(cut);
+  }
   next.disabled=playing;
  }
  function announce(message:string):void{status.textContent=message;}
@@ -100,7 +144,7 @@ export function attachCutWalkthrough(wrapper:HTMLElement,svg:SVGSVGElement):void
    render(current+1);
    if(current>=count){
     cancel();render(count);
-    announce('Walkthrough complete. All '+count+' cuts are visible.');
+    announce('Cut '+count+' of '+count+' highlighted. Choose Show all cuts to restore the entire layout.');
     return;
    }
   }
@@ -113,7 +157,7 @@ export function attachCutWalkthrough(wrapper:HTMLElement,svg:SVGSVGElement):void
    announce('Cut order paused at '+current+' of '+count+'.');
    return;
   }
-  if(current===count)render(0);
+  if(showAll||current===count)render(0);
   playing=true;
   play.textContent='Pause sequence';
   render(current);
@@ -122,16 +166,26 @@ export function attachCutWalkthrough(wrapper:HTMLElement,svg:SVGSVGElement):void
  });
  next.addEventListener('click',()=>{
   cancel();
-  render(current===count?1:current+1);
+  render(showAll||current===count?1:current+1);
   announce('Showing cut '+current+' of '+count+'.');
  });
  reset.addEventListener('click',()=>{
-  cancel();render(count);
+  cancel();render(count,true);
   announce('All '+count+' cuts restored.');
  });
  range.addEventListener('input',()=>{
   cancel();render(Number(range.value));
-  announce(current===count?'All cuts visible.':'Showing '+current+' of '+count+' cuts.');
+  announce('Showing '+current+' of '+count+' cuts.');
  });
- render(count);
+ // Pointer shortcut uses the same semantic state as the keyboard-accessible
+ // range and Next button; SVG geometry remains untouched.
+ svg.addEventListener('click',event=>{
+  const target=event.target;
+  if(!(target instanceof SVGRectElement))return;
+  const index=Number(target.dataset.cutIndex);
+  if(!Number.isInteger(index)||index<1||index>count)return;
+  cancel();render(index);
+  announce('Showing cut '+index+' of '+count+' cuts.');
+ });
+ render(count,true);
 }
