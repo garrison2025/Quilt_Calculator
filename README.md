@@ -70,3 +70,6 @@ The source XLSX's 39 Golden examples, 24 property requirements and 47 release ga
 
 ### Directional fabric safety (2026-11-05)
 The Fabric Yardage tool now independently stores its 90° rotation permission and one-way fabric-print flag. When a one-way print is selected, the engine refuses rotated cuts on both the current roll and the hypothetical alternate width and exports only actual permitted grain angles. Existing V2 JSON without these optional flags remains importable. [Verification: 169 unit/property tests and Chromium](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41940484000). This is an engineering QA result, not real-fabric certification.
+
+### Purchase-safe project planner (2026-11-05)
+The whole-quilt planner now uses the same one-piece batting grain-rotation setting as the separate batting tool. Unfit rolls are shown as `FIT IMPOSSIBLE` rather than silently assigned purchase yardage. If any roll cannot fit, the downloadable shopping CSV is explicitly named INCOMPLETE and annotates each unpurchasable line; cut CSV and the built-in Print plan button are disabled, while a diagnostic JSON calculation remains available. [Chromium verification and 173 passing tests](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41941616100).

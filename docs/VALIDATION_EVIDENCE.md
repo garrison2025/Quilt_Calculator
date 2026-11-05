@@ -1,11 +1,11 @@
 # Quilt Studio — verification evidence and release blockers
-Last verified: 2026-11-05 · independent fabric grain/rotation CI `41940484000` · `noindex` engineering preview.
+Last verified: 2026-11-05 · hub/batting parity and incomplete purchase release gates, CI `41941616100` · `noindex` engineering preview.
 
 ## What is actually verified
 | Check | Status | Evidence / reproducible action |
 |---|---|---|
 | TypeScript static typing | PASS | GitHub CI https://github.com/garrison2025/Quilt_Calculator/actions/runs/41931472782 · `npm run lint` |
-| Deterministic arithmetic, geometry and V2 import checks | PASS · 169 tests | Same CI · `npm test`; includes backing seam thresholds, binding strip thresholds and 2,000-piece roll-area conservation |
+| Deterministic arithmetic, geometry and V2 import checks | PASS · 173 tests | Same CI · `npm test`; includes backing seam thresholds, binding strip thresholds and 2,000-piece roll-area conservation |
 | Astro static build and route list | PASS | Same CI · `npm run build && node scripts/check-build.mjs` |
 | Original 218-keyword source appendices and canonical intent routing | PASS (engineering mapping only) | `docs/data/V2_Keyword_Appendix_218.csv`: 202 assigned to nine distinct tool intents; 16 HOLD; not search ranking evidence |
 | Published preview index protection | PASS | Static check ensures only `noindex,follow`; no preview sitemap or absolute canonical |
@@ -90,3 +90,8 @@ Only these are calculated with checked physical layouts: joined rectangular back
 - The approved Fabric Yardage route now has distinct optional `yardage.allowRotate` and `yardage.oneWayPrint` constraints in Project V2. A directional material cannot be rotated for purchasing, even if its stored allow-rotation setting is checked; both current and alternate WOF scenarios enforce the same rule in the shared math engine.
 - Existing exported Project V2 JSON files lacking these optional fields still import with their legacy `options.allowRotate` fallback. Fabric-specific rotation changes no longer alter the one-piece batting rotation setting; backing orientation retains its separate `options.oneWayPrint` setting.
 - [CI 41940484000](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41940484000): **169/169 Vitest assertions** across nine suites plus browser screenshots/network, exported CSV grain rotation 90° vs 0°, 25 in vs 30 in actual-current-roll comparison, persistence across page navigation and the existing noindex and 218-keyword gates. This is automated geometry/grain logic evidence, **not** independent proof that printed fabric motifs are visually aligned during real sewing.
+
+## Project-level material feasibility and purchase-safe exports · 2026-11-05
+- Project Planner and the standalone batting tool now pass the same `options.allowRotate` flag to the single-piece batting engine. An actual 108 × 58 in cut on 65-in usable roll is infeasible unrotated, then feasible as 58 × 108 in with grainRotationDeg=90° and 3 yd required in both tool CSVs. Both tools share the saved browser Project V2 state.
+- On projects with any impossible physical roll, the shopping list shows an explicit incomplete status and the exported sheet marks each impossible material without fabricated quantity/cost. A partial CSV filename begins with `quilt-studio-INCOMPLETE`. Full physical cut CSV and the built-in Print-plan action are disabled until every present material has a feasible layout. Diagnostic JSON remains available.
+- [CI 41941616100](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41941616100) passed 173/173 tests across 10 suites, 10 published route browser checks, one isolated hub/batting grain-parity scenario, partial purchasing CSV and corrected fabric SKU recovery. Real paper measurement, material grain inspection by a quilter, and actual sewing remain NOT_RUN.
