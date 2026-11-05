@@ -800,9 +800,22 @@ if(root){
   try{
    if(!requireCommittedDraft('import a project'))return;
    if(file.size>1024*1024)throw Error('Project JSON must be below 1 MB.');
+   // Reading a file yields control to the browser. Both an accepted local edit
+   // and a different tab's autosave can happen while the file is loading.
+   // Check exact source state after the await: a valid but stale JSON import
+   // must NEVER silently erase those newer measurements or acknowledgments.
+   const startProjectJson=JSON.stringify(project);
+   const startStoredJson=lastStoredJson;
    const imported=validateProject(JSON.parse(await file.text()));
-   // The file read can overlap new typing: check again before replacing.
    if(!requireCommittedDraft('import a project'))return;
+   let changedInOtherTab=false;
+   try{changedInOtherTab=localStorage.getItem(STORAGE_KEY)!==startStoredJson;}
+   catch{/* Private/blocked localStorage: protect in-memory edits instead. */}
+   if(JSON.stringify(project)!==startProjectJson || lastStoredJson!==startStoredJson || changedInOtherTab){
+    if(changedInOtherTab)showStorageConflict();
+    note('Import canceled: the project changed while the file was loading. Your newer edits are preserved. Select the JSON file again if you still want to replace this project.',true);
+    return;
+   }
    project=imported;persist();renderEditor();update();
   }catch(e){note('Could not import project: '+(e instanceof Error?e.message:'Invalid project file'),true);}
   finally{picker.value='';}

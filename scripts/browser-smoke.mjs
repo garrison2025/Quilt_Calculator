@@ -928,6 +928,82 @@ try{
   await page.waitForFunction(()=>document.querySelector('[data-status]')?.textContent?.includes('Backing join take-up'));
   assert.equal(await page.getByLabel('Finished quilt width (in)',{exact:true}).inputValue(),'74','Invalid join input must preserve current project.');
   console.log('PASS valid JSON import and rejections of schema, quantity and join-width errors.');
+
+  // Asynchronous File.text() must not overwrite edits accepted after the import
+  // started. Delay ONLY the browser's file-reading promise: no test mocks for
+  // app internals, geometry, storage, form validation, or persistence.
+  const raceContext=await browser.newContext({viewport:{width:1150,height:800},acceptDownloads:true});
+  instrumentNetwork(raceContext,'delayed-import-race');
+  const race=await raceContext.newPage();
+  race.on('pageerror',e=>problems.push('Delayed import: '+e.message));
+  await hydrated(race,'/quilt-backing-calculator/');
+  const raceInitialDownload=race.waitForEvent('download');
+  await race.locator('[data-action="save"]').click();
+  const raceProject=JSON.parse(await fs.readFile(await (await raceInitialDownload).path(),'utf8'));
+  await race.evaluate(()=>{
+    const original=File.prototype.text;
+    File.prototype.text=function(){
+      window.__raceFileReading=true;
+      return new Promise(resolve=>{
+        const file=this;
+        window.__raceResumeImport=async()=>resolve(await original.call(file));
+      });
+    };
+  });
+  const raceWidth=race.getByLabel('Finished quilt width (in)',{exact:true});
+  raceProject.quilt.finishedWidth=89;
+  const importedRaceBuffer=()=>Buffer.from(JSON.stringify(raceProject));
+  await race.locator('[data-file]').setInputFiles({
+    name:'delayed-import.json',mimeType:'application/json',buffer:importedRaceBuffer()
+  });
+  await race.waitForFunction(()=>window.__raceFileReading===true);
+  await raceWidth.fill('77');await raceWidth.press('Tab');
+  check((await race.evaluate(()=>JSON.parse(localStorage.getItem('quilt-studio-v2')).quilt.finishedWidth))===77,
+    'Newer accepted measurement should autosave even while import read is pending.');
+  await race.evaluate(()=>window.__raceResumeImport());
+  await race.waitForFunction(()=>document.querySelector('[data-status]')?.textContent?.includes('Import canceled'));
+  check(await raceWidth.inputValue()==='77',
+    'Delayed import must not silently overwrite a later accepted user edit.');
+  check((await race.evaluate(()=>JSON.parse(localStorage.getItem('quilt-studio-v2')).quilt.finishedWidth))===77,
+    'Delayed import must preserve the newer localStorage project too.');
+
+  // Import without an overlapping edit should still work normally.
+  await race.evaluate(()=>{window.__raceFileReading=false;});
+  await race.locator('[data-file]').setInputFiles({
+    name:'delayed-import-clean.json',mimeType:'application/json',buffer:importedRaceBuffer()
+  });
+  await race.waitForFunction(()=>window.__raceFileReading===true);
+  await race.evaluate(()=>window.__raceResumeImport());
+  await race.waitForFunction(()=>JSON.parse(localStorage.getItem('quilt-studio-v2')||'{}').quilt?.finishedWidth===89);
+  check(await raceWidth.inputValue()==='89','Uncontested delayed import should restore its intended project.');
+  check((await race.locator('[data-status]').innerText()).includes('Updated from the current project'),
+    'Successful import must recalculate and clear the prior cancellation warning.');
+
+  // Also protect against an independent tab updating shared storage while
+  // the user's current tab is reading the selected JSON file.
+  const raceOther=await raceContext.newPage();
+  await hydrated(raceOther,'/quilt-backing-calculator/');
+  raceProject.quilt.finishedWidth=94;
+  await race.evaluate(()=>{window.__raceFileReading=false;});
+  await race.locator('[data-file]').setInputFiles({
+    name:'delayed-import-cross-tab.json',mimeType:'application/json',buffer:importedRaceBuffer()
+  });
+  await race.waitForFunction(()=>window.__raceFileReading===true);
+  const otherWidth=raceOther.getByLabel('Finished quilt width (in)',{exact:true});
+  await otherWidth.fill('92');await otherWidth.press('Tab');
+  await race.locator('[data-sync-warning]').waitFor({state:'visible'});
+  await race.evaluate(()=>window.__raceResumeImport());
+  await race.waitForFunction(()=>document.querySelector('[data-status]')?.textContent?.includes('Import canceled'));
+  check((await race.evaluate(()=>JSON.parse(localStorage.getItem('quilt-studio-v2')).quilt.finishedWidth))===92,
+    'Delayed import must not overwrite a different tab\'s later autosave.');
+  check(await raceWidth.inputValue()==='89',
+    'Delayed import must preserve this tab\'s last accepted in-memory project.');
+  check(!(await race.locator('[data-sync-warning]').isHidden()),
+    'Cross-tab import collision must warn that newer shared storage exists.');
+  await race.screenshot({path:'artifacts/qa/delayed-json-import-conflict.png',fullPage:true,animations:'disabled'});
+  await raceContext.close();
+  console.log('PASS delayed JSON import cannot overwrite later local edits or newer cross-tab autosaves; clean delayed import still works.');
+
   // Independent tabs must not silently overwrite each other's saved projects.
   const tabA=await desktop.newPage(),tabB=await desktop.newPage();
   tabA.on('pageerror',e=>problems.push('Multi-tab A: '+e.message));
