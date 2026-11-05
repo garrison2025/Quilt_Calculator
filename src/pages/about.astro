@@ -1,0 +1,32 @@
+---
+import Base from '../layouts/Base.astro';
+---
+<Base noIndex title="About Quilt Studio — Methods, Limitations & Feedback" description="Understand how Quilt Studio calculates fabric cutting plans, what its results do not prove, and how to check the open-source code or report an error.">
+<div class="page-shell about-methods">
+  <div class="page-heading">
+    <span class="eyebrow-with-line">— ABOUT THE TOOLKIT</span>
+    <h1>How Quilt Studio calculates—and what it cannot promise.</h1>
+    <p>Quilt Studio is a free, browser-based set of quilt and fabric cutting calculators. It models explicit dimensions and physical rectangular cuts. It does not replace measuring your own fabric, checking your pattern or reviewing your quilting method.</p>
+  </div>
+  <section class="content-block" id="methods" aria-labelledby="method-title">
+    <div class="editorial-head"><span class="eyebrow-with-line">— HOW THE NUMBERS WORK</span><h2 id="method-title">Verifiable geometry, not area-only estimates.</h2><p>These are the actual calculation rules used in the open-source implementation. Each calculator page also explains its inputs and a worked example.</p></div>
+    <div class="story-grid">
+      <article class="story-panel"><span class="story-number">01 / WIDTH</span><h3>Measure usable width of fabric</h3><p>WOF is the real width available for cutting after removing unusable selvedges. The advertised bolt width may differ. A piece wider than the permitted roll width is rejected rather than assigned an imaginary cutting plan.</p></article>
+      <article class="story-panel"><span class="story-number">02 / JOINS</span><h3>Count seam or joining loss</h3><p>Backing calculations count rectangular panels and subtract total seam take-up at each join. Straight-grain binding counts full-width strips and their joined usable length. The join input is a measured assumption, not a universal sewing rule.</p></article>
+      <article class="story-panel"><span class="story-number">03 / BUYING</span><h3>Round purchasing quantities after layout</h3><p>The engine lays out actual rectangles, computes the fabric run length, optionally accounts for entered length shrinkage and rounds upward to your shop increment. It keeps fabric SKUs separate and does not claim globally minimal waste.</p></article>
+    </div>
+  </section>
+  <section class="content-block about-constraints" aria-labelledby="limits-title">
+    <div class="editorial-head"><span class="eyebrow-with-line">— SAFETY &amp; LIMITS</span><h2 id="limits-title">What we have not verified.</h2></div>
+    <p>These calculators do <strong>not</strong> provide validated instructions for bias binding, diagonal backing, mitered or pieced borders, one-piece batting joins, or every square-in-a-square construction method. Experimental techniques are kept out of the indexed calculator set.</p>
+    <p>Software and browser tests confirm mathematical and data-flow properties, but they are <strong>not physical sewing certification</strong>. Real fabric shrinkage, stretch, directional prints, hardware, defects and seam behavior still require independent checks. Printable cutting plans are schematics—not 1:1 fabric patterns. Before using print dimensions, <a href="/qa/print-calibration/">measure the printed calibration marks with a ruler</a>.</p>
+  </section>
+  <section class="content-block" aria-labelledby="maintenance-title">
+    <div class="editorial-head"><span class="eyebrow-with-line">— SOURCE &amp; CORRECTIONS</span><h2 id="maintenance-title">Inspect the code or flag a problem.</h2></div>
+    <p>The <a href="https://github.com/garrison2025/Quilt_Calculator">public source repository</a> contains the cutting-engine implementation, test cases and current acceptance records. No named sewing expert, institution or third-party certification is claimed. Review the method and test evidence for the specific calculator before relying on its results.</p>
+    <p>To report a reproducible calculation error, broken link or usability problem, use the project's <a href="https://github.com/garrison2025/Quilt_Calculator/issues">GitHub issue tracker</a>. Include the calculator URL, input measurements, expected result and observed result. Do not post private information or commercially sensitive project files publicly.</p>
+    <p>You can also read our <a href="/privacy/">browser-local project data and privacy disclosure</a>. At this time there is no user account, checkout, paid service or advertising integration in the published calculator.</p>
+  </section>
+  <nav class="about-return" aria-label="Back to quilt calculators"><a href="/calculators/">Open the full quilt calculator and project planner ↗</a> <a href="/fabric-yardage-calculator/">Try fabric yardage with a physical layout ↗</a></nav>
+</div>
+</Base>

@@ -383,3 +383,30 @@
  .seo-reference-table th small{color:#d5eddb}
 }
 @media print{.seo-direct-answer,.seo-reference{display:none!important}}
+
+/* Task-first semantic directory; every card links to one approved calculator. */
+.task-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.task-card{display:flex;flex-direction:column;gap:10px;background:#fff;border:1px solid #dae4d9;border-radius:15px;padding:22px;min-width:0;transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease}
+.task-card:hover,.task-card:focus-visible{border-color:#7aa993;box-shadow:0 7px 21px rgba(35,69,46,.08);transform:translateY(-2px)}
+.task-card-type{font-size:10px;text-transform:uppercase;letter-spacing:1.15px;font-weight:800;color:#446f56}
+.task-card strong{font:400 clamp(19px,2vw,23px)/1.25 Georgia,serif;color:#244734}
+.task-card-detail{font-size:12px;line-height:1.65;color:#476251;flex-grow:1}
+.task-card-link{font-size:12px;font-weight:750;color:#2a6c52}
+.methodology-link{margin:18px 0;padding:13px 18px;font-size:12px;line-height:1.75;border-left:3px solid #89b29d;color:#405b4b;background:#f1f7ef}
+.methodology-link a,.about-methods a:not(.header-cta){text-decoration:underline;text-underline-offset:3px;color:#265e49}
+.about-methods .page-heading{max-width:880px}
+.about-methods .page-heading h1{font-size:clamp(34px,4.5vw,58px)}
+.about-constraints p{font-size:14px;line-height:1.85;color:#435d4e;max-width:900px}
+.about-return{display:flex;gap:13px;flex-wrap:wrap;margin-top:28px}
+.about-return a{display:inline-block;border:1px solid #cadcd0;border-radius:9px;background:#fff;padding:12px 14px;font-size:13px;font-weight:700}
+@media(max-width:900px){.task-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.task-grid{grid-template-columns:1fr}.task-card{padding:18px}.task-card strong{font-size:21px}}
+@media screen and (prefers-color-scheme:dark){
+ .task-card,.about-return a{background:#1e2f25;border-color:#3c5e49}
+ .task-card-type,.task-card-link{color:#b7dfc5}
+ .task-card strong{color:#e2f0e4}
+ .task-card-detail,.methodology-link,.about-constraints p{color:#c6dccc}
+ .methodology-link{background:#1a2a20;border-left-color:#94cba8}
+ .methodology-link a,.about-methods a:not(.header-cta){color:#c6f2d6}
+}
+@media print{.task-grid,.methodology-link,.about-return{display:none!important}}

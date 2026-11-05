@@ -1,8 +1,8 @@
 ---
 import Base from '../layouts/Base.astro';
 import Calculator from '../components/Calculator.astro';
-import {routes,byId} from '../data/routes';
-const featured=routes.filter(r=>['backing','binding','borders','yardage'].includes(r.id));
+import {byId} from '../data/routes';
+import {calculatorTasks} from '../data/calculator-tasks';
 ---
 <Base home title="Quilt Studio — Better Quilt & Fabric Calculators with Cut Plans" description="Plan a quilt in one place. Calculate backing, straight binding, batting and materials from real cutting diagrams, with printable shopping lists and free local project files.">
 <div class="page-shell">
@@ -20,9 +20,19 @@ const featured=routes.filter(r=>['backing','binding','borders','yardage'].includ
  <div class="editorial-head"><span class="eyebrow-with-line">— START RIGHT HERE</span><h2>Your next quilt, in one place.</h2><p>Try the 60 × 80 inch sample project below. Adjust the dimensions and get a physically checked fabric plan, not an area-only estimate.</p></div>
  <Calculator tool="hub" sample={byId('hub').sample}/>
 </section>
-<section class="content-block">
- <div class="editorial-head"><span class="eyebrow-with-line">— YOUR NEXT STEP</span><h2>Four tools makers come back to.</h2><p>Each calculator answers a different cutting question, with its own inputs, assumptions and worked example.</p></div>
- <div class="related-grid">{featured.map(r=><a class="related-card" href={'/'+r.slug+'/'}><span class="related-ornament">✳</span><span>{r.nav.toUpperCase()}</span><strong>{r.h1}</strong><small>Explore the calculator ↗</small></a>)}</div>
+<section class="content-block tool-choice" data-tool-choice>
+ <div class="editorial-head"><span class="eyebrow-with-line">— FIND YOUR CALCULATOR</span><h2>What would you like to calculate?</h2><p>Choose by the actual fabric-cutting problem. Every question leads to one calculator, not a duplicate keyword page.</p></div>
+ <nav class="task-grid" aria-label="Find a quilt calculator by your cutting task">
+ {calculatorTasks.map(task=>{
+   const route=byId(task.id);
+   return <a class="task-card" href={'/'+route.slug+'/'} data-task={task.id}>
+      <span class="task-card-type">{task.label}</span>
+      <strong>{task.question}</strong>
+      <span class="task-card-detail">{task.detail}</span>
+      <span class="task-card-link">Use the {route.nav.toLowerCase()} tool <span aria-hidden="true">↗</span></span>
+    </a>;
+ })}
+ </nav>
 </section>
 <section class="sample-block"><div><span class="eyebrow-with-line">— WHY WE MADE THIS</span><h2>Calculations that respect the fabric.</h2><p>A square-inch area estimate can hide impossible cuts. Quilt Studio checks usable width, grain direction and actual rectangular placement before giving you a purchase quantity. Where sewing geometry is unverified, the tool tells you clearly instead of guessing.</p><a href="/calculators/">View all planning tools ↗</a></div><span class="sample-icon" aria-hidden="true">✳</span></section>
 </div>

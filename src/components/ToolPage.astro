@@ -30,6 +30,7 @@ const related=guides[route.id].related.map(id=>routes.find(t=>t.id===id)!);
 </section>
 <section class="sample-block"><div><span class="eyebrow-with-line">— THE WORKED EXAMPLE</span><h2>Start with something familiar.</h2><p>{route.sample}</p></div><span class="sample-icon" aria-hidden="true">✳</span></section>
 <IntentGuide tool={route.id}/>
+<p class="methodology-link">Want to check how these estimates are calculated or report a problem? Read our <a href="/about/#methods">cutting and purchase methodology</a>, with limitations and source-code references.</p>
 <section class="faq-block"><div><span class="eyebrow-with-line">— COMMON QUESTIONS</span><h2>A little clarity goes a long way.</h2></div><div class="faq-list">{route.faqs.map(([q,a])=><details><summary>{q}<span aria-hidden="true">+</span></summary><p>{a}</p></details>)}</div></section>
 <section class="related-block"><span class="eyebrow-with-line">— KEEP MAKING</span><h2>More for your next step.</h2><div class="related-grid">{related.map(r=><a href={'/'+r.slug+'/'} class="related-card"><span class="related-ornament">✳</span><span>{r.nav}</span><strong>{r.h1}</strong><small>Open calculator ↗</small></a>)}</div></section>
 </div>
