@@ -1013,7 +1013,7 @@ if(root){
    const incompleteProject=anyInfeasible || topFabricMissing || topCutListNotReviewed;
    const time=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
    note(tool==='hub'
-    ?(incompleteProject?'Incomplete material plan · backing estimate available · see 3-step checklist · ':'✓ Entered materials reviewed · ')+time
+    ?(incompleteProject?'Incomplete material plan · backing estimate available · see 3-step checklist · ':'✓ Updated from the current project · listed cuts reviewed · ')+time
     :(incompleteProject?'⚠ Incomplete material plan · check review, missing cuts or infeasible rolls · ':'✓ Updated from the current project · ')+time,
     tool!=='hub'&&incompleteProject);
    // Recalculating a valid local edit must not re-enable outputs while
