@@ -109,7 +109,7 @@ describe('Shopping CSV is explicit about cut-fit safety and incomplete purchase 
    expect(roll.layout.cutPieces.every(piece=>piece.grainRotationDeg===0)).toBe(true);
   }
   const csv=cutListCsv(result.map((roll,i)=>({material:roll.label,sku:fabrics[i].id,layout:roll.layout})));
-  expect(csv.split('\\r\\n').filter(Boolean)).toHaveLength(2001);
+  expect(csv.split(String.fromCharCode(13,10)).filter(Boolean)).toHaveLength(2001);
   expect(csv).toContain('"sku-29"');
   // This is a functional capacity test, NOT a brittle machine-specific
   // performance SLA. The browser smoke separately exercises real UI.
