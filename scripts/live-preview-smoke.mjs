@@ -217,6 +217,46 @@ try{
  await resumedContext.close();
  console.log('PASS public Cloudflare pageshow catches missing storage events before cut export and restores latest project.');
 
+ // On the actual deployed Cloudflare bundle, an unreadable browser autosave
+ // must be protected against a normal edit. Download the exact raw string
+ // before the user is allowed to explicitly replace it with a valid project.
+ const corruptContext=await browser.newContext({viewport:{width:1150,height:820},acceptDownloads:true});
+ const corruptPage=await corruptContext.newPage();
+ const corruptErrors=[];
+ corruptPage.on('pageerror',e=>corruptErrors.push(e.message));
+ await corruptPage.goto(BASE+'/quilt-backing-calculator/',{waitUntil:'domcontentloaded',timeout:20000});
+ await corruptPage.waitForFunction(()=>document.querySelector('[data-status]')?.textContent?.includes('Updated from the current project'),null,{timeout:15000});
+ const originalRaw='{"schemaVersion":400,"recover":"future project data must be preserved verbatim"}';
+ await corruptPage.evaluate(raw=>localStorage.setItem('quilt-studio-v2',raw),originalRaw);
+ await corruptPage.reload({waitUntil:'domcontentloaded'});
+ await corruptPage.locator('[data-download-unreadable-backup]').waitFor({state:'visible',timeout:15000});
+ assertThat((await corruptPage.locator('[data-persist-state]').innerText()).includes('UNREADABLE AUTOSAVE PROTECTED') &&
+   !(await corruptPage.locator('[data-action="export-cut-csv"]').isEnabled()) &&
+   !(await corruptPage.locator('[data-action="print"]').isEnabled()),
+  'Live unreadable autosave must be protected before edits or print.');
+ const corruptWidth=corruptPage.getByLabel('Finished quilt width (in)',{exact:true});
+ await corruptWidth.fill('86');await corruptWidth.press('Tab');
+ assert.equal(await corruptPage.evaluate(()=>localStorage.getItem('quilt-studio-v2')),originalRaw,
+  'Live first edit must not erase incompatible saved project data.');
+ assertThat(!(await corruptPage.locator('[data-replace-unreadable-backup]').isEnabled()),
+  'Live explicit replacement must require a prior raw text download.');
+ const originalBackup=await downloadText(corruptPage,'[data-download-unreadable-backup]');
+ assert.equal(originalBackup.content,originalRaw,'Live raw download must preserve the exact unreadable text.');
+ assert.equal(originalBackup.name,'quilt-unreadable-original-autosave.txt');
+ assertThat(await corruptPage.locator('[data-replace-unreadable-backup]').isEnabled(),
+  'Raw download must enable the explicit replacement action.');
+ await corruptPage.locator('[data-replace-unreadable-backup]').click();
+ assertThat(await corruptPage.locator('[data-sync-warning]').isHidden() &&
+   await corruptPage.locator('[data-action="export-cut-csv"]').isEnabled(),
+  'Live backed-up explicit replacement must restore safe cutting exports.');
+ assert.equal(await corruptPage.evaluate(()=>JSON.parse(localStorage.getItem('quilt-studio-v2')).quilt.finishedWidth),86);
+ await corruptPage.reload({waitUntil:'domcontentloaded'});
+ await corruptPage.waitForFunction(()=>document.querySelector('[data-status]')?.textContent?.includes('Updated from the current project'),null,{timeout:15000});
+ assert.equal(await corruptPage.getByLabel('Finished quilt width (in)',{exact:true}).inputValue(),'86');
+ assert.equal(corruptErrors.length,0,'Public unreadable-autosave JS errors: '+corruptErrors.join('; '));
+ await corruptContext.close();
+ console.log('PASS public Cloudflare unreadable autosave protects raw data, blocks accidental replacement and restores on explicit backup recovery.');
+
  // Verify that the live Cloudflare bundle (not only the local CI preview)
  // preserves keyboard focus after replacing dynamic material controls.
  const focusContext=await browser.newContext({viewport:{width:1100,height:820}});
