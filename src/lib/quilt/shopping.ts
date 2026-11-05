@@ -3,10 +3,25 @@ import {csvDocument} from './cutlist';
 export type ShoppingLine = {
  label:string; hint:string; amount?:number; rawYards?:number; offcutSqIn?:number;
  roundingExtraIn?:number; unitPrice?:number; assemblyTrimSqIn?:number;
+ status?: 'not-planned';
 };
 
+export type ShoppingStatus = 'FEASIBLE_LAYOUT' | 'FIT_IMPOSSIBLE_NOT_PURCHASE_READY' | 'NOT_PLANNED_NO_CUT_PIECES';
+
+export function shoppingLineStatus(line:ShoppingLine):ShoppingStatus {
+ if(line.status==='not-planned')return 'NOT_PLANNED_NO_CUT_PIECES';
+ return line.amount===undefined?'FIT_IMPOSSIBLE_NOT_PURCHASE_READY':'FEASIBLE_LAYOUT';
+}
+
 export function hasIncompleteShopping(lines:readonly ShoppingLine[]):boolean {
- return lines.some(line=>line.amount===undefined);
+ return lines.some(line=>shoppingLineStatus(line)!=='FEASIBLE_LAYOUT');
+}
+
+/** An empty SKU list or a SKU with no positive-count cut pieces means the
+ * quilt top is not planned. Other fabric colors do not fill that missing SKU.
+ */
+export function needsTopFabricPlan(fabrics:readonly {pieces:readonly {count:number}[]}[]):boolean {
+ return fabrics.length===0 || fabrics.some(f=>!f.pieces.some(p=>p.count>0));
 }
 
 /** Retain all material rows while clearly marking those with no verified fit.
@@ -20,13 +35,16 @@ export function shoppingCsv(lines:readonly ShoppingLine[]):string {
   'User entered price USD per yd','Estimated cost USD','Cut-fit / purchase status'
  ];
  const rows=lines.map(line=>{
-  const feasible=line.amount!==undefined;
+  const status=shoppingLineStatus(line);
+  const feasible=status==='FEASIBLE_LAYOUT';
+  if(line.status==='not-planned' && line.amount!==undefined)
+   throw Error('A not-planned material cannot have a purchasing quantity: '+line.label);
   if(feasible && (!Number.isFinite(line.amount)||line.amount!<0))throw Error('Invalid purchased yardage for '+line.label);
   const estimated=feasible && line.unitPrice!==undefined ? line.amount!*line.unitPrice : undefined;
   return [
-   line.label,line.hint,line.rawYards,line.amount,line.offcutSqIn,
-   line.roundingExtraIn,line.assemblyTrimSqIn,line.unitPrice,estimated,
-   feasible?'FEASIBLE_LAYOUT':'FIT_IMPOSSIBLE_NOT_PURCHASE_READY'
+   line.label,line.hint,feasible?line.rawYards:undefined,feasible?line.amount:undefined,
+   feasible?line.offcutSqIn:undefined,feasible?line.roundingExtraIn:undefined,
+   feasible?line.assemblyTrimSqIn:undefined,line.unitPrice,estimated,status
   ];
  });
  return csvDocument([headers,...rows]);

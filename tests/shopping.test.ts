@@ -1,5 +1,5 @@
 import {describe,expect,it} from 'vitest';
-import {shoppingCsv,hasIncompleteShopping, type ShoppingLine} from '../src/lib/quilt/shopping';
+import {shoppingCsv,hasIncompleteShopping,needsTopFabricPlan,shoppingLineStatus, type ShoppingLine} from '../src/lib/quilt/shopping';
 
 describe('Shopping CSV is explicit about cut-fit safety and incomplete purchase lists',()=>{
  const good:ShoppingLine={label:'Indigo fabric',hint:'43 in usable WOF',amount:.875,rawYards:5/6,offcutSqIn:125,roundingExtraIn:1.5,unitPrice:8};
@@ -21,6 +21,26 @@ describe('Shopping CSV is explicit about cut-fit safety and incomplete purchase 
   expect(lines[2]).toContain('"FIT_IMPOSSIBLE_NOT_PURCHASE_READY"');
   expect(lines[2]).not.toContain('"0"');
   expect(lines[2]).toContain('"Directional background"');
+ });
+ it('distinguishes missing quilt-top cuts from physically impossible fabric widths',()=>{
+  const missing:ShoppingLine={label:'Quilt-top fabric',hint:'No cuts entered',status:'not-planned'};
+  const csv=shoppingCsv([good,missing,impossible]);
+  const rows=csv.slice(1).trim().split('\r\n');
+  expect(shoppingLineStatus(missing)).toBe('NOT_PLANNED_NO_CUT_PIECES');
+  expect(shoppingLineStatus(impossible)).toBe('FIT_IMPOSSIBLE_NOT_PURCHASE_READY');
+  expect(hasIncompleteShopping([good,missing])).toBe(true);
+  expect(rows[2]).toContain('"NOT_PLANNED_NO_CUT_PIECES"');
+  expect(rows[2]).not.toContain('"0"');
+  expect(rows[3]).toContain('"FIT_IMPOSSIBLE_NOT_PURCHASE_READY"');
+  expect(()=>shoppingCsv([{...missing,amount:0}])).toThrow(/not-planned material/);
+ });
+ it('requires top-fabric SKU entries with positive-count cut pieces',()=>{
+  expect(needsTopFabricPlan([])).toBe(true);
+  expect(needsTopFabricPlan([{pieces:[]}])).toBe(true);
+  expect(needsTopFabricPlan([{pieces:[{count:0}]}])).toBe(true);
+  expect(needsTopFabricPlan([{pieces:[{count:5},{count:0}]}])).toBe(false);
+  expect(needsTopFabricPlan([{pieces:[{count:5}]},{pieces:[{count:0}]}])).toBe(true);
+  expect(needsTopFabricPlan([{pieces:[{count:5}]},{pieces:[{count:2}]}])).toBe(false);
  });
  it('escapes potentially executable spreadsheet labels',()=>{
   const csv=shoppingCsv([{...good,label:'=1+2'}]);

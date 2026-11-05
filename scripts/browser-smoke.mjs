@@ -476,6 +476,80 @@ try{
   await crossBatting.close();
   console.log('PASS hub/batting 90° parity, impossible roll purchase warnings, print gating and partial CSV safety.');
 
+
+  // Full project shopping cannot be complete without actual quilt-top pieces,
+  // even if backing, batting, binding and borders all have feasible cuts.
+  const topContext=await browser.newContext({viewport:{width:1200,height:860},acceptDownloads:true});
+  instrumentNetwork(topContext,'unplanned-top-fabric');
+  const topPage=await topContext.newPage();
+  topPage.on('pageerror',err=>problems.push('Unplanned quilt top: '+err.message));
+  await hydrated(topPage,'/quilt-fabric-calculator/');
+  check((await topPage.locator('details.sku-plan').count())===2,'Start with the two sample fabric SKU cutting plans.');
+  await topPage.getByRole('button',{name:'Remove SKU'}).first().click();
+  await topPage.getByRole('button',{name:'Remove SKU'}).first().click();
+  check((await topPage.locator('[data-results]').innerText()).includes('Quilt-top fabric is NOT PLANNED'),
+    'Deleting the last fabric SKU must not claim a finished top-material purchase.');
+  check(!(await topPage.locator('[data-action="print"]').isEnabled()),
+    'A fabric tool without SKUs must not print a complete cut plan.');
+  check(await topPage.getByRole('button',{name:'Download INCOMPLETE shopping CSV'}).count()===1,
+    'No-SKU top should still provide a clearly labeled partial diagnostic shopping CSV.');
+  await hydrated(topPage,'/calculators/');
+  const missingSummary=await topPage.locator('[data-results]').innerText();
+  check(missingSummary.includes('QUILT TOP NOT PLANNED')&&missingSummary.includes('INCOMPLETE SHOPPING LIST'),
+    'Project planner must disclose missing top fabric separately from its valid backing estimate.');
+  check(missingSummary.includes('NOT PLANNED')&&!missingSummary.includes('FIT IMPOSSIBLE'),
+    'No top-fabric SKU is missing data, not physically impossible.');
+  check(!(await topPage.locator('[data-action="print"]').isEnabled()),
+    'Project hub must refuse a complete printout when top fabric is absent.');
+  check(!(await topPage.locator('[data-action="export-cut-csv"]').isEnabled()),
+    'Project hub must not export a misleading full-material cutting CSV without top fabric.');
+  check(await topPage.locator('[data-action="export-cut"]').isEnabled(),
+    'Incomplete hub should retain JSON diagnostics.');
+  await topPage.emulateMedia({media:'print'});
+  check(await topPage.locator('[data-tool]').getAttribute('data-print-ready')==='false',
+    'Ctrl+P must hide the incomplete full project when top fabric is missing.');
+  check(await topPage.locator('[data-results]').evaluate(el=>getComputedStyle(el).display)==='none',
+    'Print stylesheet must suppress partial shopping values for a missing quilt top.');
+  await topPage.emulateMedia({media:'screen'});
+  const emptyTopCsvPending=topPage.waitForEvent('download');
+  await topPage.getByRole('button',{name:'Download INCOMPLETE shopping CSV'}).click();
+  const emptyTopFile=await emptyTopCsvPending;
+  check(emptyTopFile.suggestedFilename().includes('INCOMPLETE'),'Missing top cut CSV cannot be named as a complete purchase list.');
+  const emptyTopCsv=await fs.readFile(await emptyTopFile.path(),'utf8');
+  check(emptyTopCsv.includes('NOT_PLANNED_NO_CUT_PIECES')&&emptyTopCsv.includes('Quilt-top fabric'),
+    'Incomplete CSV must include an explicit zero-SKU top-fabric row, not omit it or suggest zero-yard purchase.');
+  await hydrated(topPage,'/quilt-fabric-calculator/');
+  await topPage.getByRole('button',{name:'+ Add fabric SKU'}).click();
+  const quantity=topPage.getByLabel('Count',{exact:true}).first();
+  await quantity.fill('0');await quantity.press('Tab');
+  const zeroQuantityResult=await topPage.locator('[data-results]').innerText();
+  check(zeroQuantityResult.includes('NOT PLANNED')&&!zeroQuantityResult.includes('FIT IMPOSSIBLE'),
+    'A defined SKU with only zero-count pieces is not a physically impossible layout or a 0-yard order.');
+  check((await topPage.locator('details.sku-plan').first().locator('summary').innerText()).includes('NOT PLANNED'),
+    'A zero-piece SKU cutting accordion must not display 0 yd or FIT IMPOSSIBLE.');
+  const zeroCsvPending=topPage.waitForEvent('download');
+  await topPage.getByRole('button',{name:'Download INCOMPLETE shopping CSV'}).click();
+  const zeroCsv=await fs.readFile(await (await zeroCsvPending).path(),'utf8');
+  check(zeroCsv.includes('NOT_PLANNED_NO_CUT_PIECES'),
+    'Positive SKU count with zero real cuts must remain NOT PLANNED in the shopping CSV.');
+  await hydrated(topPage,'/calculators/');
+  check(!(await topPage.locator('[data-action="export-cut-csv"]').isEnabled()),
+    'Hub must persist missing piece-count readiness across calculator navigation.');
+  await hydrated(topPage,'/quilt-fabric-calculator/');
+  const restoredQuantity=topPage.getByLabel('Count',{exact:true}).first();
+  await restoredQuantity.fill('4');await restoredQuantity.press('Tab');
+  check(await topPage.locator('[data-action="print"]').isEnabled(),
+    'Adding positive-count physical cut pieces should make the fabric tool printable again.');
+  await hydrated(topPage,'/calculators/');
+  check(await topPage.locator('[data-action="print"]').isEnabled(),
+    'Restored quilt-top cut data should re-enable project hub print.');
+  check(await topPage.locator('[data-action="export-cut-csv"]').isEnabled(),
+    'Restored top-fabric cuts should re-enable full-project cutting CSV.');
+  check(!(await topPage.locator('[data-results]').innerText()).includes('INCOMPLETE SHOPPING LIST'),
+    'The missing-top warning must clear after positive-count cuts are entered.');
+  await topPage.screenshot({path:'artifacts/qa/quilt-top-material-completeness.png',fullPage:true,animations:'disabled'});
+  await topContext.close();
+  console.log('PASS empty/zero-quantity top-fabric planning, incomplete CSV reasons, no-print safety and restored complete project.');
   // Isolated Square-in-a-Square lab must stay off approved SEO routes.
   const labReply=await page.goto(ROOT+'/lab/square-in-square/',{waitUntil:'domcontentloaded'});
   assert.equal(labReply.status(),200,'Square laboratory route missing.');
