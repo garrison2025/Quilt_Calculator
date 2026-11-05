@@ -1,0 +1,64 @@
+name: Quilt SEO mobile Lighthouse lab
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/lighthouse.yml"
+      - "src/**"
+      - "scripts/previews.mjs"
+      - "scripts/report-lighthouse.mjs"
+      - "package.json"
+      - "package-lock.json"
+jobs:
+  mobile-lab:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install pinned project and isolated lab dependencies
+        run: |
+          npm ci --no-audit --no-fund
+          npm install --no-save --package-lock=false lighthouse@12 playwright
+          npx playwright install --with-deps chromium
+      - name: Build exact source snapshot
+        run: npm run build
+      - name: Run real Chrome Lighthouse lab (simulated mobile)
+        timeout-minutes: 7
+        shell: bash
+        run: |
+          mkdir -p artifacts/lighthouse
+          npm run preview -- --host 127.0.0.1 --port 4321 > /tmp/quilt-seo-preview.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:4321/ >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:4321/quilt-backing-calculator/ >/dev/null
+          export CHROME_PATH="$(node -e "console.log(require('playwright').chromium.executablePath())")"
+          for slug in quilt-backing-calculator quilt-binding-calculator fabric-yards-to-inches; do
+            npx lighthouse "http://127.0.0.1:4321/$slug/" \
+              --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" \
+              --only-categories=performance,seo \
+              --form-factor=mobile \
+              --output=json \
+              --output-path="artifacts/lighthouse/$slug.json" \
+              --quiet
+          done
+          node scripts/report-lighthouse.mjs \
+            artifacts/lighthouse/quilt-backing-calculator.json \
+            artifacts/lighthouse/quilt-binding-calculator.json \
+            artifacts/lighthouse/fabric-yards-to-inches.json
+      - name: Archive performance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quilt-seo-lighthouse-lab
+          path: artifacts/lighthouse/
+          if-no-files-found: ignore
+          retention-days: 14
