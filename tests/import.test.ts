@@ -2,6 +2,17 @@ import { describe,expect,it } from 'vitest';
 import { sampleProject,validateProject } from '../src/lib/quilt/project';
 const fresh=()=>JSON.parse(JSON.stringify(sampleProject)) as Record<string,any>;
 describe('Version 2 project import security and data invariants',()=>{
+ it('accepts legacy yardage JSON without new directional fields and rejects bad booleans',()=>{
+  const legacy=fresh();delete legacy.yardage.oneWayPrint;delete legacy.yardage.allowRotate;
+  expect(validateProject(legacy).yardage.oneWayPrint).toBeUndefined();
+  expect(validateProject(legacy).yardage.allowRotate).toBeUndefined();
+  const modern=fresh();modern.yardage.allowRotate=true;modern.yardage.oneWayPrint=true;
+  expect(validateProject(modern).yardage).toMatchObject({allowRotate:true,oneWayPrint:true});
+  for(const field of ['oneWayPrint','allowRotate'])for(const invalid of ['true',1,null,{}]){
+    const bad=fresh();bad.yardage[field]=invalid;
+    expect(()=>validateProject(bad),field+': '+String(invalid)).toThrow();
+  }
+ });
  it('keeps legacy V2 project exports valid without an alternate WOF',()=>{
   const p=fresh();delete p.yardage.alternateWof;
   expect(validateProject(p).yardage.alternateWof).toBeUndefined();

@@ -138,6 +138,14 @@
           "exclusiveMinimum": 0,
           "maximum": 100000,
           "description": "Optional measured usable fabric width for a hypothetical physical-cut comparison. Not included in the current roll purchase."
+        },
+        "allowRotate": {
+          "type": "boolean",
+          "description": "Optional yardage-only rotation permission; legacy V2 files without this field retain their old options.allowRotate setting."
+        },
+        "oneWayPrint": {
+          "type": "boolean",
+          "description": "Optional directional print flag for this yardage material. If true, rotation is disabled regardless of allowRotate."
         }
       },
       "required": [

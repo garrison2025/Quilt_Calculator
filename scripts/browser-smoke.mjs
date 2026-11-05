@@ -325,6 +325,37 @@ try{
       await page.pdf({path:'artifacts/qa/yardage-current-width-only-print.pdf',printBackground:true,format:'A4'});
       await page.emulateMedia({media:'screen'});
       console.log('PASS physical dual-WOF comparison, CURRENT-only CSV and print/PDF exports.');
+      // Shared batting rotation must no longer toggle this fabric roll.
+      const rot=page.getByLabel('Allow 90° grain rotation',{exact:true});
+      const oneWay=page.getByLabel('One-way / directional print',{exact:true});
+      check(!(await rot.isChecked())&&!(await oneWay.isChecked()),'New sample should start with grain rotation disabled.');
+      await rot.check();
+      check((await panel.innerText()).includes('25 in'),'Permitted 90-degree rotation should reduce current roll run to 25 in.');
+      const rotatedDownload=page.waitForEvent('download');
+      await page.locator('[data-action="export-cut-csv"]').click();
+      const rotatedFile=await rotatedDownload;
+      const rotatedRows=csvRecords(await fs.readFile(await rotatedFile.path(),'utf8'));
+      check(rotatedRows.slice(1).every(row=>row[8]==='90'),'Current rotated cut list must preserve actual 90-degree grain setting.');
+      await oneWay.check();
+      check((await panel.innerText()).includes('30 in'),'Directional print must enforce unrotated 30-in current run.');
+      check((await page.locator('[data-results]').innerText()).includes('rotation is disabled'),'Explain when one-way print overrides rotation setting.');
+      const directionalDownload=page.waitForEvent('download');
+      await page.locator('[data-action="export-cut-csv"]').click();
+      const directionalFile=await directionalDownload;
+      const directionalRows=csvRecords(await fs.readFile(await directionalFile.path(),'utf8'));
+      check(directionalRows.slice(1).every(row=>row[8]==='0'),'Directional print must never export a 90-degree cut.');
+      check(await page.evaluate(()=>JSON.parse(localStorage.getItem('quilt-studio-v2')).yardage.oneWayPrint)===true,
+        'Directional print preference must persist in Project V2.');
+      await hydrated(page,'/quilt-batting-calculator/');
+      check(!(await page.getByLabel('May rotate 90°',{exact:true}).isChecked()),
+        'Fabric-only rotation must not silently change the shared batting setting.');
+      await hydrated(page,'/fabric-yardage-calculator/');
+      check(await page.getByLabel('One-way / directional print',{exact:true}).isChecked(),
+        'Directional yardage constraint must persist after navigation.');
+      check(await page.getByLabel('Allow 90° grain rotation',{exact:true}).isChecked(),
+        'Unrestricted rotation preference must remain saved but overridden while directional print is on.');
+      console.log('PASS independently scoped yardage rotation, one-way print safety and current cut CSV grain metadata.');
+
     }
     if(path==='/quilt-batting-calculator/'){
       const rollWidth=page.getByLabel('Actual roll width (in)',{exact:true});

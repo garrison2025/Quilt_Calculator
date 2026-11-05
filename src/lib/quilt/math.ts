@@ -219,8 +219,8 @@ export function calculateStraightBinding(input: { widthIn: number; heightIn: num
   return { requiredLengthIn, stripCount, effectiveJoinedLengthIn: stripCount * F - (stripCount - 1) * join,
     layout, purchase: purchase(layout.exactFabricRunLengthIn, input.step, input.shrinkageLengthPct) };
 }
-export function calculateYardage(input: { pieceWidthIn: number; pieceHeightIn: number; count: number; wofIn: number; allowRotate?: boolean; step?: number; shrinkageLengthPct?: number }): { layout: Layout; purchase?: Purchase; across: number; rows: number } {
-  const layout = layoutRectangles(input.wofIn, [{ widthIn: input.pieceWidthIn, heightIn: input.pieceHeightIn, count: input.count, allowRotate: input.allowRotate, label: 'Rectangle' }]);
+export function calculateYardage(input: { pieceWidthIn: number; pieceHeightIn: number; count: number; wofIn: number; allowRotate?: boolean; oneWayPrint?: boolean; step?: number; shrinkageLengthPct?: number }): { layout: Layout; purchase?: Purchase; across: number; rows: number } {
+  const layout = layoutRectangles(input.wofIn, [{ widthIn: input.pieceWidthIn, heightIn: input.pieceHeightIn, count: input.count, allowRotate: Boolean(input.allowRotate) && !input.oneWayPrint, label: 'Rectangle' }]);
   if (!layout.isCutFeasible) return { layout, across: 0, rows: 0 };
   const first = layout.cutPieces[0];
   // With zero pieces, retain the *theoretical* per-row capacity rather than

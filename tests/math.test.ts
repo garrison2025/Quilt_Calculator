@@ -3,6 +3,24 @@ import { calculateBacking, calculateStraightBinding, calculateYardage, calculate
  calculateBorders, calculateSashing, compareYardageWidths, parseMeasure, purchase, roundToStep, verifyLayout, layoutRectangles, calculateWofArea } from '../src/lib/quilt/math';
 import { sampleProject, validateProject } from '../src/lib/quilt/project';
 describe('V2 independent arithmetic fixtures', () => {
+ it('locks a directional fabric roll against 90-degree rotation for both candidate widths',()=>{
+  const base={pieceWidthIn:5,pieceHeightIn:10,count:20,wofIn:43,allowRotate:true,step:.125};
+  const unrestricted=compareYardageWidths(base,50);
+  expect(unrestricted.current.layout.exactFabricRunLengthIn).toBe(25);
+  expect(unrestricted.current.layout.cutPieces.every(p=>p.grainRotationDeg===90)).toBe(true);
+  const directional=compareYardageWidths({...base,oneWayPrint:true},50);
+  expect(directional.current.layout.exactFabricRunLengthIn).toBe(30);
+  expect(directional.alternate.layout.exactFabricRunLengthIn).toBe(20);
+  expect(directional.current.layout.cutPieces.every(p=>p.grainRotationDeg===0)).toBe(true);
+  expect(directional.alternate.layout.cutPieces.every(p=>p.grainRotationDeg===0)).toBe(true);
+  expect(verifyLayout(directional.current.layout)).toBe(true);
+  expect(verifyLayout(directional.alternate.layout)).toBe(true);
+  const wide={pieceWidthIn:45,pieceHeightIn:8,count:3,wofIn:43,allowRotate:true};
+  expect(calculateYardage(wide).layout.isCutFeasible).toBe(true);
+  const blocked=calculateYardage({...wide,oneWayPrint:true});
+  expect(blocked.layout.isCutFeasible).toBe(false);
+  expect(blocked.purchase).toBeUndefined();
+ });
  it('preserves theoretical per-row fabric capacity with a zero-piece, zero-purchase plan',()=>{
   const r=calculateYardage({pieceWidthIn:1,pieceHeightIn:1,count:0,wofIn:43,allowRotate:false});
   expect(r.layout.isCutFeasible).toBe(true);

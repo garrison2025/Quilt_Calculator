@@ -46,7 +46,7 @@ const groups: Record<ToolId, {title:string;fields:Field[]}[]> = {
  yardage:[
   {title:'Fabric pieces',fields:[{label:'Piece cut width',path:'yardage.pieceWidth',kind:'length'},{label:'Piece cut height',path:'yardage.pieceHeight',kind:'length'},{label:'Piece quantity',path:'yardage.count',kind:'whole'},{label:'Usable fabric WOF',path:'options.usableWof',kind:'length'}]},
   {title:'Compare a second fabric width',fields:[{label:'Alternate usable WOF',path:'yardage.alternateWof',kind:'length',note:'Optional comparison scenario; current WOF alone determines your cut-list and shopping purchase.'}]},
-  {title:'Fabric constraints',fields:[{label:'Allow 90° grain rotation',path:'options.allowRotate',kind:'check'},{label:'Prewash length shrinkage (%)',path:'options.lengthShrinkage',kind:'pct'},{label:'Purchase step (yd)',path:'options.step',kind:'number'}]}
+  {title:'Fabric constraints',fields:[{label:'Allow 90° grain rotation',path:'yardage.allowRotate',kind:'check',note:'Applies to this rectangle fabric only, not batting or backing.'},{label:'One-way / directional print',path:'yardage.oneWayPrint',kind:'check',note:'Disables 90° rotation even when Allow rotation is checked.'},{label:'Prewash length shrinkage (%)',path:'options.lengthShrinkage',kind:'pct'},{label:'Purchase step (yd)',path:'options.step',kind:'number'}]}
  ],
  fabric:[
   {title:'Quilt top (shared)',fields:fieldsBase},
@@ -332,7 +332,7 @@ if(root){
   const frag=node('div');frag.appendChild(node('h3','group-title',title));
   const grp=node('div','field-group');
   for(const f of fields){
-   const current=f.path==='yardage.alternateWof'?(get(source,f.path)??project.options.usableWof):get(source,f.path);grp.appendChild(inputField(f,current,v=>{if(onChange)onChange(f,v);else set(project,f.path,v);}));
+   const current=f.path==='yardage.alternateWof'?(get(source,f.path)??project.options.usableWof):f.path==='yardage.allowRotate'?(get(source,f.path)??project.options.allowRotate):get(source,f.path);grp.appendChild(inputField(f,current,v=>{if(onChange)onChange(f,v);else set(project,f.path,v);}));
   }frag.appendChild(grp);return frag;
  }
  function renderFabricEditor():void{
@@ -478,9 +478,10 @@ if(root){
     const y=p.yardage;
     const comparison=compareYardageWidths({
       pieceWidthIn:y.pieceWidth,pieceHeightIn:y.pieceHeight,count:y.count,
-      wofIn:o.usableWof,allowRotate:o.allowRotate,...buyArgs
+      wofIn:o.usableWof,allowRotate:y.allowRotate??o.allowRotate,oneWayPrint:y.oneWayPrint??false,...buyArgs
     },y.alternateWof??o.usableWof);
     const r=comparison.current,alternative=comparison.alternate;
+    if(y.oneWayPrint && (y.allowRotate??o.allowRotate))warning(resultRoot,'One-way print is selected: 90° rotation is disabled on both fabric widths to preserve print direction.');
     if(!r.purchase){warning(resultRoot,r.layout.error||'FIT_IMPOSSIBLE',true);}
     else{purchasesTitle(resultRoot,r.purchase,'RECTANGLE FABRIC');stats(resultRoot,[['Across fabric',String(r.across)],['Rows',String(r.rows)],['Pieces',String(y.count)]]);}
     const panel=node('section','width-comparison');panel.dataset.widthComparison='';
