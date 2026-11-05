@@ -42,9 +42,10 @@ export function attachCutWalkthrough(wrapper:HTMLElement,svg:SVGSVGElement):void
 
  // Zoom is display-only. Width scales the identical viewBox within a
  // horizontally scrollable viewport; exact SVG coordinates remain immutable.
- const stage=svg.parentElement;
- if(!(stage instanceof HTMLElement)||!stage.classList.contains('cut-diagram-stage'))
+ const stageNode=svg.parentElement;
+ if(!(stageNode instanceof HTMLElement)||!stageNode.classList.contains('cut-diagram-stage'))
   throw Error('Cut walkthrough requires a dedicated SVG scroll viewport.');
+ const stage:HTMLElement=stageNode;
  const zoom=document.createElement('div');
  zoom.className='cut-zoom-controls';
  zoom.dataset.cutZoomControls='';
