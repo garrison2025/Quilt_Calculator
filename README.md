@@ -61,6 +61,12 @@ Bias binding, diagonal backing, mitered border corners, rag quilt, square-in-a-s
 
 The fabric roll SVG is a schematic with actual rectangle coordinates, not an actual-size print pattern. Nonoverlapping feasible cuts are demonstrated; global minimum waste is not guaranteed.
 
+## Outstanding physical and bias-method validation (not part of approved preview)
+
+- [Real fabric cutting sign-off worksheet](docs/qa/REAL_FABRIC_CUTTING_SIGNOFF.md) — records actual postwash WOF, seam take-up, material/SKU identity, cut coordinates and yardage; all real cutting measurements are **MANUAL_NOT_RUN**.
+- [Original physical print worksheet](docs/qa/PRINT_SCALE_PHYSICAL_SIGNOFF.md) — print the QA calibration page at 100% and physically measure 1 inch, 100 mm and 6 inches; remains **MANUAL_NOT_RUN**.
+- [Bias binding method validation gate](docs/qa/BIAS_BINDING_VALIDATION_PLAN_20261105.md) — independent references and mandatory proof before implementing purchase-ready 45-degree continuous bias; all bias keywords remain **HOLD-BIAS**. A square-root area estimate must not be mistaken for a feasible layout.
+
 ## Sources and checks
 
 - docs/data/V2_Keyword_Appendix_218.csv — all 218 source-grounded V2 keyword candidates and route decisions.
