@@ -1124,7 +1124,7 @@ try{
   for(const width of [360,390,768,1024,1440]){
     await small.setViewportSize({width,height:812});
     for(const path of ['/','/quilt-backing-calculator/','/quilt-fabric-calculator/','/fabric-yards-to-inches/']){
-      await hydrated(small,path);
+      await hydrated(small,path,{incomplete:path==='/'||path==='/calculators/'});
       const overflow=await small.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
       check(overflow<=2,'Horizontal overflow '+overflow+'px at '+width+'px: '+path);
       if(path==='/quilt-backing-calculator/')await small.screenshot({path:'artifacts/qa/backing-'+width+'px.png',fullPage:true,animations:'disabled'});
@@ -1137,7 +1137,7 @@ try{
   await small.setViewportSize({width:320,height:720});
   for(const path of ['/','/calculators/','/quilt-backing-calculator/',
     '/quilt-fabric-calculator/','/fabric-yards-to-inches/']){
-    await hydrated(small,path);
+    await hydrated(small,path,{incomplete:path==='/'||path==='/calculators/'});
     const overflow=await small.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
     check(overflow<=2,'WCAG 1.4.10 reflow overflow at 320 CSS px: '+path+' ('+overflow+'px)');
     check(await small.locator('[data-action="recalculate"]').isVisible(),
@@ -1150,7 +1150,7 @@ try{
   await small.getByRole('button',{name:'Update cutting plan'}).click();
   check(await small.locator('#results').evaluate(el=>el===document.activeElement),
     'On narrow mobile, successful manual recalculation should focus the results landmark.');
-  await hydrated(small,'/');
+  await hydrated(small,'/',{incomplete:true});
   await small.locator('.mobile-tools summary').click();
   check(await small.locator('nav[aria-label="Mobile calculators"] a').count()===9,'Mobile tool navigation missing links.');
   const missing=await small.goto(ROOT+'/this-route-definitely-does-not-exist/',{waitUntil:'domcontentloaded'});
