@@ -271,3 +271,22 @@
   .result-status.status-error{color:#ffb9aa}
   .related-card>span:not(.related-ornament){color:#c4dcc8}
 }
+
+/* Printing from the browser menu (Ctrl+P) must obey the same cut-ready gate
+ * as the disabled Print button. Incomplete and stale plans cannot accidentally
+ * print historic SVGs, shopping amounts, or cut coordinates. CSS, not
+ * beforeprint JS alone, owns this protection in print previews and PDF output.
+ */
+@media print{
+ [data-tool][data-print-ready="false"] .result-card [data-results]{display:none!important}
+ [data-tool][data-print-ready="false"] .result-card:before{
+  content:"NOT A CUT-READY PLAN — printing of cutting dimensions is blocked. Correct or complete every material and commit any pending measurement changes in the calculator first.";
+  display:block!important;max-width:44rem;padding:20px;
+  border:2px solid #8c302a;border-radius:7px;color:#741b16;background:#fff;
+  font:700 17px/1.55 system-ui,sans-serif;letter-spacing:0;
+ }
+ [data-tool][data-print-ready="false"] .result-card:after{
+  content:"No cutting diagrams or shopping quantities are included because the current project is incomplete, infeasible, or not recalculated.";
+  display:block;margin-top:16px;font:13px/1.5 system-ui,sans-serif;color:#333;
+ }
+}

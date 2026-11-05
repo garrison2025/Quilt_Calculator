@@ -256,6 +256,7 @@ if(root){
   return field.kind==='length'?toInches(n,project.units):n;
  }
  function markResultsStale(message:string):void{
+  root.dataset.printReady='false';
   cutExport=null;materialCuts=[];
   saveButton.disabled=true;
   exportButton.disabled=true;cutCsvButton.disabled=true;printButton.disabled=true;
@@ -435,6 +436,7 @@ if(root){
   parent.appendChild(item);
  }
  function update():void{
+  root.dataset.printReady='false';
   if(fieldsRoot.querySelector('[aria-invalid="true"],[data-pending-edit="true"]')){
    markResultsStale('Commit or correct every highlighted input before updating or exporting the cutting plan. The previously accepted project is still safe.');
    note('Correct invalid input before updating the plan.',true);
@@ -608,12 +610,13 @@ if(root){
    const readyPhysicalPlan=materialCuts.length>0 && !anyInfeasible && hasPhysicalCuts;
    printButton.disabled=tool!=='inches' && !readyPhysicalPlan;
    cutCsvButton.disabled=!readyPhysicalPlan;
+   root.dataset.printReady=printButton.disabled?'false':'true';
    if(anyInfeasible)warning(resultRoot,'PRINT BLOCKED: at least one current material roll cannot fit its required cut. The JSON calculation export remains available for diagnosis, but this is not a complete cut-ready plan.',true);
    else if(tool!=='inches' && !hasPhysicalCuts)warning(resultRoot,'There are no physical cut pieces in this plan. Print and cut-list CSV are disabled until a material has real cuts.');
    resultRoot.prepend(node('p','calculation-context','Current project · '+num(w)+' × '+num(h)+' in quilt · '+(project.units==='cm'?'cm display':'in display')+' · source hash '+record.sourceProjectHash));
    resultRoot.appendChild(node('p','footer-note','Cut lengths and coordinates are calculated in inches. Purchase rounding applied once. Source project hash '+record.sourceProjectHash+'. Export JSON to review complete values. Print is a schematic, not an actual-size template.'));
    note((materialCuts.some(x=>!x.layout.isCutFeasible)?'⚠ Incomplete material plan · review impossible rolls · ':'✓ Updated from the current project · ')+new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}),materialCuts.some(x=>!x.layout.isCutFeasible));
-  }catch(err){cutExport=null;materialCuts=[];exportButton.disabled=true;cutCsvButton.disabled=true;printButton.disabled=true;warning(resultRoot,(err instanceof Error ? err.message : 'Unknown calculation error'),true);note('Cannot prove this cut is feasible. Review your measurements.',true);}
+  }catch(err){root.dataset.printReady='false';cutExport=null;materialCuts=[];exportButton.disabled=true;cutCsvButton.disabled=true;printButton.disabled=true;warning(resultRoot,(err instanceof Error ? err.message : 'Unknown calculation error'),true);note('Cannot prove this cut is feasible. Review your measurements.',true);}
  }
  unitsSelect.addEventListener('change',()=>{if(!requireCommittedDraft('change units')){unitsSelect.value=project.units;return;}project.units=unitsSelect.value==='cm'?'cm':'in';persist();renderEditor();update();});
  root.querySelector('[data-action="recalculate"]')?.addEventListener('click',()=>{

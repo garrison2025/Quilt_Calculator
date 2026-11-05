@@ -222,6 +222,11 @@ try{
       check((await page.locator('[data-results] .result-big').innerText()).includes('24'),'Pasted two-thirds must convert to 24 inches.');
       check(await page.locator('[data-action="export-cut"]').isEnabled(),'Corrected converter must re-enable valid export.');
       console.log('PASS strict US numeric syntax, inline errors, recovery and exact yard conversions.');
+      await page.emulateMedia({media:'print'});
+      check(await page.locator('[data-tool]').getAttribute('data-print-ready')==='true',
+        'Pure yards conversion may still print its valid length chart without physical cuts.');
+      await page.emulateMedia({media:'screen'});
+
     }
     if(path!=='/fabric-yards-to-inches/'){
       check(await page.locator('[data-results] svg[role="img"]').count()>0,'Missing schematic SVG: '+path);
@@ -237,6 +242,14 @@ try{
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
     check(overflow<=2,'Desktop horizontal overflow '+overflow+'px: '+path);
     if(path==='/calculators/'){
+      // Browser print shortcuts are not blocked by a disabled page button.
+      // Print CSS must hide unfinished plans even when a user presses Ctrl+P.
+      await page.emulateMedia({media:'print'});
+      check(await page.locator('[data-tool]').getAttribute('data-print-ready')==='true',
+        'Fully calculated example should remain printable.');
+      check(await page.locator('[data-results]').evaluate(el=>getComputedStyle(el).display)!=='none',
+        'Verified physical cuts should remain visible in a valid printout.');
+      await page.emulateMedia({media:'screen'});
       const rows=page.locator('.shopping-item');
       check(await rows.count()>=5,'Project shopping list must include separately purchasable materials.');
       const allMaterials=page.locator('details.sku-plan');
@@ -400,6 +413,16 @@ try{
     'Incomplete material plans must block a purchase-ready physical cut CSV.');
   check(await batPage.locator('[data-action="export-cut"]').isEnabled(),
     'Keep detailed JSON diagnostics available even when the cut list is impossible.');
+  await batPage.emulateMedia({media:'print'});
+  check(await batPage.locator('[data-tool]').getAttribute('data-print-ready')==='false',
+    'Impossible project must set its print-safety state to false.');
+  check(await batPage.locator('[data-results]').evaluate(el=>getComputedStyle(el).display)==='none',
+    'Ctrl+P must not reveal cutting coordinates or shopping quantities for infeasible project.');
+  check((await batPage.locator('.result-card').evaluate(el=>getComputedStyle(el,'::before').content)).includes('NOT A CUT-READY PLAN'),
+    'Print-only safety message must replace the misleading purchase plan heading.');
+  await batPage.pdf({path:'artifacts/qa/infeasible-browser-print-blocked.pdf',printBackground:true,format:'A4'});
+  await batPage.emulateMedia({media:'screen'});
+
   const partialPromise=batPage.waitForEvent('download');
   await batPage.getByRole('button',{name:'Download INCOMPLETE shopping CSV'}).click();
   const partialFile=await partialPromise;
@@ -413,6 +436,8 @@ try{
   check((await battingRow.innerText()).includes('3 yd'),'Rotated 58-in-wide × 108-in-long batting must fit for 3 yd.');
   check(await batPage.locator('[data-action="print"]').isEnabled(),
     'A fully feasible cross-tool plan should restore print.');
+  check(await batPage.locator('[data-tool]').getAttribute('data-print-ready')==='true',
+    'Corrected fabric-fit project must remove print blocking state.');
   check(await batPage.locator('[data-action="export-cut-csv"]').isEnabled(),
     'A fully feasible cross-tool plan should restore current-roll cut CSV.');
   const hubCutPromise=batPage.waitForEvent('download');
@@ -777,6 +802,13 @@ try{
   check((await draftWidth.inputValue())==='not-a-measurement','Reset must not erase a rejected visible draft.');
   check(await resetPage.evaluate(()=>localStorage.getItem('quilt-studio-v2'))===beforeGuard,
    'Blocked reset must not mutate the stored project.');
+  await resetPage.emulateMedia({media:'print'});
+  check(await resetPage.locator('[data-tool]').getAttribute('data-print-ready')==='false',
+    'Uncommitted invalid input must block browser-level print.');
+  check(await resetPage.locator('[data-results]').evaluate(el=>getComputedStyle(el).display)==='none',
+    'Ctrl+P must hide stale cutting figures while a draft is invalid.');
+  await resetPage.emulateMedia({media:'screen'});
+
   await resetPage.locator('[data-action="import"]').click();
   check((await draftWidth.inputValue())==='not-a-measurement','Import must not erase a rejected draft.');
   await draftWidth.fill('90');
