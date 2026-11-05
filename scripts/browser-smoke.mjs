@@ -1781,6 +1781,33 @@ try{
   const missing=await small.goto(ROOT+'/this-route-definitely-does-not-exist/',{waitUntil:'domcontentloaded'});
   assert.equal(missing.status(),404,'Unknown routes must return HTTP 404.');
   check(await small.locator('h1').innerText()==='Lost a stitch?','Custom 404 page is missing.');
+  // Visual quality gate for the editorial quilt-ateliers UI. This verifies
+  // actual CSS was shipped, not just class names or a source-only screenshot.
+  const visualCtx=await browser.newContext({viewport:{width:1440,height:900},reducedMotion:'no-preference'});
+  instrumentNetwork(visualCtx,'ui-atelier-desktop');
+  const visual=await visualCtx.newPage();
+  visual.on('pageerror',err=>problems.push('UI v3 page error: '+err.message));
+  await hydrated(visual,'/',{incomplete:true});
+  check(await visual.locator('body.quilt-ui-v3').count()===1,'Atelier UI design layer was not included in homepage HTML.');
+  check(await visual.locator('.page-intro--home .hero-main-cta[href="#calculator-workspace"]').count()===1,
+    'Hero main CTA must scroll to the real interactive calculator workspace.');
+  check(await visual.locator('.task-card').count()===9,'All nine task-first entry cards must stay visible.');
+  const heroStyles=await visual.locator('.page-intro--home').evaluate(el=>({
+    background:getComputedStyle(el).backgroundImage,
+    radius:getComputedStyle(el).borderTopLeftRadius
+  }));
+  check(heroStyles.background.includes('linear-gradient')&&parseFloat(heroStyles.radius)>=15,
+    'Atelier hero gradient and card treatment missing in rendered CSS: '+JSON.stringify(heroStyles));
+  const threadAnimation=await visual.locator('.hero-thread path').evaluate(el=>getComputedStyle(el).animationName);
+  check(threadAnimation.includes('quilt-atelier-thread'),'Hero stitch-thread animation missing with regular motion preference.');
+  await visual.screenshot({path:'artifacts/qa/quilt-ui-v3-home-desktop.png',fullPage:true,animations:'disabled'});
+  await hydrated(visual,'/quilt-backing-calculator/');
+  check(await visual.locator('.workspace-steps>span').count()===3,'Three readable plan-workflow steps missing.');
+  check(await visual.locator('.page-intro--tool .hero-main-cta').count()===1,'Tool-page calculator CTA missing.');
+  await visual.screenshot({path:'artifacts/qa/quilt-ui-v3-backing-desktop.png',fullPage:true,animations:'disabled'});
+  await visualCtx.close();
+  console.log('PASS UI v3 home + tool hierarchy, active stitch animation, nine task links and desktop screenshot evidence.');
+
   const dark=await browser.newContext({viewport:{width:1280,height:800},colorScheme:'dark'});
   instrumentNetwork(dark,'dark');
   const darkPage=await dark.newPage();
@@ -1814,6 +1841,10 @@ try{
   await hydrated(reducedPage,'/quilt-backing-calculator/');
   const motion=await reducedPage.locator('[data-results] .result-hero').evaluate(el=>getComputedStyle(el).animationName);
   check(motion==='none','Reduced motion preference must disable result animation.');
+  const heroReduced=await reducedPage.locator('.hero-thread path').evaluate(el=>getComputedStyle(el).animationName);
+  check(heroReduced==='none','Reduced motion preference must disable decorative stitch animation.');
+  const headingReduced=await reducedPage.locator('.page-intro .page-heading').evaluate(el=>getComputedStyle(el).animationName);
+  check(headingReduced==='none','Reduced motion preference must keep hero heading still.');
   console.log('PASS reduced-motion accessibility preference.');
   await reduced.close();
   await fs.writeFile('artifacts/qa/axe-wcag2a-aa-audit.json',JSON.stringify(wcagReport,null,2));
