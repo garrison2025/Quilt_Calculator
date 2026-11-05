@@ -185,8 +185,8 @@ try{
   page.on('pageerror',err=>problems.push('JS exception: '+err.message));
   for(const path of routes){
     await page.evaluate(()=>localStorage.removeItem('quilt-studio-v2')).catch(()=>{});
-    await hydrated(page,path,{incomplete:path==='/calculators/'});
-    if(path==='/calculators/'){
+    await hydrated(page,path,{incomplete:path==='/'||path==='/calculators/'});
+    if(path==='/'||path==='/calculators/'){
       const review=page.getByLabel('I reviewed every quilt-top color, cut size and piece quantity.');
       check(!(await review.isChecked()),'Sample quilt-top cutting list must never be auto-verified.');
       check(!(await page.locator('[data-action="export-cut-csv"]').isEnabled()) &&
@@ -1106,7 +1106,7 @@ try{
   const small=await mobile.newPage();
   small.on('pageerror',err=>problems.push('Mobile JS exception: '+err.message));
   for(const path of ['/','/calculators/','/quilt-backing-calculator/','/quilt-fabric-calculator/','/fabric-yards-to-inches/']){
-    await hydrated(small,path,{incomplete:path==='/calculators/'});
+    await hydrated(small,path,{incomplete:path==='/'||path==='/calculators/'});
     if(path==='/quilt-backing-calculator/'||path==='/quilt-fabric-calculator/')
       await auditWcag(small,path+' [mobile 375px]');
     const overflow=await small.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
