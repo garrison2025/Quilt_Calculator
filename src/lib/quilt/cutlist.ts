@@ -2,6 +2,16 @@ import { verifyLayout, type Layout } from './math';
 
 /** A physical cut list never merges independent rolls or claims an infeasible cut. */
 export type MaterialCutPlan = { material:string; sku:string; layout:Layout };
+/** Namespace editable material IDs without changing project JSON or the
+ * displayed user SKU. Never combine a user 'backing' fabric with the actual
+ * backing roll (or a user border SKU with another fabric category).
+ * encodeURIComponent is injective for valid Unicode strings, so even colons
+ * and slashes in user IDs cannot create cross-category roll collisions.
+ */
+export function physicalRollId(category:'fabric'|'border',userSku:string):string{
+ if(typeof userSku!=='string'||!userSku.trim())throw Error('Physical roll requires a nonempty user SKU.');
+ return category+':'+encodeURIComponent(userSku);
+}
 export type CsvCell = string | number | undefined;
 export const CUT_LIST_HEADERS=[
  'Material','Fabric SKU / roll','Piece number on this roll','Piece label',
@@ -20,7 +30,11 @@ export function csvDocument(rows:readonly (readonly CsvCell[])[]):string{
 }
 export function cutListRows(plans:readonly MaterialCutPlan[]):CsvCell[][]{
  const rows:CsvCell[][]=[];
+ const seen=new Set<string>();
  for(const plan of plans){
+  if(!plan.sku || seen.has(plan.sku))
+   throw Error('Duplicate or empty physical roll ID: '+plan.sku+'. Separate fabric, border and built-in roll IDs are required.');
+  seen.add(plan.sku);
   if(!plan.layout.isCutFeasible)throw Error('Cut-list export blocked: '+plan.material+' ('+plan.sku+') has no feasible cut layout.');
   if(!verifyLayout(plan.layout))throw Error('Cut-list export blocked: '+plan.material+' ('+plan.sku+') failed geometry verification.');
   plan.layout.cutPieces.forEach((piece,index)=>{

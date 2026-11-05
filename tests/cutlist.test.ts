@@ -1,10 +1,35 @@
 import { describe, it, expect } from 'vitest';
-import { cutListCsv, cutListRows, csvDocument } from '../src/lib/quilt/cutlist';
+import { cutListCsv, cutListRows, csvDocument, physicalRollId } from '../src/lib/quilt/cutlist';
 import { layoutRectangles, impossible } from '../src/lib/quilt/math';
 
 describe('Cut-list CSV covers every physical piece with safe data boundaries',()=>{
  const a=layoutRectangles(43,[{widthIn:5,heightIn:10,count:3,label:'Blue'}]);
  const b=layoutRectangles(42,[{widthIn:4,heightIn:8,count:2,label:'Red',allowRotate:true}]);
+ it('namespaces user fabric and border IDs so reserved rolls and even delimiters cannot collide',()=>{
+  const ids=[
+   'backing','binding','batting',physicalRollId('fabric','backing'),
+   physicalRollId('border','batting'),
+   physicalRollId('fabric','border:batting'),
+   physicalRollId('border','fabric:backing'),
+   physicalRollId('fabric','x/y'),physicalRollId('fabric','x%2Fy'),
+   physicalRollId('border','x/y')
+  ];
+  expect(new Set(ids).size).toBe(ids.length);
+  expect(physicalRollId('fabric','backing')).toBe('fabric:backing');
+  expect(physicalRollId('border','batting')).toBe('border:batting');
+  expect(physicalRollId('fabric','x/y')).toBe('fabric:x%2Fy');
+  expect(()=>physicalRollId('fabric','  ')).toThrow(/nonempty/);
+ });
+ it('rejects duplicate IDs for two separate physical rolls instead of merging their cut rows',()=>{
+  const plans=[
+   {material:'Actual backing',sku:'backing',layout:a},
+   {material:'Color named backing',sku:'backing',layout:b}
+  ];
+  expect(()=>cutListRows(plans)).toThrow(/Duplicate or empty physical roll ID/);
+  const distinct=plans.map((p,i)=>i?{...p,sku:physicalRollId('fabric','backing')}:p);
+  expect(cutListRows(distinct)).toHaveLength(5);
+  expect(new Set(cutListRows(distinct).map(x=>x[1])).size).toBe(2);
+ });
  it('separates SKU rolls and preserves coordinates and grain degrees',()=>{
   const rows=cutListRows([{material:'Blue fabric',sku:'blue',layout:a},{material:'Red fabric',sku:'red',layout:b}]);
   expect(rows).toHaveLength(5);

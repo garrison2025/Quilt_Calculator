@@ -1,6 +1,6 @@
 import { VERSION, calculateBacking, calculateStraightBinding, calculateYardage, compareYardageWidths, calculateQuiltFabric, calculateBatting, calculateBorders, calculateSashing, layoutRectangles, verifyLayout, parseMeasure, fromInches, toInches, yardsToInches, purchase, hashProject, type Layout, type PieceRequest } from '../lib/quilt/math';
 import { sampleProject, validateProject, quiltTopReviewFingerprint, hasCurrentQuiltTopReview, type Project } from '../lib/quilt/project';
-import { cutListCsv, type MaterialCutPlan } from '../lib/quilt/cutlist';
+import { cutListCsv, physicalRollId, type MaterialCutPlan } from '../lib/quilt/cutlist';
 import { shoppingCsv, shoppingPriceSummary, hasIncompleteShopping, shoppingLineStatus, needsTopFabricPlan, type ShoppingLine } from '../lib/quilt/shopping';
 import type { ToolId } from './types';
 type Kind = 'length' | 'whole' | 'number' | 'pct' | 'check' | 'text';
@@ -789,8 +789,8 @@ if(root){
     })));
     if(b.layers.some(x=>!x.purchase))warning(resultRoot,'At least one layer is FIT_IMPOSSIBLE at its specified WOF. No yardage is offered for that layer.',true);
     section(resultRoot,'Cutting diagrams by border layer','Open each layer to inspect its physical coordinates');
-    b.layers.forEach((x,i)=>materialPlan(resultRoot,x.sku,x.label,x.layout,i,x.purchase?.roundedPurchaseYards));
-    materialCuts=b.layers.map(x=>({material:x.label,sku:x.sku,layout:x.layout}));
+    b.layers.forEach((x,i)=>materialPlan(resultRoot,x.sku,x.label,x.layout,i,x.purchase?.roundedPurchaseYards,physicalRollId('border',x.sku)));
+    materialCuts=b.layers.map(x=>({material:x.label,sku:physicalRollId('border',x.sku),layout:x.layout}));
     plan=b;
     warning(resultRoot,'Continuous, lengthwise-grain butted strips only. Do not use this result for mitered or separately pieced borders.');
    }else if(tool==='fabric'){
@@ -805,8 +805,8 @@ if(root){
      shopping(resultRoot,f.map(x=>topFabricShoppingLine(x,p.fabrics.find(sku=>sku.id===x.fabricSku)?.pricePerYard)));
      if(f.some(x=>!x.purchase))warning(resultRoot,'One or more fabric SKUs contain a piece that cannot fit in the specified WOF.',true);
      section(resultRoot,'Cutting diagrams by fabric SKU','Each roll has independent coordinates and yardage');
-     f.forEach((x,i)=>materialPlan(resultRoot,x.fabricSku,x.label,x.layout,i,x.purchase?.roundedPurchaseYards));
-     materialCuts=f.map(x=>({material:x.label,sku:x.fabricSku,layout:x.layout}));
+     f.forEach((x,i)=>materialPlan(resultRoot,x.fabricSku,x.label,x.layout,i,x.purchase?.roundedPurchaseYards,physicalRollId('fabric',x.fabricSku)));
+     materialCuts=f.map(x=>({material:x.label,sku:physicalRollId('fabric',x.fabricSku),layout:x.layout}));
      plan=f;
     }
    }else if(tool==='hub'){
@@ -841,14 +841,14 @@ if(root){
     materialPlan(resultRoot,'backing','Backing · '+backing.recommended.direction+' seams',backing.recommended.layout,0,backing.recommended.purchase.roundedPurchaseYards);
     materialPlan(resultRoot,'binding','Straight-grain binding',binding.layout,1,binding.purchase.roundedPurchaseYards);
     materialPlan(resultRoot,'batting','One-piece batting',batting.layout,2,batting.purchase?.roundedPurchaseYards);
-    border.layers.forEach((item,i)=>materialPlan(resultRoot,'border-'+item.sku,item.label+' · border',item.layout,3+i,item.purchase?.roundedPurchaseYards,item.sku));
-    fabric.forEach((item,i)=>materialPlan(resultRoot,'fabric-'+item.fabricSku,item.label+' · '+item.fabricSku,item.layout,3+border.layers.length+i,item.purchase?.roundedPurchaseYards,item.fabricSku));
+    border.layers.forEach((item,i)=>materialPlan(resultRoot,'border-'+item.sku,item.label+' · border',item.layout,3+i,item.purchase?.roundedPurchaseYards,physicalRollId('border',item.sku)));
+    fabric.forEach((item,i)=>materialPlan(resultRoot,'fabric-'+item.fabricSku,item.label+' · '+item.fabricSku,item.layout,3+border.layers.length+i,item.purchase?.roundedPurchaseYards,physicalRollId('fabric',item.fabricSku)));
     materialCuts=[
      {material:'Backing · '+backing.recommended.direction+' seams',sku:'backing',layout:backing.recommended.layout},
      {material:'Straight-grain binding',sku:'binding',layout:binding.layout},
      {material:'One-piece batting',sku:'batting',layout:batting.layout},
-     ...border.layers.map(x=>({material:x.label+' · border',sku:x.sku,layout:x.layout})),
-     ...fabric.map(x=>({material:x.label,sku:x.fabricSku,layout:x.layout}))
+     ...border.layers.map(x=>({material:x.label+' · border',sku:physicalRollId('border',x.sku),layout:x.layout})),
+     ...fabric.map(x=>({material:x.label,sku:physicalRollId('fabric',x.fabricSku),layout:x.layout}))
     ];
     plan={backing,binding,batting,border,fabric};
     warning(resultRoot,'Fabric and border sample colors are part of the example project until you edit them. Purchase totals are separate by material; different rolls are never silently merged.');

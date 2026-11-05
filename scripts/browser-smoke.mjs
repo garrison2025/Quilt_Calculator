@@ -302,7 +302,7 @@ try{
       const cutCsv=await fs.readFile(await cutFile.path(),'utf8');
       check(cutCsv.charCodeAt(0)===0xFEFF,'Cut CSV must include UTF-8 BOM.');
       check(cutCsv.includes('Roll X (in)')&&cutCsv.includes('Grain rotation (degrees)'),'Cut CSV must include exact coordinates and grain orientation.');
-      for(const material of ['backing','binding','batting','border-indigo','sky-blue','sand']){
+      for(const material of ['backing','binding','batting','border:indigo','fabric:sky-blue','fabric:sand']){
         check(cutCsv.includes('"'+material+'"'),'Cut CSV missing fabric roll / SKU: '+material);
       }
       check(cutCsv.split('\r\n').filter(Boolean).length===36,'Sample project should yield 35 exact cut pieces plus one header row.');
@@ -1438,6 +1438,8 @@ try{
   await keyboard.locator('[data-action="export-cut-csv"]').click();
   const stressCsv=csvRecords(await fs.readFile(await (await stressDownload).path(),'utf8'));
   check(stressCsv.length===2001,'All 2,000 cuts plus the header must be present in the CSV.');
+  check(stressCsv.slice(1).every(row=>row[1].startsWith('fabric:')),
+    'All editable fabric SKU roll identifiers must be namespaced for physical export.');
   check(new Set(stressCsv.slice(1).map(row=>row[1])).size===30,
     'Upper-capacity CSV must keep all 30 separate fabric SKU roll identifiers.');
   await keyboard.setViewportSize({width:375,height:820});
@@ -1470,7 +1472,7 @@ try{
   const denseDownload=keyboard.waitForEvent('download');
   await keyboard.locator('[data-action="export-cut-csv"]').click();
   const denseCsv=csvRecords(await fs.readFile(await (await denseDownload).path(),'utf8'));
-  check(denseCsv.length===2001 && denseCsv.slice(1).every(row=>row[1]==='single-dense'),
+  check(denseCsv.length===2001 && denseCsv.slice(1).every(row=>row[1]==='fabric:single-dense'),
    'Single dense roll must still export all 2,000 actual cuts under the one correct roll ID.');
   await keyboardCtx.close();
   console.log('PASS 30-SKU 2,000-cut and one-dense-SKU 2,000-cut browser exports, truthful SVG limits and live editor labels; no hardware speed SLA.');

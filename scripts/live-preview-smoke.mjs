@@ -94,7 +94,7 @@ try{
  assertThat(await page.locator('[data-action="export-cut-csv"]').isEnabled(),'Review did not enable public cutting CSV.');
  assertThat(await page.locator('[data-action="print"]').isEnabled(),'Review did not enable public cut print.');
  const fullCsv=await downloadText(page,'[data-action="export-cut-csv"]');
- assertThat(fullCsv.content.includes('"sky-blue"')&&fullCsv.content.includes('"sand"') &&
+ assertThat(fullCsv.content.includes('"fabric:sky-blue"')&&fullCsv.content.includes('"fabric:sand"') &&
   fullCsv.content.includes('"batting"'),'Public verified CSV excludes actual sample material rolls.');
  assert.equal(fullCsv.content.split('\r\n').filter(Boolean).length,36,
   'Physical public cut CSV should have 35 sample cuts + header.');
