@@ -1,6 +1,6 @@
 # Quilt Studio — verified release status
 
-Updated: 2026-11-05 (engineering CI 41953819230; public deployment CI 41953819293; real-paper manual validation still NOT_RUN).
+Updated: 2026-11-05 (source/browser CI 41955969336; actual Cloudflare preview CI 41955969436; physical paper/ruler work remains NOT_RUN).
 
 ## Verified in the repository
 
@@ -179,3 +179,9 @@ Only **straight binding, butted borders, one-piece batting and explicitly feasib
 - [Local quality CI 41953819230](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41953819230): 178/178 Vitest tests, approved SEO routes, intentionally noindex QA route, Chromium print emulation of all three CSS physical gauges and generated QA PDF, plus all existing calculator/mobile/print regression.
 - [Real Cloudflare Pages CI 41953819293](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41953819293): verifies exact commit `f2b89050` and the actual public calibration page's presence, SEO restrictions and all three CSS dimensional references. Cloudflare Pages deployment check also succeeded.
 - Original G2 print gate remains **MANUAL_NOT_RUN** until a person prints at Actual Size (100%), measures with a physical ruler and records all four values. This change makes the independent physical test easier to perform; it does not satisfy it.
+
+## Safe asynchronous JSON import under concurrent edits (2026-11-05)
+- Fixed a project data-loss race: `File.text()` is asynchronous. The prior V2 import path checked for unfinished drafts after the await but not whether the user had **accepted and saved new measurements** while that JSON file was being read. A successfully parsed but stale file could silently replace newer work. It also lacked a full shared-storage recheck after the read.
+- The import handler now captures the **exact starting project JSON** and the **starting saved-storage snapshot**. After file parsing and validation it rechecks: (1) unfinished form changes, (2) the in-memory project, (3) this tab's saved-storage marker, and (4) the actual latest cross-tab localStorage value where readable. On a mismatch, the import is explicitly **canceled without applying the stale JSON**; a cross-tab storage conflict is visibly announced. Browser-storage-blocked sessions keep in-memory safety without requiring localStorage.
+- Added an actual Chromium regression which deliberately suspends `File.prototype.text()`, commits a new edited width and then completes the old read; checks that both UI and localStorage still contain the new width. It also confirms a non-overlapping delayed import **works** and that a newer other-tab autosave is not overwritten by a delayed import. Screenshot evidence: `artifacts/qa/delayed-json-import-conflict.png`.
+- [Local CI 41955969336](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41955969336): **178/178** unit/property tests and all browser interaction/print/mobile/P21 checks passed. [Public Cloudflare CI 41955969436](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41955969436) confirmed the exact deployed commit `8dfdd043` and public interaction regression, with Cloudflare Pages deployment check `success`. This is engineering evidence; it does not change the original 47-gate physical/manual release statuses.
