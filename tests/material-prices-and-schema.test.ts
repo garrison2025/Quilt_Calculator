@@ -50,10 +50,10 @@ describe('V2 project price inputs and published JSON Schema contract', () => {
     expect([backing.purchase.roundedPurchaseYards,batting.purchase?.roundedPurchaseYards,
       binding.purchase.roundedPurchaseYards]).toEqual([5.25,2.625,0.625]);
     const rows: ShoppingLine[] = [
-      {label:'Backing',amount:backing.purchase.roundedPurchaseYards,unitPrice:10},
-      {label:'Batting',amount:batting.purchase?.roundedPurchaseYards,unitPrice:8},
-      {label:'Straight binding',amount:binding.purchase.roundedPurchaseYards,unitPrice:6},
-      {label:'Unpriced border',amount:1.25}
+      {label:'Backing',hint:'Joined panels',amount:backing.purchase.roundedPurchaseYards,unitPrice:10},
+      {label:'Batting',hint:'Single piece',amount:batting.purchase?.roundedPurchaseYards,unitPrice:8},
+      {label:'Straight binding',hint:'Straight grain',amount:binding.purchase.roundedPurchaseYards,unitPrice:6},
+      {label:'Unpriced border',hint:'No user price',amount:1.25}
     ];
     const prices = shoppingPriceSummary(rows);
     expect(prices.enteredPriceSubtotalUsd).toBeCloseTo(77.25,8);
