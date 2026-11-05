@@ -1,0 +1,68 @@
+---
+import Base from '../../../layouts/Base.astro';
+---
+<Base noIndex title="Physical Print Scale Calibration Worksheet | Quilt Studio" description="Noindex verification worksheet for printing a one-inch square, 100-mm line and six-inch reference at actual size. Real physical ruler testing required.">
+<section class="page-shell qa-calibration" data-qa-calibration>
+ <div class="qa-calibration-intro">
+  <span class="eyebrow-with-line">— QA WORKSHEET / NOT AN SEO LANDING PAGE</span>
+  <h1>Print scale calibration</h1>
+  <p>Before cutting fabric from a printed plan, check your actual paper scaling. These marks use physical CSS units, but <strong>a screen preview or PDF cannot prove real printed paper dimensions.</strong></p>
+ </div>
+ <div class="qa-calibration-screen">
+  <strong>How to perform the real-world check</strong>
+  <ol>
+   <li>Use a physical printer, preferably A4 or US Letter paper, with no page enlargement.</li>
+   <li>Press Print, select <strong>100% / Actual size</strong>. Disable Fit to page, Shrink to fit, borderless auto enlargement, headers and footers.</li>
+   <li>Using a real ruler, measure the square outer edges and the distance between the centers of both end ticks on each horizontal line.</li>
+   <li>Record the printed lengths, printer model, paper size, print scaling, date and reviewer. Do not sign off without real ruler measurements.</li>
+   <li>If inaccurate, adjust print settings and repeat. A browser PDF or screenshot does not replace actual paper.</li>
+  </ol>
+  <p><strong>Suggested tolerances only:</strong> within ±0.5 mm for each one-inch-square axis and ±1 mm for each horizontal line. Different hardware can require stricter limits. No automatic physical PASS is recorded.</p>
+ </div>
+ <div class="qa-calibration-actions">
+  <button class="action-primary" type="button" data-qa-print>Print calibration worksheet</button>
+  <a class="header-cta" href="/quilt-backing-calculator/">Return to backing calculator</a>
+  <a class="header-cta" href="/calculators/">Return to project planner</a>
+ </div>
+ <article class="qa-calibration-paper" aria-label="Printable physical size reference sheet" data-qa-paper>
+  <h2>QUILT STUDIO · REAL PAPER SCALE CHECK</h2>
+  <p>TEST ONLY — physical printer, paper and ruler measurements required. Print at <strong>100% / Actual size</strong>. Disable Fit, Shrink and automatic enlargement. This is not a cutting template.</p>
+  <section class="qa-calibration-measure">
+   <h3>A · One-inch square (25.4 mm × 25.4 mm)</h3>
+   <div class="qa-gauge-1in" data-qa-inch-square role="img" aria-label="Physical one-inch by one-inch reference square. Both outer edges should measure 25.4 millimeters."></div>
+   <p>Measure BOTH outside edges; expected width and height <strong>25.4 mm</strong> each (1 inch).</p>
+  </section>
+  <section class="qa-calibration-measure">
+   <h3>B · 100-mm line</h3>
+   <div class="qa-gauge-100mm" data-qa-mm-line role="img" aria-label="Physical 100-millimeter line between two black end ticks."></div>
+   <p>Measure between end-tick centers; expected <strong>100 mm</strong> (10 cm).</p>
+  </section>
+  <section class="qa-calibration-measure">
+   <h3>C · Six-inch line</h3>
+   <div class="qa-gauge-6in" data-qa-six-inch role="img" aria-label="Physical six-inch line between two black end ticks."></div>
+   <p>Measure between end-tick centers; expected <strong>152.4 mm</strong> (6 inches).</p>
+  </section>
+  <section class="qa-calibration-record" aria-label="Handwritten physical measurement and printer evidence">
+   <strong>MANUAL MEASUREMENT RECORD — NOT AUTO-CERTIFIED</strong>
+   <div class="qa-report-columns">
+    <p>Printed 1″ width (mm): <span class="qa-record-line"></span></p>
+    <p>Printed 1″ height (mm): <span class="qa-record-line"></span></p>
+    <p>Printed 100-mm line (mm): <span class="qa-record-line"></span></p>
+    <p>Printed 6″ line (mm): <span class="qa-record-line"></span></p>
+    <p>Printer / driver: <span class="qa-record-line"></span></p>
+    <p>Paper / selected print scale: <span class="qa-record-line"></span></p>
+    <p>Date / reviewer: <span class="qa-record-line"></span></p>
+    <p>Result (PASS / FAIL / INCONCLUSIVE): <span class="qa-record-line"></span></p>
+   </div>
+   <p class="qa-calibration-note">Only print scale is being tested. It does NOT prove quilt sewing geometry, physical cutting suitability or an exact-size pattern. Cutting diagrams elsewhere remain schematic.</p>
+  </section>
+ </article>
+ <div class="qa-calibration-navigation qa-calibration-screen">
+  <strong>Release-checklist status</strong>
+  <p>Rendering this page and PDF is engineering evidence, not physical sign-off. The original V2 print gate remains <strong>MANUAL_NOT_RUN</strong> until a human measures and records the printed sheet.</p>
+ </div>
+</section>
+<script>
+ document.querySelector<HTMLButtonElement>('[data-qa-print]')?.addEventListener('click',()=>window.print());
+</script>
+</Base>

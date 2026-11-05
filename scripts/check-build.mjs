@@ -26,6 +26,14 @@ if(!squareLabHtml.includes('noindex,follow')||squareLabHtml.includes('rel="canon
  throw Error('Square trial must remain unindexed and clearly provisional.');
 if(fs.existsSync('dist/square-in-a-square-calculator/index.html'))throw Error('Premature public SQUARE keyword route.');
 if(!fs.existsSync('dist/privacy/index.html'))throw Error('Missing privacy page');
+const qaPath='dist/qa/print-calibration/index.html';
+if(!fs.existsSync(qaPath))throw Error('Missing manual physical print-calibration worksheet.');
+const qaHtml=fs.readFileSync(qaPath,'utf8');
+if(!qaHtml.includes('noindex,follow')||qaHtml.includes('rel="canonical"')||
+   qaHtml.includes('application/ld+json')||!qaHtml.includes('data-qa-inch-square')||
+   !qaHtml.includes('data-qa-mm-line')||!qaHtml.includes('data-qa-six-inch')||
+   !qaHtml.includes('MANUAL_NOT_RUN')||!qaHtml.includes('100% / Actual size'))
+ throw Error('Print calibration worksheet must remain noindex, physically dimensioned and unsigned.');
 const privacy=fs.readFileSync('dist/privacy/index.html','utf8');
 if(production && !privacy.includes('href="'+site+'/privacy/"'))throw Error('Privacy canonical must not point to undefined.');
 if(!fs.existsSync('dist/404.html'))throw Error('Missing Cloudflare Pages 404.html: unknown URLs would silently fall back to homepage.');
@@ -82,8 +90,8 @@ console.log('PASS: 218 source keyword records, 202 mapped to 9 unique tool inten
  * Asset hrefs are intentionally excluded; internal navigation URLs must be valid.
  */
 const seenTitles=new Set();
-const internalRoutes=new Set([...slugs.map(slug=>'/'+(slug?slug+'/':'')),'/privacy/']);
-for(const slug of [...slugs,'privacy']){
+const internalRoutes=new Set([...slugs.map(slug=>'/'+(slug?slug+'/':'')),'/privacy/','/qa/print-calibration/']);
+for(const slug of [...slugs,'privacy','qa/print-calibration']){
  const html=fs.readFileSync('dist/'+(slug?slug+'/':'')+'index.html','utf8');
  const title=html.match(/<title>([^<]+)<\/title>/)?.[1];
  if(!title||seenTitles.has(title))throw Error('Missing/duplicate page title: '+slug);
@@ -96,7 +104,7 @@ for(const slug of [...slugs,'privacy']){
   if(!internalRoutes.has(href))throw Error('Broken internal page link '+href+' from '+slug);
  }
 }
-console.log('PASS: 11 uniquely titled static pages, one H1 each, internal link destinations verified.');
+console.log('PASS: 12 uniquely titled static pages including noindex manual calibration worksheet, one H1 each, internal link destinations verified.');
 
 const primaryHeadings=new Map([
  ['calculators','Quilt calculator'],
