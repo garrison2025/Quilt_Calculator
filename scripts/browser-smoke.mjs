@@ -1874,6 +1874,11 @@ try{
   console.log('PASS narrow 320 CSS-pixel reflow proxy across all '+routes.length+' approved routes.');
   await small.setViewportSize({width:375,height:812});
   await hydrated(small,'/quilt-backing-calculator/');
+  const mobileHero=small.locator('.page-intro--tool');
+  check(await mobileHero.locator('.mini-feature').evaluate(el=>getComputedStyle(el).display)==='none',
+    'Phone calculator entry should not be pushed below decorative preview artwork.');
+  const entryTop=await small.locator('#calculator-workspace').evaluate(el=>el.getBoundingClientRect().top+scrollY);
+  check(entryTop<=900,'Phone tool inputs should start within roughly the first phone viewport, not after an oversized hero: '+entryTop);
   const phoneWalk=small.locator('[data-results] [data-cut-walkthrough]').first();
   check(await phoneWalk.count()===1&&await phoneWalk.getByRole('button',{name:'Next cut'}).isVisible(),
     'Mobile phones need visible, actionable cut-walkthrough controls.');

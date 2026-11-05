@@ -472,3 +472,18 @@
 .dimension-basis-label,.dimension-basis-help{color:#daf1df}
 .dimension-result-context{background:#2b4533;color:#d9f2df;border-color:#5e8468}
 }
+
+/* Mobile tool routes are task-first. Editorial imagery remains available in
+ * desktop/tablet views but must not push the primary calculator below the
+ * first phone viewport. No content or SEO page is removed. */
+@media screen and (max-width:760px){
+ .page-intro--tool{display:block;margin-bottom:12px}
+ .page-intro--tool .page-heading h1{font-size:clamp(31px,8.2vw,44px);line-height:1.12;letter-spacing:-.8px;margin:10px 0}
+ .page-intro--tool .page-heading>p{font-size:13px;line-height:1.5;margin:6px 0 10px}
+ .page-intro--tool .mini-feature{display:none}
+ .page-intro--tool .feature-pills{margin-top:11px;gap:6px}
+ .page-intro--tool .feature-pills span{font-size:10px;padding:5px 8px}
+ .page-intro--tool .hero-actions{margin-top:12px;gap:8px}
+ .page-intro--tool .hero-main-cta{min-height:44px}
+ .page-intro--tool+.calculator-wrap .workspace-steps{margin-bottom:11px}
+}
