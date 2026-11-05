@@ -58,6 +58,14 @@ try{
  assertThat(robotsText.includes('User-agent:')&&robotsText.includes('Allow: /'),'Preview robots file not readable.');
  const {response:sitemap}=await get('/sitemap.xml');
  assert.equal(sitemap.status,404,'No production sitemap should be emitted on preview.');
+ const {response:qa,html:qaHtml}=await get('/qa/print-calibration/');
+ assert.equal(qa.status,200,'Public preview must serve its physical print-calibration worksheet.');
+ assert.equal(stamp(qaHtml),sha,'Public physical QA worksheet must identify the exact Cloudflare commit.');
+ assertThat(qaHtml.includes('noindex,follow')&&!qaHtml.includes('rel="canonical"')&&!qaHtml.includes('application/ld+json'),
+  'Public manual worksheet must remain unindexed and cannot claim an approved SEO route.');
+ assertThat(qaHtml.includes('data-qa-inch-square')&&qaHtml.includes('data-qa-mm-line')&&
+    qaHtml.includes('data-qa-six-inch')&&qaHtml.includes('MANUAL_NOT_RUN'),
+  'Public physical worksheet must declare all three references and pending human verification.');
  const {response:lab,html:labHtml}=await get('/lab/square-in-square/');
  assert.equal(lab.status,200);
  assertThat(labHtml.includes('noindex,follow')&&!labHtml.includes('rel="canonical"'),'Lab must remain noindex with no canonical.');
@@ -119,5 +127,19 @@ try{
   'Exact matching V2 review fingerprint failed to restore public cut-plan status.');
  assert.equal(errors.length,0,'Public browser JS exceptions: '+errors.join('; '));
  console.log('PASS public import rejects stale reviewed JSON and accepts exact matching reviewed backup.');
+ await page.goto(BASE+'/qa/print-calibration/',{waitUntil:'domcontentloaded',timeout:20000});
+ await page.emulateMedia({media:'print'});
+ const measuredCss=await page.evaluate(()=>{
+  const a=document.querySelector('[data-qa-inch-square]').getBoundingClientRect();
+  const b=document.querySelector('[data-qa-mm-line]').getBoundingClientRect();
+  const c=document.querySelector('[data-qa-six-inch]').getBoundingClientRect();
+  return {squareX:a.width,squareY:a.height,mm:b.width,six:c.width};
+ });
+ assertThat(Math.abs(measuredCss.squareX-96)<.25&&Math.abs(measuredCss.squareY-96)<.25,
+  'Public physical print worksheet has incorrect 1-inch CSS square.');
+ assertThat(Math.abs(measuredCss.mm-100/25.4*96)<.35&&Math.abs(measuredCss.six-576)<.25,
+  'Public physical print worksheet 100mm or six-inch CSS reference has incorrect dimensions.');
+ await page.emulateMedia({media:'screen'});
+ console.log('PASS public noindex physical-scale QA sheet and nominal CSS reference lengths; real ruler MANUAL_NOT_RUN.');
  console.log('LIVE DEPLOYMENT SMOKE PASS — '+sha+' · '+BASE+' · 10 routes · SEO gates · actual Chromium interactions.');
 }finally{if(browser)await browser.close();}

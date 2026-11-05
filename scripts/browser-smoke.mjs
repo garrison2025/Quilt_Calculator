@@ -866,6 +866,32 @@ try{
   await page.pdf({path:'artifacts/qa/backing-print.pdf',printBackground:true,format:'A4'});
   await page.emulateMedia({media:'screen'});
   console.log('PASS print stylesheet and PDF rendering.');
+  // The dedicated print-check page has three distinct physical-unit references.
+  // CSS/PDF are only engineering checks; physical paper remains MANUAL_NOT_RUN.
+  const qaResponse=await page.goto(ROOT+'/qa/print-calibration/',{waitUntil:'domcontentloaded'});
+  check(qaResponse.status()===200,'QA print calibration page must respond HTTP 200.');
+  check(await page.locator('meta[name="robots"]').getAttribute('content')==='noindex,follow',
+   'Manual paper-test QA page must never be indexed.');
+  check(await page.locator('link[rel="canonical"]').count()===0,'QA page must not have SEO canonical.');
+  await page.emulateMedia({media:'print'});
+  const qaDimensions=await page.evaluate(()=>{
+   const square=document.querySelector('[data-qa-inch-square]').getBoundingClientRect();
+   const mm=document.querySelector('[data-qa-mm-line]').getBoundingClientRect();
+   const six=document.querySelector('[data-qa-six-inch]').getBoundingClientRect();
+   return {squareX:square.width,squareY:square.height,mmWidth:mm.width,sixWidth:six.width,
+    paperText:document.querySelector('[data-qa-paper]')?.textContent||''};
+  });
+  check(Math.abs(qaDimensions.squareX-96)<.25&&Math.abs(qaDimensions.squareY-96)<.25,
+   'Real-paper worksheet 1in square must render at CSS 1in × 1in: '+JSON.stringify(qaDimensions));
+  check(Math.abs(qaDimensions.mmWidth-100/25.4*96)<.35&&Math.abs(qaDimensions.sixWidth-576)<.25,
+   'Physical worksheet 100mm and 6in guides must use correct CSS physical units: '+JSON.stringify(qaDimensions));
+  check(qaDimensions.paperText.includes('25.4 mm')&&qaDimensions.paperText.includes('152.4 mm')&&
+    qaDimensions.paperText.includes('NOT AUTO-CERTIFIED'),
+   'Physical worksheet must state targets and visibly disallow automatic sign-off.');
+  await page.pdf({path:'artifacts/qa/physical-print-calibration-worksheet.pdf',format:'A4',printBackground:true});
+  await page.emulateMedia({media:'screen'});
+  check(await page.locator('[data-qa-print]').isVisible(),'Worksheet print action must be visible on screen.');
+  console.log('PASS independent noindex 1in / 100mm / 6in print worksheet and browser PDF; real ruler MANUAL_NOT_RUN.');
   await hydrated(page,'/calculators/',{incomplete:true});
   await page.getByLabel('I reviewed every quilt-top color, cut size and piece quantity.').check();
   check(await page.locator('details.sku-plan').count()===6,'Project print must contain all six material plans.');
