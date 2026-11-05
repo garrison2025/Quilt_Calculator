@@ -1687,6 +1687,19 @@ try{
    check(exportIds.has(sku),'Every system and user roll needs its distinct physical identity: '+sku);
   check(exportIds.size===6,
    'Six separate real material rolls must never collapse into one CSV SKU group.');
+  // Shopping and cutting CSV must share roll IDs even when human labels collide.
+  const shoppingDownload=idsPage.waitForEvent('download');
+  await idsPage.getByRole('button',{name:'Download shopping CSV'}).click();
+  const shoppingRows=csvRecords(await fs.readFile(await (await shoppingDownload).path(),'utf8'));
+  const rollIdColumn=shoppingRows[0].indexOf('Physical roll ID (matches cut-list CSV)');
+  check(rollIdColumn===10,'Shopping CSV must append roll IDs without shifting cost columns.');
+  const shoppingIds=shoppingRows.slice(1).map(row=>row[rollIdColumn]);
+  check(shoppingIds.length===6&&new Set(shoppingIds).size===6,
+   'Every independently purchased material must have a unique physical roll ID.');
+  for(const sku of exportIds)check(shoppingIds.includes(sku),
+   'Every cutting roll must also appear in the shopping CSV: '+sku);
+  check(await idsPage.locator('.shopping-item .roll-id').count()===6,
+   'Shopping UI must show matching physical roll IDs for manual auditing.');
   await hydrated(idsPage,'/quilt-fabric-calculator/');
   check(await idsPage.locator('details.sku-plan svg[data-roll-sku="fabric:backing"]').count()===1,
    'Fabric calculator must use the same scoped physical roll ID as Project Planner.');

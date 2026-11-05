@@ -1,7 +1,7 @@
 import {describe,expect,it} from 'vitest';
 import {shoppingCsv,shoppingPriceSummary,hasIncompleteShopping,needsTopFabricPlan,shoppingLineStatus, type ShoppingLine} from '../src/lib/quilt/shopping';
 import {calculateQuiltFabric,verifyLayout, type FabricSku} from '../src/lib/quilt/math';
-import {cutListCsv} from '../src/lib/quilt/cutlist';
+import {cutListCsv,physicalRollId} from '../src/lib/quilt/cutlist';
 
 describe('Shopping CSV is explicit about cut-fit safety and incomplete purchase lists',()=>{
  const good:ShoppingLine={label:'Indigo fabric',hint:'43 in usable WOF',amount:.875,rawYards:5/6,offcutSqIn:125,roundingExtraIn:1.5,unitPrice:8};
@@ -114,6 +114,26 @@ describe('Shopping CSV is explicit about cut-fit safety and incomplete purchase 
   // This is a functional capacity test, NOT a brittle machine-specific
   // performance SLA. The browser smoke separately exercises real UI.
   expect(Date.now()-start).toBeLessThan(15000);
+ });
+ it('links each purchased material to a category-scoped physical cutting roll ID',()=>{
+  const lines:ShoppingLine[]=[
+   {...good,label:'Built-in backing',rollId:'backing'},
+   {...good,label:'Top color called backing',rollId:physicalRollId('fabric','backing')},
+   {...good,label:'Border called batting',rollId:physicalRollId('border','batting')},
+   {...impossible,rollId:physicalRollId('fabric','not-fitting')}
+  ];
+  const csv=shoppingCsv(lines);
+  expect(csv).toContain('"Physical roll ID (matches cut-list CSV)"');
+  expect(csv).toContain('"backing"');
+  expect(csv).toContain('"fabric:backing"');
+  expect(csv).toContain('"border:batting"');
+  // An impossible roll retains its identity but does not invent a buy amount.
+  expect(csv).toContain('"fabric:not-fitting"');
+  expect(csv).toContain('"FIT_IMPOSSIBLE_NOT_PURCHASE_READY"');
+  expect(()=>shoppingCsv([...lines,{...good,label:'duplicate SKU',rollId:'backing'}])).toThrow(/Duplicate physical roll ID/);
+  expect(()=>shoppingCsv([{...good,rollId:' '}])).toThrow(/Invalid physical roll ID/);
+  // Unplanned fabric without an existing SKU has no physical cut roll.
+  expect(shoppingCsv([{label:'Top not planned',hint:'Enter pieces',status:'not-planned'}])).toContain('NOT_PLANNED_NO_CUT_PIECES');
  });
  it('escapes potentially executable spreadsheet labels',()=>{
   const csv=shoppingCsv([{...good,label:'=1+2'}]);

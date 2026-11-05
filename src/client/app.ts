@@ -188,6 +188,7 @@ function shopping(parent:Element,lines:ShoppingLine[]):void{
  for(const line of lines){
   const item=node('div','shopping-item'),left=node('div','shopping-info'),metrics=node('div','shopping-metrics');
   append(left,node('b','',line.label),node('small','',line.hint));
+   if(line.rollId)left.appendChild(node('small','roll-id','Physical roll ID: '+line.rollId));
   if(line.rawYards!==undefined)metrics.appendChild(node('span','','Raw: '+num(line.rawYards,4)+' yd'));
   if(line.offcutSqIn!==undefined)metrics.appendChild(node('span','','Roll offcut: '+num(line.offcutSqIn,1)+' in²'));
   if(line.roundingExtraIn!==undefined)metrics.appendChild(node('span','','Purchase rounding excess: '+num(line.roundingExtraIn,2)+' in'));
@@ -688,6 +689,7 @@ if(root){
   const noPieces=x.layout.isCutFeasible && x.layout.cutPieces.length===0;
   return {
    label:x.label+' · '+x.fabricSku,
+   rollId:physicalRollId('fabric',x.fabricSku),
    hint:noPieces?'No positive-count cut pieces: add cut groups or remove this unused SKU.':x.layout.cutPieces.length+' cut pieces (independent fabric SKU)',
    status:noPieces?'not-planned':(!reviewed && x.layout.isCutFeasible)?'not-reviewed':undefined,
    amount:noPieces?undefined:x.purchase?.roundedPurchaseYards,
@@ -781,7 +783,7 @@ if(root){
     const b=calculateBorders({widthIn:w,heightIn:h,seamIn:o.seam,layers:p.borders,step:o.step});
     hero(resultRoot,String(b.layers.length),'BUTTED BORDER LAYERS','Final quilt '+num(b.finishedWidthIn)+' × '+num(b.finishedHeightIn)+' in. Side strips are attached before top and bottom strips.',b.layers.length===1?'layer':'layers');
     shopping(resultRoot,b.layers.map((x,i)=>({
-     label:x.label+' · '+x.sku,hint:'Sides '+num(x.sideCutLengthIn)+' in; top/bottom '+num(x.topCutLengthIn)+' in',
+     label:x.label+' · '+x.sku,rollId:physicalRollId('border',x.sku),hint:'Sides '+num(x.sideCutLengthIn)+' in; top/bottom '+num(x.topCutLengthIn)+' in',
      amount:x.purchase?.roundedPurchaseYards,rawYards:x.purchase?.rawPurchaseYards,
      offcutSqIn:x.layout.isCutFeasible?x.layout.physicalOffcutAreaSqIn:undefined,
      roundingExtraIn:x.purchase?.purchaseRoundingExtraLengthIn,
@@ -822,17 +824,17 @@ if(root){
     else if(!reviewedTop)warning(resultRoot,'QUILT TOP NOT REVIEWED: entered fabric cuts are preliminary estimates. Check every real block, color and cutting quantity, then tick the review checkbox on Project Planner before exporting a whole-project cut list.',true);
     else resultRoot.appendChild(node('p','footer-note','Quilt-top coverage was manually reviewed for the entered project. Physical assembly and real fabric orientation still need independent verification.'));
     shopping(resultRoot,[
-     {label:'Backing · '+backing.recommended.direction+' seams',hint:backing.recommended.panelCount+' full WOF panels',
+     {label:'Backing · '+backing.recommended.direction+' seams',rollId:'backing',hint:backing.recommended.panelCount+' full WOF panels',
       amount:backing.recommended.purchase.roundedPurchaseYards,rawYards:backing.recommended.purchase.rawPurchaseYards,
       offcutSqIn:backing.recommended.layout.physicalOffcutAreaSqIn,roundingExtraIn:backing.recommended.purchase.purchaseRoundingExtraLengthIn,
       assemblyTrimSqIn:backing.recommended.postAssemblyTrimAreaSqIn},
-     {label:'Batting · single piece only',hint:batting.message,amount:batting.purchase?.roundedPurchaseYards,
+     {label:'Batting · single piece only',rollId:'batting',hint:batting.message,amount:batting.purchase?.roundedPurchaseYards,
       rawYards:batting.purchase?.rawPurchaseYards,offcutSqIn:batting.isCutFeasible?batting.layout.physicalOffcutAreaSqIn:undefined,
       roundingExtraIn:batting.purchase?.purchaseRoundingExtraLengthIn},
-     {label:'Straight-grain binding',hint:binding.stripCount+' full WOF strips',amount:binding.purchase.roundedPurchaseYards,
+     {label:'Straight-grain binding',rollId:'binding',hint:binding.stripCount+' full WOF strips',amount:binding.purchase.roundedPurchaseYards,
       rawYards:binding.purchase.rawPurchaseYards,offcutSqIn:binding.layout.physicalOffcutAreaSqIn,
       roundingExtraIn:binding.purchase.purchaseRoundingExtraLengthIn},
-     ...border.layers.map((x,i)=>({label:x.label+' · '+x.sku,hint:'Butted borders',amount:x.purchase?.roundedPurchaseYards,
+     ...border.layers.map((x,i)=>({label:x.label+' · '+x.sku,rollId:physicalRollId('border',x.sku),hint:'Butted borders',amount:x.purchase?.roundedPurchaseYards,
       rawYards:x.purchase?.rawPurchaseYards,offcutSqIn:x.layout.isCutFeasible?x.layout.physicalOffcutAreaSqIn:undefined,
       roundingExtraIn:x.purchase?.purchaseRoundingExtraLengthIn,unitPrice:p.borders[i].pricePerYard})),
      ...(fabric.length?fabric.map(x=>topFabricShoppingLine(x,p.fabrics.find(sku=>sku.id===x.fabricSku)?.pricePerYard,reviewedTop)):[missingTopFabricShoppingLine()])

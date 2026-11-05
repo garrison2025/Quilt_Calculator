@@ -1,7 +1,7 @@
 import {csvDocument} from './cutlist';
 
 export type ShoppingLine = {
- label:string; hint:string; amount?:number; rawYards?:number; offcutSqIn?:number;
+ label:string; hint:string; rollId?:string; amount?:number; rawYards?:number; offcutSqIn?:number;
  roundingExtraIn?:number; unitPrice?:number; assemblyTrimSqIn?:number;
  status?: 'not-planned' | 'not-reviewed';
 };
@@ -68,10 +68,20 @@ export function shoppingCsv(lines:readonly ShoppingLine[]):string {
  if(!lines.length)throw Error('No materials in shopping list.');
  // CSV rows and screen subtotal share the same finite-number validation.
  shoppingPriceSummary(lines);
+ // Category-scoped IDs allow manual and machine reconciliation with physical
+ // cut-list CSV. A reused roll ID must never silently merge purchases.
+ const seenRollIds=new Set<string>();
+ for(const line of lines){
+  if(line.rollId===undefined)continue;
+  if(typeof line.rollId!=='string'||!line.rollId.trim())throw Error('Invalid physical roll ID for '+line.label+'.');
+  if(seenRollIds.has(line.rollId))throw Error('Duplicate physical roll ID in shopping CSV: '+line.rollId+'.');
+  seenRollIds.add(line.rollId);
+ }
  const headers=[
   'Material / SKU','Notes','Exact raw yards','Rounded purchase yards','Roll offcut sq in',
   'Purchase rounding excess in','Post-assembly trim sq in',
-  'User entered price USD per yd','Estimated cost USD','Cut-fit / purchase status'
+  'User entered price USD per yd','Estimated cost USD','Cut-fit / purchase status',
+  'Physical roll ID (matches cut-list CSV)'
  ];
  const rows=lines.map(line=>{
   const status=shoppingLineStatus(line);
@@ -80,7 +90,7 @@ export function shoppingCsv(lines:readonly ShoppingLine[]):string {
   return [
    line.label,line.hint,feasible?line.rawYards:undefined,feasible?line.amount:undefined,
    feasible?line.offcutSqIn:undefined,feasible?line.roundingExtraIn:undefined,
-   feasible?line.assemblyTrimSqIn:undefined,line.unitPrice,estimated,status
+   feasible?line.assemblyTrimSqIn:undefined,line.unitPrice,estimated,status,line.rollId
   ];
  });
  return csvDocument([headers,...rows]);
