@@ -363,7 +363,7 @@
 .seo-reference-table{min-width:620px;width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
 .seo-reference-table th,.seo-reference-table td{padding:11px 12px;font-size:12px;line-height:1.45;text-align:left;white-space:normal}
 .seo-reference-table th:first-child{min-width:118px}
-.seo-reference-table th small{display:block;font-size:11px;opacity:.77;font-weight:400;margin-top:4px}
+.seo-reference-table th small{display:block;font-size:11px;color:#314735;opacity:1;font-weight:400;margin-top:4px}
 .seo-reference-table caption{text-align:left;font-size:12px;margin-bottom:9px;color:#516c59}
 .seo-reference-table td strong{white-space:nowrap}
 .seo-reference .seo-reference-disclaimer{font-size:12px;color:#526856;margin:12px 0 0}
@@ -380,5 +380,6 @@
  .seo-direct-answer a{color:#a5e6c6}
  .seo-direct-answer-metric{background:#23392b;border-color:#536d5b;color:#e2f1e6}
  .seo-direct-answer-metric small,.seo-reference-table caption{color:#c2ddcb}
+ .seo-reference-table th small{color:#d5eddb}
 }
 @media print{.seo-direct-answer,.seo-reference{display:none!important}}
