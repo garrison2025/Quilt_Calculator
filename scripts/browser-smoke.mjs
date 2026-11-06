@@ -3092,8 +3092,8 @@ try{
     document.querySelector('[data-tube-development-status]')?.textContent?.includes('Software 2D'));
   const developed=tubePage.locator('[data-tube-development-output]');
   check((await developed.innerText()).includes('MODELED square-ended length') &&
-    (await developed.innerText()).includes('First assembly seam loss') &&
-    (await developed.innerText()).includes('Second (tube) seam loss') &&
+    (await developed.innerText()).includes('First triangle-assembly seam take-up') &&
+    (await developed.innerText()).includes('Second tube-closing seam take-up') &&
     await developed.locator('.tube-development-svg').count()===1 &&
     await developed.locator('tbody tr').count()===9,
     'The 30in tube must expose independent 2D geometry, both seam losses, terminal trim and nine numeric cut boundaries.');
@@ -3108,6 +3108,9 @@ try{
     !('purchaseYards' in geometry) &&
     geometry.bands.length===8 &&
     geometry.bands.every(b=>b.sourceRegions.length===2) &&
+    geometry.firstSeamTakeupSqIn>0 && geometry.secondTubeSeamTakeupSqIn>0 &&
+    geometry.terminalOffcutPolygons.start.length===3 &&
+    geometry.terminalOffcutPolygons.end.length===3 &&
     geometry.cutBoundaries.filter(c=>c.tubeCrossing!==null).length===7 &&
     Math.abs(geometry.areaClosureErrorSqIn)<1e-7 &&
     Math.abs(geometry.modeledSquareEndedLengthIn-
