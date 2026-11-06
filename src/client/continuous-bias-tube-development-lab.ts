@@ -149,7 +149,7 @@ function show(parent:HTMLElement,m:BiasTubeDevelopment):void{
  wrapper.setAttribute('aria-label','Two-dimensional cut line coordinates');
  const table=document.createElement('table');table.className='breakdown-table tube-seam-table';
  const thead=document.createElement('thead'),tr=document.createElement('tr');
- for(const head of ['Cut line','Left (x,y) in','Seam 1 (x,y) in','Right (x,y) in','Tube crossing destination (x,y) in']){
+ for(const head of ['Cut line','Left (x,y) in','Seam 1 (x,y) in','Right (x,y) in','Tube seam match destination (x,y) in']){
   const th=document.createElement('th');th.scope='col';th.textContent=head;tr.appendChild(th);
  }
  thead.appendChild(tr);table.appendChild(thead);
@@ -167,6 +167,9 @@ function show(parent:HTMLElement,m:BiasTubeDevelopment):void{
   tbody.appendChild(row);
  }
  table.appendChild(tbody);wrapper.appendChild(table);parent.appendChild(wrapper);
+ parent.appendChild(make('p',
+  'The N boundary endpoint matches (including boundary 0) define N−1 complete tube-seam segments. Each segment is verified by both endpoint pairs, and its two source edges must map to the same shared edge in the unfolded strip.',
+  'hint'));
  parent.appendChild(make('p',
   'Unfolded full-strip terminal perpendicular cuts: x = '+
   fmt(m.unfoldedTerminalSquares.startCutXIn)+' in and '+
