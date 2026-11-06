@@ -370,6 +370,8 @@
 .qa-evidence-panel button:disabled{opacity:.55;cursor:not-allowed}
 @media(max-width:630px){.qa-evidence-grid{grid-template-columns:1fr}.qa-evidence-panel{padding:16px 14px}}
 @media screen and (prefers-color-scheme:dark){
+ .qa-evidence-panel{background:#1b3022;border-color:#52705a}
+ .qa-evidence-panel p{color:#d0e6d5}
  .qa-evidence-panel h2,.qa-evidence-panel h3,.qa-evidence-grid label,.qa-evidence-confirm{color:#e2f1e5}
  .qa-evidence-grid input,.qa-evidence-grid select,.qa-evidence-table{background:#1a2c20;color:#e6f0e8;border-color:#68876b}
  .qa-evidence-panel [data-qa-status]{background:#1d2e21;border-color:#63816a;color:#e1f1e4}
