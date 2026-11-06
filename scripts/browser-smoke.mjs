@@ -770,7 +770,7 @@ try{
   await seamTolerance.fill('0.0625');
   const finishingArea=auditPage.locator('[data-fabric-finishing-area]');
   check(await finishingArea.isVisible() &&
-    (await auditPage.locator('[data-fabric-finishing-plan]').innerText()).includes('Plan: sewn quilt TOP outside'),
+    (await auditPage.locator('[data-fabric-finishing-plan]').textContent()).includes('Plan: sewn quilt TOP outside'),
     'The nonindexed QA must expose separate model quilt-top and backing trim targets only with matching reviewed JSON.');
   await finishingArea.locator('summary').click();
   const fin=(name)=>finishingArea.locator('[data-fabric-finish="'+name+'"]');
