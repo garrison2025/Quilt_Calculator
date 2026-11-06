@@ -60,6 +60,7 @@ function drawUnfoldedChart(parent:HTMLElement,m:BiasTubeDevelopment):void{
  const svg=svgEl('svg');svg.setAttribute('viewBox','0 0 760 245');
  svg.setAttribute('role','img');
  svg.classList.add('tube-seam-svg','tube-unfolded-svg');
+ svg.dataset.unfoldedStrip='true';
  svg.setAttribute('aria-label',
   'Unfolded continuous bias strip made from adjacent parallelogram bands, with one-lane seam joins, two triangular terminal offcuts and perpendicular end trim lines. Horizontal and vertical scales are intentionally different for visibility; JSON coordinates are authoritative.');
  const N=m.actualFullBands,W=m.stripPitchIn,Q=m.postSecondSeamFullRunIn;
@@ -87,14 +88,23 @@ function drawUnfoldedChart(parent:HTMLElement,m:BiasTubeDevelopment):void{
  // Band polygons are drawn first; their sloping end edges show the one-lane
  // offset joins. The unequal chart scales are explicitly disclosed.
  for(const [i,b] of m.bands.entries()){
-  polygon(b.unfoldedPolygon,i%2===0?'#dcebdc':'#c8e0d1','#5e8d73');
+  const bandShape=svgEl('polygon');bandShape.dataset.unfoldedBand=String(b.number);
+  bandShape.setAttribute('points',map(b.unfoldedPolygon));
+  bandShape.setAttribute('fill',i%2===0?'#dcebdc':'#c8e0d1');
+  bandShape.setAttribute('stroke','#5e8d73');bandShape.setAttribute('stroke-width','1.2');
+  svg.appendChild(bandShape);
   const cx=px(i*Q+Q/2+W/2),cy=py(W/2)+4;
   label(cx,cy,String(b.number),'#244c38',Math.max(9,Math.min(12,12*sx/1.5)));
  }
- polygon(m.terminalOffcutPolygons.start,'#f4d5b9','#b06032',1.8);
- polygon(m.terminalOffcutPolygons.end,'#f4d5b9','#b06032',1.8);
+ const startOffcut=svgEl('polygon');startOffcut.dataset.terminalOffcut='start';
+ startOffcut.setAttribute('points',map(m.terminalOffcutPolygons.start));
+ startOffcut.setAttribute('fill','#f4d5b9');startOffcut.setAttribute('stroke','#b06032');startOffcut.setAttribute('stroke-width','1.8');svg.appendChild(startOffcut);
+ const endOffcut=svgEl('polygon');endOffcut.dataset.terminalOffcut='end';
+ endOffcut.setAttribute('points',map(m.terminalOffcutPolygons.end));
+ endOffcut.setAttribute('fill','#f4d5b9');endOffcut.setAttribute('stroke','#b06032');endOffcut.setAttribute('stroke-width','1.8');svg.appendChild(endOffcut);
  // Remaining full-width rectangle after both end cuts.
  const usable=svgEl('rect');
+ usable.dataset.usableStrip='true';
  usable.setAttribute('x',String(px(W)));
  usable.setAttribute('y',String(py(0)));
  usable.setAttribute('width',String((N*Q-W)*sx));
@@ -102,11 +112,17 @@ function drawUnfoldedChart(parent:HTMLElement,m:BiasTubeDevelopment):void{
  usable.setAttribute('fill','none');usable.setAttribute('stroke','#1f6949');
  usable.setAttribute('stroke-width','2');
  svg.appendChild(usable);
- line(px(W),py(0),px(W),py(W),'#b06032',2.2);
- line(px(N*Q),py(0),px(N*Q),py(W),'#b06032',2.2);
+ const startTrim=svgEl('line');startTrim.dataset.terminalTrim='start';
+ startTrim.setAttribute('x1',String(px(W)));startTrim.setAttribute('x2',String(px(W)));
+ startTrim.setAttribute('y1',String(py(0)));startTrim.setAttribute('y2',String(py(W)));
+ startTrim.setAttribute('stroke','#b06032');startTrim.setAttribute('stroke-width','2.2');svg.appendChild(startTrim);
+ const endTrim=svgEl('line');endTrim.dataset.terminalTrim='end';
+ endTrim.setAttribute('x1',String(px(N*Q)));endTrim.setAttribute('x2',String(px(N*Q)));
+ endTrim.setAttribute('y1',String(py(0)));endTrim.setAttribute('y2',String(py(W)));
+ endTrim.setAttribute('stroke','#b06032');endTrim.setAttribute('stroke-width','2.2');svg.appendChild(endTrim);
  label(24,28,'UNFOLDED STRIP · x scale and width scale are exaggerated independently');
  label(px(W)+3,py(W)+24,'START TRIM');
- label(px(N*Q)+3,py(W)+24,'END TRIM');
+ label(px(N*Q)-54,py(W)+24,'END TRIM');
  label(24,228,'Orange: W²/2 terminal wedges · Green outline: retained full-width rectangle · Band numbers: cut order');
  parent.appendChild(svg);
  parent.appendChild(make('p',
