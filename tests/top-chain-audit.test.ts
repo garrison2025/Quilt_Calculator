@@ -109,6 +109,24 @@ describe('optional user-ordered quilt-top straight seam chain',()=>{
   expect(r.independentJoinMismatch).toBe(false);
   expect(assessFabricAudit(input(setup(),m)).status).toBe('USER_REPORTED_TOP_CHAIN_CUT_SIZE_DEVIATION');
  });
+ it('does not let a large total chain tolerance mask a miscut physical piece',()=>{
+  const g=complete();g.declaredTotalToleranceIn=.5;
+  g.pieces[0].observedCutSpanIn=10.125;
+  g.observedJoinedSpanIn=19.625;
+  const r=evaluateTopChain(setup(),g,.0625);
+  expect(r.independentJoinMismatch).toBe(false);
+  expect(r.cutSizeDeviationCount).toBe(1);
+  expect(r.cutPieceToleranceIn).toBe(.0625);
+  expect(r.cutComparisons[0].differenceIn).toBeCloseTo(.125);
+  expect(r.cutComparisons[0].exceedsPieceTolerance).toBe(true);
+  expect(assessFabricAudit(input(setup(),g)).status).toBe('USER_REPORTED_TOP_CHAIN_CUT_SIZE_DEVIATION');
+  const evidence=fabricAuditEvidence(input(setup(),g),'2026-11-06T13:01:00Z');
+  expect(evidence.topChainCheck.cutComparisons[0].expectedCutSpanIn).toBe(10);
+  expect(evidence.quiltCuttingApproval).toBe(false);
+  const wider=input(setup(),g);wider.allowedPieceDeviationIn=.25;
+  expect(assessFabricAudit(wider).status).toBe('USER_REPORTED_WITHIN_DECLARED_LIMITS');
+  expect(evaluateTopChain(setup(),g,.26).invalid.join(' ')).toContain('cut-piece tolerance');
+ });
  it('keeps incomplete seam edges partial instead of filling them from a model',()=>{
   const m=complete();m.joins[0].nextEdgeTakeupIn=undefined;
   const r=evaluateTopChain(setup(),m);
