@@ -539,3 +539,26 @@
  .quick-sizing-panel,.backing-width-comparison{padding:.75rem}
 }
 @media print{.quick-sizing-panel,.backing-width-comparison{display:none!important}}
+
+/* Reverse straight-set block sizing is optional until explicitly applied. */
+.reverse-block-size{margin:1.15rem 0;padding:1rem;border:1px solid #bfd5c4;border-radius:13px;background:#f6faf6;color:#21492e;min-width:0}
+.reverse-block-size .group-title{color:#21492e;margin:0 0 .5rem}
+.reverse-block-size .hint{color:#405c48;line-height:1.55}
+.reverse-block-inputs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.8rem;margin:.75rem 0}
+.reverse-block-field{display:flex;flex-direction:column;gap:.3rem;min-width:0}
+.reverse-block-field label{font-size:.82rem;font-weight:650}
+.reverse-block-field input{max-width:100%;min-width:0}
+.reverse-block-actions{display:flex;flex-wrap:wrap;gap:.65rem;margin:.85rem 0}
+.reverse-block-result{min-height:2.5rem;font-size:.87rem;line-height:1.55;overflow-wrap:anywhere}
+.reverse-block-result p{margin:.25rem 0 .55rem}
+.reverse-block-result [data-reverse-solved]{font-weight:700}
+@media screen and (prefers-color-scheme:dark){
+ .reverse-block-size{background:#22392a;border-color:#557b60;color:#e1f1e3}
+ .reverse-block-size .group-title,.reverse-block-size .hint{color:#e1f1e3}
+}
+@media screen and (max-width:700px){
+ .reverse-block-size{padding:.75rem}
+ .reverse-block-inputs{grid-template-columns:1fr;gap:.55rem}
+ .reverse-block-actions .action-secondary{width:100%;white-space:normal;text-align:center}
+}
+@media print{.reverse-block-size{display:none!important}}
