@@ -4,6 +4,7 @@ import {
 import {verifyLayout, MAX_PIECES, type Layout, type Rect} from './math';
 import {evaluateJoinedSeams, type JoinedSeamPlan, type UserJoinedSeamReading, type JoinedSeamObservation, type JoinedSeamEvaluation} from './seam-audit';
 import {evaluateFinishing, type FinishingAudit, type UserFinishingReading} from './finishing-audit';
+import {evaluateTopChain, type TopChainAudit, type UserTopChain} from './top-chain-audit';
 
 /** The CSV reader is intentionally strict. Uploaded files remain in the browser:
  * nothing here can attest to physical fabric quality, ownership or provenance.
@@ -180,6 +181,8 @@ export type ManualFabricAuditInput={
  allowedSeamDeviationIn?:number;
  finishingReading?:UserFinishingReading;
  allowedFinishingDeviationIn?:number;
+ /** Explicit manually ordered one-row or one-column straight-seam chain. */
+ topChain?:UserTopChain;
  reviewer:string;
  physicallyMeasured:boolean;
 };
@@ -194,6 +197,9 @@ export type FabricAuditStatus=
  'USER_REPORTED_FINISH_MEASUREMENTS_DISAGREE'|
  'USER_REPORTED_BACKING_TRIM_SHORTFALL'|
  'USER_REPORTED_SEWN_TOP_SIZE_DEVIATION'|
+ 'USER_REPORTED_TOP_CHAIN_MEASUREMENTS_DISAGREE'|
+ 'USER_REPORTED_TOP_CHAIN_CENTER_SIZE_DEVIATION'|
+ 'USER_REPORTED_TOP_CHAIN_CUT_SIZE_DEVIATION'|
  'USER_REPORTED_WITHIN_DECLARED_LIMITS';
 export type RollAuditCheck={
  id:string;material:string;requiredWofIn:number;requiredRunIn:number;
@@ -212,6 +218,7 @@ export type FabricAuditAssessment={
  seamChecks:JoinedSeamObservation[];
  seamVerificationCoverage:JoinedSeamEvaluation['verificationCoverage'];
  finishingCheck:FinishingAudit;
+ topChainCheck:TopChainAudit;
 };
 function validDate(date:string):boolean{
  if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return false;
@@ -279,10 +286,11 @@ export function assessFabricAudit(input:ManualFabricAuditInput):FabricAuditAsses
  }
  const seams=evaluateJoinedSeams(input.project.seamPlan,input.readings,input.joinedSeamReadings??[],input.allowedSeamDeviationIn);
  const finishing=evaluateFinishing(input.project.seamPlan,input.finishingReading,input.joinedSeamReadings??[],input.allowedFinishingDeviationIn);
- missing.push(...seams.missing,...finishing.invalid);
+ const topChain=evaluateTopChain(input.project,input.topChain);
+ missing.push(...seams.missing,...finishing.invalid,...topChain.invalid);
  const seamDetails={
   seamChecks:seams.observations,seamVerificationCoverage:seams.verificationCoverage,
-  finishingCheck:finishing
+  finishingCheck:finishing,topChainCheck:topChain
  };
  if(missing.length)return {...seamDetails,status:'INCOMPLETE_USER_MEASUREMENTS',canExport:false,checks,missing,
   message:'Missing real paper/fabric measurements or required metadata. No cutting pass or physical approval is available.'};
@@ -309,6 +317,15 @@ export function assessFabricAudit(input:ManualFabricAuditInput):FabricAuditAsses
  if(finishing.sewnQuiltTopOutsideTolerance)return {
   ...seamDetails,status:'USER_REPORTED_SEWN_TOP_SIZE_DEVIATION',canExport:true,checks,missing,
   message:'User-reported sewn quilt TOP outside width/height is outside the planned finished top dimensions by more than the declared dimensional tolerance. Finished bound quilt dimensions remain unverified.'};
+ if(topChain.independentJoinMismatch)return {
+  ...seamDetails,status:'USER_REPORTED_TOP_CHAIN_MEASUREMENTS_DISAGREE',canExport:true,checks,missing,
+  message:'User-measured quilt-top cut-piece chain minus BOTH consumed edges at each seam does not reconcile to independently measured sewn chain. Recheck all labeled physical pieces and join edges; no quilt-top construction approval is possible.'};
+ if(topChain.centerSpanMismatch)return {
+  ...seamDetails,status:'USER_REPORTED_TOP_CHAIN_CENTER_SIZE_DEVIATION',canExport:true,checks,missing,
+  message:'A single user-claimed full-center quilt-top chain is outside the planned center dimension beyond the selected allowance. This is a manual sampled chain, NOT proof of the whole quilt-top layout.'};
+ if(topChain.cutSizeDeviationCount>0)return {
+  ...seamDetails,status:'USER_REPORTED_TOP_CHAIN_CUT_SIZE_DEVIATION',canExport:true,checks,missing,
+  message:'At least one quilt-top cut piece is user-measured outside the native cut-list span tolerance. Inspect the actual cut piece and its selected SKU/number before sewing.'};
  if(checks.some(c=>c.observedShrinkageExceedsPlan))return {
   ...seamDetails,status:'USER_REPORTED_SHRINKAGE_EXCEEDS_PLAN',canExport:true,checks,missing,
   message:'The user-measured prewash/postwash length decrease exceeds the shrinkage percentage assumed by the shopping estimate. Recheck the source roll and purchasing buffer; enough actual postwash material may still remain. This is NOT a physical approval.'};
@@ -330,13 +347,15 @@ export function assessFabricAudit(input:ManualFabricAuditInput):FabricAuditAsses
    (backingUnconfirmed?'The real backing seam direction was NOT user-confirmed. ':'')+
    (finishing.backingCoverage==='FULL_USER_REPORTED'?'Backing edge trimming is USER REPORTED only. ':'Four backing edge trims and final dimensions are NOT fully verified. ')+
    (finishing.topCoverage==='FULL_USER_REPORTED'?'Sewn quilt TOP outside size is USER REPORTED only. ':'Sewn quilt TOP final outside size is NOT verified. ')+
+   (topChain.coverage==='ALL_USER_REPORTED'?'One explicit straight-seam quilt-top chain is USER REPORTED only; complete top placement remains unverified. ':
+     'Cut-piece-to-sewn-top seam-chain reconciliation is NOT fully verified. ')+
    'Final quilt dimensions after batting, quilting and binding are NOT verified. This is NOT independent certification, and does NOT approve fabric purchase or production.'};
 }
 export function fabricAuditEvidence(input:ManualFabricAuditInput,recordedAtUtc:string){
  const result=assessFabricAudit(input);
  if(!result.canExport)throw Error('Complete every physical measurement and confirm it was performed before exporting.');
  return {
-  schemaVersion:4,kind:'user-reported-fabric-cutting-check',
+  schemaVersion:5,kind:'user-reported-fabric-cutting-check',
   recordedAtUtc,measuredOn:input.date,
   projectFingerprint:input.project.sourceProjectHash,
   sourceSnapshotIsCryptographicallyAuthenticated:false,
@@ -352,6 +371,7 @@ export function fabricAuditEvidence(input:ManualFabricAuditInput,recordedAtUtc:s
   userSelectedSeamDeviationAllowanceIn:input.allowedSeamDeviationIn,
   finishingCheck:result.finishingCheck,
   userSelectedFinishingDeviationAllowanceIn:input.allowedFinishingDeviationIn,
+  topChainCheck:result.topChainCheck,
   selfReportedStatus:result.status,explanation:result.message,
   independentPhysicalVerification:false,quiltCuttingApproval:false,
   note:'Uploaded files and measurements are user supplied. Checking a sample cut is not verification of every physical cut.'
