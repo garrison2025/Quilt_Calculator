@@ -3095,6 +3095,11 @@ try{
     (await developed.innerText()).includes('First triangle-assembly seam take-up') &&
     (await developed.innerText()).includes('Second tube-closing seam take-up') &&
     await developed.locator('.tube-development-svg').count()===1 &&
+    await developed.locator('.tube-unfolded-svg').count()===1 &&
+    await developed.locator('[data-unfolded-band]').count()===8 &&
+    await developed.locator('[data-terminal-offcut]').count()===2 &&
+    await developed.locator('[data-terminal-trim]').count()===2 &&
+    await developed.locator('[data-usable-strip]').count()===1 &&
     await developed.locator('tbody tr').count()===9,
     'The 30in tube must expose independent 2D geometry, both seam losses, terminal trim and nine numeric cut boundaries.');
   const geometryDownloaded=tubePage.waitForEvent('download');
