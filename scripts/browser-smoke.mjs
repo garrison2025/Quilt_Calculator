@@ -2892,9 +2892,9 @@ try{
   await biasReference.locator('summary').click();
   check(await biasReference.isVisible() &&
     (await biasReference.innerText()).includes('METHOD_NOT_VERIFIED') &&
-    (await biasReference.innerText()).includes('730 in²') &&
-    (await biasReference.innerText()).includes('27.125 in'),
-    '60×80 finished-outside binding example must expose only 292×2.5=730in² theoretical area and 27.125in ruler lower bound.');
+    (await biasReference.innerText()).includes('790 in²') &&
+    (await biasReference.innerText()).includes('28.125 in'),
+    'Default 60×80 CENTER plus 3in borders yields 66×86 OUTSIDE: (316in binding)×2.5=790in² and 28.125in ideal ruler floor.');
   const biasDownload=biasPage.waitForEvent('download');
   await biasPage.locator('[data-action="export-cut-csv"]').click();
   const straightSource=(await fs.readFile(await (await biasDownload).path(),'utf8'));
