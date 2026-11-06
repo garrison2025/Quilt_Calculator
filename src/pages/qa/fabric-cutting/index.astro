@@ -52,13 +52,13 @@ import Base from '../../../layouts/Base.astro';
    <div data-fabric-rolls></div>
    <section class="qa-fabric-roll" data-fabric-seam-area hidden aria-labelledby="qa-fabric-seam-heading">
     <h3 id="qa-fabric-seam-heading">Optional: measure sewn backing and binding joins</h3>
-    <p>After sewing all full-width panels or strips, measure the <strong>complete joined dimension before any edge or end trimming</strong>. Do not enter an already-trimmed finished dimension. These are user-reported measurements, not independent seam certification.</p>
+    <p>First confirm the actual backing seam orientation. For each join, optionally measure its <strong>net length take-up</strong> (lost usable span), then independently measure the <strong>complete joined dimension before trimming</strong>. The tool sums the individual losses and checks them against the separately measured overall length; no value is filled from the model. Measurements are user-reported, not independent certification.</p>
     <div class="qa-fabric-field-grid">
      <label>Allowed total joint loss above model (inches; 0–1)
       <input type="number" min="0" max="1" step="any" inputmode="decimal" data-fabric-seam-tolerance placeholder="e.g. 0.125" />
      </label>
     </div>
-    <p class="qa-fabric-small">Allowance applies to the <strong>whole joined assembly</strong>, not each seam. A joined span smaller than the required usable dimension is flagged regardless of tolerance. Calculations compare with your real measured postwash usable WOF above.</p>
+    <p class="qa-fabric-small">The allowance applies to the <strong>whole joined assembly</strong>, not each seam. A joined span shorter than required is always flagged. For backing, measure net take-up of the two joined panel edges at each seam; for straight-grain binding, measure the net loss along the strip after each join (diagonal joins do not necessarily equal twice a nominal seam allowance). These checks use the real postwash usable WOF above and do not verify stitch quality or pressing distortion.</p>
     <div data-fabric-seams></div>
    </section>
    <label class="qa-fabric-confirm"><input type="checkbox" data-fabric-confirm /> I actually measured the fabric and sample cuts with a physical ruler. I understand that browser and CSV calculations cannot independently verify my statements.</label>
@@ -149,10 +149,46 @@ import Base from '../../../layouts/Base.astro';
     ' joins; planned total seam loss '+spec.modeledTotalJoinLossIn.toFixed(3)+' in.';
    block.append(heading,expected);
    if(spec.joinCount>0){
+    if(spec.kind==='backing'){
+     const directionLabel=labelFor('Observed direction of sewn backing panel seams (optional)');
+     const direction=document.createElement('select');direction.dataset.fabricObservedDirection='';
+     const options=[
+      {value:'',title:'Not physically confirmed'},
+      {value:'vertical',title:'Vertical seams'},
+      {value:'horizontal',title:'Horizontal seams'}
+     ];
+     for(const item of options){
+      const option=document.createElement('option');option.value=item.value;
+      option.textContent=item.title;direction.appendChild(option);
+     }
+     directionLabel.appendChild(direction);block.append(directionLabel);
+    }
     const label=numericField('Actual complete joined '+spec.kind+' span BEFORE trimming (inches; optional)','joined');
     const measure=label.querySelector('input');
     if(measure)measure.dataset.fabricJoinedMeasurement='';
     block.append(label);
+    if(spec.joinCount<=64){
+     const detail=document.createElement('details');
+     detail.className='qa-fabric-individual-joins';
+     const title=document.createElement('summary');
+     title.textContent='Optional: record each of the '+spec.joinCount+' join losses, in physical assembly order';
+     detail.appendChild(title);
+     const grid=document.createElement('div');grid.className='qa-fabric-join-grid';
+     for(let i=0;i<spec.joinCount;i++){
+      const field=numericField('Join #'+(i+1)+' net length take-up (in; optional)','individual');
+      const input=field.querySelector('input');
+      if(input){input.min='0';input.dataset.fabricJoinIndex=String(i);}
+      grid.appendChild(field);
+     }
+     detail.appendChild(grid);
+     const hint=document.createElement('p');hint.className='qa-fabric-small';
+     hint.textContent='Blank joints remain NOT MEASURED. All '+spec.joinCount+' are required before cumulative join loss is considered complete. Exact zero is allowed; no example measurements are prefilled.';
+     detail.appendChild(hint);block.append(detail);
+    }else{
+     const note=document.createElement('p');note.className='qa-fabric-small';
+     note.textContent='More than 64 joins: record them outside the browser; only the whole assembled length can be entered here. Per-join loss remains unverified.';
+     block.append(note);
+    }
    }else{
     const text=document.createElement('p');text.className='qa-fabric-small';
     text.textContent='One section, no seam join to verify.';
@@ -180,10 +216,16 @@ import Base from '../../../layouts/Base.astro';
    }
    const joinedSeamReadings=[...(seamContainer?.querySelectorAll<HTMLElement>('[data-fabric-seam-kind]')??[])]
     .filter(item=>item.querySelector('[data-fabric-joined-measurement]'))
-    .map(item=>({
-     kind:item.dataset.fabricSeamKind as 'backing'|'binding',
-     measuredPretrimJoinedLengthIn:numberValue(item.querySelector<HTMLInputElement>('[data-fabric-joined-measurement]'))
-    }));
+    .map(item=>{
+     const jointInputs=[...item.querySelectorAll<HTMLInputElement>('[data-fabric-join-index]')];
+     const direction=item.querySelector<HTMLSelectElement>('[data-fabric-observed-direction]')?.value;
+     return {
+      kind:item.dataset.fabricSeamKind as 'backing'|'binding',
+      measuredPretrimJoinedLengthIn:numberValue(item.querySelector<HTMLInputElement>('[data-fabric-joined-measurement]')),
+      observedBackingJoinDirection:direction ? direction as 'vertical'|'horizontal' : undefined,
+      perJoinObservedLossesIn:jointInputs.length?jointInputs.map(input=>numberValue(input)):undefined
+     };
+    });
    return {
     project:imported,readings,
     joinedSeamReadings,
@@ -206,13 +248,33 @@ import Base from '../../../layouts/Base.astro';
      .find(el=>el.dataset.fabricSeamKind===check.kind)?.querySelector<HTMLElement>('[data-fabric-seam-result]');
     if(!node)continue;
     if(check.joinCount===0){node.textContent='No sewn seam to verify.';continue;}
-    if(check.measuredPretrimJoinedLengthIn===undefined){node.textContent='No real joined span measured: NOT VERIFIED.';continue;}
-    node.textContent='Reported pretrim joined span '+check.measuredPretrimJoinedLengthIn.toFixed(3)+
-     ' in; observed total join loss '+check.observedTotalJoinLossIn?.toFixed(3)+
-     ' in vs planned '+check.modeledTotalJoinLossIn.toFixed(3)+' in. '+
-     (check.assembledSpanShortfall?'SHORTER THAN REQUIRED FINISHED SPAN. ':'')+
-     (check.observedLossExceedsModel?'JOIN LOSS EXCEEDS ASSUMED TOTAL. ':'')+
-     (check.measurementState==='USER_REPORTED_WITHIN_ASSUMPTION'?'User-reported only, not independently certified.':'');
+    const notes:string[]=[];
+    if(check.kind==='backing'){
+     notes.push(check.observedBackingJoinDirection?
+      'Actual sewn backing seams: '+check.observedBackingJoinDirection+'.':
+      'Actual backing seam direction NOT CONFIRMED.');
+     if(check.backingDirectionMismatch)notes.push('SEAM DIRECTION DOES NOT MATCH THE PLAN.');
+    }
+    notes.push(check.measuredPretrimJoinedLengthIn===undefined?
+     'No full joined span measured: NOT VERIFIED.':
+     'Reported pretrim joined span '+check.measuredPretrimJoinedLengthIn.toFixed(3)+
+      ' in; observed total loss '+check.observedTotalJoinLossIn?.toFixed(3)+
+      ' in versus modeled '+check.modeledTotalJoinLossIn.toFixed(3)+' in.');
+    notes.push('Individually measured joins: '+check.perJoinMeasuredCount+'/'+check.joinCount+'.');
+    if(check.perJoinTotalLossIn!==undefined){
+     notes.push('SUM of actual per-join losses: '+check.perJoinTotalLossIn.toFixed(3)+
+      ' in; predicted assembled span '+check.predictedJoinedSpanFromPerJoinIn?.toFixed(3)+' in.');
+     if(check.perJoinLossExceedsModel)notes.push('CUMULATIVE JOIN LOSS EXCEEDS PLANNED TOTAL.');
+     if(check.perJoinVsAssembledSpanDifferenceIn!==undefined){
+      notes.push('Independent whole-span minus per-join prediction: '+
+       check.perJoinVsAssembledSpanDifferenceIn.toFixed(3)+' in.');
+      if(check.perJoinVsAssembledSpanMismatch)notes.push('PER-JOIN AND WHOLE-SPAN MEASUREMENTS DISAGREE.');
+     }
+    }else notes.push('Full per-join take-up NOT VERIFIED.');
+    if(check.assembledSpanShortfall)notes.push('SHORTER THAN REQUIRED FINISHED SPAN.');
+    if(check.observedLossExceedsModel)notes.push('JOIN LOSS EXCEEDS ASSUMED TOTAL.');
+    notes.push('User-reported measurements only; never an independent physical pass.');
+    node.textContent=notes.join(' ');
    }
    for(const check of outcome.checks){
     const node=[...(rollsContainer?.querySelectorAll<HTMLElement>('[data-fabric-roll-id]')??[])]
@@ -314,6 +376,11 @@ import Base from '../../../layouts/Base.astro';
  .qa-fabric-seam-item label{display:grid;gap:7px;font-size:13px;font-weight:650;max-width:480px}
  .qa-fabric-seam-item input{box-sizing:border-box;width:100%;min-height:44px;padding:8px 10px;border:1px solid #98b9a0;border-radius:8px}
  .qa-fabric-seam-item [data-fabric-seam-result]{margin-top:9px;overflow-wrap:anywhere}
+ .qa-fabric-seam-item select{box-sizing:border-box;max-width:480px;width:100%;min-height:44px;padding:8px;border:1px solid #98b9a0;border-radius:8px}
+ .qa-fabric-individual-joins{margin:14px 0;padding:12px;border:1px solid #cddccc;border-radius:9px}
+ .qa-fabric-individual-joins summary{font-weight:700;cursor:pointer}
+ .qa-fabric-join-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:12px 0}
+ @media(max-width:600px){.qa-fabric-join-grid{grid-template-columns:1fr}}
  .qa-fabric-confirm{display:flex;gap:10px;align-items:start;line-height:1.7;font-size:13px;font-weight:650;margin:23px 0;cursor:pointer}
  .qa-fabric-confirm input{width:19px;height:19px;flex-shrink:0;accent-color:#25774e;margin-top:2px}
  .qa-fabric-buttons{display:flex;gap:12px;flex-wrap:wrap;margin:17px 0}
@@ -322,16 +389,20 @@ import Base from '../../../layouts/Base.astro';
  [data-fabric-assessment="USER_REPORTED_SHORTAGE_OR_DEVIATION"],
  [data-fabric-assessment="USER_REPORTED_SHRINKAGE_EXCEEDS_PLAN"],
  [data-fabric-assessment="USER_REPORTED_SEAM_LOSS_EXCEEDS_PLAN"],
+ [data-fabric-assessment="USER_REPORTED_SEAM_DIRECTION_MISMATCH"],
+ [data-fabric-assessment="USER_REPORTED_SEAM_MEASUREMENTS_DISAGREE"],
  [data-fabric-assessment="INCONCLUSIVE_NOT_POSTWASHED"]{border-color:#d1ad79;background:#fff0df;color:#7d3e16}
  @media(max-width:650px){.qa-fabric-field-grid{grid-template-columns:1fr}.qa-fabric-audit{padding-block:22px 55px}}
  @media(prefers-color-scheme:dark){
   .qa-fabric-audit-card,.qa-fabric-roll{background:#1e3225;border-color:#52745a;color:#e4f1e6}
   .qa-fabric-audit-intro h1,.qa-fabric-audit-card h2,.qa-fabric-field-grid label,.qa-fabric-roll h3{color:#e3f0e3}
-  .qa-fabric-field-grid input,.qa-fabric-field-grid select,.qa-fabric-seam-item input{background:#132c1c;color:#fff;border-color:#72917a}
+  .qa-fabric-field-grid input,.qa-fabric-field-grid select,.qa-fabric-seam-item input,.qa-fabric-seam-item select{background:#132c1c;color:#fff;border-color:#72917a}
   [data-fabric-result],[data-fabric-import-status]{background:#244630;color:#e7f5e9;border-color:#67936a}
   [data-fabric-assessment="USER_REPORTED_SHORTAGE_OR_DEVIATION"],
   [data-fabric-assessment="USER_REPORTED_SHRINKAGE_EXCEEDS_PLAN"],
   [data-fabric-assessment="USER_REPORTED_SEAM_LOSS_EXCEEDS_PLAN"],
+  [data-fabric-assessment="USER_REPORTED_SEAM_DIRECTION_MISMATCH"],
+  [data-fabric-assessment="USER_REPORTED_SEAM_MEASUREMENTS_DISAGREE"],
   [data-fabric-assessment="INCONCLUSIVE_NOT_POSTWASHED"]{background:#463522;color:#ffdbb9;border-color:#a98251}
  }
  @media print{.qa-fabric-audit{display:none!important}}
