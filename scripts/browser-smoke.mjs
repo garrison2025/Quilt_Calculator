@@ -900,7 +900,7 @@ try{
   check(await gridArea.isVisible() &&
     (await auditPage.locator('[data-top-grid-plan]').textContent()).includes('Reviewed CENTER before borders: 60 × 80'),
     'Rectangular grid QA must use the same reviewed center size but NOT invent physical sewn placements.');
-  await gridArea.locator('summary').click();
+  await gridArea.locator(':scope > summary').click();
   check(await gridStatus.getAttribute('data-top-grid-coverage')==='NOT_STARTED',
     'Cut-list roll coordinates alone must NOT construct a 2D quilt top.');
   await auditPage.locator('[data-top-grid-create]').click();
