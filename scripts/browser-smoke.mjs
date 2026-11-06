@@ -886,10 +886,17 @@ try{
   check(await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_TOP_CHAIN_CENTER_SIZE_DEVIATION',
     'Only an EXPLICIT user claim of spanning the whole center enables the 60in center-width comparison.');
   await auditPage.locator('[data-top-chain-full-center]').uncheck();
+  await chainJoins.first().locator('[data-top-chain-loss-previous]').fill(chosenTop[0][6]);
+  check(await auditStatus.getAttribute('data-fabric-assessment')==='INCOMPLETE_USER_MEASUREMENTS' &&
+    await auditDownload.isDisabled() &&
+    (await chainResult.innerText()).includes('consumes the entire physical span'),
+    'A single piece exhausted by ONE physical seam loss must block export even when the whole-chain sum remains positive.');
+  await chainJoins.first().locator('[data-top-chain-loss-previous]').fill('0.25');
   await chainJoins.first().locator('[data-top-chain-loss-next]').fill('');
-  check(await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_WITHIN_DECLARED_LIMITS' &&
-    await chainResult.getAttribute('data-top-chain-coverage')==='PARTIAL_USER_REPORTED',
-    'Missing even one physical seam edge must not be filled from model assumptions.');
+  check(await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_OPTIONAL_TOP_QA_PARTIAL' &&
+    await chainResult.getAttribute('data-top-chain-coverage')==='PARTIAL_USER_REPORTED' &&
+    await auditDownload.isEnabled(),
+    'Missing one real top-chain seam edge must be PARTIAL, never WITHIN_DECLARED_LIMITS; safe incomplete evidence remains exportable.');
   await auditPage.locator('[data-top-chain-clear]').click();
   check(await chainPieces.count()===0 &&
     await chainJoins.count()===0 &&
@@ -931,8 +938,9 @@ try{
   const gridCells=auditPage.locator('[data-top-grid-cell]');
   check(await gridCells.count()===4 &&
     (await gridCells.first().locator('[data-grid-width]').inputValue())==='' &&
-    await gridStatus.getAttribute('data-top-grid-coverage')==='PARTIAL_USER_REPORTED',
-    'Create 2×2 must produce exactly four empty user-positioned cells and no model-fabricated ruler values.');
+    await gridStatus.getAttribute('data-top-grid-coverage')==='PARTIAL_USER_REPORTED' &&
+    await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_OPTIONAL_TOP_QA_PARTIAL',
+    'Create 2×2 must start a PARTIAL measured-grid record, not invent ruler values or return a WITHIN limits verdict.');
   const chosenGrid=sourceTopRows.slice(0,4);
   check(chosenGrid.length===4 && chosenGrid.every(row=>row[1].startsWith('fabric:')) &&
     chosenGrid.every(row=>row[6]===chosenGrid[0][6]&&row[7]===chosenGrid[0][7]),
@@ -1005,8 +1013,18 @@ try{
   await auditPage.locator('[data-top-grid-measured-width]').fill(String(gridWidth));
   await gridCells.nth(2).locator('[data-grid-edge="right"]').fill('');
   check(await gridStatus.getAttribute('data-top-grid-coverage')==='PARTIAL_USER_REPORTED' &&
-    await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_WITHIN_DECLARED_LIMITS',
-    'One unmeasured interior seam edge must revoke all complete-rectangle geometry claims.');
+    await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_OPTIONAL_TOP_QA_PARTIAL' &&
+    await auditDownload.isEnabled(),
+    'One unmeasured interior seam edge must revoke any whole-rectangle verdict while keeping incomplete evidence exportable.');
+  const partialTopDownload=auditPage.waitForEvent('download');
+  await auditDownload.click();
+  const partialTopEvidence=JSON.parse(await fs.readFile(await (await partialTopDownload).path(),'utf8'));
+  check(partialTopEvidence.selfReportedStatus==='USER_REPORTED_OPTIONAL_TOP_QA_PARTIAL' &&
+    partialTopEvidence.topGridCheck.measuredInternalEdges<partialTopEvidence.topGridCheck.expectedInternalEdges &&
+    partialTopEvidence.topGridCheck.predictedAssembledWidthIn===undefined &&
+    partialTopEvidence.independentPhysicalVerification===false &&
+    partialTopEvidence.quiltCuttingApproval===false,
+    'Partial quilt-top evidence must disclose incompleteness and cannot assert physically approved sewn-grid dimensions.');
   await auditPage.locator('[data-top-grid-clear]').click();
   check(await gridCells.count()===0 &&
     await gridStatus.getAttribute('data-top-grid-coverage')==='NOT_STARTED' &&
