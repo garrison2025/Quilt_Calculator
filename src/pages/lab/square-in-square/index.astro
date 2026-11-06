@@ -48,7 +48,7 @@ const referenceSizes=[4,6,8,10,12,16].map(finishedOuterIn=>({
      <caption>Cut measurements in inches. These are parent squares, not resulting sewn-edge or triangle lengths.</caption>
      <thead><tr><th scope="col">FINISHED outer block</th><th scope="col">CENTER square cut ×1</th><th scope="col">CORNER square cut ×2</th><th scope="col">Unfinished outside target</th><th scope="col">Try this size</th></tr></thead>
      <tbody>{referenceSizes.map(({finishedOuterIn,result})=>
-      <tr><th scope="row">{finishedOuterIn} in</th><td>{result.centerCutIn} in</td><td>{result.cornerSquareCutIn} in</td><td>{result.unfinishedOutsideIn} in</td><td><button type="button" class="action-secondary" data-square-reference-size={finishedOuterIn} aria-label={'Use '+finishedOuterIn+' inch finished block with standard corner squares'}>Use {finishedOuterIn} in</button></td></tr>
+      <tr><th scope="row">{finishedOuterIn} in</th><td>{result.centerCutIn} in</td><td>{result.cornerSquareCutIn} in</td><td>{result.unfinishedOutsideIn} in</td><td><button type="button" class="action-secondary" data-square-reference-size={finishedOuterIn}>Use {finishedOuterIn} in</button></td></tr>
      )}</tbody>
     </table>
    </div>
