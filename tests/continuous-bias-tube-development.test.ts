@@ -16,7 +16,8 @@ describe('continuous bias tube: exact 2D sewn face, two seam take-ups, offset jo
   expect(m.verdict).toBe('NUMERICAL_GEOMETRY_ONLY_PHYSICAL_VALIDATION_REQUIRED');
   expect(m.bands).toHaveLength(8);
   expect(m.cutBoundaries).toHaveLength(9);
-  expect(m.cutBoundaries.filter(x=>x.tubeCrossing)).toHaveLength(7);
+  expect(m.cutBoundaries.filter(x=>x.tubeCrossing)).toHaveLength(8);
+  expect(m.tubeSeamSegments).toHaveLength(7);
   approx(m.postFirstSeamLongEdgeIn,L-d);
   approx(m.postFirstSeamFullHeightIn,H1);
   approx(m.postSecondSeamFullRunIn,Q);
@@ -40,6 +41,11 @@ describe('continuous bias tube: exact 2D sewn face, two seam take-ups, offset jo
   expect(m.cutBoundaries[1].assemblySeamIntersection).toEqual({
    xIn:L-d-W,yIn:W
   });
+  expect(m.cutBoundaries[0].tubeCrossing?.right).toEqual({xIn:L-2*d,yIn:0});
+  expect(m.cutBoundaries[0].tubeCrossing?.nextLeft).toEqual({xIn:d+W,yIn:W});
+  expect(m.tubeSeamSegments[0].unfoldedSharedEdge).toEqual([
+   {xIn:Q,yIn:0},{xIn:Q+W,yIn:W}
+  ]);
   expect(m.cutBoundaries[1].tubeCrossing?.right).toEqual({
    xIn:L-2*d+W,yIn:W
   });
@@ -138,6 +144,7 @@ describe('continuous bias tube: exact 2D sewn face, two seam take-ups, offset jo
   tamper(m=>{m.bands[0].sewnFacePolygon[0].xIn+=.125;});
   tamper(m=>{m.bands[3].unfoldedPolygon[2].yIn+=.1;});
   tamper(m=>{m.bands[2].sourceRegions[0].polygon[0].xIn=-3;});
+  tamper(m=>{m.bands[1].sourceRegions=structuredClone(m.bands[0].sourceRegions);});
   tamper(m=>{m.cutBoundaries[2].tubeCrossing!.nextLeft.yIn+=.25;});
   tamper(m=>{m.terminalOffcutPolygons.start[0].xIn+=.5;});
   tamper(m=>{m.secondTubeSeamTakeupSqIn-=2;});
