@@ -153,6 +153,20 @@ export function evaluateTopGrid(project:ImportedFabricAudit,reading:UserTopGrid|
    if(!keys.includes(side)&&cell?.[side]!==undefined)
     result.invalid.push('Perimeter '+side+' at '+tag+' has no INTERNAL seam; do not invent outer-edge losses.');
   }
+  // Fail closed as soon as a known measured edge loss exhausts the physical
+  // cut dimension. Do not wait for unrelated cells, the opposite seam side,
+  // or the assembled-grid ruler: partial evidence can already be impossible.
+  // Missing edges remain missing; zeros below mean only KNOWN valid losses.
+  const knownWidthLoss=
+   (nonneg(cell?.seamLeftIn)?cell.seamLeftIn:0)+
+   (nonneg(cell?.seamRightIn)?cell.seamRightIn:0);
+  const knownHeightLoss=
+   (nonneg(cell?.seamTopIn)?cell.seamTopIn:0)+
+   (nonneg(cell?.seamBottomIn)?cell.seamBottomIn:0);
+  if(pos(cell?.measuredCutWidthIn)&&knownWidthLoss>=cell.measuredCutWidthIn-EPS)
+   result.invalid.push('Measured internal seam take-up consumes the entire physical width of cell '+tag+'.');
+  if(pos(cell?.measuredCutHeightIn)&&knownHeightLoss>=cell.measuredCutHeightIn-EPS)
+   result.invalid.push('Measured internal seam take-up consumes the entire physical height of cell '+tag+'.');
   perCellEdges.push(measuredEdges);
   widths.push(cell?.measuredCutWidthIn??NaN);
   heights.push(cell?.measuredCutHeightIn??NaN);
@@ -171,12 +185,8 @@ export function evaluateTopGrid(project:ImportedFabricAudit,reading:UserTopGrid|
   const edges=perCellEdges[i];
   const netW=widths[i]-edges.seamLeftIn-edges.seamRightIn;
   const netH=heights[i]-edges.seamTopIn-edges.seamBottomIn;
-  if(netW<=0||netH<=0){
-   result.invalid.push('Measured internal seam take-up consumes the entire physical width/height of cell row '+(Math.floor(i/columns)+1)+', column '+(i%columns+1)+'.');
-  }
   netWidths.push(netW);netHeights.push(netH);
  }
- if(result.invalid.length)return result;
  const rowWidths=Array.from({length:rows},(_,r)=>netWidths.slice(r*columns,(r+1)*columns).reduce((a,b)=>a+b,0));
  const colHeights=Array.from({length:columns},(_,c)=>
   Array.from({length:rows},(_,r)=>netHeights[r*columns+c]).reduce((a,b)=>a+b,0));
