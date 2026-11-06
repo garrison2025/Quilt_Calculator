@@ -68,7 +68,7 @@ for(const expected of [
 if(tubeTopologyHtml.includes('rel="canonical"')||
    tubeTopologyHtml.includes('application/ld+json'))
  throw Error('Noindex tube topology lab must not have canonical or WebApplication structured data.');
-for(const source of ['quilt-binding-calculator','lab/individual-bias-strips','lab/continuous-bias-tube']){
+for(const source of ['quilt-binding-calculator','lab/individual-bias-strips']){
  const html=fs.readFileSync('dist/'+source+'/index.html','utf8');
  if(!html.includes('href="/lab/continuous-bias-tube/"'))
   throw Error('Both bias pages must link to separate noindex tube topology research: '+source);
@@ -321,7 +321,7 @@ console.log('PASS: 218 source keyword records, 202 mapped to 9 unique tool inten
  */
 const seenTitles=new Set();
 const internalRoutes=new Set([...slugs.map(slug=>'/'+(slug?slug+'/':'')),'/about/','/privacy/','/qa/print-calibration/','/qa/fabric-cutting/','/qa/2x2-measurement-sheet/','/lab/individual-bias-strips/','/lab/continuous-bias-tube/']);
-for(const slug of [...slugs,'about','privacy','qa/print-calibration','qa/fabric-cutting','qa/2x2-measurement-sheet','lab/individual-bias-strips']){
+for(const slug of [...slugs,'about','privacy','qa/print-calibration','qa/fabric-cutting','qa/2x2-measurement-sheet','lab/individual-bias-strips','lab/continuous-bias-tube']){
  const html=fs.readFileSync('dist/'+(slug?slug+'/':'')+'index.html','utf8');
  const title=html.match(/<title>([^<]+)<\/title>/)?.[1];
  if(!title||seenTitles.has(title))throw Error('Missing/duplicate page title: '+slug);
