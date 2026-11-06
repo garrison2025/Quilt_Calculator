@@ -1,0 +1,251 @@
+---
+import Base from '../../../layouts/Base.astro';
+---
+<Base noIndex title="Physical Fabric Cutting Check | Quilt Studio" description="Noindex physical ruler recording for matched quilt cutting and purchasing CSVs. User-entered checks are not independent certification.">
+ <div class="page-shell qa-fabric-audit" data-qa-fabric-audit>
+  <header class="qa-fabric-audit-intro">
+   <span class="eyebrow-with-line">— QA LAB / NON-INDEXED, HUMAN MEASUREMENTS REQUIRED</span>
+   <h1>Check fabric cuts against your real material</h1>
+   <p>Compare cutting instructions with actual fabric width, usable run length and one physically measured sample cut per roll. This is a <strong>local manual self-check</strong>, not automated quality certification.</p>
+  </header>
+  <section class="qa-fabric-audit-card" aria-labelledby="qa-fabric-load-title">
+   <h2 id="qa-fabric-load-title">1. Import the matching project exports</h2>
+   <p>On <a href="/calculators/">Project Planner</a>, finish reviewing all actual fabric colors and cutting quantities. Download its <strong>cut-list CSV</strong> and <strong>shopping CSV</strong> from the same calculation. Both files must have the same eight-character project fingerprint and physical roll IDs. Files are read locally in your browser; the site does not upload them.</p>
+   <div class="qa-fabric-field-grid">
+    <label>Physical cut-list CSV
+     <input type="file" data-fabric-cuts accept=".csv,text/csv" aria-describedby="qa-fabric-file-limit" />
+    </label>
+    <label>Shopping CSV for the same project
+     <input type="file" data-fabric-shopping accept=".csv,text/csv" aria-describedby="qa-fabric-file-limit" />
+    </label>
+   </div>
+   <p id="qa-fabric-file-limit" class="qa-fabric-small">Only the site's current 12-column, source-tagged exports are supported; each file must be smaller than 2 MB. A short fingerprint identifies matching revisions, but is <strong>not</strong> a cryptographic signature or proof of file authenticity.</p>
+   <button type="button" class="action-primary" data-fabric-import>Check both CSV files</button>
+   <div data-fabric-import-status role="status" aria-live="polite">No files imported. No physical cutting evidence has been checked.</div>
+  </section>
+  <section class="qa-fabric-audit-card" data-fabric-workspace hidden aria-labelledby="qa-fabric-measure-title">
+   <h2 id="qa-fabric-measure-title">2. Measure the actual material</h2>
+   <p data-fabric-snapshot></p>
+   <p>Measure <strong>usable postwash fabric width</strong> after selvedges, and <strong>available usable roll length</strong> along the bolt; these measurements must refer to the same condition as the planned cuts. Pick a representative piece on each roll, physically cut and measure its width and height. The tool checks only the specified sample, <strong>not all cuts or assembled seams</strong>.</p>
+   <div class="qa-fabric-field-grid">
+    <label>Physical measurement date
+     <input data-fabric-date type="date" />
+    </label>
+    <label>Actual fabric condition
+     <select data-fabric-condition>
+      <option value="">Select condition</option>
+      <option value="postwash">Measured after any intended washing/shrinkage</option>
+      <option value="not-postwashed">Not washed / condition unsure — inconclusive</option>
+     </select>
+    </label>
+    <label>Allowed sample-cut deviation (inches)
+     <input data-fabric-tolerance type="number" min="0" max="0.25" step="any" inputmode="decimal" placeholder="e.g. 0.0625 = 1/16 in" />
+    </label>
+    <label>Reviewer (optional)
+     <input data-fabric-reviewer type="text" maxlength="200" placeholder="Local self-check name" autocomplete="off" />
+    </label>
+   </div>
+   <p class="qa-fabric-small">Enter your own cutting tolerance, from 0 to ¼ inch. There is no single universally approved allowance; your sewing method may require a stricter threshold. For example, 0.0625 = 1/16 inch. Do not treat an allowed deviation as a verified industry specification.</p>
+   <div data-fabric-rolls></div>
+   <label class="qa-fabric-confirm"><input type="checkbox" data-fabric-confirm /> I actually measured the fabric and sample cuts with a physical ruler. I understand that browser and CSV calculations cannot independently verify my statements.</label>
+   <h2>3. Review the user-reported results</h2>
+   <div data-fabric-result role="status" aria-live="polite">No physical measurements entered.</div>
+   <div class="qa-fabric-buttons">
+    <button type="button" class="action-primary" data-fabric-download disabled>Download local user-reported evidence JSON</button>
+    <button type="button" class="header-cta" data-fabric-reset>Clear measurements and imported files</button>
+   </div>
+   <p class="qa-fabric-small"><strong>Important:</strong> Within-limit results never mean an independent physical PASS. A complete failed or inconclusive self-check remains exportable so negative evidence is preserved. The site never sends, saves or certifies your files or measurements.</p>
+  </section>
+  <nav class="qa-fabric-audit-card" aria-label="Further physical QA">
+   <h2>Physical verification remains separate</h2>
+   <p>For real paper scaling, use the <a href="/qa/print-calibration/">noindex printer ruler worksheet</a>. The physical cutting release gate remains <strong>MANUAL_NOT_RUN</strong> pending qualified human review, real materials and separately recorded seam results. A project fingerprint is not a substitute.</p>
+   <a class="header-cta" href="/calculators/">Back to Project Planner</a>
+  </nav>
+ </div>
+ <script>
+  import {
+   importFabricAudit,assessFabricAudit,fabricAuditEvidence,
+   type ImportedFabricAudit,type ManualFabricAuditInput,type ManualRollReading,
+   type FabricAuditRoll
+  } from '../../../lib/quilt/fabric-audit';
+  const parent=document.querySelector<HTMLElement>('[data-qa-fabric-audit]');
+  const cutsFile=parent?.querySelector<HTMLInputElement>('[data-fabric-cuts]');
+  const shoppingFile=parent?.querySelector<HTMLInputElement>('[data-fabric-shopping]');
+  const importButton=parent?.querySelector<HTMLButtonElement>('[data-fabric-import]');
+  const importStatus=parent?.querySelector<HTMLElement>('[data-fabric-import-status]');
+  const workspace=parent?.querySelector<HTMLElement>('[data-fabric-workspace]');
+  const rollsContainer=parent?.querySelector<HTMLElement>('[data-fabric-rolls]');
+  const snapshot=parent?.querySelector<HTMLElement>('[data-fabric-snapshot]');
+  const resultNode=parent?.querySelector<HTMLElement>('[data-fabric-result]');
+  const exportButton=parent?.querySelector<HTMLButtonElement>('[data-fabric-download]');
+  const resetButton=parent?.querySelector<HTMLButtonElement>('[data-fabric-reset]');
+  let imported:ImportedFabricAudit|null=null;
+  let attempt=0;
+  const query=<T extends Element>(selector:string)=>parent?.querySelector<T>(selector)??null;
+  const fieldValue=(selector:string)=>query<HTMLInputElement|HTMLSelectElement>(selector)?.value??'';
+  const numberValue=(el:HTMLInputElement|null)=>el?.value.trim()?Number(el.value):undefined;
+  function labelFor(value:string):HTMLLabelElement{
+   const label=document.createElement('label');label.textContent=value;return label;
+  }
+  function numericField(title:string,field:string):HTMLLabelElement{
+   const label=labelFor(title);
+   const input=document.createElement('input');
+   input.type='number';input.step='any';input.min='0.00001';input.max='100000';
+   input.inputMode='decimal';input.dataset.measurement=field;
+   label.appendChild(input);return label;
+  }
+  function rollForm(roll:FabricAuditRoll):HTMLElement{
+   const block=document.createElement('section');block.className='qa-fabric-roll';block.dataset.fabricRollId=roll.id;
+   const heading=document.createElement('h3');heading.textContent=roll.material+' · '+roll.id;
+   const summary=document.createElement('p');
+   summary.textContent=roll.pieces.length+' cut pieces · required usable WOF '+roll.usableWofIn+' in · full roll cut run '+roll.requiredRunIn+' in';
+   const grid=document.createElement('div');grid.className='qa-fabric-field-grid';
+   grid.append(numericField('Real usable WOF (inches)','wof'),numericField('Real usable run length (inches)','run'));
+   const pick=labelFor('Which physical cut did you sample?');
+   const select=document.createElement('select');select.dataset.measurement='piece';
+   for(const piece of roll.pieces){
+    const option=document.createElement('option');
+    option.value=String(piece.pieceNumber);
+    option.textContent='#'+piece.pieceNumber+' · '+piece.label+' · '+piece.widthIn+' × '+piece.heightIn+' in';
+    select.appendChild(option);
+   }
+   pick.appendChild(select);
+   grid.append(pick,numericField('Measured sample cut width (inches)','width'),
+    numericField('Measured sample cut height (inches)','height'));
+   const line=document.createElement('p');line.className='qa-fabric-small';line.dataset.measurementResult='';
+   line.textContent='No real measurements recorded for this fabric roll.';
+   block.append(heading,summary,grid,line);
+   return block;
+  }
+  function readManual():ManualFabricAuditInput|null{
+   if(!imported)return null;
+   const readings:ManualRollReading[]=[];
+   for(const roll of rollsContainer?.querySelectorAll<HTMLElement>('[data-fabric-roll-id]')??[]){
+    const el=<T extends Element>(role:string)=>roll.querySelector<T>('[data-measurement="'+role+'"]');
+    readings.push({
+     id:roll.dataset.fabricRollId??'',
+     actualUsableWofIn:numberValue(el<HTMLInputElement>('wof')),
+     actualUsableRunIn:numberValue(el<HTMLInputElement>('run')),
+     sampledPieceNumber:Number(el<HTMLSelectElement>('piece')?.value),
+     measuredPieceWidthIn:numberValue(el<HTMLInputElement>('width')),
+     measuredPieceHeightIn:numberValue(el<HTMLInputElement>('height'))
+    });
+   }
+   return {
+    project:imported,readings,
+    date:fieldValue('[data-fabric-date]'),
+    fabricCondition:fieldValue('[data-fabric-condition]') as ManualFabricAuditInput['fabricCondition'],
+    allowedPieceDeviationIn:numberValue(query<HTMLInputElement>('[data-fabric-tolerance]')),
+    reviewer:fieldValue('[data-fabric-reviewer]'),
+    physicallyMeasured:query<HTMLInputElement>('[data-fabric-confirm]')?.checked??false
+   };
+  }
+  function render():void{
+   const input=readManual();if(!input||!resultNode||!exportButton)return;
+   const outcome=assessFabricAudit(input);
+   resultNode.dataset.fabricAssessment=outcome.status;
+   resultNode.textContent=outcome.message+(outcome.missing.length?' Missing: '+outcome.missing.join('; ')+'.':'');
+   exportButton.disabled=!outcome.canExport;
+   for(const check of outcome.checks){
+    const node=[...(rollsContainer?.querySelectorAll<HTMLElement>('[data-fabric-roll-id]')??[])]
+     .find(el=>el.dataset.fabricRollId===check.id)?.querySelector<HTMLElement>('[data-measurement-result]');
+    if(!node)continue;
+    if(check.actualUsableWofIn===undefined||check.widthDifferenceIn===undefined){
+     node.textContent='This roll still needs real usable width/length and one measured sample piece.';continue;
+    }
+    node.textContent='WOF '+check.actualUsableWofIn+' vs '+check.requiredWofIn+
+     ' in; run '+check.actualUsableRunIn+' vs '+check.requiredRunIn+
+     ' in; sampled piece #'+check.sampledPieceNumber+' width difference '+check.widthDifferenceIn?.toFixed(4)+
+     ' in, height difference '+check.heightDifferenceIn?.toFixed(4)+' in. '+
+     (check.hasShortage?'REPORTED SHORTAGE. ':'')+
+     (check.sampleOutsideAllowance?'SAMPLE EXCEEDS ALLOWANCE.':'');
+   }
+  }
+  async function load():Promise<void>{
+   const current=++attempt;
+   imported=null;
+   if(workspace)workspace.hidden=true;
+   if(exportButton)exportButton.disabled=true;
+   if(!cutsFile?.files?.length||!shoppingFile?.files?.length){
+    if(importStatus)importStatus.textContent='Choose both the cut-list CSV and the shopping CSV from one saved calculation.';
+    return;
+   }
+   const cutFile=cutsFile.files[0],shopFile=shoppingFile.files[0];
+   if(cutFile.size>2_000_000||shopFile.size>2_000_000){
+    if(importStatus)importStatus.textContent='Each CSV must be smaller than 2 MB.';return;
+   }
+   if(importStatus)importStatus.textContent='Reading both CSV files locally…';
+   try{
+    const [cuts,shop]=await Promise.all([cutFile.text(),shopFile.text()]);
+    if(current!==attempt)return;
+    const parsed=importFabricAudit(cuts,shop);
+    imported=parsed;
+    rollsContainer?.replaceChildren(...parsed.rolls.map(rollForm));
+    if(snapshot)snapshot.textContent='Matched snapshot '+parsed.sourceProjectHash+' · '+parsed.rolls.length+' separate rolls · '+parsed.cutCount+' physical cuts. This tag is only a short consistency marker.';
+    if(workspace)workspace.hidden=false;
+    if(importStatus)importStatus.textContent='Both CSV files match by fingerprint and material roll IDs. Geometry and cutting-run checks passed. Physical measurements have not yet been performed.';
+    render();
+   }catch(error){
+    if(current!==attempt)return;
+    imported=null;
+    if(importStatus)importStatus.textContent='CSV validation rejected: '+(error instanceof Error?error.message:String(error));
+    if(workspace)workspace.hidden=true;
+   }
+  }
+  importButton?.addEventListener('click',()=>{void load();});
+  workspace?.addEventListener('input',render);
+  workspace?.addEventListener('change',render);
+  resetButton?.addEventListener('click',()=>{
+   ++attempt;imported=null;if(cutsFile)cutsFile.value='';if(shoppingFile)shoppingFile.value='';
+   for(const selector of ['[data-fabric-date]','[data-fabric-tolerance]','[data-fabric-reviewer]']){
+    const input=query<HTMLInputElement>(selector);if(input)input.value='';
+   }
+   const condition=query<HTMLSelectElement>('[data-fabric-condition]');if(condition)condition.value='';
+   const checked=query<HTMLInputElement>('[data-fabric-confirm]');if(checked)checked.checked=false;
+   rollsContainer?.replaceChildren();if(workspace)workspace.hidden=true;
+   if(exportButton)exportButton.disabled=true;
+   if(importStatus)importStatus.textContent='Cleared. Import a fresh matching pair of CSV files to start again.';
+  });
+  exportButton?.addEventListener('click',()=>{
+   const input=readManual();if(!input||!assessFabricAudit(input).canExport)return;
+   const record=fabricAuditEvidence(input,new Date().toISOString());
+   const blob=new Blob([JSON.stringify(record,null,2)+'\n'],{type:'application/json'});
+   const url=URL.createObjectURL(blob),a=document.createElement('a');
+   a.href=url;a.download='quilt-user-reported-fabric-audit-'+record.projectFingerprint+'-'+record.measuredOn+'.json';
+   document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
+  });
+ </script>
+</Base>
+<style is:global>
+ .qa-fabric-audit{padding-block:40px 75px;max-width:1040px}
+ .qa-fabric-audit-intro{margin-bottom:28px}
+ .qa-fabric-audit-intro h1{font:600 clamp(27px,3.8vw,43px)/1.14 Georgia,serif;margin:12px 0;color:var(--ink,#23412c)}
+ .qa-fabric-audit-intro p{max-width:760px;line-height:1.7}
+ .qa-fabric-audit-card{margin:16px 0;padding:clamp(17px,3vw,30px);border:1px solid #cddccf;border-radius:15px;background:#f8fbf7;box-shadow:0 8px 28px #152c1b0b}
+ .qa-fabric-audit-card h2{font:600 clamp(19px,2.3vw,26px)/1.3 Georgia,serif;margin:0 0 12px;color:#244d33}
+ .qa-fabric-audit-card p{line-height:1.7}
+ .qa-fabric-field-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:18px 0}
+ .qa-fabric-field-grid label{font:700 12px/1.4 system-ui;display:grid;gap:7px;min-width:0;color:#244d33}
+ .qa-fabric-field-grid input,.qa-fabric-field-grid select{box-sizing:border-box;min-width:0;width:100%;min-height:46px;padding:9px 11px;border:1px solid #98b9a0;border-radius:8px;background:white;color:#223e2b;font:500 14px/1.4 system-ui}
+ .qa-fabric-field-grid input:focus-visible,.qa-fabric-field-grid select:focus-visible,.qa-fabric-audit button:focus-visible{outline:3px solid #47855e;outline-offset:2px}
+ .qa-fabric-small{font-size:12px;line-height:1.7;overflow-wrap:anywhere}
+ .qa-fabric-roll{background:#fff;border:1px solid #d0ddce;border-radius:12px;padding:18px;margin:18px 0;overflow-wrap:anywhere}
+ .qa-fabric-roll h3{font:700 15px/1.4 system-ui;color:#24523a;margin:0 0 8px}
+ .qa-fabric-confirm{display:flex;gap:10px;align-items:start;line-height:1.7;font-size:13px;font-weight:650;margin:23px 0;cursor:pointer}
+ .qa-fabric-confirm input{width:19px;height:19px;flex-shrink:0;accent-color:#25774e;margin-top:2px}
+ .qa-fabric-buttons{display:flex;gap:12px;flex-wrap:wrap;margin:17px 0}
+ .qa-fabric-audit button:disabled{opacity:.52;cursor:not-allowed}
+ [data-fabric-result],[data-fabric-import-status]{border:1px solid #a7c6a9;background:#ecf5eb;border-radius:8px;padding:13px;margin-top:13px;line-height:1.6;font-size:13px;overflow-wrap:anywhere}
+ [data-fabric-assessment="USER_REPORTED_SHORTAGE_OR_DEVIATION"],
+ [data-fabric-assessment="INCONCLUSIVE_NOT_POSTWASHED"]{border-color:#d1ad79;background:#fff0df;color:#7d3e16}
+ @media(max-width:650px){.qa-fabric-field-grid{grid-template-columns:1fr}.qa-fabric-audit{padding-block:22px 55px}}
+ @media(prefers-color-scheme:dark){
+  .qa-fabric-audit-card,.qa-fabric-roll{background:#1e3225;border-color:#52745a;color:#e4f1e6}
+  .qa-fabric-audit-intro h1,.qa-fabric-audit-card h2,.qa-fabric-field-grid label,.qa-fabric-roll h3{color:#e3f0e3}
+  .qa-fabric-field-grid input,.qa-fabric-field-grid select{background:#132c1c;color:#fff;border-color:#72917a}
+  [data-fabric-result],[data-fabric-import-status]{background:#244630;color:#e7f5e9;border-color:#67936a}
+  [data-fabric-assessment="USER_REPORTED_SHORTAGE_OR_DEVIATION"],
+  [data-fabric-assessment="INCONCLUSIVE_NOT_POSTWASHED"]{background:#463522;color:#ffdbb9;border-color:#a98251}
+ }
+ @media print{.qa-fabric-audit{display:none!important}}
+</style>
