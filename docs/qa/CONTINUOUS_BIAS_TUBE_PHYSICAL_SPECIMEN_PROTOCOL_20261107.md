@@ -29,7 +29,7 @@ These are predicted values for the current convention, not a claim that the fabr
 
 ## Published comparison fixture (not a project-run sample)
 
-[Geta's Quilting Studio](https://www.getasquiltingstudio.com/2018/04/continuous-bias-binding.html) reports measuring **120in of 2.5in-wide continuous bias from an 18in × 18in square**. The article does not detail the exact end-trim measurement, fabric stretch or measuring tension. Under the current model convention (`a=0.25in`, `N=5`), the prediction is **119.476in**, 0.524in / 0.44% below the published measurement.
+[Geta's Quilting Studio](https://www.getasquiltingstudio.com/2018/04/continuous-bias-binding-cheat-sheets-formulas-and-more.html) reports measuring **120in of 2.5in-wide continuous bias from an 18in × 18in square**. The article does not detail the exact end-trim measurement, fabric stretch or measuring tension. Under the current model convention (`a=0.25in`, `N=5`), the prediction is **119.476in**, 0.524in / 0.44% below the published measurement.
 
 | Reference | S | W | a | N | Model length | Published measured length | Difference |
 |---|---:|---:|---:|---:|---:|---:|---:|
