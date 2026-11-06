@@ -823,6 +823,77 @@ try{
     (await finishingStatus.innerText()).includes('PARTIAL_USER_REPORTED'),
     'Partially entered edge trimming must stay NOT VERIFIED and cannot masquerade as a full physical trim check.');
   await fin('trimLeftIn').fill('0');
+  // This check is a ONE-CHAIN manual sewn-order example only; cut CSV gives
+  // no trustworthy adjacency, so deliberately choose two actual top pieces.
+  const chainArea=auditPage.locator('[data-top-chain-area]');
+  const chainResult=auditPage.locator('[data-top-chain-result]');
+  check(await chainArea.isVisible() &&
+    (await auditPage.locator('[data-top-chain-plan]').textContent()).includes('quilt TOP CENTER 60 × 80'),
+    'A matched cut-plan must expose the center BEFORE borders but never infer top patch adjacency.');
+  await chainArea.locator('summary').click();
+  check(await chainResult.innerText()==='No real quilt-top seam chain reported: NOT VERIFIED.',
+    'Before user initiation the source cutting CSV must not generate a fictional assembled quilt top.');
+  await auditPage.locator('[data-top-chain-axis]').selectOption('width');
+  await auditPage.locator('[data-top-chain-create]').click();
+  const chainPieces=auditPage.locator('[data-top-chain-piece]');
+  const chainJoins=auditPage.locator('[data-top-chain-join]');
+  const sourceTopRows=physicalRows.slice(1).filter(row=>row[1].startsWith('fabric:'));
+  check(sourceTopRows.length>=2 && await chainPieces.count()===2 &&
+    await chainJoins.count()===1 &&
+    (await chainPieces.first().locator('[data-top-chain-cut-span]').inputValue())==='',
+    'Only explicit creation produces two blank user-ordered top cut-piece and one bilateral join input.');
+  const chosenTop=sourceTopRows.slice(0,2);
+  for(let i=0;i<2;i++){
+   const row=chainPieces.nth(i),piece=chosenTop[i];
+   await row.locator('[data-top-chain-roll]').selectOption(piece[1]);
+   await row.locator('[data-top-chain-piece-num]').fill(piece[2]);
+   check((await row.locator('[data-top-chain-piece-info]').innerText()).includes('Reference CSV cut #'),
+     'Native top source dimensions are shown only as non-measured references.');
+   await row.locator('[data-top-chain-cut-span]').fill(piece[6]);
+  }
+  await chainJoins.first().locator('[data-top-chain-loss-previous]').fill('0.25');
+  await chainJoins.first().locator('[data-top-chain-loss-next]').fill('0.25');
+  const joinedTopSpan=Number(chosenTop[0][6])+Number(chosenTop[1][6])-.5;
+  await auditPage.locator('[data-top-chain-tolerance]').fill('0.0625');
+  await auditPage.locator('[data-top-chain-joined]').fill(String(joinedTopSpan));
+  check(await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_WITHIN_DECLARED_LIMITS' &&
+    await chainResult.getAttribute('data-top-chain-coverage')==='ALL_USER_REPORTED' &&
+    (await chainResult.innerText()).includes('not a full-center'),
+    'Real-source two-piece chain with matching synthetic independent ruler input is only self-reported sampled chain.');
+  const chainPromise=auditPage.waitForEvent('download');
+  await auditDownload.click();
+  const chainProof=JSON.parse(await fs.readFile(await (await chainPromise).path(),'utf8'));
+  check(chainProof.schemaVersion===5 &&
+    chainProof.topChainCheck.coverage==='ALL_USER_REPORTED' &&
+    chainProof.topChainCheck.recordedPieceCount===2 &&
+    chainProof.topChainCheck.recordedJoinEdgeCount===2 &&
+    chainProof.topChainCheck.predictedJoinedSpanFromMeasuredPartsIn===joinedTopSpan &&
+    chainProof.topChainCheck.expectedCenterSpanIn===undefined &&
+    chainProof.independentPhysicalVerification===false &&
+    chainProof.quiltCuttingApproval===false,
+    'V5 evidence must preserve manually selected source cuts, TWO seam losses and a noncertified sampled chain.');
+  await auditPage.locator('[data-top-chain-joined]').fill(String(joinedTopSpan+.25));
+  check(await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_TOP_CHAIN_MEASUREMENTS_DISAGREE' &&
+    await auditDownload.isEnabled(),
+    'Two-piece cut-to-assembled discrepancy must retain exportable negative physical evidence.');
+  await chainPieces.first().locator('[data-top-chain-cut-span]').fill(String(Number(chosenTop[0][6])+.25));
+  check(await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_TOP_CHAIN_CUT_SIZE_DEVIATION',
+    'Real measured cut outside the current source CSV span must be detected independently of sewn-chain math.');
+  await chainPieces.first().locator('[data-top-chain-cut-span]').fill(chosenTop[0][6]);
+  await auditPage.locator('[data-top-chain-joined]').fill(String(joinedTopSpan));
+  await auditPage.locator('[data-top-chain-full-center]').check();
+  check(await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_TOP_CHAIN_CENTER_SIZE_DEVIATION',
+    'Only an EXPLICIT user claim of spanning the whole center enables the 60in center-width comparison.');
+  await auditPage.locator('[data-top-chain-full-center]').uncheck();
+  await chainJoins.first().locator('[data-top-chain-loss-next]').fill('');
+  check(await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_WITHIN_DECLARED_LIMITS' &&
+    await chainResult.getAttribute('data-top-chain-coverage')==='PARTIAL_USER_REPORTED',
+    'Missing even one physical seam edge must not be filled from model assumptions.');
+  await auditPage.locator('[data-top-chain-clear]').click();
+  check(await chainPieces.count()===0 &&
+    await chainJoins.count()===0 &&
+    await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_WITHIN_DECLARED_LIMITS',
+    'Explicit Clear chain must preserve already measured roll/backing/finish audit data.');
   const originalWof=Number(await firstAuditRoll.locator('[data-measurement="wof"]').inputValue());
   await firstAuditRoll.locator('[data-measurement="wof"]').fill(String(originalWof-0.125));
   check(await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_SHORTAGE_OR_DEVIATION' &&
