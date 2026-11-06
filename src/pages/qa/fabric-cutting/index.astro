@@ -61,6 +61,48 @@ import Base from '../../../layouts/Base.astro';
     <p class="qa-fabric-small">The allowance applies to the <strong>whole joined assembly</strong>, not each seam. A joined span shorter than required is always flagged. For backing, measure net take-up of the two joined panel edges at each seam; for straight-grain binding, measure the net loss along the strip after each join (diagonal joins do not necessarily equal twice a nominal seam allowance). These checks use the real postwash usable WOF above and do not verify stitch quality or pressing distortion.</p>
     <div data-fabric-seams></div>
    </section>
+   <details class="qa-fabric-roll" data-fabric-finishing-area hidden>
+    <summary>Optional: actual four-edge backing trim and sewn quilt-top outside size</summary>
+    <p class="qa-fabric-small" data-fabric-finishing-plan></p>
+    <p>Use a ruler to record assembled backing dimensions BEFORE trimming, actual fabric removed from EACH of four edges, and independently measured backing dimensions AFTER trimming. Separately measure the sewn quilt TOP outside before batting, quilting and binding. <strong>All values start blank</strong>, and this never certifies the final bound quilt.</p>
+    <div class="qa-fabric-field-grid">
+     <label>User-declared finishing tolerance (0–1 inch)
+      <input type="number" min="0" max="1" step="any" data-fabric-finishing-tolerance placeholder="e.g. 0.0625" />
+     </label>
+     <label>Untrimmed backing width (inches)
+      <input type="number" min="0" step="any" data-fabric-finish="pretrimBackingWidthIn" />
+     </label>
+     <label>Untrimmed backing height (inches)
+      <input type="number" min="0" step="any" data-fabric-finish="pretrimBackingHeightIn" />
+     </label>
+     <label>Backing LEFT edge removed (inches; zero allowed)
+      <input type="number" min="0" step="any" data-fabric-finish="trimLeftIn" />
+     </label>
+     <label>Backing RIGHT edge removed (inches; zero allowed)
+      <input type="number" min="0" step="any" data-fabric-finish="trimRightIn" />
+     </label>
+     <label>Backing TOP edge removed (inches; zero allowed)
+      <input type="number" min="0" step="any" data-fabric-finish="trimTopIn" />
+     </label>
+     <label>Backing BOTTOM edge removed (inches; zero allowed)
+      <input type="number" min="0" step="any" data-fabric-finish="trimBottomIn" />
+     </label>
+     <label>Independent backing width AFTER trimming (inches)
+      <input type="number" min="0" step="any" data-fabric-finish="trimmedBackingWidthIn" />
+     </label>
+     <label>Independent backing height AFTER trimming (inches)
+      <input type="number" min="0" step="any" data-fabric-finish="trimmedBackingHeightIn" />
+     </label>
+     <label>Sewn quilt TOP outside width BEFORE quilting (inches)
+      <input type="number" min="0" step="any" data-fabric-finish="sewnQuiltTopWidthIn" />
+     </label>
+     <label>Sewn quilt TOP outside height BEFORE quilting (inches)
+      <input type="number" min="0" step="any" data-fabric-finish="sewnQuiltTopHeightIn" />
+     </label>
+    </div>
+    <p class="qa-fabric-small">Removing four backing edges and independently measuring the resulting dimensions are separate checks; a partially filled checklist stays unverified. Backing below its required size is always flagged regardless of tolerance.</p>
+    <div data-fabric-finishing-result role="status" aria-live="polite">Finishing measurements NOT VERIFIED.</div>
+   </details>
    <label class="qa-fabric-confirm"><input type="checkbox" data-fabric-confirm /> I actually measured the fabric and sample cuts with a physical ruler. I understand that browser and CSV calculations cannot independently verify my statements.</label>
    <h2>3. Review the user-reported results</h2>
    <div data-fabric-result role="status" aria-live="polite">No physical measurements entered.</div>
@@ -83,6 +125,7 @@ import Base from '../../../layouts/Base.astro';
    type FabricAuditRoll
   } from '../../../lib/quilt/fabric-audit';
   import {readJoinedSeamPlan,type PlannedSeamCheck} from '../../../lib/quilt/seam-audit';
+  import type {UserFinishingReading} from '../../../lib/quilt/finishing-audit';
   const parent=document.querySelector<HTMLElement>('[data-qa-fabric-audit]');
   const cutsFile=parent?.querySelector<HTMLInputElement>('[data-fabric-cuts]');
   const shoppingFile=parent?.querySelector<HTMLInputElement>('[data-fabric-shopping]');
@@ -93,6 +136,9 @@ import Base from '../../../layouts/Base.astro';
   const rollsContainer=parent?.querySelector<HTMLElement>('[data-fabric-rolls]');
   const seamArea=parent?.querySelector<HTMLElement>('[data-fabric-seam-area]');
   const seamContainer=parent?.querySelector<HTMLElement>('[data-fabric-seams]');
+  const finishArea=parent?.querySelector<HTMLElement>('[data-fabric-finishing-area]');
+  const finishPlan=parent?.querySelector<HTMLElement>('[data-fabric-finishing-plan]');
+  const finishResult=parent?.querySelector<HTMLElement>('[data-fabric-finishing-result]');
   const snapshot=parent?.querySelector<HTMLElement>('[data-fabric-snapshot]');
   const resultNode=parent?.querySelector<HTMLElement>('[data-fabric-result]');
   const exportButton=parent?.querySelector<HTMLButtonElement>('[data-fabric-download]');
