@@ -1078,7 +1078,7 @@ try{
   await page.locator('[data-qa-reading="metricLine"]').fill('101');
   await page.locator('[data-qa-reading="imperialLine"]').fill('151.4');
   await page.locator('[data-qa-printer]').fill('SYNTHETIC BROWSER TEST — NOT A REAL PRINTER');
-  await page.locator('[data-qa-paper]').selectOption('A4');
+  await page.locator('[data-qa-paper-size]').selectOption('A4');
   await page.locator('[data-qa-scale]').selectOption('actual-size');
   await page.locator('[data-qa-date]').fill('2026-11-06');
   check(await measureDownload.isDisabled(),'Without explicit real-ruler confirmation the record must remain incomplete.');
