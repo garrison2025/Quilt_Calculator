@@ -577,9 +577,11 @@ try{
   await auditShopping.setInputFiles({name:'mismatched-shopping.csv',mimeType:'text/csv',
    buffer:Buffer.from(originalShoppingCsv.replaceAll(shopFingerprint,'deadbeef'))});
   await auditImport.click();
-  check((await auditPage.locator('[data-fabric-import-status]').innerText()).includes('different project snapshots') &&
-    await auditPage.locator('[data-fabric-workspace]').isHidden(),
-    'Mismatched project CSVs must be rejected before entering or exporting fake physical measurements.');
+  const mismatchedMessage=await auditPage.locator('[data-fabric-import-status]').innerText();
+  const mismatchedHidden=await auditPage.locator('[data-fabric-workspace]').isHidden();
+  check(mismatchedMessage.includes('different project snapshots') && mismatchedHidden,
+    'Mismatched project CSVs must be rejected before entering or exporting fake physical measurements: '+
+     JSON.stringify({mismatchedMessage,mismatchedHidden}));
   await auditShopping.setInputFiles({name:'real-site-shopping.csv',mimeType:'text/csv',
    buffer:Buffer.from(originalShoppingCsv)});
   await auditImport.click();
