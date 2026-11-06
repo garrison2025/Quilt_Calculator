@@ -135,7 +135,7 @@ import Base from '../../../layouts/Base.astro';
     </div>
     <div data-top-chain-pieces></div>
     <div data-top-chain-joins></div>
-    <p class="qa-fabric-small">For each piece, choose its physical fabric SKU and printed cut-list piece number, then measure the actual cut span. For every join, measure the lost length at the previous piece's trailing edge and the next piece's leading edge (zero allowed). The listed cut dimensions are only reference data, never automatically treated as actual measurements.</p>
+    <p class="qa-fabric-small">For each piece, choose its physical fabric SKU and printed cut-list piece number, then measure the actual cut span. For every join, measure the lost length at the previous piece's trailing edge and the next piece's leading edge (zero allowed). The listed cut dimensions are only reference data, never automatically treated as actual measurements. <strong>Individual cut sizes use the 0–¼ in cutting tolerance from section 2, NOT the 0–1 in total assembled-chain tolerance.</strong></p>
     <div data-top-chain-result role="status" aria-live="polite">No real quilt-top seam chain reported: NOT VERIFIED.</div>
    </details>
    <details class="qa-fabric-roll" data-top-grid-area hidden>
@@ -167,7 +167,7 @@ import Base from '../../../layouts/Base.astro';
      <button type="button" class="header-cta" data-top-grid-clear>Clear only the 2D grid</button>
     </div>
     <div data-top-grid-cells></div>
-    <p class="qa-fabric-small">Cell cut width/height and seam-edge losses are <strong>user ruler measurements</strong>, not source-model defaults. A blank field is NOT measured, including the two sides of any interior join. Only internal joins require values. Correctly observed zero is explicitly entered as 0.</p>
+    <p class="qa-fabric-small">Cell cut width/height and seam-edge losses are <strong>user ruler measurements</strong>, not source-model defaults. A blank field is NOT measured, including the two sides of any interior join. Only internal joins require values. Correctly observed zero is explicitly entered as 0. <strong>Cut-size deviation is checked using the separate “Allowed sample-cut deviation” (0–¼ in) from section 2; the TOTAL assembled-grid tolerance (0–1 in) must never excuse an oversize or undersize individual patch.</strong></p>
     <div data-top-grid-result role="status" aria-live="polite">No user-arranged quilt TOP rectangular grid: NOT VERIFIED.</div>
     <details class="qa-fabric-roll" data-top-grid-signoff-guide>
      <summary>Human review and applicable construction limits — no physical approval</summary>
@@ -571,6 +571,15 @@ import Base from '../../../layouts/Base.astro';
      notes.push('Independent sewn-grid ruler minus derived width '+
       rectangular.independentWidthDifferenceIn.toFixed(3)+' in, height '+
       rectangular.independentHeightDifferenceIn?.toFixed(3)+' in.');
+    if(rectangular.cutComparisons.length){
+     notes.push('Physical cutting tolerance '+rectangular.cutPieceToleranceIn.toFixed(3)+' in (different from assembled-grid tolerance).');
+     const mismatches=rectangular.cutComparisons.filter(c=>c.exceedsPieceTolerance);
+     if(mismatches.length)notes.push('Actual cuts outside reference: '+mismatches.map(c=>
+      'row '+c.row+' col '+c.column+' '+c.rollId+' #'+c.pieceNumber+
+      ' width Δ '+(c.widthDifferenceIn===undefined?'UNMEASURED':c.widthDifferenceIn.toFixed(3))+
+      ' in, height Δ '+(c.heightDifferenceIn===undefined?'UNMEASURED':c.heightDifferenceIn.toFixed(3))+' in'
+     ).join('; ')+'.');
+    }
     if(rectangular.actualCenterWidthDifferenceIn!==undefined)
      notes.push('User-claimed complete CENTER grid minus planned center: width '+
       rectangular.actualCenterWidthDifferenceIn.toFixed(3)+' in, height '+
@@ -610,7 +619,9 @@ import Base from '../../../layouts/Base.astro';
      notes.push('User-claimed complete CENTER chain vs planned center difference '+
       chain.centerSpanDifferenceIn.toFixed(3)+' in.');
     if(chain.cutSizeDeviationCount>0)
-     notes.push(chain.cutSizeDeviationCount+' selected real cut spans outside native CSV size tolerance.');
+     notes.push('Cut-size tolerance '+chain.cutPieceToleranceIn.toFixed(3)+' in; '+chain.cutComparisons.filter(c=>c.exceedsPieceTolerance).map(c=>
+      'physical '+c.rollId+' #'+c.pieceNumber+' Δ '+c.differenceIn?.toFixed(3)+' in'
+     ).join('; ')+'.');
     notes.push(...chain.warnings);
     if(chain.invalid.length)notes.push('Invalid: '+chain.invalid.join('; '));
     topResult.textContent=notes.join(' ')+' All physical results USER REPORTED; NOT independent quilt-top verification.';
