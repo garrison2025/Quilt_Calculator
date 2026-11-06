@@ -1,80 +1,175 @@
-# Continuous Bias Tube — 2D sewing-line development and squared ends
-Date: 2026-11-06 | Status: **SOFTWARE / NUMERICAL GEOMETRY MODEL; PHYSICAL CUTTING NOT VERIFIED**
+# Continuous Bias Tube — corrected 2D sewing-line development and squared ends
+Date: 2026-11-07 | Status: **SOFTWARE / NUMERICAL GEOMETRY MODEL; PHYSICAL CUTTING NOT VERIFIED**
 
-This document extends `CONTINUOUS_BIAS_TUBE_TOPOLOGY_20261106.md`. The topology checker remains intact. The 2D model is **not** a live buying calculator and does not remove any HOLD-BIAS keyword restrictions.
+This document supersedes the earlier 2026-11-06 draft geometry in this branch. The topology graph is unchanged. The earlier `V=H-a√2`, `Q=L-2a√2` length model and its **331.254in** worked result are withdrawn. Do not use them.
 
-## Sources, construction and explicit assumptions
-The sewing sequence (square, two triangles, sew short legs into parallelogram, mark bias lines, one-lane shift at the **sewing line**, close tube and cut a ONE-layer spiral) follows [American Patchwork & Quilting](https://www.allpeoplequilt.com/how-to-quilt/finishing/how-to-make-continuous-bias-binding) and the [American Sewing Guild](https://www.asg.org/on-a-roll-diy-continuous-bias/). Neither article proves the length of a fabricated strip from arbitrary dimensions; the formulas below are our **stated idealized geometric convention**, not quotations from those sources.
+## Construction evidence and model boundary
 
-Assumptions to validate against cloth:
-1. A source square side `S` has already been measured after any prewash and selvage removal. `S<=usableWofIn`, and both source triangles are exact 45° right isosceles triangles. No pattern direction change is promised.
-2. The first assembly seam allowance and second tube seam allowance are the SAME perpendicular measurement `a` from each relevant raw edge (as in the original lab). The model does **not** silently treat `a` as a horizontal or vertical allowance.
-3. Two triangle pieces are aligned **on the stitching line**. The sewn face excludes seam allowances folded to the reverse. Triangle faces rotate rigidly and translate; no mechanical fabric stretch, ease, wrinkling, needle curvature or overcasting width is modeled.
-4. The sewn tube seam lines are paired with one full-width-strip offset; a right cut mark at `v=jW` corresponds to left mark `v=(j+1)W`. Zero or two-lane offsets are rejected.
-5. Keep only `N` full width-`W` bands that fit the usable sewn face. Any leftover transverse sliver is deliberately discarded; two diagonally ended tails are squared off perpendicular to the final strip. No salvage, backstitch consumption or stretched-length gain is credited.
-6. The unfolded coordinates are a 2D **mathematical development** of the sewn face, not an A4 printable pattern, proof of sewn-cloth dimensions, or an instruction to pre-cut every triangle fragment.
+The two-seam continuous-bias procedure is supported by these sewing references:
+
+- [American Patchwork & Quilting, How to Make Continuous Bias Binding](https://www.allpeoplequilt.com/how-to-quilt/finishing/how-to-make-continuous-bias-binding): cut a square into two triangles; sew short edges into a parallelogram; mark parallel bias lines; bring the short edges together with one-strip offset; match the marks at the ¼in sewing line; cut a one-layer spiral. Its steps do not publish a general exact length formula. The article also says to trim the last mark to a full strip width.
+- [APQS, A Guide to Bias Binding](https://www.apqs.com/a-guide-to-bias-binding/): when making the parallelogram, one triangle tip extends past the other by ¼in at each end; the later tube seam is offset one line, and each drawn mark is checked ¼in from the raw edge. It explicitly instructs checking that the cut marks form one continuous path before cutting.
+- [Geta's Quilting Studio, Continuous Bias Binding Cheat Sheet](https://www.getasquiltingstudio.com/pdf/tutorials/continuous-bias-binding-cheat-sheet.pdf), page 7, gives a practical rectangular-piece area estimate after subtracting ½in from each dimension. This is an external planning reference, **not** an exact oracle for the present seam/tip/terminal-trim convention.
+
+The equations and coordinate transforms below are the project's explicit idealized construction convention. The sources support the operation and alignment; they do **not** certify this engine's numeric output as physical fabric yield.
+
+## Assumptions
+
+1. `S` is the measured usable side of a square after selvage removal/prewash decisions. The source square fits the measured usable WOF. The two cut pieces are exact 45° right-isosceles triangles.
+2. Both seams use the same perpendicular seam allowance `a` measured from each raw edge. Unequal seam allowances are not supported.
+3. The first triangle-assembly seam uses the equal tip overhang specified by the APQS method: each triangle's tip extends by `a` at opposite ends. The seam allowances are pressed open. No stretch, easing, distortion, or extra end trimming is assumed.
+4. The second seam closes the parallelogram's two short straight-grain edges. The drawn lines are offset by exactly one full unfolded strip width `W`, and their intersections are matched on the stitch line, not at raw edges.
+5. Only `N` complete marked bands of width `W` are retained. Any remaining transverse sliver is discarded; no fractional-width strip is counted.
+6. The unfolded offset strip has two diagonal terminal wedges. Squaring the ends removes one `W²/2` triangle at each end. No extra operator allowance, backstitch, bias-stretch gain, shrinkage, or retail rounding is included.
+7. SVG coordinates are numerical inch coordinates, scaled to fit the screen. They are **not** a 1:1 printable cutting template.
 
 ## Coordinate contract
 
-Let `H=S/sqrt(2)`, `L=S*sqrt(2)=2H`, `d=a*sqrt(2)`, `V=H-d`, `Q=L-2d`. The ideal pre-assembly parallelogram has vertices `(0,0),(L,0),(L+H,H),(H,H)` and area `S²`. The first seam line runs `x+y=L-d` across the sewn face, joining bottom at `(L-d,0)` to top at `(H,V)`. Its two triangle faces are identified on this stitching line (the upper triangle is translated by `(-d,-d)` from pre-sewing placement). This reduces the full transverse height to `V`.
+Let:
+```
+S = original square side
+a = seam allowance per raw edge, used for BOTH seams
+d = a * sqrt(2)
+L = S * sqrt(2)
+H = S / sqrt(2)
+```
 
-The second tube stitching lines are `x-y=d` (left) and `x-y=L-d` (right). Each loses a perpendicular allowance of `a`; the full band-run span after both edges is `Q`. The resulting sewn-face 2D parallelogram is
-```
-v=y in [0,V], u=x-y in [d,L-d]
-(x,y) = (u+v,v)
-```
-For band `i=0,...,N-1`, `v0=iW`, `v1=(i+1)W`, the four sewn-face vertices are `(d+v0,v0),(L-d+v0,v0),(L-d+v1,v1),(d+v1,v1)`. Every marked boundary `j` is the 3-point polyline left `(d+jW,jW)` → first seam `(L-d-jW,jW)` → right `(L-d+jW,jW)`. The offset tube stitch identifies the right point at `jW` with the left point at `(j+1)W` for `1<=j<N`. They are *not* the same point before sewing.
+### 1. First seam: two triangles into a parallelogram
 
-The original source-square triangle coordinates in JSON are the inverse rigid rotations of each polygon clipped by the first seam `x+y=L-d`. For the lower-right source triangle, `(X,Y)=((x+y)/sqrt(2),(x-y)/sqrt(2))`. For the upper-left triangle, replace `x,y` with `x-(H-d),y-(H-d)` before applying the same inverse. Test assertions require `0<=X,Y<=S` and correct original triangle membership. These mappings are for **provenance and area audit**, not a pre-seam cutting order.
+Before seam allowance, the ideal parallelogram chart has vertices:
+```
+(0,0), (L,0), (L+H,H), (H,H)
+```
+The first assembly stitch line is `x+y=L-d`. With the equal `a)-tip-overhang alignment, the sewn-face parallelogram becomes:
+```
+A = (0,0)
+B = (L-d,0)
+C = (H-d/2,H-d/2)
+D = (L+H-3d/2,H-d/2)
+```
+Therefore:
+```
+post-first-seam long edge L1 = L-d = sqrt(2)*(S-a)
+post-first-seam height H1 = H-d/2 = (S-a)/sqrt(2)
+post-first-seam face area = L1*H1 = (S-a)^2
+first seam face take-up A1 = S^2 - (S-a)^2 = 2*S*a - a^2
+```
+The first assembly stitch line runs from `B` to `C`. This is an internal seam, not the tube-closing seam.
 
-## Unfolded 2D strip and end squaring
-For each band `i`, the developed panel has vertices
+The band polygons are split at this line to retain their provenance in the two original source-square triangles. For a point `(x,y)` in the lower-right triangle:
 ```
-(iQ,0), ((i+1)Q,0), ((i+1)Q+W,W), (iQ+W,W).
+X = (x+y)/sqrt(2)
+Y = (x-y)/sqrt(2)
 ```
-Their diagonal edges meet exactly with no overlap after gluing each one-offset seam. The developed union has model centerline span `NQ`, but slanted ends cannot supply a full width W everywhere. Perpendicular end cuts at `x=W` and `x=NQ` remove **two triangular wedges, each area W²/2**, leaving a full-width rectangle and **MODELED, NOT MEASURED** usable length `NQ-W`.
+For a point in the upper-left triangle, reverse the first-seam tip-overhang placement:
+```
+X = (x+y+2*d-L)/sqrt(2)
+Y = (x-y+d)/sqrt(2)
+```
+Every mapped source vertex is checked to remain inside `[0,S]²` and the correct triangle (`Y<=X` or `X<=Y`). The two mapped regions of each band must sum to that band polygon's area.
 
-This is not the unqualified shortcut `S²/W`. The separate seam and trim ledger closes exactly:
-```
-raw square area: S²
-  first-seam face loss: L*d
-  second-seam face loss: 2*d*V
-  unused transverse partial-band area: (V-NW)*Q
-  both squared end triangles: W²
-  remaining full-width strip area: W*(NQ-W)
-S² = sum of the five contributions
-```
-The model rejects `N*W>V` **even when** the older PRE-SEAM theoretical count still permits N; no negative or partial-length band is padded. `N>=2` and `offsetBands=1` remain required.
+### 2. Second seam: close the tube with one-line offset
 
-### Reproducible example: S=30in, a=0.25in, W=2.5in, N=8
+Use `u=x-y` and `v=y`. The two raw short edges of the post-first-seam parallelogram are `u=0` and `u=L-d`. A perpendicular allowance `a` moves their stitch lines to:
+```
+left tube stitch line:  u=d
+right tube stitch line: u=L-2*d
+```
+The available full-band run is:
+```
+Q = (L-2*d)-d = L-3*d = sqrt(2)*(S-3*a)
+```
+The post-first-seam transverse height remains `H1=(S-a)/sqrt(2)`. A complete marked band count must satisfy:
+```
+N*W <= H1
+R = H1 - N*W >= 0
+```
+The engine rejects a band count that only fits the pre-seam theoretical sheet but exceeds this sewn-face height.
+
+For band `i=0,...,N-1`, with `v0=iW` and `v1=(i+1)W`, the exact sewn-face vertices are:
+```
+(d+v0,v0)
+(L-2d+v0,v0)
+(L-2d+v1,v1)
+(d+v1,v1)
+```
+The first seam line in this chart is `x+y=L-d`. A cut boundary at `v=jW` intersects that seam only when the intersection lies between the two tube stitch lines. The intersection is `(L-d-jW,jW)`; otherwise the boundary is a two-point polyline without an interior seam crossing.
+
+The one-lane tube connection is:
+```
+right cut mark j at (L-2*d+j*W, j*W)
+    is sewn to
+left cut mark j+1 at (d+(j+1)*W, (j+1)*W)
+```
+There are exactly `N-1` connections. The coordinates are different before sewing; the seam identifies them. Zero/two/three-line offsets remain topology failures and are not developed as a single strip.
+
+### 3. Unfolded spiral and end trimming
+
+For each band `i`, the unfolded panel is:
+```
+(i*Q,0)
+((i+1)*Q,0)
+((i+1)*Q+W,W)
+(i*Q+W,W)
+```
+Adjacent panels meet edge-to-edge after the one-line seam identification. The full developed strip has two diagonal ends. Perpendicular end cuts at `x=W` and `x=N*Q` remove two triangles, each `W²/2`. The remaining full-width rectangle has the model length:
+```
+modeled square-ended length = N*Q - W
+```
+This length is a mathematical result of the stated construction convention, not a measured cloth result.
+
+## Independent area ledger
+
+The implementation balances the complete original square area across five disjoint accounting categories:
+```
+raw source square area:             S²
+first triangle-assembly seam loss:  S² - (S-a)²
+second tube seam loss:              2*a*(S-a)
+unused partial-width remainder:     R*Q
+two terminal squared-off triangles: W²
+usable full-width strip area:       W*(N*Q-W)
+
+S² = sum of all five categories
+```
+The second seam term is the two allowances along the post-first-seam short edge, whose length is `S-a`. The partial-width remainder is not promoted to a full band. The terminal triangles are removed from the developed strip; their area is not double-counted as seam loss.
+
+## Reproducible example: S=30in, a=0.25in, W=2.5in, N=8
+
 | Quantity | Result |
 |---|---:|
+| Ideal pre-seam long edge L | 42.426406871 in |
 | Ideal pre-seam height H | 21.213203436 in |
-| Post-first-seam face height V | 20.859650045 in |
-| Post-second-seam band run Q | 41.719300090 in |
-| Connected centerline before end squaring NQ | 333.754400720 in |
-| Terminal end length removed | 2.500000000 in |
-| **Idealized full-width squared-end length** | **331.254400720 in (NOT measured yield)** |
-| First seam face area loss | 15.000000000 sq in |
-| Second seam face area loss | 14.750000000 sq in |
-| Discarded partial-width remainder | 35.863998200 sq in |
-| Both terminal triangular offcuts | 6.250000000 sq in |
-| Full-width modeled strip | 828.136001800 sq in |
+| Post-first-seam long edge L1 | 42.072853481 in |
+| Post-first-seam height H1 | 21.036426740 in |
+| Post-second-seam band run Q | 41.365746699 in |
+| Full bands N | 8 |
+| Unused transverse remainder R | 1.036426740 in |
+| Full-band run before end squaring NQ | 330.925973595 in |
+| Both terminal end trims (length-equivalent) | 2.500000000 in |
+| **Idealized squared-end strip length** | **328.425973595 in (NOT measured yield)** |
+| First assembly seam take-up | 14.937500000 sq in |
+| Second tube seam take-up | 14.875000000 sq in |
+| Unused partial-band area | 42.872566012 sq in |
+| Both terminal triangles | 6.250000000 sq in |
+| Usable full-width strip area | 821.064933988 sq in |
 | Total source-square area accounted | **900.000000000 sq in** |
 
-The numeric output may differ from published approximate square-sizing charts because this model discards partial bands and adopts precise seam and end-trim conventions. **Do not calibrate to an approximate chart by forcing arbitrary waste constants.**
+For comparison, Geta's practical rectangular-piece rule subtracts ½in from both dimensions; for this square that gives `(30-0.5)^2=870.25 sq in`. The present explicit seam convention gives post-two-seam face area `(S-a)(S-3a)=870.1875 sq in` before the partial-width and terminal trims. The 0.0625 sq in difference is small, but it is not silently rounded away or used to claim physical agreement.
 
 ## Implemented engineering assertions
-- `src/lib/quilt/continuous-bias-tube-development.ts`: coordinate polygons in stitched and unfolded charts, inverse mappings back into both source triangles, marked cut-line/stitch-line intersections, two individually accounted seam regions, unused transverse sliver, two squared-end triangular trims and an area balance.
-- `tests/continuous-bias-tube-development.test.ts`: exact polygons and seam crossings; provenance triangle bounds and band area; all 5-area identity; multiple values of S/W/a; pre-seam fit versus sewn-face failure; wrong 0/2/3 offsets; deliberate geometry/length/purchasing-flag tampering.
-- `/lab/continuous-bias-tube/`: new 2D research panel with vector geometry, coordinate table and full JSON. Previous topology-only CSV remains explicitly topology-only. The lab is `noindex,follow`; it does not create a new indexable or commercially purchasable route.
-- `scripts/browser-smoke.mjs`: mobile 375px read-only geometry, JSON vertex/area review, disabled/stale export, connectivity failure and existing WCAG/noindex checks.
 
-## NOT YET DONE — required before a Continuous Bias Binding buying calculator
-1. Sew and independently measure reference specimens across representative source square sizes, full strip widths and seam allowances. Record actual finished *full-width, squared-end length* and individual two-seam/end-trim dimensions **against this coordinate convention**. The 18-inch tutorial example is not by itself a measured mathematical oracle.
-2. Verify whether fabric distortion, seamline taper, mismatched short-edge offset or actual dog-ear trimming invalidate the conservative ideal geometry or require alternative coordinates. Reject or explicitly model unequal seam allowances and non-square source rectangles.
-3. Validate physical one-layer continuous cutting, both right/left stitch-line correspondences, full strip width along the entire strip, and a scale-calibrated physical pattern/print workflow. The screen SVG is explicitly NOT 1:1.
-4. Only after representative physical agreement and QA signoff decide whether to expose buyer-safe raw yardage with post-prewash WOF feasibility, directional grain, shrinkage, 1/8-yard rounding and shared Binding/HUB/CSV/print integration.
-5. Keep the seven `HOLD-BIAS` SEO intents, preview noindex/canonical restrictions and absence of formal domain unchanged.
+- `src/lib/quilt/continuous-bias-tube-development.ts`: sewn-face band polygons, first-seam split and source-triangle provenance, first/second seam stitch-line coordinates, one-offset tube joins, unfolded band polygons, terminal wedge polygons and a five-category source-area ledger.
+- `tests/continuous-bias-tube-development.test.ts`: exact sample coordinates; both seam losses; all source vertices inside the correct original triangle; pre-seam-fit/post-first-seam rejection; parameter grid across square size/strip width/seam allowance; deliberate polygon/seam/trim/length/physical-status tampering.
+- `/lab/continuous-bias-tube/`: nonindexed research panel with chart, coordinate table and JSON. It does not create a public buying calculator, purchase-yardage output or printable 1:1 pattern.
+- `scripts/browser-smoke.mjs`: mobile 375px chart and table, geometry JSON review, stale/disabled download, offset failure, noindex and WCAG assertions.
 
-**Current decision: numerical coordinate gate can pass; physical fabrication and purchasing gates are still HOLD.**
+## Required before a Continuous Bias Binding purchase calculator
+
+1. Sew and independently measure actual specimens at several `S/W/a` combinations. Record both first-seam tip overhangs, both seam stitchline positions, marked-line intersections, finished band width, and the length after both terminal trims.
+2. Compare the physical strip to the predicted `Q`, `N`, end wedges and total length. Bias stretching, pressing, seam rolling and fabric thickness may cause systematic deviation.
+3. Validate the one-layer spiral cut on real cloth, including both seam crossings and the first/last strip width. Confirm no fabric layer is accidentally cut twice.
+4. Test unequal seam allowances, non-square source rectangles, prewash shrinkage, usable WOF and realistic end trimming before broadening the engine.
+5. Only after physical agreement and manual signoff may the result be integrated into the production Binding calculator with yard rounding and purchase guidance.
+6. Keep all seven `HOLD-BIAS` SEO intents held, and keep this research route `noindex,follow` with no canonical or sitemap entry.
+
+**Current decision: corrected numerical 2D gate is ready for software validation; real sewn-fabric yield and purchasing remain HOLD.**
