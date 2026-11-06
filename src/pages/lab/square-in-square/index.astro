@@ -1,27 +1,39 @@
 ---
 import Base from '../../../layouts/Base.astro';
 import SquareAudit from '../../../components/SquareAudit.astro';
-import {calculateSquareLab} from '../../../lib/quilt/square-lab';
+import {calculateSquareLab,calculateFoldedCornerSquareLab} from '../../../lib/quilt/square-lab';
 const referenceSizes=[4,6,8,10,12,16].map(finishedOuterIn=>({
  finishedOuterIn,
  result:calculateSquareLab({finishedOuterIn,blocks:1,centerWofIn:43,cornerWofIn:43,cornerExtraIn:0})
 }));
+const foldedSizes=[4,6,8,10,12,16].map(finishedOuterIn=>({
+ finishedOuterIn,
+ result:calculateFoldedCornerSquareLab({finishedOuterIn,blocks:1,centerWofIn:43,cornerWofIn:43,cornerExtraIn:0})
+}));
 ---
-<Base noIndex title="Square-in-a-Square Cutting Lab — Unverified Preview | Quilt Studio" description="Non-indexed one-round square-in-a-square quilt block prototype: calculate center and corner parent squares, trim allowances and two independent fabric roll layouts. Physical sewing validation pending.">
+<Base noIndex title="Square-in-a-Square Cutting Lab — Two Methods | Quilt Studio" description="Non-indexed square-in-a-square prototype: choose one-round diagonal triangles or four-corner stitch-and-flip, with method-specific parent squares, fabric-roll calculations and downloadable trial cuts.">
 <div class="page-shell square-lab" data-square-lab>
  <div class="square-lab-heading">
    <span class="eyebrow-with-line">— ENGINEERING PREVIEW / NOT RELEASED FOR CUTTING</span>
    <h1>Square-in-a-Square Cutting Lab</h1>
-   <p>A test-only, one-round on-point center block calculator. Calculate a center square and two background squares, then cut each background square once diagonally to make four corner triangles. These dimensions require a sewn test block and trimming verification before cutting a quilt.</p>
+   <p>Compare two DISTINCT constructions: (1) a center diamond on point with four triangles cut from two parent squares; (2) a straight base square with FOUR stitch-and-flip corner squares that are sewn before trimming, not pre-split. They use different cut dimensions and parent-piece counts. Verify the selected method before cutting fabric.</p>
    <div class="feature-pills"><span>Fixed ¼″ seam</span><span>1/8″ ruler increments</span><span>Two separate fabric rolls</span><span>Not search-indexable</span></div>
  </div>
  <div class="warning-banner square-lab-alert" role="note"><strong>Unverified construction method.</strong> This prototype checks the physical rectangular cuts on each fabric roll. It has NOT verified the sewn square-in-a-square geometry, point clearance, corner-triangle bias handling or finished size against real fabric. Make and trim one practice block first. Do not rely on these quantities for bulk purchases.</div>
  <div class="workspace">
   <form class="input-card square-lab-form" data-square-form novalidate>
-   <div class="card-heading"><span class="eyebrow-with-dot">● ONE-ROUND CONSTRUCTION</span><h2>Trial cut measurements</h2><p>US inches only · no account · values remain on this page</p></div>
+   <div class="card-heading"><span class="eyebrow-with-dot">● SELECT CONSTRUCTION METHOD</span><h2>Trial cut measurements</h2><p>US inches only · no account · values remain on this page</p></div>
+   <div class="field-wrap square-method-selector">
+    <label for="square-method">Square-in-a-square construction method</label>
+    <select id="square-method" class="field-control" data-square-method aria-describedby="square-method-help">
+     <option value="on-point-triangles">One-round on-point diamond: 1 center + 2 diagonal-cut corner squares</option>
+     <option value="stitch-and-flip">Stitch-and-flip / quick corners: 1 base + 4 uncut corner squares</option>
+    </select>
+    <small id="square-method-help" class="hint" data-square-method-help>On-point method: two corner parent squares are split diagonally once to make four triangles. No stitching flip/quick corners.</small>
+   </div>
    <div class="square-lab-fields">
     <div class="field-wrap"><label for="sq-finished">Finished outer block side (in)</label><input class="field-control" id="sq-finished" data-square-input="finishedOuterIn" inputmode="decimal" value="12" aria-describedby="sq-finished-help"/><small id="sq-finished-help" class="hint">Final outer edge, after the block joins the quilt · 2–120 in</small></div>
-    <div class="field-wrap"><label for="sq-blocks">Number of identical blocks</label><input class="field-control" id="sq-blocks" data-square-input="blocks" inputmode="numeric" value="4" aria-describedby="sq-blocks-help"/><small id="sq-blocks-help" class="hint">1–200 trial blocks · 1 center and 2 corner parent squares per block</small></div>
+    <div class="field-wrap"><label for="sq-blocks">Number of identical blocks</label><input class="field-control" id="sq-blocks" data-square-input="blocks" inputmode="numeric" value="4" aria-describedby="sq-blocks-help"/><small id="sq-blocks-help" class="hint">1–200 blocks; actual corner square counts depend on the selected method</small></div>
     <div class="field-wrap"><label for="sq-center-wof">Center fabric usable WOF (in)</label><input class="field-control" id="sq-center-wof" data-square-input="centerWofIn" inputmode="decimal" value="43"/></div>
     <div class="field-wrap"><label for="sq-corner-wof">Corner fabric usable WOF (in)</label><input class="field-control" id="sq-corner-wof" data-square-input="cornerWofIn" inputmode="decimal" value="43"/></div>
     <div class="field-wrap"><label for="sq-extra">Extra on each corner parent-square side (in)</label><input class="field-control" id="sq-extra" data-square-input="cornerExtraIn" inputmode="decimal" value="0.25"/><small class="hint">Trial trim margin on the parent-square cut dimension, not the center; 0–2 in</small></div>
@@ -40,7 +52,7 @@ const referenceSizes=[4,6,8,10,12,16].map(finishedOuterIn=>({
  <section class="content-block square-lab-reference" data-square-reference-chart>
    <div class="editorial-head">
     <span class="eyebrow-with-line">— SOFTWARE-REPRODUCIBLE SIZE CHART</span>
-    <h2>Square-in-a-square cut sizes: 4–16 inch finished blocks</h2>
+    <h2>One-round ON-POINT diamond chart: 4–16 inch finished blocks</h2>
     <p>One center square plus two corner-parent squares per block, each corner square split diagonally ONCE into two triangles. The chart uses exactly ¼-inch seams, no extra oversized-corner allowance, and always rounds both parent CUT sides upward to the next ⅛ inch.</p>
    </div>
    <div class="table-scroll square-lab-chart-scroll" tabindex="0" role="region" aria-label="Square in a square cut sizes by finished block size">
@@ -54,9 +66,27 @@ const referenceSizes=[4,6,8,10,12,16].map(finishedOuterIn=>({
    </div>
    <p class="footer-note">The cut numbers above are reproducible SOFTWARE math and agree with published one-round dimensional charts (for example, a 12-inch finished block uses a 9-inch center cut and two 6⅞-inch corner-parent squares). Clicking a row also resets the extra corner-square margin to zero so that the calculator agrees with the chart. You can add a separate oversize margin afterwards. This does not make the dimensions a certified sewing pattern or guarantee physical point alignment.</p>
  </section>
+ <section class="content-block square-lab-folded-reference" data-square-folded-reference-chart>
+  <div class="editorial-head">
+   <span class="eyebrow-with-line">— DIFFERENT METHOD / DIFFERENT NUMBERS</span>
+   <h2>Stitch-and-flip cutting chart: 1 base and 4 corner squares</h2>
+   <p>The central BASE square is NOT turned on point. Cut one square at FINISHED outside size + ½ inch, and four corner squares each at half the FINISHED size + ½ inch. Mark and sew each corner square diagonally to the base before folding and trimming. Never pre-split these four corner squares.</p>
+  </div>
+  <div class="table-scroll square-lab-chart-scroll" tabindex="0" role="region" aria-label="Stitch and flip base square and four corner squares reference chart">
+   <table class="breakdown-table square-lab-chart">
+    <caption>Stitch-and-flip ¼-inch seam, cut size in inches, four intact corner squares for each base square.</caption>
+    <thead><tr><th scope="col">FINISHED outer block</th><th scope="col">BASE square ×1</th><th scope="col">FLIP corner square ×4</th><th scope="col">Unfinished outside</th><th scope="col">Try this method</th></tr></thead>
+    <tbody>{foldedSizes.map(({finishedOuterIn,result})=>
+     <tr><th scope="row">{finishedOuterIn} in</th><td>{result.centerCutIn} in</td><td>{result.cornerSquareCutIn} in</td><td>{result.unfinishedOutsideIn} in</td><td><button type="button" class="action-secondary" data-square-folded-size={finishedOuterIn}>Use {finishedOuterIn} in</button></td></tr>
+    )}</tbody>
+   </table>
+  </div>
+  <p class="footer-note">For 8-inch FINISHED size, stitch-and-flip cuts one 8½-inch base and four 4½-inch corner squares; the on-point diamond method instead uses a 6¼-inch center and two 4⅞-inch parent squares split into triangles. Different physical constructions, not interchangeable cut lists. See <a href="https://www.generations-quilt-patterns.com/square-in-square-quilt-block.html" rel="noopener noreferrer" target="_blank">Generations Quilt Patterns' folded-corner chart</a> and <a href="https://scissortailquilting.com/quilt-block-library/square-in-a-square/" rel="noopener noreferrer" target="_blank">Scissortail's quick-corner method</a>.</p>
+ </section>
+ <p class="warning-banner" data-folded-audit-note hidden>The six-readings point-to-raw-edge manual worksheet below applies ONLY to the center-diamond on-point triangle method. Stitch-and-flip has different center geometry: do not reuse those point-margin measurements as a pass/fail gate.</p>
  <SquareAudit />
  <section class="content-block square-lab-method">
-  <div class="editorial-head"><span class="eyebrow-with-line">— CHECK BEFORE CUTTING</span><h2>A single round of corner triangles.</h2><p>Construction sequence and the difference between cutting fit and sewn fit.</p></div>
+  <div class="editorial-head"><span class="eyebrow-with-line">— CHECK BEFORE CUTTING</span><h2>On-point center: a single round of corner triangles.</h2><p>Construction sequence and the difference between cutting fit and sewn fit.</p></div>
   <div class="story-grid">
    <article class="story-panel"><span class="story-number">01 / CENTER</span><h3>One square on point</h3><p>The visible inner square is rotated 45°. Its theoretical finished side follows the desired outer side divided by √2. Add two ¼-inch seam allowances, then round the center square cut upward to the next ⅛ inch.</p></article>
    <article class="story-panel"><span class="story-number">02 / CORNERS</span><h3>Four triangles from two squares</h3><p>Cut two oversized background squares for each block. Cut each square diagonally once. Sew pairs of triangles on opposite sides of the center, press, then add the other pair. The extra cutting allowance is for trimming, not a guarantee of finished geometry.</p></article>

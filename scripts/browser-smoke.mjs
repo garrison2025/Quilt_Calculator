@@ -2923,7 +2923,7 @@ try{
     'Six one-round reference sizes must be discoverable in a NOINDEX lab without creating a public keyword doorway.');
   await squarePage.waitForFunction(()=>
     document.querySelector('[data-square-status]')?.textContent?.includes('Calculated preview'),{timeout:20000});
-  const tableArea=squarePage.locator('.square-lab-chart-scroll');
+  const tableArea=squarePage.locator('[data-square-reference-chart] .square-lab-chart-scroll');
   check(await tableArea.getAttribute('tabindex')==='0' &&
     await tableArea.getAttribute('role')==='region'&&
     Boolean(await tableArea.getAttribute('aria-label')),
@@ -2946,6 +2946,42 @@ try{
     (await squarePage.locator('[data-square-output]').innerText()).includes('4.875 in'),
     'Changing published size to 8-in must recalculate rather than download stale 12-in cuts.');
   await auditWcag(squarePage,'/lab/square-in-square/ [reference size chart mobile 375px]');
+  // Two alternative sewing methods must not accidentally reuse the SAME
+  // parent-square dimensions/count or misrepresent cut triangles as originals.
+  check(await squarePage.locator('[data-square-folded-size]').count()===6,
+    'Six separately generated stitch-flip reference sizes must be present in the noindex lab.');
+  await squarePage.locator('[data-square-folded-size="8"]').click();
+  const methodChoice=squarePage.locator('[data-square-method]');
+  check(await methodChoice.inputValue()==='stitch-and-flip' &&
+    await squarePage.locator('[data-square-input="cornerExtraIn"]').isDisabled() &&
+    await squarePage.locator('[data-square-input="cornerExtraIn"]').inputValue()==='0' &&
+    await squarePage.locator('[data-square-test-audit]').isHidden() &&
+    await squarePage.locator('[data-folded-audit-note]').isVisible(),
+    'Stitch-flip must disable the inapplicable on-point oversize margin and its physical point audit.');
+  const flipped=await squarePage.locator('[data-square-output]').innerText();
+  check(flipped.includes('8.5 in')&&flipped.includes('4.5 in')&&
+    flipped.includes('16')&&flipped.includes('do NOT pre-cut diagonals') &&
+    !flipped.includes('Triangles after diagonal split'),
+    'Four 8in stitch-flip blocks must cut 4 bases at 8.5in and 16 intact corners at 4.5in, not 8 diagonal parent squares.');
+  const foldedDownload=squarePage.waitForEvent('download');
+  await squarePage.locator('[data-square-download]').click();
+  const foldedFile=await foldedDownload;
+  const foldedCsv=await fs.readFile(await foldedFile.path(),'utf8');
+  const foldedRows=csvRecords(foldedCsv);
+  check(foldedFile.suggestedFilename().includes('STITCH-FLIP') &&
+    foldedRows.filter(row=>row[1]==='center-trial').length===4&&
+    foldedRows.filter(row=>row[1]==='corner-trial').length===16 &&
+    foldedCsv.includes('DO NOT diagonal split') &&
+    !foldedCsv.includes('slice each once diagonally'),
+    'Stitch-flip CSV must contain exactly 1 uncut base and 4 uncut corner squares per block, with explicit construction identity.');
+  await squarePage.locator('[data-square-reference-size="12"]').click();
+  check(await methodChoice.inputValue()==='on-point-triangles' &&
+    await squarePage.locator('[data-square-test-audit]').isVisible() &&
+    await squarePage.locator('[data-square-input="cornerExtraIn"]').isEnabled() &&
+    (await squarePage.locator('[data-square-output]').innerText()).includes('6.875 in') &&
+    !(await squarePage.locator('[data-square-output]').innerText()).includes('DO NOT pre-cut diagonals'),
+    'Returning to on-point method must restore its exact 12in parent-triangle dimensions and correct manual worksheet.');
+  await auditWcag(squarePage,'/lab/square-in-square/ [two selectable methods mobile]');
   await squareCtx.close();
   console.log('PASS bias theoretical area isolation, published one-round Square parent cuts, keyboard chart and noindex lab.');
   const dark=await browser.newContext({viewport:{width:1280,height:800},colorScheme:'dark'});
