@@ -58,16 +58,16 @@ function drawChart(parent:HTMLElement,m:BiasTubeDevelopment):void{
 function show(parent:HTMLElement,m:BiasTubeDevelopment):void{
  parent.replaceChildren();
  parent.appendChild(make('p',
-  'This is a coordinate/area-conserving ideal-fabric MODEL, not a measured sewing result. Real seam rolling, bias stretch and end cut quality are not certified.',
+  'This is a coordinate/area-conserving ideal-fabric MODEL, not a measured sewing result. It models the first triangle seam with equal tip overhang and the second offset tube seam separately. Real seam rolling, bias stretch and end cut quality are not certified.',
   'warning-banner'));
  const stats=make('div','','tube-stats');
  const values:[string,string][]=[
-  ['First assembly seam loss',fmt(m.sourceSeamOneAreaSqIn)+' sq in'],
-  ['Second (tube) seam loss',fmt(m.sourceSeamTwoAreaSqIn)+' sq in'],
-  ['Post-first-seam usable transverse height',fmt(m.postFirstSeamFullHeightIn)+' in'],
-  ['Post-tube-seam run per full band',fmt(m.postSecondSeamFullRunIn)+' in'],
-  ['Unusable partial-width remainder',fmt(m.unusedTransverseWidthIn)+' in / '+fmt(m.unusedFullBandAreaSqIn)+' sq in'],
-  ['Two squared-up terminal triangles',fmt(m.squaredEndTrimAreaSqIn)+' sq in'],
+  ['First triangle-assembly seam take-up',fmt(m.firstSeamTakeupSqIn)+' sq in'],
+  ['Second tube-closing seam take-up',fmt(m.secondTubeSeamTakeupSqIn)+' sq in'],
+  ['Post-first-seam face height',fmt(m.postFirstSeamFullHeightIn)+' in'],
+  ['Post-second-seam run per full band',fmt(m.postSecondSeamFullRunIn)+' in'],
+  ['Unused partial-width remainder',fmt(m.unusedTransverseWidthIn)+' in / '+fmt(m.unusedPartialBandAreaSqIn)+' sq in'],
+  ['Two terminal triangles removed',fmt(m.terminalEndTrimAreaSqIn)+' sq in'],
   ['Full-band geometric length before end trims',fmt(m.actualFullBands*m.postSecondSeamFullRunIn)+' in'],
   ['MODELED square-ended length — NOT verified fabric yield',fmt(m.modeledSquareEndedLengthIn)+' in'],
   ['Area ledger residual',fmt(m.areaClosureErrorSqIn)+' sq in']
@@ -94,7 +94,9 @@ function show(parent:HTMLElement,m:BiasTubeDevelopment):void{
  for(const boundary of m.cutBoundaries){
   const row=document.createElement('tr');
   for(const value of [
-   String(boundary.line),...boundary.sewnFacePolyline.map(pt),
+   String(boundary.line),pt(boundary.sewnFacePolyline[0]),
+   boundary.assemblySeamIntersection?pt(boundary.assemblySeamIntersection):'No interior crossing',
+   pt(boundary.sewnFacePolyline[boundary.sewnFacePolyline.length-1]),
    boundary.tubeCrossing?pt(boundary.tubeCrossing.nextLeft):'OPEN END'
   ]){
    const td=document.createElement('td');td.textContent=value;row.appendChild(td);
