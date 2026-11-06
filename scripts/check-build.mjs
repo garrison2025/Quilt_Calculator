@@ -258,6 +258,26 @@ for(const slug of [...slugs,'about','privacy','qa/print-calibration','qa/fabric-
 }
 console.log('PASS: 15 uniquely titled static pages including noindex About, print-scale, fabric QA and blank 2×2 record, one H1 each, internal link destinations verified.');
 
+// Feature enhancements must deepen approved existing SEO routes; never
+// create three isolated thin keyword pages or make the preview indexable.
+for(const [slug,marker,phrase] of [
+ ['calculators','data-seo-size-examples','not standardized dimensions'],
+ ['quilt-backing-calculator','data-seo-backing-width-comparison','usable fabric width after trimming selvedges'],
+ ['quilt-sashing-calculator','data-seo-block-grid-handoff','58 × 46 inches']
+]){
+ const page=fs.readFileSync('dist/'+slug+'/index.html','utf8');
+ if(!page.includes(marker)||!page.includes(phrase))
+  throw Error('Existing calculator lacks crawlable, accurate quick-planning explanation: '+slug);
+ if(page.includes('content="index,follow'))
+  throw Error('Preview tool unexpectedly exposed indexing: '+slug);
+}
+const newHelper=fs.readFileSync('src/lib/quilt/quick-planning.ts','utf8');
+if(!newHelper.includes('hypotheticalOnly:true')||
+   !newHelper.includes('topCutsReviewFingerprint=undefined')||
+   !newHelper.includes('resolveQuiltDimensions(candidate)'))
+ throw Error('Quick planning must keep what-if outputs isolated, check borders, and revoke stale top-cut review.');
+console.log('PASS: existing 9-tool scope deepened with safe size, backing and block-grid answers; preview remains noindex.');
+
 const primaryHeadings=new Map([
  ['calculators','Quilt calculator'],
  ['quilt-backing-calculator','Quilt backing calculator'],
