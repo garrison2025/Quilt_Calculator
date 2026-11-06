@@ -136,6 +136,33 @@ import Base from '../../../layouts/Base.astro';
    block.append(heading,summary,grid,line);
    return block;
   }
+  function seamForm(spec:PlannedSeamCheck):HTMLElement{
+   const block=document.createElement('section');block.className='qa-fabric-seam-item';
+   block.dataset.fabricSeamKind=spec.kind;
+   const heading=document.createElement('h4');
+   heading.textContent=spec.kind==='backing'
+    ?'Backing · '+spec.direction+' seams · '+spec.sectionCount+' panels'
+    :'Straight-grain binding · '+spec.sectionCount+' strips';
+   const expected=document.createElement('p');expected.className='qa-fabric-small';
+   expected.textContent='Expected before trimming: '+spec.plannedPretrimJoinedLengthIn.toFixed(3)+
+    ' in joined, at least '+spec.requiredMinimumLengthIn.toFixed(3)+' in required. '+spec.joinCount+
+    ' joins; planned total seam loss '+spec.modeledTotalJoinLossIn.toFixed(3)+' in.';
+   block.append(heading,expected);
+   if(spec.joinCount>0){
+    const label=numericField('Actual complete joined '+spec.kind+' span BEFORE trimming (inches; optional)','joined');
+    const measure=label.querySelector('input');
+    if(measure)measure.dataset.fabricJoinedMeasurement='';
+    block.append(label);
+   }else{
+    const text=document.createElement('p');text.className='qa-fabric-small';
+    text.textContent='One section, no seam join to verify.';
+    block.append(text);
+   }
+   const assessment=document.createElement('p');assessment.dataset.fabricSeamResult='';
+   assessment.className='qa-fabric-small';assessment.textContent='No real sewn dimension measured.';
+   block.append(assessment);
+   return block;
+  }
   function readManual():ManualFabricAuditInput|null{
    if(!imported)return null;
    const readings:ManualRollReading[]=[];
@@ -151,8 +178,16 @@ import Base from '../../../layouts/Base.astro';
      measuredPieceHeightIn:numberValue(el<HTMLInputElement>('height'))
     });
    }
+   const joinedSeamReadings=[...(seamContainer?.querySelectorAll<HTMLElement>('[data-fabric-seam-kind]')??[])]
+    .filter(item=>item.querySelector('[data-fabric-joined-measurement]'))
+    .map(item=>({
+     kind:item.dataset.fabricSeamKind as 'backing'|'binding',
+     measuredPretrimJoinedLengthIn:numberValue(item.querySelector<HTMLInputElement>('[data-fabric-joined-measurement]'))
+    }));
    return {
     project:imported,readings,
+    joinedSeamReadings,
+    allowedSeamDeviationIn:numberValue(query<HTMLInputElement>('[data-fabric-seam-tolerance]')),
     date:fieldValue('[data-fabric-date]'),
     fabricCondition:fieldValue('[data-fabric-condition]') as ManualFabricAuditInput['fabricCondition'],
     allowedPieceDeviationIn:numberValue(query<HTMLInputElement>('[data-fabric-tolerance]')),
@@ -166,6 +201,19 @@ import Base from '../../../layouts/Base.astro';
    resultNode.dataset.fabricAssessment=outcome.status;
    resultNode.textContent=outcome.message+(outcome.missing.length?' Missing: '+outcome.missing.join('; ')+'.':'');
    exportButton.disabled=!outcome.canExport;
+   for(const check of outcome.seamChecks){
+    const node=[...(seamContainer?.querySelectorAll<HTMLElement>('[data-fabric-seam-kind]')??[])]
+     .find(el=>el.dataset.fabricSeamKind===check.kind)?.querySelector<HTMLElement>('[data-fabric-seam-result]');
+    if(!node)continue;
+    if(check.joinCount===0){node.textContent='No sewn seam to verify.';continue;}
+    if(check.measuredPretrimJoinedLengthIn===undefined){node.textContent='No real joined span measured: NOT VERIFIED.';continue;}
+    node.textContent='Reported pretrim joined span '+check.measuredPretrimJoinedLengthIn.toFixed(3)+
+     ' in; observed total join loss '+check.observedTotalJoinLossIn?.toFixed(3)+
+     ' in vs planned '+check.modeledTotalJoinLossIn.toFixed(3)+' in. '+
+     (check.assembledSpanShortfall?'SHORTER THAN REQUIRED FINISHED SPAN. ':'')+
+     (check.observedLossExceedsModel?'JOIN LOSS EXCEEDS ASSUMED TOTAL. ':'')+
+     (check.measurementState==='USER_REPORTED_WITHIN_ASSUMPTION'?'User-reported only, not independently certified.':'');
+   }
    for(const check of outcome.checks){
     const node=[...(rollsContainer?.querySelectorAll<HTMLElement>('[data-fabric-roll-id]')??[])]
      .find(el=>el.dataset.fabricRollId===check.id)?.querySelector<HTMLElement>('[data-measurement-result]');
@@ -196,24 +244,28 @@ import Base from '../../../layouts/Base.astro';
     return;
    }
    const cutFile=cutsFile.files[0],shopFile=shoppingFile.files[0];
-   if(cutFile.size>2_000_000||shopFile.size>2_000_000){
+   const extraFile=planJsonFile?.files?.[0];
+   if(cutFile.size>2_000_000||shopFile.size>2_000_000||(extraFile&&extraFile.size>2_000_000)){
     if(importStatus)importStatus.textContent='Each CSV must be smaller than 2 MB.';return;
    }
    if(importStatus)importStatus.textContent='Reading both CSV files locally…';
    try{
-    const [cuts,shop]=await Promise.all([cutFile.text(),shopFile.text()]);
+    const [cuts,shop,sidecar]=await Promise.all([cutFile.text(),shopFile.text(),extraFile?extraFile.text():Promise.resolve(undefined)]);
     if(current!==attempt)return;
     const parsed=importFabricAudit(cuts,shop);
+    if(sidecar!==undefined)parsed.seamPlan=readJoinedSeamPlan(parsed,sidecar);
     imported=parsed;
     rollsContainer?.replaceChildren(...parsed.rolls.map(rollForm));
+    seamContainer?.replaceChildren(...(parsed.seamPlan?.checks??[]).map(seamForm));
+    if(seamArea)seamArea.hidden=!parsed.seamPlan;
     if(snapshot)snapshot.textContent='Matched snapshot '+parsed.sourceProjectHash+' · '+parsed.rolls.length+' separate rolls · '+parsed.cutCount+' physical cuts. This tag is only a short consistency marker.';
     if(workspace)workspace.hidden=false;
-    if(importStatus)importStatus.textContent='Both CSV files match by fingerprint and material roll IDs. Geometry and cutting-run checks passed. Physical measurements have not yet been performed.';
+    if(importStatus)importStatus.textContent='Both CSVs match by project revision, roll IDs and geometry. '+(parsed.seamPlan?'The cutting-plan JSON also reconciles with the backing and binding cut pieces.':'No cutting-plan JSON: sewn seams remain UNVERIFIED.')+' Physical measurements have not yet been performed.';
     render();
    }catch(error){
     if(current!==attempt)return;
     imported=null;
-    if(importStatus)importStatus.textContent='CSV validation rejected: '+(error instanceof Error?error.message:String(error));
+    if(importStatus)importStatus.textContent='CSV or optional JSON validation rejected: '+(error instanceof Error?error.message:String(error));
     if(workspace)workspace.hidden=true;
    }
   }
@@ -221,13 +273,14 @@ import Base from '../../../layouts/Base.astro';
   workspace?.addEventListener('input',render);
   workspace?.addEventListener('change',render);
   resetButton?.addEventListener('click',()=>{
-   ++attempt;imported=null;if(cutsFile)cutsFile.value='';if(shoppingFile)shoppingFile.value='';
-   for(const selector of ['[data-fabric-date]','[data-fabric-tolerance]','[data-fabric-reviewer]']){
+   ++attempt;imported=null;if(cutsFile)cutsFile.value='';if(shoppingFile)shoppingFile.value='';if(planJsonFile)planJsonFile.value='';
+   for(const selector of ['[data-fabric-date]','[data-fabric-tolerance]','[data-fabric-seam-tolerance]','[data-fabric-reviewer]']){
     const input=query<HTMLInputElement>(selector);if(input)input.value='';
    }
    const condition=query<HTMLSelectElement>('[data-fabric-condition]');if(condition)condition.value='';
    const checked=query<HTMLInputElement>('[data-fabric-confirm]');if(checked)checked.checked=false;
-   rollsContainer?.replaceChildren();if(workspace)workspace.hidden=true;
+   rollsContainer?.replaceChildren();seamContainer?.replaceChildren();
+   if(seamArea)seamArea.hidden=true;if(workspace)workspace.hidden=true;
    if(exportButton)exportButton.disabled=true;
    if(importStatus)importStatus.textContent='Cleared. Import a fresh matching pair of CSV files to start again.';
   });
