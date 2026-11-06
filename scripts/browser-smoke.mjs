@@ -627,6 +627,35 @@ try{
     auditEvidence.quiltCuttingApproval===false,
     'Downloaded manual fabric evidence must preserve original revision and never claim physical certification.');
   const firstAuditRoll=auditPage.locator('[data-fabric-roll-id]').first();
+  const actualRun=Number(await firstAuditRoll.locator('[data-measurement="run"]').inputValue());
+  check((await auditStatus.innerText()).includes('actual shrinkage was NOT verified') &&
+    (await firstAuditRoll.locator('[data-measurement-result]').innerText()).includes('observed shrinkage is unverified'),
+    'Without real before-wash measurement the QA must not claim that shrinkage has been checked.');
+  const beforeWash=firstAuditRoll.locator('[data-measurement="prewash"]');
+  await beforeWash.fill(String(actualRun+2));
+  check(await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_SHRINKAGE_EXCEEDS_PLAN' &&
+    await auditDownload.isEnabled() &&
+    (await firstAuditRoll.locator('[data-measurement-result]').innerText()).includes('EXCEEDS PLANNED SHRINKAGE'),
+    'Reported shrinkage greater than modeled purchasing buffer must be highlighted and preserved as negative evidence.');
+  const shrinkEvidencePromise=auditPage.waitForEvent('download');
+  await auditDownload.click();
+  const shrinkEvidenceFile=await shrinkEvidencePromise;
+  const shrinkEvidence=JSON.parse(await fs.readFile(await shrinkEvidenceFile.path(),'utf8'));
+  check(shrinkEvidence.selfReportedStatus==='USER_REPORTED_SHRINKAGE_EXCEEDS_PLAN' &&
+    shrinkEvidence.checks[0].observedLengthShrinkagePct>0 &&
+    shrinkEvidence.checks[0].observedShrinkageExceedsPlan===true &&
+    shrinkEvidence.independentPhysicalVerification===false,
+    'Local JSON must record observed versus planned shrinkage without fabric or independent-review certification.');
+  await beforeWash.fill(String(actualRun));
+  check(await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_WITHIN_DECLARED_LIMITS',
+    'Zero observed shrinkage must not exceed a zero modeled rate.');
+  await beforeWash.fill('0');
+  check(await auditDownload.isDisabled() &&
+    await auditStatus.getAttribute('data-fabric-assessment')==='INCOMPLETE_USER_MEASUREMENTS',
+    'An invalid supplied before-wash length must block export rather than be mistaken for an omitted optional measurement.');
+  await beforeWash.fill('');
+  check(await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_WITHIN_DECLARED_LIMITS',
+    'Omitting the optional before-wash measurement must restore the explicitly shrinkage-unverified self-report.');
   const originalWof=Number(await firstAuditRoll.locator('[data-measurement="wof"]').inputValue());
   await firstAuditRoll.locator('[data-measurement="wof"]').fill(String(originalWof-0.125));
   check(await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_SHORTAGE_OR_DEVIATION' &&
@@ -641,7 +670,7 @@ try{
     (await auditPage.locator('[data-fabric-shopping]').inputValue())==='',
     'Clear must remove all local imported files and invalidate prior measured evidence.');
   await auditCtx.close();
-  console.log('PASS paired real exported CSV import, snapshot mismatch rejection, human-only ruler limits and local non-certified fabric evidence.');
+  console.log('PASS paired CSV imports, planned/observed shrinkage math, user-entered physical ruler limits, and local non-certified fabric evidence.');
   await geometryPage.emulateMedia({media:'print'});
   check((await geometryPage.locator('[data-final-quilt-dimensions]').innerText()).includes('Final outside: 66 × 86'),
     'Printed material plan must preserve the same final exterior dimensions.');
