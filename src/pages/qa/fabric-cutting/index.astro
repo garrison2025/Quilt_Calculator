@@ -288,6 +288,62 @@ import Base from '../../../layouts/Base.astro';
    block.append(assessment);
    return block;
   }
+  function createTopChainRows():void{
+   if(!imported?.seamPlan||!topPieces||!topJoins)return;
+   const count=Number(fieldValue('[data-top-chain-count]'));
+   if(!Number.isSafeInteger(count)||count<2||count>12){
+    if(topResult)topResult.textContent='Select a whole piece count between 2 and 12; nothing has been measured.';
+    return;
+   }
+   const sourceRolls=imported.rolls.filter(r=>r.id.startsWith('fabric:')&&r.pieces.length>0);
+   if(!sourceRolls.length){
+    if(topResult)topResult.textContent='No physical quilt-top fabric cut-list pieces. This check is unavailable.';
+    return;
+   }
+   const pieces:HTMLElement[]=[],joins:HTMLElement[]=[];
+   for(let i=0;i<count;i++){
+    const row=document.createElement('section');row.className='qa-top-chain-row';
+    row.dataset.topChainPiece=String(i);
+    const h=document.createElement('h4');h.textContent='Sewn position #'+(i+1)+' (actual quilt TOP cut piece)';
+    const grid=document.createElement('div');grid.className='qa-fabric-field-grid';
+    const rollLabel=labelFor('Physical fabric SKU for piece #'+(i+1));
+    const select=document.createElement('select');select.dataset.topChainRoll='';
+    const empty=document.createElement('option');empty.value='';empty.textContent='Choose the actual cut-list fabric roll';
+    select.append(empty);
+    for(const roll of sourceRolls){
+     const opt=document.createElement('option');opt.value=roll.id;
+     opt.textContent=roll.material+' · '+roll.id+' ('+roll.pieces.length+' numbered cuts)';
+     select.append(opt);
+    }
+    rollLabel.append(select);
+    const numberLabel=numericField('Printed cut-list piece number at sewn position #'+(i+1),'chainPieceNum');
+    const num=numberLabel.querySelector('input');
+    if(num){num.dataset.topChainPieceNum='';num.step='1';num.min='1';num.max='2000';}
+    const measureLabel=numericField('ACTUALLY measured span along this chain (inches)','chainCutSpan');
+    const measure=measureLabel.querySelector('input');
+    if(measure)measure.dataset.topChainCutSpan='';
+    grid.append(rollLabel,numberLabel,measureLabel);
+    const hint=document.createElement('p');hint.className='qa-fabric-small';hint.dataset.topChainPieceInfo='';
+    hint.textContent='No source cut piece chosen; actual ruler span NOT MEASURED.';
+    row.append(h,grid,hint);pieces.push(row);
+    if(i<count-1){
+     const joined=document.createElement('section');joined.className='qa-top-chain-row';
+     joined.dataset.topChainJoin=String(i);
+     const title=document.createElement('h4');title.textContent='Physical straight butt join #'+(i+1)+': position '+(i+1)+' to '+(i+2);
+     const fields=document.createElement('div');fields.className='qa-fabric-field-grid';
+     const last=numericField('Consumed length from previous piece edge (inches)','chainLossPrevious');
+     const first=numericField('Consumed length from next piece edge (inches)','chainLossNext');
+     const left=last.querySelector('input'),right=first.querySelector('input');
+     if(left){left.min='0';left.dataset.topChainLossPrevious='';}
+     if(right){right.min='0';right.dataset.topChainLossNext='';}
+     fields.append(last,first);
+     joined.append(title,fields);joins.push(joined);
+    }
+   }
+   topPieces.replaceChildren(...pieces);topJoins.replaceChildren(...joins);
+   if(topResult)topResult.textContent='Blank chain created. Select real cut pieces and enter independent ruler readings; NOT VERIFIED until recorded.';
+   render();
+  }
   function readManual():ManualFabricAuditInput|null{
    if(!imported)return null;
    const readings:ManualRollReading[]=[];
