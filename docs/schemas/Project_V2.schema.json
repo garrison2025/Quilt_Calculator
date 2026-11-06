@@ -110,6 +110,10 @@
         "allowRotate": {
           "type": "boolean"
         },
+        "backingDirection": {
+          "enum": ["auto", "vertical", "horizontal"],
+          "description": "Optional shared seam orientation; legacy V2 defaults to auto. A manual choice is preserved across the backing and whole-project planners; impossible directional-fabric choices block cut-ready output."
+        },
         "backingPricePerYard": {
           "type": "number", "minimum": 0, "maximum": 100000,
           "description": "Optional user-entered USD per yard; missing values are unpriced, not free."
