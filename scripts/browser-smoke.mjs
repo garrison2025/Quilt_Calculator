@@ -2776,6 +2776,66 @@ try{
   await backingChoiceCtx.close();
   console.log('PASS backing seam choice persists across pages, JSON, shopping/cut CSV; directional print fails safely.');
 
+  // Explicitly test new helpers through real browser clicks and the same
+  // persisted V2 project, not isolated DOM mockups or fabricated SEO routes.
+  const quickCtx=await browser.newContext({viewport:{width:1180,height:800}});
+  instrumentNetwork(quickCtx,'quick-planning');
+  const quickPage=await quickCtx.newPage();
+  quickPage.on('pageerror',err=>problems.push('Quick planning: '+err.message));
+  await hydrated(quickPage,'/calculators/',{incomplete:true});
+  check(await quickPage.locator('[data-size-preset]').count()===5,
+    'Five explicitly illustrative finished-outside preset choices must be available on the shared planner.');
+  await quickPage.locator('[data-size-preset="queen"]').click();
+  const afterPreset=await quickPage.locator('[data-final-quilt-dimensions]').innerText();
+  check(afterPreset.includes('Center before borders: 84 × 94')&&afterPreset.includes('Final outside: 90 × 100')&&
+    await quickPage.getByLabel('What do your quilt measurements include?').inputValue()==='includes-borders'&&
+    await quickPage.locator('#quilt-top-review').isChecked()===false,
+    'Applying a quilt finished-size example must preserve separate borders and revoke prior top-cut review.');
+  await hydrated(quickPage,'/quilt-backing-calculator/');
+  const comparison=quickPage.locator('[data-backing-width-comparison]');
+  check(await comparison.isVisible() &&
+    (await comparison.innerText()).includes('CURRENT · 43 in') &&
+    (await comparison.innerText()).includes('WHAT-IF · 108 in') &&
+    (await comparison.innerText()).includes('Price not supplied') &&
+    await quickPage.getByLabel('What do your quilt measurements include?').inputValue()==='includes-borders',
+    'Backing wide-fabric comparison must use the persisted outside-size project without inventing prices.');
+  await comparison.locator('[data-backing-alt-price]').fill('18');
+  check((await comparison.innerText()).includes('Enter the current price'),
+    'Showing an alternate price without a current price cannot invent a cost saving.');
+  await quickPage.getByLabel('Backing price (USD/yd, optional)').fill('10');
+  await quickPage.getByLabel('Backing price (USD/yd, optional)').press('Tab');
+  check((await comparison.innerText()).includes('material cost') &&
+    (await comparison.innerText()).includes('WHAT-IF · 108 in') &&
+    await comparison.locator('[data-backing-alt-price]').inputValue()==='18',
+    'Alternate backing width and input price survive recalculation, while current project pricing remains separate.');
+  await comparison.locator('[data-backing-alt-wof]').fill('0');
+  check(await comparison.locator('[data-backing-comparison-error]').isVisible() &&
+    await quickPage.locator('[data-action="export-cut-csv"]').isEnabled(),
+    'An impossible alternate WOF must show a hypothetical error without invalidating feasible CURRENT cuts.');
+  await comparison.locator('[data-backing-alt-wof]').fill('108');
+  check((await comparison.innerText()).includes('WHAT-IF · 108 in'),
+    'Correcting the what-if WOF must recalculate without changing native source project.');
+  const widthProof=quickPage.waitForEvent('download');
+  await quickPage.locator('[data-action="export-cut"]').click();
+  const currentProof=JSON.parse(await fs.readFile(await (await widthProof).path(),'utf8'));
+  check(currentProof.result.options.every(x=>x.layout.wofIn===43) &&
+    !JSON.stringify(currentProof).includes('alternateWofIn'),
+    'Hypothetical 108in backing must never contaminate the CURRENT 43in physical source export.');
+  await hydrated(quickPage,'/quilt-sashing-calculator/');
+  check(await quickPage.locator('[data-use-sashing-center]').isVisible() &&
+    (await quickPage.locator('[data-results]').innerText()).includes('58 × 46 in'),
+    'Sashing block layout must display its engine-computed real finished grid dimensions.');
+  await quickPage.locator('[data-use-sashing-center]').click();
+  await hydrated(quickPage,'/calculators/',{incomplete:true});
+  const afterSashing=await quickPage.locator('[data-final-quilt-dimensions]').innerText();
+  check(afterSashing.includes('Center before borders: 58 × 46')&&
+    afterSashing.includes('Final outside: 64 × 52') &&
+    await quickPage.getByLabel('What do your quilt measurements include?').inputValue()==='before-borders' &&
+    await quickPage.locator('#quilt-top-review').isChecked()===false,
+    'Only computed block+internal-sash grid CENTER transfers; 3in outside borders remain separate and old cuts unreviewed.');
+  await quickCtx.close();
+  console.log('PASS finished-size presets, wideback price what-if isolation and sashing-grid center handoff.');
+
   const dark=await browser.newContext({viewport:{width:1280,height:800},colorScheme:'dark'});
   instrumentNetwork(dark,'dark');
   const darkPage=await dark.newPage();
