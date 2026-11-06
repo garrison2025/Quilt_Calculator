@@ -502,9 +502,28 @@ import Base from '../../../layouts/Base.astro';
      nextEdgeTakeupIn:numberValue(row.querySelector<HTMLInputElement>('[data-top-chain-loss-next]'))
     }))
    }:undefined;
+   const chosenCells=[...(gridCells?.querySelectorAll<HTMLElement>('[data-top-grid-cell]')??[])];
+   const topGrid:UserTopGrid|undefined=chosenCells.length?{
+    rows:Number(fieldValue('[data-top-grid-rows]')),
+    columns:Number(fieldValue('[data-top-grid-columns]')),
+    declaredTotalToleranceIn:numberValue(query<HTMLInputElement>('[data-top-grid-tolerance]')),
+    measuredAssembledWidthIn:numberValue(query<HTMLInputElement>('[data-top-grid-measured-width]')),
+    measuredAssembledHeightIn:numberValue(query<HTMLInputElement>('[data-top-grid-measured-height]')),
+    spansEntireCenter:query<HTMLInputElement>('[data-top-grid-full-center]')?.checked??false,
+    cells:chosenCells.map(el=>({
+     rollId:el.querySelector<HTMLSelectElement>('[data-grid-roll]')?.value??'',
+     pieceNumber:numberValue(el.querySelector<HTMLInputElement>('[data-grid-piece-num]'))??0,
+     measuredCutWidthIn:numberValue(el.querySelector<HTMLInputElement>('[data-grid-width]')),
+     measuredCutHeightIn:numberValue(el.querySelector<HTMLInputElement>('[data-grid-height]')),
+     seamLeftIn:numberValue(el.querySelector<HTMLInputElement>('[data-grid-edge="left"]')),
+     seamRightIn:numberValue(el.querySelector<HTMLInputElement>('[data-grid-edge="right"]')),
+     seamTopIn:numberValue(el.querySelector<HTMLInputElement>('[data-grid-edge="top"]')),
+     seamBottomIn:numberValue(el.querySelector<HTMLInputElement>('[data-grid-edge="bottom"]'))
+    }))
+   }:undefined;
    return {
     project:imported,readings,
-    topChain,joinedSeamReadings,
+    topGrid,topChain,joinedSeamReadings,
     allowedSeamDeviationIn:numberValue(query<HTMLInputElement>('[data-fabric-seam-tolerance]')),
     finishingReading,allowedFinishingDeviationIn:numberValue(query<HTMLInputElement>('[data-fabric-finishing-tolerance]')),
     date:fieldValue('[data-fabric-date]'),
@@ -520,6 +539,44 @@ import Base from '../../../layouts/Base.astro';
    resultNode.dataset.fabricAssessment=outcome.status;
    resultNode.textContent=outcome.message+(outcome.missing.length?' Missing: '+outcome.missing.join('; ')+'.':'');
    exportButton.disabled=!outcome.canExport;
+   const rectangular=outcome.topGridCheck;
+   if(gridResult){
+    gridResult.dataset.topGridCoverage=rectangular.coverage;
+    const notes=[
+     'Manual quilt-TOP grid: '+rectangular.coverage+'. Source '+rectangular.source+'.',
+     'Real source pieces '+rectangular.knownSourceCells+'/'+rectangular.expectedCellCount+
+     ', physical cut-pair ruler measurements '+rectangular.measuredCells+'/'+rectangular.expectedCellCount+
+     ', individual internal seam-edge readings '+rectangular.measuredInternalEdges+'/'+rectangular.expectedInternalEdges+'.'
+    ];
+    if(rectangular.predictedAssembledWidthIn!==undefined)
+     notes.push('Derived sewn rectangle width '+rectangular.predictedAssembledWidthIn.toFixed(3)+
+      ' in and height '+rectangular.predictedAssembledHeightIn?.toFixed(3)+
+      ' in, from USER measured cut sizes minus USER measured internal seam losses.');
+    if(rectangular.rowWidthSpreadIn!==undefined)
+     notes.push('Cross-row assembled width spread '+rectangular.rowWidthSpreadIn.toFixed(3)+
+      ' in; cross-column assembled height spread '+rectangular.columnHeightSpreadIn?.toFixed(3)+' in.');
+    if(rectangular.independentWidthDifferenceIn!==undefined)
+     notes.push('Independent sewn-grid ruler minus derived width '+
+      rectangular.independentWidthDifferenceIn.toFixed(3)+' in, height '+
+      rectangular.independentHeightDifferenceIn?.toFixed(3)+' in.');
+    if(rectangular.actualCenterWidthDifferenceIn!==undefined)
+     notes.push('User-claimed complete CENTER grid minus planned center: width '+
+      rectangular.actualCenterWidthDifferenceIn.toFixed(3)+' in, height '+
+      rectangular.actualCenterHeightDifferenceIn?.toFixed(3)+' in.');
+    notes.push(...rectangular.warnings);
+    if(rectangular.invalid.length)notes.push('Invalid: '+rectangular.invalid.join('; '));
+    gridResult.textContent=notes.join(' ')+' USER REPORTED ONLY. NOT independently sewn, physically witnessed or certified.';
+    for(const el of gridCells?.querySelectorAll<HTMLElement>('[data-top-grid-cell]')??[]){
+     const info=el.querySelector<HTMLElement>('[data-grid-source-info]');
+     if(!info)continue;
+     const id=el.querySelector<HTMLSelectElement>('[data-grid-roll]')?.value??'';
+     const no=numberValue(el.querySelector<HTMLInputElement>('[data-grid-piece-num]'));
+     const piece=imported?.rolls.find(x=>x.id===id)?.pieces.find(x=>x.pieceNumber===no);
+     info.textContent=piece?'Native cut-list REFERENCE only: physical #'+no+' is '+
+      piece.widthIn+' × '+piece.heightIn+' inches (not a real measurement).':
+      'Select a real quilt-TOP fabric roll and unique CSV cut number; no physical width/height was inferred.';
+    }
+   }
    const chain=outcome.topChainCheck;
    if(topResult){
     topResult.dataset.topChainCoverage=chain.coverage;
