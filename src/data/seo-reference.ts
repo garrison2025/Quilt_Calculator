@@ -1,9 +1,40 @@
-import {calculateBacking, calculateStraightBinding, calculateYardage} from '../lib/quilt/math';
+import {calculateBacking, calculateStraightBinding, calculateYardage, selectBackingOption} from '../lib/quilt/math';
+import {sampleProject} from '../lib/quilt/project';
+import {resolveQuiltDimensions} from '../lib/quilt/dimensions';
 
 /** Verified-engine illustrative examples. These are NOT industry-standard quilt
  * dimensions, actual-sewn validation, or a substitute for the user's measured WOF.
  * No new cutting method and no extra public SEO route.
  */
+/** The live demo project includes its 3-inch border. A brochure-style
+ * unbordered 60 × 80 quote is NOT the same as the full project purchase.
+ * Derive the public worked example from the exact saved V2 sample and engine.
+ */
+export function currentPlannerSample(){
+ const p=sampleProject,o=p.options,d=resolveQuiltDimensions(p);
+ const backing=calculateBacking({
+  widthIn:d.finalWidthIn,heightIn:d.finalHeightIn,overageIn:o.overage,
+  wofIn:o.usableWof,joinTakeupIn:o.joinTakeup,oneWayPrint:o.oneWayPrint,
+  step:o.step,shrinkageLengthPct:o.lengthShrinkage
+ });
+ const chosen=selectBackingOption(backing,o.backingDirection);
+ const binding=calculateStraightBinding({
+  widthIn:d.finalWidthIn,heightIn:d.finalHeightIn,
+  wofIn:o.usableWof,stripWidthIn:o.stripWidth,tailAllowanceIn:o.tailAllowance,
+  joinLossIn:o.stripJoinLoss,step:o.step,shrinkageLengthPct:o.lengthShrinkage
+ });
+ return {centerWidthIn:d.centerWidthIn,centerHeightIn:d.centerHeightIn,
+  borderPerSideIn:d.borderPerSideIn,finalWidthIn:d.finalWidthIn,finalHeightIn:d.finalHeightIn,
+  backingOverageIn:o.overage,backingWidthIn:backing.targetWidthIn,
+  backingHeightIn:backing.targetHeightIn,usableWofIn:o.usableWof,
+  direction:chosen.direction,panels:chosen.panelCount,
+  backingYards:chosen.purchase.roundedPurchaseYards,
+  bindingStrips:binding.stripCount,bindingLengthIn:binding.requiredLengthIn,
+  bindingYards:binding.purchase.roundedPurchaseYards
+ };
+}
+export const plannerSampleReference=currentPlannerSample();
+
 const common={step:.125,shrinkageLengthPct:0};
 export const backingReference=[
  {label:'Baby-sized example',width:36,height:45},
