@@ -206,6 +206,20 @@ export function calculateBacking(input: { widthIn: number; heightIn: number; ove
   const recommended = [...options].sort((a, b) => a.purchase.roundedPurchaseYards - b.purchase.roundedPurchaseYards || a.purchase.rawPurchaseYards - b.purchase.rawPurchaseYards)[0];
   return { targetWidthIn, targetHeightIn, options, recommended };
 }
+export type BackingDirectionPreference = 'auto' | 'vertical' | 'horizontal';
+/** A manual seam choice must survive a change of calculator route. Never silently
+ * revert a chosen orientation to the cheapest option. A directional print can
+ * make a previously selected horizontal seam physically forbidden.
+ */
+export function selectBackingOption(
+ result: Pick<ReturnType<typeof calculateBacking>, 'recommended' | 'options'>,
+ preference: BackingDirectionPreference = 'auto'
+): BackingOption {
+ if(preference==='auto')return result.recommended;
+ const option=result.options.find(item=>item.direction===preference);
+ if(!option)throw Error('BACKING DIRECTION CONFLICT: The selected '+preference+' seam orientation is not available for the current fabric constraints. Choose Auto or a permitted direction before printing or buying fabric.');
+ return option;
+}
 export function calculateStraightBinding(input: { widthIn: number; heightIn: number; wofIn: number; stripWidthIn: number; tailAllowanceIn: number; joinLossIn: number; step?: number; shrinkageLengthPct?: number }): { requiredLengthIn: number; stripCount: number; effectiveJoinedLengthIn: number; layout: Layout; purchase: Purchase } {
   const W = valid(input.widthIn, 'Quilt width'), H = valid(input.heightIn, 'Quilt height');
   const F = valid(input.wofIn, 'Usable WOF'), strip = valid(input.stripWidthIn, 'Strip width');
