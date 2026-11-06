@@ -727,7 +727,7 @@ try{
   const seamEvidencePromise=auditPage.waitForEvent('download');
   await auditDownload.click();
   const seamEvidence=JSON.parse(await fs.readFile(await (await seamEvidencePromise).path(),'utf8'));
-  check(seamEvidence.schemaVersion===5 && seamEvidence.cuttingPlanJsonMatchedByFingerprint===true &&
+  check(seamEvidence.schemaVersion===6 && seamEvidence.cuttingPlanJsonMatchedByFingerprint===true &&
     seamEvidence.seamVerificationCoverage==='ALL_USER_REPORTED' &&
     seamEvidence.seamChecks.length===2 &&
     seamEvidence.seamChecks.every(c=>c.perJoinCoverage==='ALL_USER_REPORTED' && !c.perJoinVsAssembledSpanMismatch) &&
@@ -797,7 +797,7 @@ try{
   const finishDownloadPromise=auditPage.waitForEvent('download');
   await auditDownload.click();
   const finishJson=JSON.parse(await fs.readFile(await(await finishDownloadPromise).path(),'utf8'));
-  check(finishJson.schemaVersion===5 &&
+  check(finishJson.schemaVersion===6 &&
     finishJson.finishingCheck.backingCoverage==='FULL_USER_REPORTED' &&
     finishJson.finishingCheck.topCoverage==='FULL_USER_REPORTED' &&
     finishJson.finishingCheck.observedTrimAreaSqIn>=0 &&
@@ -864,7 +864,7 @@ try{
   const chainPromise=auditPage.waitForEvent('download');
   await auditDownload.click();
   const chainProof=JSON.parse(await fs.readFile(await (await chainPromise).path(),'utf8'));
-  check(chainProof.schemaVersion===5 &&
+  check(chainProof.schemaVersion===6 &&
     chainProof.topChainCheck.coverage==='ALL_USER_REPORTED' &&
     chainProof.topChainCheck.recordedPieceCount===2 &&
     chainProof.topChainCheck.recordedJoinEdgeCount===2 &&
@@ -895,6 +895,88 @@ try{
     await chainJoins.count()===0 &&
     await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_WITHIN_DECLARED_LIMITS',
     'Explicit Clear chain must preserve already measured roll/backing/finish audit data.');
+  const gridArea=auditPage.locator('[data-top-grid-area]');
+  const gridStatus=auditPage.locator('[data-top-grid-result]');
+  check(await gridArea.isVisible() &&
+    (await auditPage.locator('[data-top-grid-plan]').textContent()).includes('Reviewed CENTER before borders: 60 × 80'),
+    'Rectangular grid QA must use the same reviewed center size but NOT invent physical sewn placements.');
+  await gridArea.locator('summary').click();
+  check(await gridStatus.getAttribute('data-top-grid-coverage')==='NOT_STARTED',
+    'Cut-list roll coordinates alone must NOT construct a 2D quilt top.');
+  await auditPage.locator('[data-top-grid-create]').click();
+  const gridCells=auditPage.locator('[data-top-grid-cell]');
+  check(await gridCells.count()===4 &&
+    (await gridCells.first().locator('[data-grid-width]').inputValue())==='' &&
+    await gridStatus.getAttribute('data-top-grid-coverage')==='PARTIAL_USER_REPORTED',
+    'Create 2×2 must produce exactly four empty user-positioned cells and no model-fabricated ruler values.');
+  const chosenGrid=sourceTopRows.slice(0,4);
+  check(chosenGrid.length===4 && chosenGrid.every(row=>row[1].startsWith('fabric:')) &&
+    chosenGrid.every(row=>row[6]===chosenGrid[0][6]&&row[7]===chosenGrid[0][7]),
+    '2×2 browser test requires four actual distinct equal-size source TOP pieces from the sample project.');
+  for(let i=0;i<4;i++){
+   const cell=gridCells.nth(i),piece=chosenGrid[i];
+   await cell.locator('[data-grid-roll]').selectOption(piece[1]);
+   await cell.locator('[data-grid-piece-num]').fill(piece[2]);
+   await cell.locator('[data-grid-width]').fill(piece[6]);
+   await cell.locator('[data-grid-height]').fill(piece[7]);
+   check((await cell.locator('[data-grid-source-info]').innerText()).includes('Native cut-list REFERENCE only'),
+     'Each native source cut may be displayed as a reference but NOT copied to actual measurement fields.');
+   for(const edge of await cell.locator('[data-grid-edge]').all())await edge.fill('0.25');
+  }
+  const gridWidth=2*Number(chosenGrid[0][6])-.5;
+  const gridHeight=2*Number(chosenGrid[0][7])-.5;
+  await auditPage.locator('[data-top-grid-tolerance]').fill('0.0625');
+  await auditPage.locator('[data-top-grid-measured-width]').fill(String(gridWidth));
+  await auditPage.locator('[data-top-grid-measured-height]').fill(String(gridHeight));
+  check(await gridStatus.getAttribute('data-top-grid-coverage')==='ALL_USER_REPORTED' &&
+    await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_WITHIN_DECLARED_LIMITS' &&
+    (await gridStatus.innerText()).includes('Cross-row assembled width spread 0.000'),
+    'Real source 2×2 grid with synthetic but manually typed seams must reconcile without asserting independent physical certification.');
+  const gridEvidencePromise=auditPage.waitForEvent('download');
+  await auditDownload.click();
+  const gridEvidence=JSON.parse(await fs.readFile(await (await gridEvidencePromise).path(),'utf8'));
+  check(gridEvidence.schemaVersion===6 &&
+    gridEvidence.topGridCheck.coverage==='ALL_USER_REPORTED' &&
+    gridEvidence.topGridCheck.measuredInternalEdges===8 &&
+    gridEvidence.topGridCheck.knownSourceCells===4 &&
+    gridEvidence.topGridCheck.predictedAssembledWidthIn===gridWidth &&
+    gridEvidence.topGridCheck.predictedAssembledHeightIn===gridHeight &&
+    gridEvidence.topGridCheck.shapeMismatch===false &&
+    gridEvidence.topGridCheck.independentRulerMismatch===false &&
+    gridEvidence.topGridCheck.actualCenterWidthDifferenceIn===undefined &&
+    gridEvidence.independentPhysicalVerification===false &&
+    gridEvidence.quiltCuttingApproval===false,
+    'V6 local evidence must preserve 4 unique physical top cut IDs and 8 internal seam losses, without whole-top certification.');
+  await gridCells.nth(0).locator('[data-grid-edge="right"]').fill('0.375');
+  await gridCells.nth(1).locator('[data-grid-edge="left"]').fill('0.125');
+  check(await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_TOP_GRID_SHAPE_MISMATCH',
+    'Even equal row totals must not mask unequal cell widths across aligned grid columns.');
+  await gridCells.nth(0).locator('[data-grid-edge="right"]').fill('0.25');
+  await gridCells.nth(1).locator('[data-grid-edge="left"]').fill('0.25');
+  await auditPage.locator('[data-top-grid-measured-width]').fill(String(gridWidth+.25));
+  check(await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_TOP_GRID_RULER_MISMATCH' &&
+    await auditDownload.isEnabled(),
+    'Independent user ruler width differing from calculated seam take-up must be an exportable negative state.');
+  await auditPage.locator('[data-top-grid-measured-width]').fill(String(gridWidth));
+  await auditPage.locator('[data-top-grid-full-center]').check();
+  check(await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_TOP_GRID_CENTER_SIZE_DEVIATION',
+    'Only a reviewer-asserted WHOLE quilt center grid may be compared against 60×80 center dimensions.');
+  await auditPage.locator('[data-top-grid-full-center]').uncheck();
+  for(const cell of await gridCells.all())await cell.locator('[data-grid-width]').fill(String(Number(chosenGrid[0][6])+.25));
+  await auditPage.locator('[data-top-grid-measured-width]').fill(String(gridWidth+.5));
+  check(await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_TOP_GRID_CUT_SIZE_DEVIATION',
+    'A geometrically consistent but wrong-width actual cut must flag the native CSV cut size mismatch.');
+  for(const cell of await gridCells.all())await cell.locator('[data-grid-width]').fill(chosenGrid[0][6]);
+  await auditPage.locator('[data-top-grid-measured-width]').fill(String(gridWidth));
+  await gridCells.nth(2).locator('[data-grid-edge="right"]').fill('');
+  check(await gridStatus.getAttribute('data-top-grid-coverage')==='PARTIAL_USER_REPORTED' &&
+    await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_WITHIN_DECLARED_LIMITS',
+    'One unmeasured interior seam edge must revoke all complete-rectangle geometry claims.');
+  await auditPage.locator('[data-top-grid-clear]').click();
+  check(await gridCells.count()===0 &&
+    await gridStatus.getAttribute('data-top-grid-coverage')==='NOT_STARTED' &&
+    await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_WITHIN_DECLARED_LIMITS',
+    'Clear 2D grid must not erase previous physical roll/backing and 1D chain audit.');
   const originalWof=Number(await firstAuditRoll.locator('[data-measurement="wof"]').inputValue());
   await firstAuditRoll.locator('[data-measurement="wof"]').fill(String(originalWof-0.125));
   check(await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_SHORTAGE_OR_DEVIATION' &&

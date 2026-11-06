@@ -5,6 +5,7 @@ import {verifyLayout, MAX_PIECES, type Layout, type Rect} from './math';
 import {evaluateJoinedSeams, type JoinedSeamPlan, type UserJoinedSeamReading, type JoinedSeamObservation, type JoinedSeamEvaluation} from './seam-audit';
 import {evaluateFinishing, type FinishingAudit, type UserFinishingReading} from './finishing-audit';
 import {evaluateTopChain, type TopChainAudit, type UserTopChain} from './top-chain-audit';
+import {evaluateTopGrid, type TopGridAudit, type UserTopGrid} from './top-grid-audit';
 
 /** The CSV reader is intentionally strict. Uploaded files remain in the browser:
  * nothing here can attest to physical fabric quality, ownership or provenance.
@@ -183,6 +184,8 @@ export type ManualFabricAuditInput={
  allowedFinishingDeviationIn?:number;
  /** Explicit manually ordered one-row or one-column straight-seam chain. */
  topChain?:UserTopChain;
+ /** User-selected rectangular patch arrangement, never inferred from CSV. */
+ topGrid?:UserTopGrid;
  reviewer:string;
  physicallyMeasured:boolean;
 };
@@ -200,6 +203,10 @@ export type FabricAuditStatus=
  'USER_REPORTED_TOP_CHAIN_MEASUREMENTS_DISAGREE'|
  'USER_REPORTED_TOP_CHAIN_CENTER_SIZE_DEVIATION'|
  'USER_REPORTED_TOP_CHAIN_CUT_SIZE_DEVIATION'|
+ 'USER_REPORTED_TOP_GRID_SHAPE_MISMATCH'|
+ 'USER_REPORTED_TOP_GRID_RULER_MISMATCH'|
+ 'USER_REPORTED_TOP_GRID_CENTER_SIZE_DEVIATION'|
+ 'USER_REPORTED_TOP_GRID_CUT_SIZE_DEVIATION'|
  'USER_REPORTED_WITHIN_DECLARED_LIMITS';
 export type RollAuditCheck={
  id:string;material:string;requiredWofIn:number;requiredRunIn:number;
@@ -219,6 +226,7 @@ export type FabricAuditAssessment={
  seamVerificationCoverage:JoinedSeamEvaluation['verificationCoverage'];
  finishingCheck:FinishingAudit;
  topChainCheck:TopChainAudit;
+ topGridCheck:TopGridAudit;
 };
 function validDate(date:string):boolean{
  if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return false;
@@ -287,10 +295,11 @@ export function assessFabricAudit(input:ManualFabricAuditInput):FabricAuditAsses
  const seams=evaluateJoinedSeams(input.project.seamPlan,input.readings,input.joinedSeamReadings??[],input.allowedSeamDeviationIn);
  const finishing=evaluateFinishing(input.project.seamPlan,input.finishingReading,input.joinedSeamReadings??[],input.allowedFinishingDeviationIn);
  const topChain=evaluateTopChain(input.project,input.topChain);
- missing.push(...seams.missing,...finishing.invalid,...topChain.invalid);
+ const topGrid=evaluateTopGrid(input.project,input.topGrid);
+ missing.push(...seams.missing,...finishing.invalid,...topChain.invalid,...topGrid.invalid);
  const seamDetails={
   seamChecks:seams.observations,seamVerificationCoverage:seams.verificationCoverage,
-  finishingCheck:finishing,topChainCheck:topChain
+  finishingCheck:finishing,topChainCheck:topChain,topGridCheck:topGrid
  };
  if(missing.length)return {...seamDetails,status:'INCOMPLETE_USER_MEASUREMENTS',canExport:false,checks,missing,
   message:'Missing real paper/fabric measurements or required metadata. No cutting pass or physical approval is available.'};
@@ -326,6 +335,18 @@ export function assessFabricAudit(input:ManualFabricAuditInput):FabricAuditAsses
  if(topChain.cutSizeDeviationCount>0)return {
   ...seamDetails,status:'USER_REPORTED_TOP_CHAIN_CUT_SIZE_DEVIATION',canExport:true,checks,missing,
   message:'At least one quilt-top cut piece is user-measured outside the native cut-list span tolerance. Inspect the actual cut piece and its selected SKU/number before sewing.'};
+ if(topGrid.shapeMismatch)return {
+  ...seamDetails,status:'USER_REPORTED_TOP_GRID_SHAPE_MISMATCH',canExport:true,checks,missing,
+  message:'User-reported row widths, column heights or aligned piece cell spans do not form a consistent straight-seam rectangular quilt-top grid. Check actual placement and each measured seam edge. No physical approval.'};
+ if(topGrid.independentRulerMismatch)return {
+  ...seamDetails,status:'USER_REPORTED_TOP_GRID_RULER_MISMATCH',canExport:true,checks,missing,
+  message:'Independently measured user-assembled quilt-top grid width/height disagrees with real piece dimensions minus BOTH sides of all internal seams. Recheck ruler values; not independently certified.'};
+ if(topGrid.centerSizeMismatch)return {
+  ...seamDetails,status:'USER_REPORTED_TOP_GRID_CENTER_SIZE_DEVIATION',canExport:true,checks,missing,
+  message:'User-claimed complete quilt TOP center grid differs from the reviewed plan CENTER width/height. Do not compare arbitrary partial grids to the full center.'};
+ if(topGrid.cutSizeDeviationCount>0)return {
+  ...seamDetails,status:'USER_REPORTED_TOP_GRID_CUT_SIZE_DEVIATION',canExport:true,checks,missing,
+  message:'At least one user-measured quilt-top grid patch differs from the matching cut-list CSV target size. Recheck the selected roll and numbered physical cut.'};
  if(checks.some(c=>c.observedShrinkageExceedsPlan))return {
   ...seamDetails,status:'USER_REPORTED_SHRINKAGE_EXCEEDS_PLAN',canExport:true,checks,missing,
   message:'The user-measured prewash/postwash length decrease exceeds the shrinkage percentage assumed by the shopping estimate. Recheck the source roll and purchasing buffer; enough actual postwash material may still remain. This is NOT a physical approval.'};
@@ -349,13 +370,15 @@ export function assessFabricAudit(input:ManualFabricAuditInput):FabricAuditAsses
    (finishing.topCoverage==='FULL_USER_REPORTED'?'Sewn quilt TOP outside size is USER REPORTED only. ':'Sewn quilt TOP final outside size is NOT verified. ')+
    (topChain.coverage==='ALL_USER_REPORTED'?'One explicit straight-seam quilt-top chain is USER REPORTED only; complete top placement remains unverified. ':
      'Cut-piece-to-sewn-top seam-chain reconciliation is NOT fully verified. ')+
+   (topGrid.coverage==='ALL_USER_REPORTED'?'One explicitly assembled rectangular quilt-TOP grid is USER REPORTED only; real geometry was not independently witnessed. ':
+     'The quilt-TOP rectangular grid is NOT fully measured or was NOT recorded. ')+
    'Final quilt dimensions after batting, quilting and binding are NOT verified. This is NOT independent certification, and does NOT approve fabric purchase or production.'};
 }
 export function fabricAuditEvidence(input:ManualFabricAuditInput,recordedAtUtc:string){
  const result=assessFabricAudit(input);
  if(!result.canExport)throw Error('Complete every physical measurement and confirm it was performed before exporting.');
  return {
-  schemaVersion:5,kind:'user-reported-fabric-cutting-check',
+  schemaVersion:6,kind:'user-reported-fabric-cutting-check',
   recordedAtUtc,measuredOn:input.date,
   projectFingerprint:input.project.sourceProjectHash,
   sourceSnapshotIsCryptographicallyAuthenticated:false,
@@ -372,6 +395,7 @@ export function fabricAuditEvidence(input:ManualFabricAuditInput,recordedAtUtc:s
   finishingCheck:result.finishingCheck,
   userSelectedFinishingDeviationAllowanceIn:input.allowedFinishingDeviationIn,
   topChainCheck:result.topChainCheck,
+  topGridCheck:result.topGridCheck,
   selfReportedStatus:result.status,explanation:result.message,
   independentPhysicalVerification:false,quiltCuttingApproval:false,
   note:'Uploaded files and measurements are user supplied. Checking a sample cut is not verification of every physical cut.'

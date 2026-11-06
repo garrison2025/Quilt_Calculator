@@ -138,6 +138,38 @@ import Base from '../../../layouts/Base.astro';
     <p class="qa-fabric-small">For each piece, choose its physical fabric SKU and printed cut-list piece number, then measure the actual cut span. For every join, measure the lost length at the previous piece's trailing edge and the next piece's leading edge (zero allowed). The listed cut dimensions are only reference data, never automatically treated as actual measurements.</p>
     <div data-top-chain-result role="status" aria-live="polite">No real quilt-top seam chain reported: NOT VERIFIED.</div>
    </details>
+   <details class="qa-fabric-roll" data-top-grid-area hidden>
+    <summary>Optional: physical 2D rectangular quilt-TOP grid (manual piece placement and sewn seam take-up)</summary>
+    <p class="qa-fabric-small" data-top-grid-plan></p>
+    <p>This is for a <strong>straight, rectangular patchwork grid only</strong>. Source cutting CSV tells us each physical cut's size and ID but <strong>NOT the actual sewn placement</strong>. You must select the true row/column position of every piece. Measure BOTH width and height of every cut, then the net length lost at every <em>internal</em> seam edge. Actual outer perimeter edges are not sewn to another grid cell and are excluded from these internal seam calculations. Rotated, offset, overlapping, angled, improv or irregular piecing is outside this check.</p>
+    <div class="qa-fabric-field-grid">
+     <label>Actual sewn row count (2–4)
+      <input type="number" data-top-grid-rows min="2" max="4" step="1" value="2" />
+     </label>
+     <label>Actual sewn column count (2–4)
+      <input type="number" data-top-grid-columns min="2" max="4" step="1" value="2" />
+     </label>
+     <label>Declared TOTAL assembled-dimension tolerance (0–1 inch)
+      <input type="number" data-top-grid-tolerance min="0" max="1" step="any" placeholder="e.g. 0.0625" />
+     </label>
+     <label>Independent measured assembled GRID width BEFORE borders (inches)
+      <input type="number" data-top-grid-measured-width min="0" step="any" placeholder="Real sewn-grid ruler width" />
+     </label>
+     <label>Independent measured assembled GRID height BEFORE borders (inches)
+      <input type="number" data-top-grid-measured-height min="0" step="any" placeholder="Real sewn-grid ruler height" />
+     </label>
+    </div>
+    <label class="qa-fabric-confirm"><input type="checkbox" data-top-grid-full-center />
+     I affirm this exact 2D grid is the COMPLETE quilt TOP CENTER, not a small sample. Only then compare to the reviewed plan's center width/height, never to its border-inclusive outside dimensions.
+    </label>
+    <div class="qa-fabric-buttons">
+     <button type="button" class="header-cta" data-top-grid-create>Create empty measured-grid cells</button>
+     <button type="button" class="header-cta" data-top-grid-clear>Clear only the 2D grid</button>
+    </div>
+    <div data-top-grid-cells></div>
+    <p class="qa-fabric-small">Cell cut width/height and seam-edge losses are <strong>user ruler measurements</strong>, not source-model defaults. A blank field is NOT measured, including the two sides of any interior join. Only internal joins require values. Correctly observed zero is explicitly entered as 0.</p>
+    <div data-top-grid-result role="status" aria-live="polite">No user-arranged quilt TOP rectangular grid: NOT VERIFIED.</div>
+   </details>
    <label class="qa-fabric-confirm"><input type="checkbox" data-fabric-confirm /> I actually measured the fabric and sample cuts with a physical ruler. I understand that browser and CSV calculations cannot independently verify my statements.</label>
    <h2>3. Review the user-reported results</h2>
    <div data-fabric-result role="status" aria-live="polite">No physical measurements entered.</div>
@@ -162,6 +194,7 @@ import Base from '../../../layouts/Base.astro';
   import {readJoinedSeamPlan,type PlannedSeamCheck} from '../../../lib/quilt/seam-audit';
   import type {UserFinishingReading} from '../../../lib/quilt/finishing-audit';
   import type {UserTopChain} from '../../../lib/quilt/top-chain-audit';
+  import type {UserTopGrid} from '../../../lib/quilt/top-grid-audit';
   const parent=document.querySelector<HTMLElement>('[data-qa-fabric-audit]');
   const cutsFile=parent?.querySelector<HTMLInputElement>('[data-fabric-cuts]');
   const shoppingFile=parent?.querySelector<HTMLInputElement>('[data-fabric-shopping]');
@@ -182,6 +215,12 @@ import Base from '../../../layouts/Base.astro';
   const topResult=parent?.querySelector<HTMLElement>('[data-top-chain-result]');
   const topCreate=parent?.querySelector<HTMLButtonElement>('[data-top-chain-create]');
   const topClear=parent?.querySelector<HTMLButtonElement>('[data-top-chain-clear]');
+  const gridArea=parent?.querySelector<HTMLElement>('[data-top-grid-area]');
+  const gridPlan=parent?.querySelector<HTMLElement>('[data-top-grid-plan]');
+  const gridCells=parent?.querySelector<HTMLElement>('[data-top-grid-cells]');
+  const gridResult=parent?.querySelector<HTMLElement>('[data-top-grid-result]');
+  const gridCreate=parent?.querySelector<HTMLButtonElement>('[data-top-grid-create]');
+  const gridClear=parent?.querySelector<HTMLButtonElement>('[data-top-grid-clear]');
   const snapshot=parent?.querySelector<HTMLElement>('[data-fabric-snapshot]');
   const resultNode=parent?.querySelector<HTMLElement>('[data-fabric-result]');
   const exportButton=parent?.querySelector<HTMLButtonElement>('[data-fabric-download]');
@@ -344,6 +383,70 @@ import Base from '../../../layouts/Base.astro';
    if(topResult)topResult.textContent='Blank chain created. Select real cut pieces and enter independent ruler readings; NOT VERIFIED until recorded.';
    render();
   }
+  function createTopGridRows():void{
+   if(!imported?.seamPlan||!gridCells)return;
+   const rows=Number(fieldValue('[data-top-grid-rows]'));
+   const columns=Number(fieldValue('[data-top-grid-columns]'));
+   if(!Number.isSafeInteger(rows)||!Number.isSafeInteger(columns)||rows<2||rows>4||columns<2||columns>4){
+    if(gridResult)gridResult.textContent='Enter actual whole grid row/column counts from 2 to 4.';
+    return;
+   }
+   const sourceRolls=imported.rolls.filter(r=>r.id.startsWith('fabric:')&&r.pieces.length>0);
+   if(!sourceRolls.length){
+    if(gridResult)gridResult.textContent='No numbered physical quilt-TOP cut pieces are in the current paired CSV files.';
+    return;
+   }
+   const blocks:HTMLElement[]=[];
+   const edges=[
+    {field:'left',label:'LEFT internal seam net loss (inches)',active:(r:number,c:number)=>c>0},
+    {field:'right',label:'RIGHT internal seam net loss (inches)',active:(r:number,c:number)=>c<columns-1},
+    {field:'top',label:'TOP internal seam net loss (inches)',active:(r:number,c:number)=>r>0},
+    {field:'bottom',label:'BOTTOM internal seam net loss (inches)',active:(r:number,c:number)=>r<rows-1}
+   ];
+   for(let r=0;r<rows;r++){
+    for(let c=0;c<columns;c++){
+     const block=document.createElement('section');
+     block.className='qa-top-grid-cell';block.dataset.topGridCell=String(r*columns+c);
+     const h=document.createElement('h4');
+     h.textContent='Sewn grid ROW '+(r+1)+' / COLUMN '+(c+1);
+     const inputs=document.createElement('div');inputs.className='qa-fabric-field-grid';
+     const rollLabel=labelFor('Actual physical fabric roll / SKU');
+     const select=document.createElement('select');select.dataset.gridRoll='';
+     const initial=document.createElement('option');initial.value='';initial.textContent='Select real fabric roll';
+     select.append(initial);
+     for(const source of sourceRolls){
+      const option=document.createElement('option');option.value=source.id;
+      option.textContent=source.material+' · '+source.id+' ('+source.pieces.length+' pieces)';
+      select.append(option);
+     }
+     rollLabel.append(select);
+     const numberLabel=numericField('Printed CSV piece # (do not reuse IDs)','topGridPieceNum');
+     const number=numberLabel.querySelector('input');
+     if(number){number.step='1';number.min='1';number.max='2000';number.dataset.gridPieceNum='';}
+     const widthLabel=numericField('ACTUAL pre-sew cut WIDTH (inches)','topGridW');
+     const width=widthLabel.querySelector('input');
+     if(width)width.dataset.gridWidth='';
+     const heightLabel=numericField('ACTUAL pre-sew cut HEIGHT (inches)','topGridH');
+     const height=heightLabel.querySelector('input');
+     if(height)height.dataset.gridHeight='';
+     inputs.append(rollLabel,numberLabel,widthLabel,heightLabel);
+     for(const e of edges){
+      if(!e.active(r,c))continue;
+      const label=numericField(e.label,'topGridEdge');
+      const input=label.querySelector('input');
+      if(input){input.min='0';input.dataset.gridEdge=e.field;}
+      inputs.append(label);
+     }
+     const info=document.createElement('p');info.className='qa-fabric-small';
+     info.dataset.gridSourceInfo='';
+     info.textContent='No source quilt-TOP cut selected; NO physical ruler measurements entered.';
+     block.append(h,inputs,info);blocks.push(block);
+    }
+   }
+   gridCells.replaceChildren(...blocks);
+   if(gridResult)gridResult.textContent='Empty user-specified rectangular grid created. All real cut and sewn measurements remain NOT VERIFIED.';
+   render();
+  }
   function readManual():ManualFabricAuditInput|null{
    if(!imported)return null;
    const readings:ManualRollReading[]=[];
@@ -399,9 +502,28 @@ import Base from '../../../layouts/Base.astro';
      nextEdgeTakeupIn:numberValue(row.querySelector<HTMLInputElement>('[data-top-chain-loss-next]'))
     }))
    }:undefined;
+   const chosenCells=[...(gridCells?.querySelectorAll<HTMLElement>('[data-top-grid-cell]')??[])];
+   const topGrid:UserTopGrid|undefined=chosenCells.length?{
+    rows:Number(fieldValue('[data-top-grid-rows]')),
+    columns:Number(fieldValue('[data-top-grid-columns]')),
+    declaredTotalToleranceIn:numberValue(query<HTMLInputElement>('[data-top-grid-tolerance]')),
+    measuredAssembledWidthIn:numberValue(query<HTMLInputElement>('[data-top-grid-measured-width]')),
+    measuredAssembledHeightIn:numberValue(query<HTMLInputElement>('[data-top-grid-measured-height]')),
+    spansEntireCenter:query<HTMLInputElement>('[data-top-grid-full-center]')?.checked??false,
+    cells:chosenCells.map(el=>({
+     rollId:el.querySelector<HTMLSelectElement>('[data-grid-roll]')?.value??'',
+     pieceNumber:numberValue(el.querySelector<HTMLInputElement>('[data-grid-piece-num]'))??0,
+     measuredCutWidthIn:numberValue(el.querySelector<HTMLInputElement>('[data-grid-width]')),
+     measuredCutHeightIn:numberValue(el.querySelector<HTMLInputElement>('[data-grid-height]')),
+     seamLeftIn:numberValue(el.querySelector<HTMLInputElement>('[data-grid-edge="left"]')),
+     seamRightIn:numberValue(el.querySelector<HTMLInputElement>('[data-grid-edge="right"]')),
+     seamTopIn:numberValue(el.querySelector<HTMLInputElement>('[data-grid-edge="top"]')),
+     seamBottomIn:numberValue(el.querySelector<HTMLInputElement>('[data-grid-edge="bottom"]'))
+    }))
+   }:undefined;
    return {
     project:imported,readings,
-    topChain,joinedSeamReadings,
+    topGrid,topChain,joinedSeamReadings,
     allowedSeamDeviationIn:numberValue(query<HTMLInputElement>('[data-fabric-seam-tolerance]')),
     finishingReading,allowedFinishingDeviationIn:numberValue(query<HTMLInputElement>('[data-fabric-finishing-tolerance]')),
     date:fieldValue('[data-fabric-date]'),
@@ -417,6 +539,44 @@ import Base from '../../../layouts/Base.astro';
    resultNode.dataset.fabricAssessment=outcome.status;
    resultNode.textContent=outcome.message+(outcome.missing.length?' Missing: '+outcome.missing.join('; ')+'.':'');
    exportButton.disabled=!outcome.canExport;
+   const rectangular=outcome.topGridCheck;
+   if(gridResult){
+    gridResult.dataset.topGridCoverage=rectangular.coverage;
+    const notes=[
+     'Manual quilt-TOP grid: '+rectangular.coverage+'. Source '+rectangular.source+'.',
+     'Real source pieces '+rectangular.knownSourceCells+'/'+rectangular.expectedCellCount+
+     ', physical cut-pair ruler measurements '+rectangular.measuredCells+'/'+rectangular.expectedCellCount+
+     ', individual internal seam-edge readings '+rectangular.measuredInternalEdges+'/'+rectangular.expectedInternalEdges+'.'
+    ];
+    if(rectangular.predictedAssembledWidthIn!==undefined)
+     notes.push('Derived sewn rectangle width '+rectangular.predictedAssembledWidthIn.toFixed(3)+
+      ' in and height '+rectangular.predictedAssembledHeightIn?.toFixed(3)+
+      ' in, from USER measured cut sizes minus USER measured internal seam losses.');
+    if(rectangular.rowWidthSpreadIn!==undefined)
+     notes.push('Cross-row assembled width spread '+rectangular.rowWidthSpreadIn.toFixed(3)+
+      ' in; cross-column assembled height spread '+rectangular.columnHeightSpreadIn?.toFixed(3)+' in.');
+    if(rectangular.independentWidthDifferenceIn!==undefined)
+     notes.push('Independent sewn-grid ruler minus derived width '+
+      rectangular.independentWidthDifferenceIn.toFixed(3)+' in, height '+
+      rectangular.independentHeightDifferenceIn?.toFixed(3)+' in.');
+    if(rectangular.actualCenterWidthDifferenceIn!==undefined)
+     notes.push('User-claimed complete CENTER grid minus planned center: width '+
+      rectangular.actualCenterWidthDifferenceIn.toFixed(3)+' in, height '+
+      rectangular.actualCenterHeightDifferenceIn?.toFixed(3)+' in.');
+    notes.push(...rectangular.warnings);
+    if(rectangular.invalid.length)notes.push('Invalid: '+rectangular.invalid.join('; '));
+    gridResult.textContent=notes.join(' ')+' USER REPORTED ONLY. NOT independently sewn, physically witnessed or certified.';
+    for(const el of gridCells?.querySelectorAll<HTMLElement>('[data-top-grid-cell]')??[]){
+     const info=el.querySelector<HTMLElement>('[data-grid-source-info]');
+     if(!info)continue;
+     const id=el.querySelector<HTMLSelectElement>('[data-grid-roll]')?.value??'';
+     const no=numberValue(el.querySelector<HTMLInputElement>('[data-grid-piece-num]'));
+     const piece=imported?.rolls.find(x=>x.id===id)?.pieces.find(x=>x.pieceNumber===no);
+     info.textContent=piece?'Native cut-list REFERENCE only: physical #'+no+' is '+
+      piece.widthIn+' × '+piece.heightIn+' inches (not a real measurement).':
+      'Select a real quilt-TOP fabric roll and unique CSV cut number; no physical width/height was inferred.';
+    }
+   }
    const chain=outcome.topChainCheck;
    if(topResult){
     topResult.dataset.topChainCoverage=chain.coverage;
@@ -563,6 +723,22 @@ import Base from '../../../layouts/Base.astro';
     if(finishArea){finishArea.hidden=!parsed.seamPlan;finishArea.removeAttribute('open');}
     topPieces?.replaceChildren();topJoins?.replaceChildren();
     if(topArea){topArea.hidden=!parsed.seamPlan;topArea.removeAttribute('open');}
+    gridCells?.replaceChildren();
+    if(gridArea){gridArea.hidden=!parsed.seamPlan;gridArea.removeAttribute('open');}
+    if(gridPlan&&parsed.seamPlan){
+     const plan=parsed.seamPlan.finishing;
+     gridPlan.textContent='Reviewed CENTER before borders: '+plan.plannedCenterWidthIn+
+      ' × '+plan.plannedCenterHeightIn+' inches. Quilt TOP outside including any borders: '+
+      plan.plannedQuiltTopWidthIn+' × '+plan.plannedQuiltTopHeightIn+
+      ' inches. Actual grid piece placement and real seams are NOT recorded in any source CSV.';
+    }
+    for(const selector of ['[data-top-grid-tolerance]','[data-top-grid-measured-width]','[data-top-grid-measured-height]']){
+     const el=query<HTMLInputElement>(selector);if(el)el.value='';
+    }
+    for(const key of ['[data-top-grid-rows]','[data-top-grid-columns]']){
+     const el=query<HTMLInputElement>(key);if(el)el.value='2';
+    }
+    const covered=query<HTMLInputElement>('[data-top-grid-full-center]');if(covered)covered.checked=false;
     if(topPlan&&parsed.seamPlan){
      const expected=parsed.seamPlan.finishing;
      topPlan.textContent='Current reviewed plan: quilt TOP CENTER '+expected.plannedCenterWidthIn+' × '+
@@ -596,6 +772,18 @@ import Base from '../../../layouts/Base.astro';
   }
   importButton?.addEventListener('click',()=>{void load();});
   topCreate?.addEventListener('click',createTopChainRows);
+  gridCreate?.addEventListener('click',createTopGridRows);
+  gridClear?.addEventListener('click',()=>{
+   gridCells?.replaceChildren();
+   for(const key of ['[data-top-grid-tolerance]','[data-top-grid-measured-width]','[data-top-grid-measured-height]']){
+    const control=query<HTMLInputElement>(key);if(control)control.value='';
+   }
+   const claimed=query<HTMLInputElement>('[data-top-grid-full-center]');if(claimed)claimed.checked=false;
+   for(const key of ['[data-top-grid-rows]','[data-top-grid-columns]']){
+    const control=query<HTMLInputElement>(key);if(control)control.value='2';
+   }
+   render();
+  });
   topClear?.addEventListener('click',()=>{
    topPieces?.replaceChildren();topJoins?.replaceChildren();
    for(const selector of ['[data-top-chain-axis]','[data-top-chain-tolerance]','[data-top-chain-joined]']){
@@ -609,13 +797,18 @@ import Base from '../../../layouts/Base.astro';
   workspace?.addEventListener('change',render);
   resetButton?.addEventListener('click',()=>{
    ++attempt;imported=null;if(cutsFile)cutsFile.value='';if(shoppingFile)shoppingFile.value='';if(planJsonFile)planJsonFile.value='';
-   for(const selector of ['[data-fabric-date]','[data-fabric-tolerance]','[data-fabric-seam-tolerance]','[data-fabric-finishing-tolerance]','[data-top-chain-tolerance]','[data-top-chain-joined]','[data-fabric-reviewer]']){
+   for(const selector of ['[data-fabric-date]','[data-fabric-tolerance]','[data-fabric-seam-tolerance]','[data-fabric-finishing-tolerance]','[data-top-chain-tolerance]','[data-top-chain-joined]','[data-top-grid-tolerance]','[data-top-grid-measured-width]','[data-top-grid-measured-height]','[data-fabric-reviewer]']){
     const input=query<HTMLInputElement>(selector);if(input)input.value='';
    }
    const condition=query<HTMLSelectElement>('[data-fabric-condition]');if(condition)condition.value='';
    const checked=query<HTMLInputElement>('[data-fabric-confirm]');if(checked)checked.checked=false;
    for(const input of finishArea?.querySelectorAll<HTMLInputElement>('[data-fabric-finish]')??[])input.value='';
-   topPieces?.replaceChildren();topJoins?.replaceChildren();
+   topPieces?.replaceChildren();topJoins?.replaceChildren();gridCells?.replaceChildren();
+   const centerGrid=query<HTMLInputElement>('[data-top-grid-full-center]');if(centerGrid)centerGrid.checked=false;
+   for(const key of ['[data-top-grid-rows]','[data-top-grid-columns]']){
+    const control=query<HTMLInputElement>(key);if(control)control.value='2';
+   }
+   if(gridArea){gridArea.hidden=true;gridArea.removeAttribute('open');}
    const axis=query<HTMLSelectElement>('[data-top-chain-axis]');if(axis)axis.value='';
    const count=query<HTMLInputElement>('[data-top-chain-count]');if(count)count.value='2';
    const claimed=query<HTMLInputElement>('[data-top-chain-full-center]');if(claimed)claimed.checked=false;
@@ -663,8 +856,10 @@ import Base from '../../../layouts/Base.astro';
  .qa-fabric-join-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:12px 0}
  @media(max-width:600px){.qa-fabric-join-grid{grid-template-columns:1fr}}
  [data-fabric-finishing-area] summary{font-weight:700;cursor:pointer;line-height:1.6;color:#24523a}
- [data-fabric-finishing-result],[data-top-chain-result]{padding:12px;border:1px solid #cddccc;border-radius:9px;line-height:1.6;overflow-wrap:anywhere}
- [data-top-chain-area] summary{font-weight:700;cursor:pointer;line-height:1.6;color:#24523a}
+ [data-fabric-finishing-result],[data-top-chain-result],[data-top-grid-result]{padding:12px;border:1px solid #cddccc;border-radius:9px;line-height:1.6;overflow-wrap:anywhere}
+ .qa-top-grid-cell{padding:14px;margin:12px 0;border:1px solid #cddccc;border-radius:9px}
+ .qa-top-grid-cell h4{font-size:14px;line-height:1.5;margin:0 0 10px}
+ [data-top-chain-area] summary,[data-top-grid-area] summary{font-weight:700;cursor:pointer;line-height:1.6;color:#24523a}
  .qa-top-chain-row{margin:14px 0;padding:14px;border:1px solid #d0ddce;border-radius:9px}
  .qa-top-chain-row h4{font-size:14px;line-height:1.5;margin:0 0 9px}
  .qa-top-chain-row [data-top-chain-piece-info]{font-size:12px;line-height:1.6;overflow-wrap:anywhere}
@@ -684,11 +879,15 @@ import Base from '../../../layouts/Base.astro';
  [data-fabric-assessment="USER_REPORTED_TOP_CHAIN_MEASUREMENTS_DISAGREE"],
  [data-fabric-assessment="USER_REPORTED_TOP_CHAIN_CENTER_SIZE_DEVIATION"],
  [data-fabric-assessment="USER_REPORTED_TOP_CHAIN_CUT_SIZE_DEVIATION"],
+ [data-fabric-assessment="USER_REPORTED_TOP_GRID_SHAPE_MISMATCH"],
+ [data-fabric-assessment="USER_REPORTED_TOP_GRID_RULER_MISMATCH"],
+ [data-fabric-assessment="USER_REPORTED_TOP_GRID_CENTER_SIZE_DEVIATION"],
+ [data-fabric-assessment="USER_REPORTED_TOP_GRID_CUT_SIZE_DEVIATION"],
  [data-fabric-assessment="INCONCLUSIVE_NOT_POSTWASHED"]{border-color:#d1ad79;background:#fff0df;color:#7d3e16}
  @media(max-width:650px){.qa-fabric-field-grid{grid-template-columns:1fr}.qa-fabric-audit{padding-block:22px 55px}}
  @media(prefers-color-scheme:dark){
   .qa-fabric-audit-card,.qa-fabric-roll{background:#1e3225;border-color:#52745a;color:#e4f1e6}
-  .qa-fabric-audit-intro h1,.qa-fabric-audit-card h2,.qa-fabric-field-grid label,.qa-fabric-roll h3,[data-fabric-finishing-area] summary,[data-top-chain-area] summary{color:#e3f0e3}
+  .qa-fabric-audit-intro h1,.qa-fabric-audit-card h2,.qa-fabric-field-grid label,.qa-fabric-roll h3,[data-fabric-finishing-area] summary,[data-top-chain-area] summary,[data-top-grid-area] summary{color:#e3f0e3}
   .qa-fabric-field-grid input,.qa-fabric-field-grid select,.qa-fabric-seam-item input,.qa-fabric-seam-item select{background:#132c1c;color:#fff;border-color:#72917a}
   [data-fabric-result],[data-fabric-import-status]{background:#244630;color:#e7f5e9;border-color:#67936a}
   [data-fabric-assessment="USER_REPORTED_SHORTAGE_OR_DEVIATION"],
@@ -702,6 +901,10 @@ import Base from '../../../layouts/Base.astro';
   [data-fabric-assessment="USER_REPORTED_TOP_CHAIN_MEASUREMENTS_DISAGREE"],
   [data-fabric-assessment="USER_REPORTED_TOP_CHAIN_CENTER_SIZE_DEVIATION"],
   [data-fabric-assessment="USER_REPORTED_TOP_CHAIN_CUT_SIZE_DEVIATION"],
+  [data-fabric-assessment="USER_REPORTED_TOP_GRID_SHAPE_MISMATCH"],
+  [data-fabric-assessment="USER_REPORTED_TOP_GRID_RULER_MISMATCH"],
+  [data-fabric-assessment="USER_REPORTED_TOP_GRID_CENTER_SIZE_DEVIATION"],
+  [data-fabric-assessment="USER_REPORTED_TOP_GRID_CUT_SIZE_DEVIATION"],
   [data-fabric-assessment="INCONCLUSIVE_NOT_POSTWASHED"]{background:#463522;color:#ffdbb9;border-color:#a98251}
  }
  @media print{.qa-fabric-audit{display:none!important}}

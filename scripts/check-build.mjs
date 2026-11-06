@@ -87,6 +87,8 @@ for(const marker of [
  'data-fabric-finishing-area','data-fabric-finishing-tolerance',
  'data-top-chain-area','data-top-chain-axis','data-top-chain-create',
  'data-top-chain-joined',
+ 'data-top-grid-area','data-top-grid-rows','data-top-grid-create',
+ 'data-top-grid-measured-width','data-top-grid-result',
  'data-fabric-seam-tolerance','data-fabric-workspace','data-fabric-download',
  'MANUAL_NOT_RUN','not</strong> a cryptographic signature'
 ]){
