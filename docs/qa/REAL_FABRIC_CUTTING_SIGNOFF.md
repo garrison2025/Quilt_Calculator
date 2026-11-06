@@ -20,6 +20,20 @@ After importing matching files, a human enters the **actual usable WOF and avail
 
 The downloaded JSON records `kind: "user-reported-fabric-cutting-check"`, the short source fingerprint, per-roll reported measurements, sample cut differences and explicit `independentPhysicalVerification: false`, `quiltCuttingApproval: false`. It neither records independent reviewer approval nor verifies every cut, grain, washing loss or assembly seam. The browser reads local files only, does not upload or autosave them and does not alter the original V2 release-gate status. The automated browser test uses **synthetic** data; it does not certify a real physical cut.
 
+## Purchase reserve and real shrinkage reconciliation — 2026-11-06
+
+The **nonindexed [physical fabric QA page](https://quilt-calculator-566.pages.dev/qa/fabric-cutting/)** now cross-checks each site's shopping CSV against its matching cut roll in three ways, before a manual assessment can start:
+
+1. The CSV's **exact prewash buying requirement (yards)** must cover the postwash cutting run, including modeled prewash length shrinkage.
+2. The **rounded purchase (yards)** must be at least the exact prewash requirement. A manipulated or truncated purchase amount below the model requirement is rejected, even if it would cover the *unwashed* cutting run.
+3. The corresponding roll ID, source revision, dimensions and nonoverlapping cut geometry must agree between both CSVs. The 8-hex source tag is a consistency aid and remains **noncryptographic**.
+
+Once the reviewer measures **actual postwash usable WOF and run**, an **optional measured length before washing** of the **same bolt segment** can be supplied per physical roll. The tool calculates `observedLengthShrinkagePct = 100 × (1 − actualPostwashLength / actualPrewashLength)` and compares it with `plannedLengthShrinkagePct = 100 × (1 − requiredPostwashCutRun / (exactPrewashYards × 36))` extracted from the shopping CSV. These are *length* rates; they do not imply anything about *width* shrinkage, which is checked separately using the actual postwash WOF.
+
+A higher observed length shrinkage rate produces `USER_REPORTED_SHRINKAGE_EXCEEDS_PLAN` (complete, exportable, **not certified**); material shortages and cut-size violations take priority in the result. It may be possible that actual postwash material still covers the job, but the planned purchasing assumption was optimistic and should be investigated. An invalid, explicitly supplied before-wash measurement blocks evidence export. Omitting that optional measurement is allowed, but the report explicitly states that **actual shrinkage has not been verified**.
+
+This audit does **not** measure joined seam take-up, fabric grain movement or every single cut; those remain distinct requirements for human verification. User-entered synthetic/browser test data do not close the physical `MANUAL_NOT_RUN` release gate.
+
 ## Measurement sheet — initially empty
 
 | Material / SKU | Expected from cutting CSV (in) | Actual postwash cut / seam measurement (in) | Actual source roll (in) | Difference and observations | Review sign-off |

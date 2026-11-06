@@ -26,7 +26,7 @@ import Base from '../../../layouts/Base.astro';
   <section class="qa-fabric-audit-card" data-fabric-workspace hidden aria-labelledby="qa-fabric-measure-title">
    <h2 id="qa-fabric-measure-title">2. Measure the actual material</h2>
    <p data-fabric-snapshot></p>
-   <p>Measure <strong>usable postwash fabric width</strong> after selvedges, and <strong>available usable roll length</strong> along the bolt; these measurements must refer to the same condition as the planned cuts. Pick a representative piece on each roll, physically cut and measure its width and height. The tool checks only the specified sample, <strong>not all cuts or assembled seams</strong>.</p>
+   <p>Measure <strong>usable postwash fabric width</strong> after selvedges, and <strong>available usable roll length</strong> along the bolt; these measurements must refer to the same condition as the planned cuts. If you also measured that <em>same fabric length before washing</em>, enter it to calculate the observed shrinkage percentage and compare with the shopping calculation. Pick one physical sample cut per roll. This cannot validate every piece, join or seam.</p>
    <div class="qa-fabric-field-grid">
     <label>Physical measurement date
      <input data-fabric-date type="date" />
@@ -45,7 +45,7 @@ import Base from '../../../layouts/Base.astro';
      <input data-fabric-reviewer type="text" maxlength="200" placeholder="Local self-check name" autocomplete="off" />
     </label>
    </div>
-   <p class="qa-fabric-small">Enter your own cutting tolerance, from 0 to ¼ inch. There is no single universally approved allowance; your sewing method may require a stricter threshold. For example, 0.0625 = 1/16 inch. Do not treat an allowed deviation as a verified industry specification.</p>
+   <p class="qa-fabric-small">Enter your own cutting tolerance, from 0 to ¼ inch. There is no single universally approved allowance; your sewing method may require a stricter threshold. For example, 0.0625 = 1/16 inch. Do not treat an allowed deviation as a verified industry specification. <strong>Before-wash length is optional</strong>, but if omitted the site will explicitly state that the real shrinkage rate was not verified. Estimated purchase yardage is checked against the cutting run and modeled shrinkage before any physical results are shown.</p>
    <div data-fabric-rolls></div>
    <label class="qa-fabric-confirm"><input type="checkbox" data-fabric-confirm /> I actually measured the fabric and sample cuts with a physical ruler. I understand that browser and CSV calculations cannot independently verify my statements.</label>
    <h2>3. Review the user-reported results</h2>
@@ -98,9 +98,10 @@ import Base from '../../../layouts/Base.astro';
    const block=document.createElement('section');block.className='qa-fabric-roll';block.dataset.fabricRollId=roll.id;
    const heading=document.createElement('h3');heading.textContent=roll.material+' · '+roll.id;
    const summary=document.createElement('p');
-   summary.textContent=roll.pieces.length+' cut pieces · required usable WOF '+roll.usableWofIn+' in · full roll cut run '+roll.requiredRunIn+' in';
+   summary.textContent=roll.pieces.length+' cut pieces · required usable WOF '+roll.usableWofIn+' in · full roll cut run '+roll.requiredRunIn+' in · modeled length shrinkage '+(roll.plannedLengthShrinkagePct??0).toFixed(2)+'% · exact prewash '+(roll.plannedRawPurchaseYards??0).toFixed(4)+' yd · rounded purchase '+(roll.plannedRoundedPurchaseYards??0).toFixed(4)+' yd';
    const grid=document.createElement('div');grid.className='qa-fabric-field-grid';
-   grid.append(numericField('Real usable WOF (inches)','wof'),numericField('Real usable run length (inches)','run'));
+   grid.append(numericField('Real usable WOF after intended washing (inches)','wof'),numericField('Real usable run length after intended washing (inches)','run'),
+    numericField('Actual before-wash length of SAME roll segment (inches; optional)','prewash'));
    const pick=labelFor('Which physical cut did you sample?');
    const select=document.createElement('select');select.dataset.measurement='piece';
    for(const piece of roll.pieces){
@@ -126,6 +127,7 @@ import Base from '../../../layouts/Base.astro';
      id:roll.dataset.fabricRollId??'',
      actualUsableWofIn:numberValue(el<HTMLInputElement>('wof')),
      actualUsableRunIn:numberValue(el<HTMLInputElement>('run')),
+     measuredPrewashRunIn:numberValue(el<HTMLInputElement>('prewash')),
      sampledPieceNumber:Number(el<HTMLSelectElement>('piece')?.value),
      measuredPieceWidthIn:numberValue(el<HTMLInputElement>('width')),
      measuredPieceHeightIn:numberValue(el<HTMLInputElement>('height'))
@@ -158,7 +160,12 @@ import Base from '../../../layouts/Base.astro';
      ' in; sampled piece #'+check.sampledPieceNumber+' width difference '+check.widthDifferenceIn?.toFixed(4)+
      ' in, height difference '+check.heightDifferenceIn?.toFixed(4)+' in. '+
      (check.hasShortage?'REPORTED SHORTAGE. ':'')+
-     (check.sampleOutsideAllowance?'SAMPLE EXCEEDS ALLOWANCE.':'');
+     (check.sampleOutsideAllowance?'SAMPLE EXCEEDS ALLOWANCE. ':'')+
+     (check.observedLengthShrinkagePct===undefined?
+      'Before-wash length not entered; observed shrinkage is unverified.':
+      ' Observed length shrinkage '+check.observedLengthShrinkagePct.toFixed(2)+
+      '% vs modeled '+(check.plannedLengthShrinkagePct??0).toFixed(2)+'%. '+
+      (check.observedShrinkageExceedsPlan?'EXCEEDS PLANNED SHRINKAGE.':'Within modeled rate.'));
    }
   }
   async function load():Promise<void>{
@@ -237,6 +244,7 @@ import Base from '../../../layouts/Base.astro';
  .qa-fabric-audit button:disabled{opacity:.52;cursor:not-allowed}
  [data-fabric-result],[data-fabric-import-status]{border:1px solid #a7c6a9;background:#ecf5eb;border-radius:8px;padding:13px;margin-top:13px;line-height:1.6;font-size:13px;overflow-wrap:anywhere}
  [data-fabric-assessment="USER_REPORTED_SHORTAGE_OR_DEVIATION"],
+ [data-fabric-assessment="USER_REPORTED_SHRINKAGE_EXCEEDS_PLAN"],
  [data-fabric-assessment="INCONCLUSIVE_NOT_POSTWASHED"]{border-color:#d1ad79;background:#fff0df;color:#7d3e16}
  @media(max-width:650px){.qa-fabric-field-grid{grid-template-columns:1fr}.qa-fabric-audit{padding-block:22px 55px}}
  @media(prefers-color-scheme:dark){
@@ -245,6 +253,7 @@ import Base from '../../../layouts/Base.astro';
   .qa-fabric-field-grid input,.qa-fabric-field-grid select{background:#132c1c;color:#fff;border-color:#72917a}
   [data-fabric-result],[data-fabric-import-status]{background:#244630;color:#e7f5e9;border-color:#67936a}
   [data-fabric-assessment="USER_REPORTED_SHORTAGE_OR_DEVIATION"],
+  [data-fabric-assessment="USER_REPORTED_SHRINKAGE_EXCEEDS_PLAN"],
   [data-fabric-assessment="INCONCLUSIVE_NOT_POSTWASHED"]{background:#463522;color:#ffdbb9;border-color:#a98251}
  }
  @media print{.qa-fabric-audit{display:none!important}}
