@@ -561,6 +561,20 @@ import Base from '../../../layouts/Base.astro';
     seamContainer?.replaceChildren(...(parsed.seamPlan?.checks??[]).map(seamForm));
     if(seamArea)seamArea.hidden=!parsed.seamPlan;
     if(finishArea){finishArea.hidden=!parsed.seamPlan;finishArea.removeAttribute('open');}
+    topPieces?.replaceChildren();topJoins?.replaceChildren();
+    if(topArea){topArea.hidden=!parsed.seamPlan;topArea.removeAttribute('open');}
+    if(topPlan&&parsed.seamPlan){
+     const expected=parsed.seamPlan.finishing;
+     topPlan.textContent='Current reviewed plan: quilt TOP CENTER '+expected.plannedCenterWidthIn+' × '+
+      expected.plannedCenterHeightIn+' in BEFORE borders. Whole sewn quilt TOP outside '+expected.plannedQuiltTopWidthIn+
+      ' × '+expected.plannedQuiltTopHeightIn+' in. This CSV has NO sewn position/adjacency map. '+
+      'You must state whether a selected physical chain really spans the full center.';
+    }
+    if(topResult)topResult.textContent='No real quilt-top seam chain reported: NOT VERIFIED.';
+    for(const selector of ['[data-top-chain-axis]','[data-top-chain-tolerance]','[data-top-chain-joined]']){
+     const control=query<HTMLInputElement|HTMLSelectElement>(selector);if(control)control.value='';
+    }
+    const topFull=query<HTMLInputElement>('[data-top-chain-full-center]');if(topFull)topFull.checked=false;
     if(finishPlan&&parsed.seamPlan){
      const expected=parsed.seamPlan.finishing;
      finishPlan.textContent='Plan: sewn quilt TOP outside '+expected.plannedQuiltTopWidthIn+' × '+
@@ -581,16 +595,31 @@ import Base from '../../../layouts/Base.astro';
    }
   }
   importButton?.addEventListener('click',()=>{void load();});
+  topCreate?.addEventListener('click',createTopChainRows);
+  topClear?.addEventListener('click',()=>{
+   topPieces?.replaceChildren();topJoins?.replaceChildren();
+   for(const selector of ['[data-top-chain-axis]','[data-top-chain-tolerance]','[data-top-chain-joined]']){
+    const el=query<HTMLInputElement|HTMLSelectElement>(selector);if(el)el.value='';
+   }
+   const center=query<HTMLInputElement>('[data-top-chain-full-center]');if(center)center.checked=false;
+   const count=query<HTMLInputElement>('[data-top-chain-count]');if(count)count.value='2';
+   render();
+  });
   workspace?.addEventListener('input',render);
   workspace?.addEventListener('change',render);
   resetButton?.addEventListener('click',()=>{
    ++attempt;imported=null;if(cutsFile)cutsFile.value='';if(shoppingFile)shoppingFile.value='';if(planJsonFile)planJsonFile.value='';
-   for(const selector of ['[data-fabric-date]','[data-fabric-tolerance]','[data-fabric-seam-tolerance]','[data-fabric-finishing-tolerance]','[data-fabric-reviewer]']){
+   for(const selector of ['[data-fabric-date]','[data-fabric-tolerance]','[data-fabric-seam-tolerance]','[data-fabric-finishing-tolerance]','[data-top-chain-tolerance]','[data-top-chain-joined]','[data-fabric-reviewer]']){
     const input=query<HTMLInputElement>(selector);if(input)input.value='';
    }
    const condition=query<HTMLSelectElement>('[data-fabric-condition]');if(condition)condition.value='';
    const checked=query<HTMLInputElement>('[data-fabric-confirm]');if(checked)checked.checked=false;
    for(const input of finishArea?.querySelectorAll<HTMLInputElement>('[data-fabric-finish]')??[])input.value='';
+   topPieces?.replaceChildren();topJoins?.replaceChildren();
+   const axis=query<HTMLSelectElement>('[data-top-chain-axis]');if(axis)axis.value='';
+   const count=query<HTMLInputElement>('[data-top-chain-count]');if(count)count.value='2';
+   const claimed=query<HTMLInputElement>('[data-top-chain-full-center]');if(claimed)claimed.checked=false;
+   if(topArea){topArea.hidden=true;topArea.removeAttribute('open');}
    rollsContainer?.replaceChildren();seamContainer?.replaceChildren();
    if(seamArea)seamArea.hidden=true;
    if(finishArea){finishArea.hidden=true;finishArea.removeAttribute('open');}
@@ -634,7 +663,11 @@ import Base from '../../../layouts/Base.astro';
  .qa-fabric-join-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:12px 0}
  @media(max-width:600px){.qa-fabric-join-grid{grid-template-columns:1fr}}
  [data-fabric-finishing-area] summary{font-weight:700;cursor:pointer;line-height:1.6;color:#24523a}
- [data-fabric-finishing-result]{padding:12px;border:1px solid #cddccc;border-radius:9px;line-height:1.6;overflow-wrap:anywhere}
+ [data-fabric-finishing-result],[data-top-chain-result]{padding:12px;border:1px solid #cddccc;border-radius:9px;line-height:1.6;overflow-wrap:anywhere}
+ [data-top-chain-area] summary{font-weight:700;cursor:pointer;line-height:1.6;color:#24523a}
+ .qa-top-chain-row{margin:14px 0;padding:14px;border:1px solid #d0ddce;border-radius:9px}
+ .qa-top-chain-row h4{font-size:14px;line-height:1.5;margin:0 0 9px}
+ .qa-top-chain-row [data-top-chain-piece-info]{font-size:12px;line-height:1.6;overflow-wrap:anywhere}
  .qa-fabric-confirm{display:flex;gap:10px;align-items:start;line-height:1.7;font-size:13px;font-weight:650;margin:23px 0;cursor:pointer}
  .qa-fabric-confirm input{width:19px;height:19px;flex-shrink:0;accent-color:#25774e;margin-top:2px}
  .qa-fabric-buttons{display:flex;gap:12px;flex-wrap:wrap;margin:17px 0}
@@ -648,11 +681,14 @@ import Base from '../../../layouts/Base.astro';
  [data-fabric-assessment="USER_REPORTED_FINISH_MEASUREMENTS_DISAGREE"],
  [data-fabric-assessment="USER_REPORTED_BACKING_TRIM_SHORTFALL"],
  [data-fabric-assessment="USER_REPORTED_SEWN_TOP_SIZE_DEVIATION"],
+ [data-fabric-assessment="USER_REPORTED_TOP_CHAIN_MEASUREMENTS_DISAGREE"],
+ [data-fabric-assessment="USER_REPORTED_TOP_CHAIN_CENTER_SIZE_DEVIATION"],
+ [data-fabric-assessment="USER_REPORTED_TOP_CHAIN_CUT_SIZE_DEVIATION"],
  [data-fabric-assessment="INCONCLUSIVE_NOT_POSTWASHED"]{border-color:#d1ad79;background:#fff0df;color:#7d3e16}
  @media(max-width:650px){.qa-fabric-field-grid{grid-template-columns:1fr}.qa-fabric-audit{padding-block:22px 55px}}
  @media(prefers-color-scheme:dark){
   .qa-fabric-audit-card,.qa-fabric-roll{background:#1e3225;border-color:#52745a;color:#e4f1e6}
-  .qa-fabric-audit-intro h1,.qa-fabric-audit-card h2,.qa-fabric-field-grid label,.qa-fabric-roll h3,[data-fabric-finishing-area] summary{color:#e3f0e3}
+  .qa-fabric-audit-intro h1,.qa-fabric-audit-card h2,.qa-fabric-field-grid label,.qa-fabric-roll h3,[data-fabric-finishing-area] summary,[data-top-chain-area] summary{color:#e3f0e3}
   .qa-fabric-field-grid input,.qa-fabric-field-grid select,.qa-fabric-seam-item input,.qa-fabric-seam-item select{background:#132c1c;color:#fff;border-color:#72917a}
   [data-fabric-result],[data-fabric-import-status]{background:#244630;color:#e7f5e9;border-color:#67936a}
   [data-fabric-assessment="USER_REPORTED_SHORTAGE_OR_DEVIATION"],
@@ -663,6 +699,9 @@ import Base from '../../../layouts/Base.astro';
   [data-fabric-assessment="USER_REPORTED_FINISH_MEASUREMENTS_DISAGREE"],
   [data-fabric-assessment="USER_REPORTED_BACKING_TRIM_SHORTFALL"],
   [data-fabric-assessment="USER_REPORTED_SEWN_TOP_SIZE_DEVIATION"],
+  [data-fabric-assessment="USER_REPORTED_TOP_CHAIN_MEASUREMENTS_DISAGREE"],
+  [data-fabric-assessment="USER_REPORTED_TOP_CHAIN_CENTER_SIZE_DEVIATION"],
+  [data-fabric-assessment="USER_REPORTED_TOP_CHAIN_CUT_SIZE_DEVIATION"],
   [data-fabric-assessment="INCONCLUSIVE_NOT_POSTWASHED"]{background:#463522;color:#ffdbb9;border-color:#a98251}
  }
  @media print{.qa-fabric-audit{display:none!important}}
