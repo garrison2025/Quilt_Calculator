@@ -886,10 +886,15 @@ if(root){
      yd(item.purchaseYards)+' yd',
      item.costUsd===undefined?'Price not supplied':money(item.costUsd)
     ];
-    table(output,['Scenario','Seam direction','Panels','Seams','Buy','Fabric cost'],[
+    const comparisonTable=table(output,['Scenario','Seam direction','Panels','Seams','Buy','Fabric cost'],[
      ['CURRENT · '+describe(summary.current)[0],...describe(summary.current).slice(1)],
      ['WHAT-IF · '+describe(summary.alternate)[0],...describe(summary.alternate).slice(1)]
     ]);
+    // On a narrow screen this is horizontally scrollable. Keyboard and
+    // screen-reader users must be able to focus the scroll region too.
+    comparisonTable.tabIndex=0;
+    comparisonTable.setAttribute('role','region');
+    comparisonTable.setAttribute('aria-label','Current and hypothetical backing width comparison');
     const yardsChange=Math.abs(summary.extraPurchaseYards)<1e-8?'same purchase yardage':
      Math.abs(summary.extraPurchaseYards).toFixed(3)+' yd '+(summary.extraPurchaseYards<0?'less':'more')+' in what-if.';
     output.appendChild(node('p','footer-note','Alternate versus current: '+yardsChange+
