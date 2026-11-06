@@ -959,8 +959,19 @@ try{
     'Independent user ruler width differing from calculated seam take-up must be an exportable negative state.');
   await auditPage.locator('[data-top-grid-measured-width]').fill(String(gridWidth));
   await auditPage.locator('[data-top-grid-full-center]').check();
-  check(await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_TOP_GRID_CENTER_SIZE_DEVIATION',
-    'Only a reviewer-asserted WHOLE quilt center grid may be compared against 60×80 center dimensions.');
+  check(await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_TOP_GRID_SOURCE_COVERAGE_MISMATCH' &&
+    (await gridStatus.innerText()).includes('FULL-CENTER CLAIM REJECTED: source cuts are missing') &&
+    await auditDownload.isEnabled(),
+    'A 2×2 physical sample cannot masquerade as complete center when the source TOP cut list has more patches.');
+  const sourceCoverageDownload=auditPage.waitForEvent('download');
+  await auditDownload.click();
+  const sourceCoverageEvidence=JSON.parse(await fs.readFile(await (await sourceCoverageDownload).path(),'utf8'));
+  check(sourceCoverageEvidence.topGridCheck.fullCenterSourceCoverageMismatch===true &&
+    sourceCoverageEvidence.topGridCheck.unmappedSourceTopCutCount>0 &&
+    sourceCoverageEvidence.topGridCheck.actualCenterWidthDifferenceIn===undefined &&
+    sourceCoverageEvidence.independentPhysicalVerification===false &&
+    sourceCoverageEvidence.quiltCuttingApproval===false,
+    'Export must keep the negative source-coverage claim but suppress false full-center dimension comparisons.');
   await auditPage.locator('[data-top-grid-full-center]').uncheck();
   for(const cell of await gridCells.all())await cell.locator('[data-grid-width]').fill(String(Number(chosenGrid[0][6])+.25));
   await auditPage.locator('[data-top-grid-measured-width]').fill(String(gridWidth+.5));

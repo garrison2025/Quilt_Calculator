@@ -35,6 +35,11 @@ export type TopGridAudit={
  rows?:number;columns?:number;
  expectedCellCount:number;
  knownSourceCells:number;measuredCells:number;measuredInternalEdges:number;expectedInternalEdges:number;
+ /** Cut-list identity coverage is not evidence of sewn topology or workmanship. */
+ sourceTopCutCount:number;
+ mappedSourceTopCutCount:number;
+ unmappedSourceTopCutCount:number;
+ fullCenterSourceCoverageMismatch?:boolean;
  reading?:UserTopGrid;
  /** Separate from the 0–1 in assembled-grid tolerance. */
  cutPieceToleranceIn:number;
@@ -73,7 +78,8 @@ export function evaluateTopGrid(project:ImportedFabricAudit,reading:UserTopGrid|
  const result:TopGridAudit={
   source:project.seamPlan?'MATCHING_CUTTING_PLAN':'NOT_IMPORTED',
   coverage:'NOT_STARTED',expectedCellCount:0,knownSourceCells:0,measuredCells:0,
-  measuredInternalEdges:0,expectedInternalEdges:0,cutPieceToleranceIn,cutComparisons:[],cutSizeDeviationCount:0,
+  measuredInternalEdges:0,expectedInternalEdges:0,sourceTopCutCount:0,mappedSourceTopCutCount:0,
+  unmappedSourceTopCutCount:0,cutPieceToleranceIn,cutComparisons:[],cutSizeDeviationCount:0,
   invalid:[],warnings:[]
  };
  if(!reading){
@@ -96,6 +102,13 @@ export function evaluateTopGrid(project:ImportedFabricAudit,reading:UserTopGrid|
   result.invalid.push('Rectangular grid must have 2–4 rows and 2–4 columns.');
   return result;
  }
+ // Only numbered TOP fabric pieces belong to this source-identity check.
+ // Roll cutting positions never imply where patches were sewn.
+ const sourceTopIds=new Set(
+  project.rolls.filter(roll=>roll.id.startsWith('fabric:'))
+   .flatMap(roll=>roll.pieces.map(piece=>roll.id+'#'+piece.pieceNumber))
+ );
+ result.sourceTopCutCount=sourceTopIds.size;
  const n=rows*columns;
  result.expectedCellCount=n;
  result.expectedInternalEdges=2*(rows*(columns-1)+(rows-1)*columns);
@@ -196,6 +209,16 @@ export function evaluateTopGrid(project:ImportedFabricAudit,reading:UserTopGrid|
   widths.push(cell?.measuredCutWidthIn??NaN);
   heights.push(cell?.measuredCutHeightIn??NaN);
  }
+ result.mappedSourceTopCutCount=[...refs].filter(ref=>sourceTopIds.has(ref)).length;
+ result.unmappedSourceTopCutCount=result.sourceTopCutCount-result.mappedSourceTopCutCount;
+ if(reading.spansEntireCenter&&result.unmappedSourceTopCutCount>0){
+  result.fullCenterSourceCoverageMismatch=true;
+  result.warnings.push('FULL-CENTER CLAIM NOT SUPPORTED BY SOURCE CUT LIST: only '+
+   result.mappedSourceTopCutCount+'/'+result.sourceTopCutCount+
+   ' numbered quilt-TOP source cuts are mapped to this user-described grid. '+
+   'The selected sewn sample cannot be compared with the planned entire center. '+
+   'These source counts do not prove physical placement; investigate spares or missing patches offline.');
+ }
  if(result.cutSizeDeviationCount)
   result.warnings.push(result.cutSizeDeviationCount+' user-measured top-piece(s) exceed the SEPARATE 0–0.25 in physical cut tolerance ('+cutPieceToleranceIn+' in), independent of assembled-grid tolerance.');
  const independentlyMeasured=reading.measuredAssembledWidthIn!==undefined&&reading.measuredAssembledHeightIn!==undefined;
@@ -243,7 +266,9 @@ export function evaluateTopGrid(project:ImportedFabricAudit,reading:UserTopGrid|
    result.warnings.push('Independently user-measured sewn grid width/height disagrees with the sum of measured cut pieces minus all measured internal seam edge take-up.');
  }else result.warnings.push('Independent assembled width AND height were not both entered; the complete top-grid ruler check is NOT VERIFIED.');
  if(reading.spansEntireCenter){
-  if(independentlyMeasured){
+  if(result.fullCenterSourceCoverageMismatch){
+   result.warnings.push('Entire-center dimension comparison SUPPRESSED until every planned top-fabric cut ID is mapped; this does not certify that mapped pieces were actually sewn.');
+  }else if(independentlyMeasured){
    const plan=project.seamPlan.finishing;
    result.actualCenterWidthDifferenceIn=reading.measuredAssembledWidthIn!-plan.plannedCenterWidthIn;
    result.actualCenterHeightDifferenceIn=reading.measuredAssembledHeightIn!-plan.plannedCenterHeightIn;
