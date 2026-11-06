@@ -1,0 +1,129 @@
+---
+import Base from '../../../layouts/Base.astro';
+---
+<Base noIndex title="2×2 Physical Quilt-Top Measurement Sheet | Quilt Studio" description="Printable blank 2 by 2 patch measurement record for independent fabric and sewn-seam checks. No physical certification.">
+ <div class="page-shell physical-grid-sheet" data-qa-physical-2x2-sheet>
+  <header class="sheet-header">
+   <p class="sheet-eyebrow">QUILT STUDIO / LOCAL PHYSICAL QA / NOT AN ACTUAL-SIZE PATTERN</p>
+   <h1>2×2 quilt-top physical measurement sheet</h1>
+   <p class="sheet-status"><strong>MANUAL_NOT_RUN</strong> · No fabric has been measured or signed off by this website. Every measurement and source identifier below is intentionally blank.</p>
+   <p>Print this blank record, then use a physical ruler and the matching reviewed Project Planner exports. This sheet is only for <strong>four aligned rectangular patches with straight butt seams</strong>. It does not certify grain, stitch quality, squareness or the finished bound quilt.</p>
+   <div class="screen-actions">
+    <a class="header-cta" href="/qa/fabric-cutting/">Open local calculation and evidence check</a>
+    <a class="header-cta" href="/qa/print-calibration/">Separate physical print calibration</a>
+    <button type="button" class="header-cta" data-sheet-print>Print blank sheet</button>
+   </div>
+  </header>
+  <section class="record-section" aria-labelledby="sheet-source">
+   <h2 id="sheet-source">1. Source files and physical session</h2>
+   <p class="sheet-help">The 8-character project tag matches exports but is not a digital signature. Keep the original same-revision cut-list CSV, shopping CSV and reviewed cutting-plan JSON separately. A sheet alone does not prove source provenance.</p>
+   <table class="sheet-metadata"><tbody>
+    <tr><th scope="row">Project fingerprint</th><td class="blank" data-measure-blank>NOT_RECORDED</td><th scope="row">Physical measurement date</th><td class="blank" data-measure-blank>NOT_RECORDED</td></tr>
+    <tr><th scope="row">Cut-list CSV / shopping CSV</th><td colspan="3" class="blank" data-measure-blank>NOT_RECORDED</td></tr>
+    <tr><th scope="row">Reviewed cutting-plan JSON</th><td colspan="3" class="blank" data-measure-blank>NOT_RECORDED</td></tr>
+    <tr><th scope="row">Operator / fabric condition</th><td class="blank" data-measure-blank>NOT_RECORDED</td><th scope="row">Ruler / measurement method</th><td class="blank" data-measure-blank>NOT_RECORDED</td></tr>
+    <tr><th scope="row">Physical cut tolerance (0–¼ in)</th><td class="blank" data-measure-blank>NOT_RECORDED</td><th scope="row">TOTAL sewn-grid tolerance (0–1 in)</th><td class="blank" data-measure-blank>NOT_RECORDED</td></tr>
+    <tr><th scope="row">Declared scope</th><td colspan="3" class="blank" data-measure-blank>NOT_RECORDED — select SAMPLE or claimed COMPLETE CENTER only after checking every source cut ID</td></tr>
+   </tbody></table>
+  </section>
+  <section class="record-section" aria-labelledby="sheet-layout">
+   <h2 id="sheet-layout">2. Actual sewn position — not the cutting-roll layout</h2>
+   <div class="sheet-position">
+    <div class="sheet-cell">R1 C1 <small>TOP LEFT</small></div>
+    <div class="sheet-cell">R1 C2 <small>TOP RIGHT</small></div>
+    <div class="sheet-cell">R2 C1 <small>BOTTOM LEFT</small></div>
+    <div class="sheet-cell">R2 C2 <small>BOTTOM RIGHT</small></div>
+   </div>
+   <p class="sheet-help">Assign a <strong>unique physical fabric SKU and numbered cut</strong> to each location, then independently measure cut width and height before sewing. Source CSV dimensions are references only. Do not invent physical placements from CSV roll X/Y coordinates.</p>
+   <table class="sheet-values" data-sheet-cut-measurements>
+    <thead><tr><th scope="col">Location</th><th scope="col">Roll SKU / numbered cut</th><th scope="col">Reference cut W × H (in)</th><th scope="col">Actual ruler cut W × H (in)</th><th scope="col">Cut difference / notes</th></tr></thead>
+    <tbody>
+     <tr><th scope="row">R1 C1</th><td class="blank" data-measure-blank></td><td class="blank" data-measure-blank></td><td class="blank" data-measure-blank></td><td class="blank" data-measure-blank></td></tr>
+     <tr><th scope="row">R1 C2</th><td class="blank" data-measure-blank></td><td class="blank" data-measure-blank></td><td class="blank" data-measure-blank></td><td class="blank" data-measure-blank></td></tr>
+     <tr><th scope="row">R2 C1</th><td class="blank" data-measure-blank></td><td class="blank" data-measure-blank></td><td class="blank" data-measure-blank></td><td class="blank" data-measure-blank></td></tr>
+     <tr><th scope="row">R2 C2</th><td class="blank" data-measure-blank></td><td class="blank" data-measure-blank></td><td class="blank" data-measure-blank></td><td class="blank" data-measure-blank></td></tr>
+    </tbody>
+   </table>
+  </section>
+  <section class="record-section" aria-labelledby="sheet-edges">
+   <h2 id="sheet-edges">3. Physically observed internal seam-edge take-up (in)</h2>
+   <p class="sheet-help">For the four internal joins, record <strong>both physically consumed edges</strong> independently, for eight readings total. A measured zero must be written <strong>0</strong>. Empty means NOT_MEASURED. Outer perimeter edges have no internal grid join and are deliberately excluded.</p>
+   <table class="sheet-values" data-sheet-seam-measurements>
+    <thead><tr><th scope="col">Physical join</th><th scope="col">First cell and edge · ruler loss (in)</th><th scope="col">Second cell and edge · ruler loss (in)</th><th scope="col">Measurement / construction notes</th></tr></thead>
+    <tbody>
+     <tr><th scope="row">Top-row vertical join</th><td>R1 C1 RIGHT: <span class="long-blank" data-measure-blank></span></td><td>R1 C2 LEFT: <span class="long-blank" data-measure-blank></span></td><td class="blank" data-measure-blank></td></tr>
+     <tr><th scope="row">Bottom-row vertical join</th><td>R2 C1 RIGHT: <span class="long-blank" data-measure-blank></span></td><td>R2 C2 LEFT: <span class="long-blank" data-measure-blank></span></td><td class="blank" data-measure-blank></td></tr>
+     <tr><th scope="row">Left-column horizontal join</th><td>R1 C1 BOTTOM: <span class="long-blank" data-measure-blank></span></td><td>R2 C1 TOP: <span class="long-blank" data-measure-blank></span></td><td class="blank" data-measure-blank></td></tr>
+     <tr><th scope="row">Right-column horizontal join</th><td>R1 C2 BOTTOM: <span class="long-blank" data-measure-blank></span></td><td>R2 C2 TOP: <span class="long-blank" data-measure-blank></span></td><td class="blank" data-measure-blank></td></tr>
+    </tbody>
+   </table>
+  </section>
+  <section class="record-section" aria-labelledby="sheet-assembly">
+   <h2 id="sheet-assembly">4. Independent sewn-grid dimensions and human observations</h2>
+   <p class="sheet-help">Measure the actual joined grid <strong>after sewing, before adding borders</strong>. Do not copy the modeled sum into these blanks. If visibly skewed, preserve additional top/bottom/left/right/diagonal measurements offline; this simple grid model does not certify those.</p>
+   <table class="sheet-metadata"><tbody>
+    <tr><th scope="row">Actual assembled width (in)</th><td class="blank" data-measure-blank>NOT_MEASURED</td><th scope="row">Actual assembled height (in)</th><td class="blank" data-measure-blank>NOT_MEASURED</td></tr>
+    <tr><th scope="row">Source TOP cuts mapped / total</th><td class="blank" data-measure-blank>NOT_RECORDED</td><th scope="row">Cutting or sewing exceptions</th><td class="blank" data-measure-blank>NOT_RECORDED</td></tr>
+    <tr><th scope="row">Warping / grain / pressing observations</th><td colspan="3" class="blank" data-measure-blank>NOT_RECORDED</td></tr>
+    <tr><th scope="row">Photos / paper evidence references</th><td colspan="3" class="blank" data-measure-blank>NOT_RECORDED</td></tr>
+   </tbody></table>
+  </section>
+  <section class="record-section" aria-labelledby="sheet-review">
+   <h2 id="sheet-review">5. Independent human decision — never automated</h2>
+   <p>Bring the measured values and original exports to <strong>/qa/fabric-cutting/</strong> for a local, noncertifying reconciliation. Preserve the resulting evidence JSON with this signed paper record. Negative or incomplete values are not permission to cut or sew more material.</p>
+   <table class="sheet-metadata"><tbody>
+    <tr><th scope="row">Reviewer / signature / date</th><td colspan="3" class="blank" data-measure-blank>NOT_RECORDED</td></tr>
+    <tr><th scope="row">Human disposition</th><td colspan="3" class="blank" data-measure-blank>NOT_RUN — reviewer must record PASS / FAIL / INCONCLUSIVE and supporting evidence outside the website</td></tr>
+   </tbody></table>
+   <p class="sheet-status"><strong>PHYSICAL GATE: MANUAL_NOT_RUN.</strong> This worksheet is not a physical ruler, authentic digital signature, sewing-pattern template, manufacturing approval or print-scale test.</p>
+  </section>
+ </div>
+ <style>
+  .physical-grid-sheet{max-width:1100px;margin-inline:auto;padding-block:2.5rem 4rem;font-size:0.94rem}
+  .physical-grid-sheet h1{font-size:clamp(1.7rem,3.3vw,2.6rem);line-height:1.15;margin:.45rem 0 .75rem}
+  .physical-grid-sheet h2{font-size:1.18rem;margin:0 0 .6rem}
+  .sheet-eyebrow{font-size:.74rem;letter-spacing:.1em;font-weight:700}
+  .sheet-status{border:1px solid currentColor;padding:.75rem 1rem;margin:1rem 0}
+  .screen-actions{display:flex;flex-wrap:wrap;gap:.65rem;margin:1.25rem 0}
+  .screen-actions button{cursor:pointer}
+  .record-section{margin-top:1.6rem;break-inside:avoid}
+  .sheet-help{font-size:.84rem;margin:.5rem 0 .85rem}
+  .physical-grid-sheet table{border-collapse:collapse;width:100%;table-layout:fixed;font-size:.78rem;line-height:1.35}
+  .physical-grid-sheet th,.physical-grid-sheet td{border:1px solid #777;padding:.45rem .5rem;text-align:left;vertical-align:top;overflow-wrap:anywhere}
+  .physical-grid-sheet th{font-weight:700}
+  .sheet-values tbody td{height:2.9rem}
+  .sheet-metadata td.blank{min-height:2rem}
+  .physical-grid-sheet .blank{color:#6b7280}
+  .sheet-position{width:min(340px,100%);display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:.75rem auto;padding:4px;border:1px solid currentColor}
+  .sheet-cell{min-height:75px;border:1px solid currentColor;display:flex;align-items:center;justify-content:center;flex-direction:column;font-weight:700;gap:.2rem}
+  .sheet-cell small{font-size:.65rem;font-weight:400}
+  .long-blank{display:inline-block;min-width:2.5rem;border-bottom:1px solid currentColor}
+  @media (max-width:700px){
+   .physical-grid-sheet{overflow-x:auto}
+   .sheet-values{min-width:660px}
+   .physical-grid-sheet th,.physical-grid-sheet td{padding:.35rem}
+  }
+  @media print{
+   @page{size:auto;margin:13mm}
+   :global(.site-header),:global(.site-footer),:global(.print-scale-audit),:global(.skip-link){display:none!important}
+   :global(body){background:white!important;color:#111!important}
+   .physical-grid-sheet{font:9pt/1.25 Arial,sans-serif!important;color:#111!important;max-width:none;padding:0!important;margin:0!important;overflow:visible!important}
+   .physical-grid-sheet h1{font-size:18pt!important}
+   .physical-grid-sheet h2{font-size:11pt!important}
+   .sheet-eyebrow{font-size:7pt}
+   .sheet-help{font-size:8pt}
+   .screen-actions{display:none!important}
+   .record-section{break-inside:avoid;margin-top:11pt}
+   .physical-grid-sheet table{font-size:8pt!important}
+   .physical-grid-sheet th,.physical-grid-sheet td{border-color:#333!important;padding:5pt}
+   .sheet-values tbody td{height:26pt}
+   .sheet-position{width:190pt;margin:6pt auto}
+   .sheet-cell{min-height:44pt}
+   .blank{color:#333!important}
+   .sheet-header{break-after:avoid}
+  }
+ </style>
+ <script>
+  document.querySelector<HTMLButtonElement>('[data-sheet-print]')?.addEventListener('click',()=>window.print());
+ </script>
+</Base>
