@@ -119,7 +119,7 @@ if(mapped!==202||hold!==16||support!==107)throw Error('V2 keyword allocation cha
 const operationRows=fs.readFileSync('docs/data/V2_SEO_Operational_Keywords_218.csv','utf8').trim().split(/\r?\n/);
 if(operationRows.length!==lines.length)throw Error('Operational keyword sheet needs all original 218 rows.');
 const parseRow=row=>[...row.matchAll(/"((?:[^"]|"")*)"/g)].map(m=>m[1].replace(/""/g,'"'));
-let activeCount=0,reviewCount=0,brandCount=0,holdCount=0;
+let activeCount=0,deprioritizedCount=0,brandCount=0,holdCount=0;
 for(let i=1;i<lines.length;i++){
  const original=parseRow(lines[i]),operational=parseRow(operationRows[i]);
  if(operational.length!==7||operational[0]!==original[0]||
@@ -130,9 +130,12 @@ for(let i=1;i<lines.length;i++){
  if(keyword==='robert kaufman calculator'){
   if(status!=='EXCLUDE_OTHER_BRAND')throw Error('Competitor brand cannot be active keyword');
   brandCount++;
- }else if(['how much is 1 yard','quilting calculator app'].includes(keyword)){
-  if(status!=='REVIEW_US_SERP_INTENT')throw Error('Ambiguous search intent must retain review gate');
-  reviewCount++;
+ }else if(keyword==='how much is 1 yard'){
+  if(status!=='DEPRIORITIZE_AMBIGUOUS_LENGTH_PRICE')throw Error('Generic yard price-versus-length intent cannot become active by accident');
+  deprioritizedCount++;
+ }else if(keyword==='quilting calculator app'){
+  if(status!=='DEPRIORITIZE_NATIVE_APP_INTENT')throw Error('Browser-only site must not treat App Store search intent as active');
+  deprioritizedCount++;
  }else if(!path){
   if(status!=='HOLD_UNVALIDATED_METHOD')throw Error('HOLD keyword must remain unindexed');
   holdCount++;
@@ -141,9 +144,30 @@ for(let i=1;i<lines.length;i++){
   activeCount++;
  }
 }
-if(activeCount!==199||reviewCount!==2||brandCount!==1||holdCount!==16)
+if(activeCount!==199||deprioritizedCount!==2||brandCount!==1||holdCount!==16)
  throw Error('Operational keyword decision counts are inconsistent.');
-console.log('PASS: 199 active mapped intent terms, 2 US-SERP reviews, 1 other-brand exclusion, 16 original HOLD; source 218 unchanged.');
+console.log('PASS: 199 active mapped intent terms, 2 public-evidence deprioritized intents (US exact SERP still unverified), 1 other-brand exclusion, 16 original HOLD; source 218 unchanged.');
+// The live bordered planner's sample must match the cut engine, not advertise
+// 5 yards from a separate unbordered example.
+const hubHtml=fs.readFileSync('dist/calculators/index.html','utf8');
+for(const value of [
+ 'Live default project:', '60 × 80 in CENTER', '66 × 86 in OUTSIDE',
+ '74 × 94 in backing', 'vertical-seam backing uses 2 panels and 5 ¼ yd',
+ '316 in of joined strip', '8 strips and ⅝ yd',
+ 'mobile-friendly browser tool, not a native App Store'
+]){
+ if(!hubHtml.includes(value))
+  throw Error('Missing accurate, crawlable HUB sample or platform disclosure: '+value);
+}
+const homepageHtml=fs.readFileSync('dist/index.html','utf8');
+if(homepageHtml.includes('physically checked fabric plan') ||
+   !homepageHtml.includes('real-paper scale and physical fabric cuts still require manual checks'))
+ throw Error('Homepage must not claim independent physical fabric signoff.');
+for(const slug of ['quilt-backing-calculator','quilt-binding-calculator','quilt-batting-calculator']){
+ const html=fs.readFileSync('dist/'+slug+'/index.html','utf8');
+ if(!html.includes('Separate unbordered worked example'))
+  throw Error('Unbordered worked example must be distinguished from live bordered sample: '+slug);
+}
 // Important static content must be genuinely inspectable without JavaScript.
 const seoTables=[['quilt-backing-calculator','backing',8],
  ['quilt-binding-calculator','binding',6],['fabric-yardage-calculator','yardage',5]];
