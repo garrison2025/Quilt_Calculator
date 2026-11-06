@@ -78,7 +78,7 @@ describe('optional user-ordered quilt-top straight seam chain',()=>{
   expect(r.coverage).toBe('ALL_USER_REPORTED');
   expect(assessFabricAudit(input(setup(),m)).status).toBe('USER_REPORTED_TOP_CHAIN_MEASUREMENTS_DISAGREE');
   expect(fabricAuditEvidence(input(setup(),m),'2026-11-06T12:00:00Z')).toMatchObject({
-   schemaVersion:5,selfReportedStatus:'USER_REPORTED_TOP_CHAIN_MEASUREMENTS_DISAGREE',
+   schemaVersion:6,selfReportedStatus:'USER_REPORTED_TOP_CHAIN_MEASUREMENTS_DISAGREE',
    independentPhysicalVerification:false,quiltCuttingApproval:false
   });
   m.observedJoinedSpanIn=19.5625;
