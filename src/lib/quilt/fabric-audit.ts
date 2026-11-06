@@ -186,6 +186,8 @@ export type FabricAuditStatus=
  'USER_REPORTED_SHORTAGE_OR_DEVIATION'|
  'USER_REPORTED_SHRINKAGE_EXCEEDS_PLAN'|
  'USER_REPORTED_SEAM_LOSS_EXCEEDS_PLAN'|
+ 'USER_REPORTED_SEAM_DIRECTION_MISMATCH'|
+ 'USER_REPORTED_SEAM_MEASUREMENTS_DISAGREE'|
  'USER_REPORTED_WITHIN_DECLARED_LIMITS';
 export type RollAuditCheck={
  id:string;material:string;requiredWofIn:number;requiredRunIn:number;
@@ -278,6 +280,12 @@ export function assessFabricAudit(input:ManualFabricAuditInput):FabricAuditAsses
  if(checks.some(c=>c.hasShortage||c.sampleOutsideAllowance))return {
   ...seamDetails,status:'USER_REPORTED_SHORTAGE_OR_DEVIATION',canExport:true,checks,missing,
   message:'User-reported material shortage or sampled piece dimension exceeds the stated allowance. Do not treat this plan as approved for real cutting.'};
+ if(seams.anyBackingDirectionMismatch)return {
+  ...seamDetails,status:'USER_REPORTED_SEAM_DIRECTION_MISMATCH',canExport:true,checks,missing,
+  message:'User-reported backing panel seam direction differs from the selected vertical/horizontal cutting plan. Stop and recheck grain/direction before cutting or sewing. This is NOT independent physical verification.'};
+ if(seams.anyJoinReconciliationMismatch)return {
+  ...seamDetails,status:'USER_REPORTED_SEAM_MEASUREMENTS_DISAGREE',canExport:true,checks,missing,
+  message:'The sum of user-measured per-join take-up does NOT reconcile to the separately measured untrimmed joined span within the declared TOTAL deviation. Re-measure each join and the complete assembly; neither value is independently certified.'};
  if(seams.anyExcessOrShortfall)return {
   ...seamDetails,status:'USER_REPORTED_SEAM_LOSS_EXCEEDS_PLAN',canExport:true,checks,missing,
   message:'User-reported backing or straight-grain binding join loss exceeded the planned total allowance or left less than the required usable joined span. Recheck all seams before production. This does NOT certify physical material.'};
@@ -285,6 +293,8 @@ export function assessFabricAudit(input:ManualFabricAuditInput):FabricAuditAsses
   ...seamDetails,status:'USER_REPORTED_SHRINKAGE_EXCEEDS_PLAN',canExport:true,checks,missing,
   message:'The user-measured prewash/postwash length decrease exceeds the shrinkage percentage assumed by the shopping estimate. Recheck the source roll and purchasing buffer; enough actual postwash material may still remain. This is NOT a physical approval.'};
  const unmeasured=checks.filter(c=>c.measuredPrewashRunIn===undefined).length;
+ const perJoinIncomplete=seams.observations.filter(o=>o.joinCount>0&&o.perJoinCoverage!=='ALL_USER_REPORTED').length;
+ const backingUnconfirmed=seams.observations.some(o=>o.kind==='backing'&&o.joinCount>0&&!o.observedBackingJoinDirection);
  const seamNote=seams.verificationCoverage==='NOT_IMPORTED'
   ?'No matching cutting-plan JSON was supplied; seam take-up was NOT verified. '
   :seams.verificationCoverage==='NOT_MEASURED'
@@ -294,13 +304,17 @@ export function assessFabricAudit(input:ManualFabricAuditInput):FabricAuditAsses
   :'Backing/binding joined lengths are USER REPORTED only; independent seam verification is NOT complete. ';
  return {...seamDetails,status:'USER_REPORTED_WITHIN_DECLARED_LIMITS',canExport:true,checks,missing,
   message:'User-entered postwash roll dimensions and sampled cuts fit the declared limits. '+(unmeasured?unmeasured+' roll(s) have no measured before-wash length; actual shrinkage was NOT verified. ':'')+
-   seamNote+'All individual cuts remain unverified. This is NOT independent certification, and does NOT approve fabric purchase or production.'};
+   seamNote+
+   (seams.verificationCoverage!=='NOT_IMPORTED'&&perJoinIncomplete?
+     perJoinIncomplete+' assembly type(s) have incomplete individual seam take-up logs; cumulative per-join loss was NOT fully checked. ':'')+
+   (backingUnconfirmed?'The real backing seam direction was NOT user-confirmed. ':'')+
+   'All individual cuts remain unverified. This is NOT independent certification, and does NOT approve fabric purchase or production.'};
 }
 export function fabricAuditEvidence(input:ManualFabricAuditInput,recordedAtUtc:string){
  const result=assessFabricAudit(input);
  if(!result.canExport)throw Error('Complete every physical measurement and confirm it was performed before exporting.');
  return {
-  schemaVersion:2,kind:'user-reported-fabric-cutting-check',
+  schemaVersion:3,kind:'user-reported-fabric-cutting-check',
   recordedAtUtc,measuredOn:input.date,
   projectFingerprint:input.project.sourceProjectHash,
   sourceSnapshotIsCryptographicallyAuthenticated:false,
