@@ -52,6 +52,33 @@ if(!squareLabHtml.includes('noindex,follow')||squareLabHtml.includes('rel="canon
    squareLabHtml.includes('application/ld+json')||!squareLabHtml.includes('Unverified construction method.')||
    !squareLabHtml.includes('Square-in-a-Square Cutting Lab'))
  throw Error('Square trial must remain unindexed and clearly provisional.');
+// Deliberately unindexed individual 45-degree strip geometry lab. The
+// orthogonal crosswise join method must not silently launch HOLD-BIAS or
+// acquire canonical/JSON-LD structured data on the preview.
+const individualBiasLabHtml=fs.readFileSync('dist/lab/individual-bias-strips/index.html','utf8');
+for(const token of [
+ 'noindex,follow','data-individual-bias-lab','Individual 45° Bias Strip Geometry Lab',
+ 'NOT the offset-seam','crosswise','30¼ inches','not the mathematical optimum'
+]){
+ if(!individualBiasLabHtml.toLowerCase().includes(token.toLowerCase()))
+  throw Error('Missing honest software-only individual-bias lab explanation: '+token);
+}
+if(individualBiasLabHtml.includes('rel="canonical"')||
+   individualBiasLabHtml.includes('application/ld+json'))
+ throw Error('Experimental individual-bias lab must never have a canonical or structured-data SEO route.');
+if(!fs.readFileSync('dist/quilt-binding-calculator/index.html','utf8')
+   .includes('href="/lab/individual-bias-strips/"'))
+ throw Error('Existing approved binding answer must link to the separate noindex research lab.');
+for(const alias of ['bias-binding-calculator','bias-tape-calculator','continuous-bias-calculator']){
+ if(fs.existsSync('dist/'+alias+'/index.html'))
+  throw Error('Bias HOLD keyword cannot become a public ranking URL merely because a separate crosswise geometry lab exists.');
+}
+const individualBiasSource=fs.readFileSync('src/lib/quilt/individual-bias-geometry.ts','utf8');
+for(const token of ['INDIVIDUAL_45DEG_CROSSWISE_JOIN',
+ 'verifyIndividualBiasLayout','modeledJoinedLengthIn','findSmallestIndividualBiasSquare']){
+ if(!individualBiasSource.includes(token))
+  throw Error('Individual bias claims must retain computational geometry proof gates.');
+}
 if(fs.existsSync('dist/square-in-a-square-calculator/index.html'))throw Error('Premature public SQUARE keyword route.');
 const biasHtml=fs.readFileSync('dist/quilt-binding-calculator/index.html','utf8');
 for(const fragment of ['data-seo-bias-area-bound','square-root fabric estimate','loss-free theoretical area equivalents',
@@ -268,8 +295,8 @@ console.log('PASS: 218 source keyword records, 202 mapped to 9 unique tool inten
  * Asset hrefs are intentionally excluded; internal navigation URLs must be valid.
  */
 const seenTitles=new Set();
-const internalRoutes=new Set([...slugs.map(slug=>'/'+(slug?slug+'/':'')),'/about/','/privacy/','/qa/print-calibration/','/qa/fabric-cutting/','/qa/2x2-measurement-sheet/']);
-for(const slug of [...slugs,'about','privacy','qa/print-calibration','qa/fabric-cutting','qa/2x2-measurement-sheet']){
+const internalRoutes=new Set([...slugs.map(slug=>'/'+(slug?slug+'/':'')),'/about/','/privacy/','/qa/print-calibration/','/qa/fabric-cutting/','/qa/2x2-measurement-sheet/','/lab/individual-bias-strips/']);
+for(const slug of [...slugs,'about','privacy','qa/print-calibration','qa/fabric-cutting','qa/2x2-measurement-sheet','lab/individual-bias-strips']){
  const html=fs.readFileSync('dist/'+(slug?slug+'/':'')+'index.html','utf8');
  const title=html.match(/<title>([^<]+)<\/title>/)?.[1];
  if(!title||seenTitles.has(title))throw Error('Missing/duplicate page title: '+slug);
@@ -282,7 +309,7 @@ for(const slug of [...slugs,'about','privacy','qa/print-calibration','qa/fabric-
   if(!internalRoutes.has(href))throw Error('Broken internal page link '+href+' from '+slug);
  }
 }
-console.log('PASS: 15 uniquely titled static pages including noindex About, print-scale, fabric QA and blank 2×2 record, one H1 each, internal link destinations verified.');
+console.log('PASS: 16 uniquely titled static pages including noindex About, print-scale, fabric QA, blank 2×2 record and individual-bias research lab, one H1 each, internal link destinations verified.');
 
 // Feature enhancements must deepen approved existing SEO routes; never
 // create three isolated thin keyword pages or make the preview indexable.
