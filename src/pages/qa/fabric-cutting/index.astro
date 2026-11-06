@@ -272,10 +272,22 @@ import Base from '../../../layouts/Base.astro';
       perJoinObservedLossesIn:jointInputs.length?jointInputs.map(input=>numberValue(input)):undefined
      };
     });
+   const fields=[
+    'pretrimBackingWidthIn','pretrimBackingHeightIn',
+    'trimLeftIn','trimRightIn','trimTopIn','trimBottomIn',
+    'trimmedBackingWidthIn','trimmedBackingHeightIn',
+    'sewnQuiltTopWidthIn','sewnQuiltTopHeightIn'
+   ] as const;
+   const finishingReading:UserFinishingReading={};
+   for(const key of fields){
+    const value=numberValue(query<HTMLInputElement>('[data-fabric-finish="'+key+'"]'));
+    if(value!==undefined)finishingReading[key]=value;
+   }
    return {
     project:imported,readings,
     joinedSeamReadings,
     allowedSeamDeviationIn:numberValue(query<HTMLInputElement>('[data-fabric-seam-tolerance]')),
+    finishingReading,allowedFinishingDeviationIn:numberValue(query<HTMLInputElement>('[data-fabric-finishing-tolerance]')),
     date:fieldValue('[data-fabric-date]'),
     fabricCondition:fieldValue('[data-fabric-condition]') as ManualFabricAuditInput['fabricCondition'],
     allowedPieceDeviationIn:numberValue(query<HTMLInputElement>('[data-fabric-tolerance]')),
@@ -289,6 +301,33 @@ import Base from '../../../layouts/Base.astro';
    resultNode.dataset.fabricAssessment=outcome.status;
    resultNode.textContent=outcome.message+(outcome.missing.length?' Missing: '+outcome.missing.join('; ')+'.':'');
    exportButton.disabled=!outcome.canExport;
+   const finish=outcome.finishingCheck;
+   if(finishResult){
+    finishResult.dataset.fabricFinishingCoverage=finish.backingCoverage;
+    const parts=[
+     'Backing four-edge measurement: '+finish.backingCoverage+'.',
+     'Sewn quilt TOP outside measurement: '+finish.topCoverage+'.'
+    ];
+    if(finish.impliedTrimmedBackingWidthIn!==undefined){
+     parts.push('Backing after four edge removals should be '+
+      finish.impliedTrimmedBackingWidthIn.toFixed(3)+' × '+
+      finish.impliedTrimmedBackingHeightIn?.toFixed(3)+' in. '+
+      'Independent posttrim width difference '+finish.trimmedWidthDifferenceIn?.toFixed(3)+
+      ' in, height difference '+finish.trimmedHeightDifferenceIn?.toFixed(3)+
+      ' in, removed area '+finish.observedTrimAreaSqIn?.toFixed(2)+' sq in.');
+    }
+    if(finish.joinedPretrimAxisDifferenceIn!==undefined)
+     parts.push('Backing pretrim versus whole joined seam span discrepancy '+
+      finish.joinedPretrimAxisDifferenceIn.toFixed(3)+' in.');
+    if(finish.sewnTopWidthDifferenceIn!==undefined)
+     parts.push('Sewn quilt TOP vs plan differences: '+
+      finish.sewnTopWidthDifferenceIn.toFixed(3)+' in width and '+
+      finish.sewnTopHeightDifferenceIn?.toFixed(3)+' in height.');
+    parts.push(...finish.warnings);
+    if(finish.invalid.length)parts.push('Invalid: '+finish.invalid.join('; '));
+    parts.push('User reported only; physical dimensions after quilting/binding NOT VERIFIED.');
+    finishResult.textContent=parts.join(' ');
+   }
    for(const check of outcome.seamChecks){
     const node=[...(seamContainer?.querySelectorAll<HTMLElement>('[data-fabric-seam-kind]')??[])]
      .find(el=>el.dataset.fabricSeamKind===check.kind)?.querySelector<HTMLElement>('[data-fabric-seam-result]');
@@ -366,6 +405,15 @@ import Base from '../../../layouts/Base.astro';
     rollsContainer?.replaceChildren(...parsed.rolls.map(rollForm));
     seamContainer?.replaceChildren(...(parsed.seamPlan?.checks??[]).map(seamForm));
     if(seamArea)seamArea.hidden=!parsed.seamPlan;
+    if(finishArea){finishArea.hidden=!parsed.seamPlan;finishArea.removeAttribute('open');}
+    if(finishPlan&&parsed.seamPlan){
+     const expected=parsed.seamPlan.finishing;
+     finishPlan.textContent='Plan: sewn quilt TOP outside '+expected.plannedQuiltTopWidthIn+' × '+
+      expected.plannedQuiltTopHeightIn+' in; backing AFTER trim at least '+
+      expected.requiredBackingWidthIn+' × '+expected.requiredBackingHeightIn+' in. '+
+      'Model backing BEFORE trimming '+expected.plannedPretrimBackingWidthIn+' × '+
+      expected.plannedPretrimBackingHeightIn+' in. These targets are NOT physical measurements.';
+    }
     if(snapshot)snapshot.textContent='Matched snapshot '+parsed.sourceProjectHash+' · '+parsed.rolls.length+' separate rolls · '+parsed.cutCount+' physical cuts. This tag is only a short consistency marker.';
     if(workspace)workspace.hidden=false;
     if(importStatus)importStatus.textContent='Both CSVs match by project revision, roll IDs and geometry. '+(parsed.seamPlan?'The cutting-plan JSON also reconciles with the backing and binding cut pieces.':'No cutting-plan JSON: sewn seams remain UNVERIFIED.')+' Physical measurements have not yet been performed.';
@@ -382,13 +430,16 @@ import Base from '../../../layouts/Base.astro';
   workspace?.addEventListener('change',render);
   resetButton?.addEventListener('click',()=>{
    ++attempt;imported=null;if(cutsFile)cutsFile.value='';if(shoppingFile)shoppingFile.value='';if(planJsonFile)planJsonFile.value='';
-   for(const selector of ['[data-fabric-date]','[data-fabric-tolerance]','[data-fabric-seam-tolerance]','[data-fabric-reviewer]']){
+   for(const selector of ['[data-fabric-date]','[data-fabric-tolerance]','[data-fabric-seam-tolerance]','[data-fabric-finishing-tolerance]','[data-fabric-reviewer]']){
     const input=query<HTMLInputElement>(selector);if(input)input.value='';
    }
    const condition=query<HTMLSelectElement>('[data-fabric-condition]');if(condition)condition.value='';
    const checked=query<HTMLInputElement>('[data-fabric-confirm]');if(checked)checked.checked=false;
+   for(const input of finishArea?.querySelectorAll<HTMLInputElement>('[data-fabric-finish]')??[])input.value='';
    rollsContainer?.replaceChildren();seamContainer?.replaceChildren();
-   if(seamArea)seamArea.hidden=true;if(workspace)workspace.hidden=true;
+   if(seamArea)seamArea.hidden=true;
+   if(finishArea){finishArea.hidden=true;finishArea.removeAttribute('open');}
+   if(workspace)workspace.hidden=true;
    if(exportButton)exportButton.disabled=true;
    if(importStatus)importStatus.textContent='Cleared. Import a fresh matching pair of CSV files to start again.';
   });
