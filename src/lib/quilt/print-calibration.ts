@@ -41,7 +41,7 @@ export function evaluatePrintCalibration(input:PrintCalibrationInput):PrintCalib
   missing.push('Actual measurement date');
  if(input.scaleMode!=='actual-size' && input.scaleMode!=='other')missing.push('Print scaling');
  if(!input.physicallyMeasured)missing.push('Physical ruler measurement confirmation');
- const checks=referenceKeys.map(key=>{
+ const checks:PrintCalibrationResult['checks']=referenceKeys.map(key=>{
   const ref=PRINT_REFERENCES[key];
   const value=input.readingsMm[key];
   if(value===undefined || !Number.isFinite(value) || value<=0 || value>500){
