@@ -147,6 +147,48 @@ describe('manual rectangular grid from actual quilt-TOP numbered cuts',()=>{
   expect(r.independentRulerMismatch).toBe(false);
   expect(assessFabricAudit(audit(g)).status).toBe('USER_REPORTED_TOP_GRID_CUT_SIZE_DEVIATION');
  });
+ it('uses the separate physical cut tolerance even when the assembled-grid tolerance is large',()=>{
+  const g=grid();g.declaredTotalToleranceIn=.5;
+  for(const c of g.cells)c.measuredCutWidthIn=5.125;
+  g.measuredAssembledWidthIn=9.75;
+  const r=evaluateTopGrid(project(),g,.0625);
+  expect(r.coverage).toBe('ALL_USER_REPORTED');
+  expect(r.shapeMismatch).toBe(false);
+  expect(r.independentRulerMismatch).toBe(false);
+  expect(r.cutPieceToleranceIn).toBe(.0625);
+  expect(r.cutSizeDeviationCount).toBe(4);
+  expect(r.cutComparisons).toHaveLength(4);
+  expect(r.cutComparisons[0]).toMatchObject({
+   row:1,column:1,expectedCutWidthIn:5,measuredCutWidthIn:5.125,
+   widthDifferenceIn:.125,heightDifferenceIn:0,exceedsPieceTolerance:true
+  });
+  const selfReported=assessFabricAudit(audit(g));
+  expect(selfReported.status).toBe('USER_REPORTED_TOP_GRID_CUT_SIZE_DEVIATION');
+  const evidence=fabricAuditEvidence(audit(g),'2026-11-06T13:00:00Z');
+  expect(evidence.topGridCheck.cutComparisons[3].widthDifferenceIn).toBeCloseTo(.125);
+  expect(evidence.independentPhysicalVerification).toBe(false);
+  const accepted=evaluateTopGrid(project(),g,.25);
+  expect(accepted.cutSizeDeviationCount).toBe(0);
+  const widened=audit(g);widened.allowedPieceDeviationIn=.25;
+  expect(assessFabricAudit(widened).status).toBe('USER_REPORTED_WITHIN_DECLARED_LIMITS');
+ });
+ it('flags a single physically measured wrong axis on a still-partial grid',()=>{
+  const g=grid();g.cells[0].measuredCutWidthIn=5.125;
+  g.cells[0].measuredCutHeightIn=undefined;
+  const r=evaluateTopGrid(project(),g,.0625);
+  expect(r.coverage).toBe('PARTIAL_USER_REPORTED');
+  expect(r.measuredCells).toBe(3);
+  expect(r.cutSizeDeviationCount).toBe(1);
+  expect(r.cutComparisons[0].widthDifferenceIn).toBeCloseTo(.125);
+  expect(r.cutComparisons[0].heightDifferenceIn).toBeUndefined();
+  expect(r.predictedAssembledWidthIn).toBeUndefined();
+  expect(assessFabricAudit(audit(g)).status).toBe('USER_REPORTED_TOP_GRID_CUT_SIZE_DEVIATION');
+ });
+ it('rejects invalid standalone cut tolerances without confusing them with assembly tolerance',()=>{
+  const g=grid();g.declaredTotalToleranceIn=1;
+  expect(evaluateTopGrid(project(),g,.26).invalid.join(' ')).toContain('cut-piece tolerance');
+  expect(evaluateTopGrid(project(),g,-1).invalid.join(' ')).toContain('cut-piece tolerance');
+ });
  it('blocks physically impossible partial grid readings without treating blank edges as measured zero',()=>{
   let g=grid();
   g.cells[2].seamRightIn=undefined; // another cell is still incomplete
