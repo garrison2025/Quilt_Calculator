@@ -101,7 +101,9 @@ right cut mark j at (L-2*d+j*W, j*W)
     is sewn to
 left cut mark j+1 at (d+(j+1)*W, (j+1)*W)
 ```
-There are exactly `N-1` connections. The coordinates are different before sewing; the seam identifies them. Zero/two/three-line offsets remain topology failures and are not developed as a single strip.
+There are `N` boundary endpoint correspondences, for boundary indices `j=0,...,N-1`; boundary `N` is the open terminal edge. Adjacent endpoint correspondences define exactly `N-1` complete band-to-band tube-seam segments. Each segment has two endpoint matches: right edge of band `i+1` to left edge of band `i+2`. In the unfolded chart, both source edges must map to the same shared edge between the two developed band panels. The first boundary match (right boundary 0 to left boundary 1) is essential: both endpoints map to the first panel join at `(Q,0)`. The topology graph's `N-1` links correspond to these `N-1` complete seam segments, not to the number of endpoint records.
+
+The coordinates are different before sewing; the seam identifies them. Zero/two/three-line offsets remain topology failures and are not developed as a single strip.
 
 ### 3. Unfolded spiral and end trimming
 
