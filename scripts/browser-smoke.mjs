@@ -610,10 +610,10 @@ try{
     await auditDownload.isEnabled(),
     'All user-entered matching measurements must be called SELF-REPORTED, never independently certified.');
   await auditPage.screenshot({path:'artifacts/qa/physical-fabric-user-check-synthetic.png',fullPage:true,animations:'disabled'});
-  const auditFilePromise=auditPage.waitForEvent('download');
+  const fabricEvidencePromise=auditPage.waitForEvent('download');
   await auditDownload.click();
-  const auditFile=await auditFilePromise;
-  const auditEvidence=JSON.parse(await fs.readFile(await auditFile.path(),'utf8'));
+  const fabricEvidenceFile=await fabricEvidencePromise;
+  const auditEvidence=JSON.parse(await fs.readFile(await fabricEvidenceFile.path(),'utf8'));
   check(auditEvidence.kind==='user-reported-fabric-cutting-check' &&
     auditEvidence.projectFingerprint===shopFingerprint &&
     auditEvidence.checks.length===recordedRolls.size &&
