@@ -3046,6 +3046,78 @@ try{
     'A source square that cannot physically fit usable WOF must not generate a purchase or cutting export.');
   await biasGeometryCtx.close();
   console.log('PASS 45-degree individual-bias inscribed source polygons, crosswise seam arithmetic, noindex method guard and polygon CSV.');
+  // The offset-TUBE connection checker is graph topology only.
+  // Do not confuse mark connections with a verified cloth yield or with the
+  // separate individual-45deg source-polygon export.
+  const tubeCtx=await browser.newContext({viewport:{width:375,height:780},acceptDownloads:true});
+  instrumentNetwork(tubeCtx,'continuous-bias-tube');
+  const tubePage=await tubeCtx.newPage();
+  tubePage.on('pageerror',err=>problems.push('Tube topology: '+err.message));
+  const tubeResponse=await tubePage.goto(ROOT+'/lab/continuous-bias-tube/',{waitUntil:'domcontentloaded'});
+  check(tubeResponse.status()===200 &&
+    await tubePage.locator('meta[name="robots"]').getAttribute('content')==='noindex,follow' &&
+    await tubePage.locator('link[rel="canonical"]').count()===0 &&
+    await tubePage.locator('script[type="application/ld+json"]').count()===0,
+    'Tube lab must remain strictly noindex with no SEO canonical or WebApplication markup.');
+  await tubePage.waitForFunction(()=>
+    document.querySelector('[data-tube-topology-status]')?.textContent?.includes('Single continuous tube'));
+  const tubeOutput=tubePage.locator('[data-tube-topology-output]');
+  check((await tubePage.locator('[data-tube-verdict]').innerText()).includes('ONE open spiral') &&
+    (await tubeOutput.innerText()).includes('PRE-SEAM possible lane limit') &&
+    (await tubeOutput.innerText()).includes('360 in') &&
+    await tubePage.locator('[data-tube-paths] li').count()===1 &&
+    (await tubePage.locator('[data-tube-paths]').innerText()).includes('1 → 2 → 3 → 4 → 5 → 6 → 7 → 8') &&
+    await tubePage.locator('.tube-seam-svg').count()===1 &&
+    await tubePage.locator('.tube-connection-path').count()===7,
+    'The 30in/2.5in eight-band model must create exactly ONE open 1-8 connection chain and seven seamline links.');
+  const tubeScroll=tubePage.locator('.tube-seam-table-scroll');
+  check(await tubeScroll.getAttribute('tabindex')==='0' &&
+    await tubeScroll.getAttribute('role')==='region' &&
+    Boolean(await tubeScroll.getAttribute('aria-label')),
+    'Tube seamline cut-mark table must be keyboard focusable on a narrow 375px screen.');
+  const tubeDownloaded=tubePage.waitForEvent('download');
+  await tubePage.locator('[data-tube-topology-download]').click();
+  const tubeFile=await tubeDownloaded;
+  const tubeCsv=await fs.readFile(await tubeFile.path(),'utf8');
+  const tubeCsvRows=csvRecords(tubeCsv);
+  check(tubeFile.suggestedFilename().includes('NO-YIELD') &&
+    tubeCsv.includes('TOPOLOGY_ONLY_NOT_PHYSICAL_NOT_PURCHASE_NOT_CUTTING') &&
+    tubeCsv.includes('CONTINUOUS_BIAS_TUBE_TOPOLOGY_ONLY') &&
+    tubeCsv.includes('Sewn fabric length verified') &&
+    tubeCsv.includes('NO') &&
+    !tubeCsv.includes('source cutting vertices') &&
+    tubeCsvRows.filter(row=>row.length===5&&/^[0-9]+$/.test(row[0])).length===7,
+    'Downloaded tube checklist must describe exactly seven conceptual seamline links, NEVER polygons, shopping yards or actual fabric yield.');
+  await auditWcag(tubePage,'/lab/continuous-bias-tube/ [375px one-offset chart]');
+  await tubePage.screenshot({path:'artifacts/qa/continuous-bias-one-lane-seam.png',fullPage:true,animations:'disabled'});
+  await tubePage.locator('[data-tube-input="offsetBands"]').selectOption('0');
+  check(await tubePage.locator('[data-tube-topology-download]').isDisabled() &&
+    (await tubePage.locator('[data-tube-topology-status]').innerText()).includes('STALE'),
+    'Changing tube line-offset must revoke previous checklist immediately.');
+  await tubePage.locator('[data-tube-topology-form] button[type="submit"]').click();
+  check((await tubePage.locator('[data-tube-verdict]').innerText()).includes('CLOSED RINGS') &&
+    await tubePage.locator('[data-tube-paths] li').count()===8,
+    'No offset must produce eight closed rings, not a false continuous spiral.');
+  await tubePage.locator('[data-tube-input="offsetBands"]').selectOption('2');
+  await tubePage.locator('[data-tube-topology-form] button[type="submit"]').click();
+  check((await tubePage.locator('[data-tube-verdict]').innerText()).includes('2 disconnected OPEN PATHS') &&
+    await tubePage.locator('[data-tube-paths] li').count()===2 &&
+    (await tubePage.locator('[data-tube-paths]').innerText()).includes('1 → 3 → 5 → 7'),
+    'Two-lane offset yields two separate paths; must reject a single-spiral claim.');
+  await auditWcag(tubePage,'/lab/continuous-bias-tube/ [375px two-offset warning]');
+  await tubePage.locator('[data-tube-input="usableWofIn"]').fill('29');
+  await tubePage.locator('[data-tube-topology-form] button[type="submit"]').click();
+  check((await tubePage.locator('[data-tube-topology-output]').innerText()).includes('cannot fit') &&
+    await tubePage.locator('[data-tube-topology-download]').isDisabled(),
+    'Source square wider than measured WOF may never generate an actionable seamline guide.');
+  await tubePage.locator('[data-tube-input="usableWofIn"]').fill('43');
+  await tubePage.locator('[data-tube-input="markedBands"]').fill('9');
+  await tubePage.locator('[data-tube-topology-form] button[type="submit"]').click();
+  check((await tubePage.locator('[data-tube-topology-output]').innerText()).includes('PRE-SEAM') &&
+    await tubePage.locator('[data-tube-topology-download]').isDisabled(),
+    'Nine 2.5in bands exceed the nominal pre-seam bound of a 30in square, preventing false cut instructions.');
+  await tubeCtx.close();
+  console.log('PASS continuous-bias tube one-lane seam graph, wrong offsets, WOF upper limit, method-only CSV and WCAG.');
   const dark=await browser.newContext({viewport:{width:1280,height:800},colorScheme:'dark'});
   instrumentNetwork(dark,'dark');
   const darkPage=await dark.newPage();
