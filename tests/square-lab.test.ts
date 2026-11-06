@@ -26,6 +26,28 @@ describe('isolated square-in-square engineering preview (not real-sewn certified
   expect(eight.centerCutIn).toBe(6.25);
   expect(eight.cornerSquareCutIn).toBe(4.875);
  });
+ it('matches independently published 4, 8, 12 and 16in one-round square charts, not stitch-and-flip',()=>{
+  // Published charts for one-center plus TWO once-diagonally cut corners:
+  // center = finished / sqrt(2) + 1/2; corners = finished / 2 + 7/8.
+  const expected=[
+   [4,3.375,2.875,4.5],
+   [6,4.75,3.875,6.5],
+   [8,6.25,4.875,8.5],
+   [10,7.625,5.875,10.5],
+   [12,9,6.875,12.5],
+   [16,11.875,8.875,16.5]
+  ] as const;
+  for(const [finished,center,corner,unfinished] of expected){
+   const r=calculateSquareLab({finishedOuterIn:finished,blocks:1,centerWofIn:43,cornerWofIn:43,cornerExtraIn:0});
+   expect([r.centerCutIn,r.cornerSquareCutIn,r.unfinishedOutsideIn],
+    'Finished one-round block '+finished).toEqual([center,corner,unfinished]);
+   expect(r.centerSquares).toBe(1);
+   expect(r.cornerParentSquares).toBe(2);
+   expect(r.resultingCornerTriangles).toBe(4);
+   expect(r.centerCutIn+1e-10).toBeGreaterThanOrEqual(finished/Math.SQRT2+.5);
+   expect(r.cornerSquareCutIn+1e-10).toBeGreaterThanOrEqual(finished/2+.875);
+  }
+ });
  it('does not provide a purchasing estimate for a physically impossible WOF',()=>{
   const r=calculateSquareLab({finishedOuterIn:12,blocks:2,centerWofIn:5,cornerWofIn:43,cornerExtraIn:.25});
   expect(r.center.layout.isCutFeasible).toBe(false);
