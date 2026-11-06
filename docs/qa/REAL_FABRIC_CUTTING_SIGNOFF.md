@@ -12,6 +12,14 @@
 6. If the project is the *whole-quilt planner*, enter **all** real quilt-top pieces and colors and only then manually check the top-cut coverage box. The check is a user acknowledgement, not proof of completeness. Do not treat the unreviewed `INCOMPLETE` shopping CSV as a complete purchase order.
 7. Separately print [/qa/print-calibration/](https://quilt-calculator-566.pages.dev/qa/print-calibration/) at 100% / Actual Size. Record real physical measurements in [PRINT_SCALE_PHYSICAL_SIGNOFF.md](PRINT_SCALE_PHYSICAL_SIGNOFF.md). The fabric-roll cutting SVG is still schematic, **not** a 1:1 fabric pattern.
 
+## Browser-assisted physical measurement record (2026-11-06)
+
+The independent, deliberately **noindex** [Fabric Cutting QA worksheet](https://quilt-calculator-566.pages.dev/qa/fabric-cutting/) now accepts BOTH site-produced CSV exports. It rejects missing source tags, incompatible file revisions, mismatched physical roll IDs, invalid piece numbering, coordinates exceeding specified WOF/run length, overlapping physical cuts, and purchase amounts shorter than the physical run. This is source-data consistency checking **only**, never evidence of a real printer, ruler or sewn fabric.
+
+After importing matching files, a human enters the **actual usable WOF and available material length** for every physical roll, and selects one physical cut to sample and measure (width/height) per roll. The reviewer declares their own tolerance (0–¼ inch), measurement date, prewash condition and actual physical-measurement confirmation. Incomplete records cannot export. Complete negative findings **can** export. A not-yet-postwashed or unknown fabric condition remains `INCONCLUSIVE_NOT_POSTWASHED`, even when its displayed measurements are large enough.
+
+The downloaded JSON records `kind: "user-reported-fabric-cutting-check"`, the short source fingerprint, per-roll reported measurements, sample cut differences and explicit `independentPhysicalVerification: false`, `quiltCuttingApproval: false`. It neither records independent reviewer approval nor verifies every cut, grain, washing loss or assembly seam. The browser reads local files only, does not upload or autosave them and does not alter the original V2 release-gate status. The automated browser test uses **synthetic** data; it does not certify a real physical cut.
+
 ## Measurement sheet — initially empty
 
 | Material / SKU | Expected from cutting CSV (in) | Actual postwash cut / seam measurement (in) | Actual source roll (in) | Difference and observations | Review sign-off |
