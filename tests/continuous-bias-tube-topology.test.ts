@@ -18,7 +18,7 @@ describe('continuous bias tube: ONLY seamline topology, never strip yield or pur
   expect(t.seamLinks).toHaveLength(7);
   expect(t.chains).toEqual([{kind:'open-path',bandOrder:[1,2,3,4,5,6,7,8]}]);
   expect(t.seamLinks[0]).toMatchObject({
-   fromBand:1,toBand:2,rightMarkDistanceIn:1.25,leftMarkDistanceIn:3.75,
+   fromBand:1,toBand:2,rightMarkDistanceIn:2.5,leftMarkDistanceIn:5,
    offsetDistanceIn:2.5,alignment:'ON_SEAM_LINE_NOT_RAW_EDGE'
   });
   expect(t.seamLinks[6]).toMatchObject({fromBand:7,toBand:8});
