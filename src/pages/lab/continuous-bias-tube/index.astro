@@ -3,7 +3,7 @@ import Base from '../../../layouts/Base.astro';
 ---
 <Base noIndex
  title="Continuous Bias Tube Seam Topology Lab — Nonindexed Engineering Preview | Quilt Studio"
- description="Noindex continuous bias tube seamline topology checker: one-strip offset produces one continuous spiral graph, zero offset forms rings, and two-strip offset splits the path. No physical yield or buying estimate.">
+ description="Noindex continuous bias tube research lab: one-strip offset topology, modeled 2D sewn-face and unfolded spiral coordinates, two-seam area ledger and end trims. Physical yield and buying remain unverified.">
 <div class="page-shell tube-topology-page" data-tube-topology-lab>
  <div class="page-intro page-intro--tool">
   <div class="page-heading">
@@ -15,7 +15,7 @@ import Base from '../../../layouts/Base.astro';
   </div>
  </div>
  <div class="warning-banner" role="note">
-  <strong>Engineering-only, NOINDEX:</strong> Do not use this tool to cut or buy continuous bias binding. It does not prove usable strip length, seam take-up, tube circumference, source cutting path or production yield. Enter the actual lane count observed after marking the fabric; the pre-seam theoretical upper limit is NOT a guarantee that this many lanes survive sewing.
+  <strong>Engineering-only, NOINDEX:</strong> Do not use this tool to buy continuous bias binding. It provides a numerical 2D construction model, but does not physically verify finished strip length, seam take-up, fabric stretch, cut quality or production yield. Enter the actual lane count observed after marking; the pre-seam theoretical upper limit is NOT a guarantee that this many lanes survive sewing.
  </div>
  <div class="workspace">
   <form class="input-card tube-topology-form" data-tube-topology-form novalidate>
@@ -27,7 +27,7 @@ import Base from '../../../layouts/Base.astro';
     <div class="field-wrap"><label for="tube-square">Original straight-grain square side (in)</label><input id="tube-square" class="field-control" data-tube-input="sourceSquareSideIn" inputmode="decimal" value="30"/><small class="hint">6–96 in. Must fit usable fabric WOF.</small></div>
     <div class="field-wrap"><label for="tube-wof">Post-trim usable WOF (in)</label><input id="tube-wof" class="field-control" data-tube-input="usableWofIn" inputmode="decimal" value="43"/><small class="hint">6–120 in, measured on fabric.</small></div>
     <div class="field-wrap"><label for="tube-width">Full UNFOLDED strip width / marked line pitch (in)</label><input id="tube-width" class="field-control" data-tube-input="fullStripCutWidthIn" inputmode="decimal" value="2.5"/><small class="hint">¾–6 in; not folded binding width.</small></div>
-    <div class="field-wrap"><label for="tube-seam">Tube closing seam allowance (in)</label><input id="tube-seam" class="field-control" data-tube-input="seamAllowanceIn" inputmode="decimal" value="0.25"/><small class="hint">⅛–½ in from each raw edge; check line intersections ON this sewing line.</small></div>
+    <div class="field-wrap"><label for="tube-seam">Seam allowance per raw edge — BOTH seams (in)</label><input id="tube-seam" class="field-control" data-tube-input="seamAllowanceIn" inputmode="decimal" value="0.25"/><small class="hint">⅛–½ in perpendicular to each raw edge. This model applies the same allowance to the triangle-assembly seam and the tube-closing seam.</small></div>
     <div class="field-wrap"><label for="tube-bands">Actual fully marked strip lanes</label><input id="tube-bands" class="field-control" data-tube-input="markedBands" inputmode="numeric" value="8"/><small class="hint">2–32 whole lanes. Count full-width bands actually present after sewing.</small></div>
     <div class="field-wrap"><label for="tube-offset">Offset in whole marked lanes</label><select id="tube-offset" class="field-control" data-tube-input="offsetBands">
       <option value="1" selected>1 lane — intended continuous spiral</option>
@@ -37,7 +37,7 @@ import Base from '../../../layouts/Base.astro';
     </select><small class="hint">Compare 0, 1, 2 or 3. Actual continuous tube requires one-lane shift.</small></div>
    </div>
    <div class="input-actions"><button type="submit" class="action-primary">Verify seam-line connections ↗</button></div>
-   <p class="hint">The short edges are stitched into a tube with the cut-line intersections matched at the <strong>SEWING LINE</strong> (not just the raw edges). Draw the cutting line on the wrong side, check one-layer cutting, and follow the sewing instructions from your pattern.</p>
+   <p class="hint">The first seam joins the two triangle short edges with equal tip overhangs; the second seam closes the parallelogram into a tube with one marked-line offset. Match cut-line intersections at each <strong>SEWING LINE</strong>, not at raw edges. This model assumes the same perpendicular allowance on both seams.</p>
   </form>
   <section class="result-card tube-topology-result" aria-label="Continuous bias tube connection results">
    <div class="results-topline"><span class="eyebrow-with-dot">● MARKING GRAPH</span><span class="result-version">NO YIELD · NOINDEX</span></div>
@@ -46,6 +46,18 @@ import Base from '../../../layouts/Base.astro';
    <div class="results-footer"><button type="button" class="action-secondary" data-tube-topology-download disabled>Download seamline connection checklist CSV · NOT a cutting plan</button></div>
   </section>
  </div>
+ <section class="content-block tube-2d-lab" data-tube-development-lab aria-label="Two-dimensional continuous bias tube geometry">
+  <div class="editorial-head">
+   <span class="eyebrow-with-line">— TWO-SEAM / TWO-DIMENSION ENGINEERING GATE</span>
+   <h2>2D sewing-line coordinates: sewn parallelogram, unfolded spiral and end squaring</h2>
+  </div>
+  <p>Separate from the seam-connectivity graph above, this <strong>idealized geometric model</strong> draws the post-sewing face using inch coordinates, traces each marked line across the first seam, maps its one-lane continuation across the tube seam, and unfolds the complete bands into a single strip with squared ends. The JSON contains each full polygon and its original fabric-square triangle provenance.</p>
+  <p class="warning-banner" role="note"><strong>Model ≠ measured yield.</strong> Two physical seam allowances and two terminal triangles are accounted for without using a generic percentage. This convention assumes exact 45° triangles, equal first-seam tip overhangs, the same perpendicular allowance on both seams, zero bias stretch and perfect stitch-line correspondence. The modeled length must not be treated as safe fabric purchasing length without independent sewn-sample validation.</p>
+  <p class="hint"><strong>Independent reference check:</strong> <a href="https://www.getasquiltingstudio.com/2018/04/continuous-bias-binding-cheat-sheets-formulas-and-more.html" target="_blank" rel="noopener noreferrer">Geta's Quilting Studio</a> reports measuring 120in of 2.5in-wide bias from an 18in square. This model predicts 119.476in (−0.524in / −0.44%). It is one published comparison; the article does not specify end-trim measurement or fabric tension, so it is not a controlled project specimen or general physical signoff.</p>
+  <p data-tube-development-status role="status" aria-live="polite">Evaluating sewn-face coordinates…</p>
+  <div data-tube-development-output></div>
+  <div class="results-footer"><button type="button" class="action-secondary" data-tube-development-download disabled>Download complete 2D polygons / seam &amp; trim ledger JSON · NOT a cutting template</button></div>
+ </section>
  <section class="content-block tube-topology-guide">
   <div class="editorial-head"><span class="eyebrow-with-line">— THREE STAGES, TWO DISTINCT VALIDATIONS</span>
    <h2>How the continuous tube becomes a single spiral</h2></div>
@@ -55,9 +67,15 @@ import Base from '../../../layouts/Base.astro';
    <li>Sew into a tube; confirm the marked path crosses the seam and continues exactly one lane later. Cut ONE layer along the continuous spiral. No length or material purchase should be inferred solely from the number of line connections.</li>
   </ol>
   <p><strong>Topological proof:</strong> If there are N marked lanes and the offset is k, a link connects lane i to lane i+k wherever the target exists. A one-lane offset creates the single path 1→2→…→N. Zero offset closes each lane back on itself, making N independent rings. An offset of 2 forms two separate paths of odd and even lanes; therefore it does not produce one continuous strip.</p>
+  <p><strong>2D proof boundary:</strong> The separate chart evaluates the post-first-seam height, the width lost at both tube sewing lines and terminal perpendicular cuts. It rejects marked lanes that fit the pre-seam source but not the stitched face, and conserves area across seam take-up, unused partial bands, end triangles and remaining full-width strip. Full coordinates are reviewable in JSON. The chart is not an actual-size pattern and the resulting length is a <em>mathematical model</em>, not a physically verified cut yield.</p>
   <p><strong>Geometric upper limit, not usable yield:</strong> Before seams, a square of side S has area S²; ideal diagonal reassembly yields a parallelogram whose perpendicular strip span is S/√2. The maximum possible number of width-W complete bands BEFORE any sewing loss is floor(S/(√2W)). Actual seam consumption and trimming can lower that count. The area-equivalent maximum theoretical length S²/W is a ceiling only. This tool intentionally does not calculate helical fabric lengths or retail yardage.</p>
   <p>Procedure sources: <a href="https://www.allpeoplequilt.com/how-to-quilt/finishing/how-to-make-continuous-bias-binding" target="_blank" rel="noopener noreferrer">American Patchwork &amp; Quilting, updated July 28, 2025</a>; <a href="https://www.asg.org/on-a-roll-diy-continuous-bias/" target="_blank" rel="noopener noreferrer">American Sewing Guild, one-strip seamline offset tutorial</a>; <a href="https://www.satomiquilts.com/blogs/tutorials/how-to-make-a-continuous-bias-binding" target="_blank" rel="noopener noreferrer">Satomi Quilts, ¼-in sewing-line intersections</a>. The graph representation and independent validation tests are this site's engineering implementation, not a claim that these sources published an exact usable-yardage formula.</p>
  </section>
 </div>
 </Base>
-<script>import {initContinuousBiasTubeTopologyLab} from '../../../client/continuous-bias-tube-lab';initContinuousBiasTubeTopologyLab();</script>
+<script>
+import {initContinuousBiasTubeTopologyLab} from '../../../client/continuous-bias-tube-lab';
+import {initContinuousBiasTubeDevelopmentLab} from '../../../client/continuous-bias-tube-development-lab';
+initContinuousBiasTubeTopologyLab();
+initContinuousBiasTubeDevelopmentLab();
+</script>

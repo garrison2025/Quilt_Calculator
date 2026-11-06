@@ -1,6 +1,6 @@
 # Continuous bias binding — V2 method validation and release gate
 
-**Status: METHOD_RESEARCH_ONLY · NOT IMPLEMENTED · HOLD-BIAS · NOT_RELEASED (2026-11-05).**
+**Status: METHOD_RESEARCH_ONLY · 2D RESEARCH LAB IMPLEMENTED · PHYSICAL YIELD NOT VERIFIED · HOLD-BIAS · NOT_RELEASED (2026-11-07).**
 
 This file is a new assessment alongside the original V2 product specification, not a modification of the original 218-keyword sheet, its 7 bias HOLD terms or historical testing status.
 
@@ -13,6 +13,49 @@ This does **not** complete the one-round/continuous-tube 45-degree construction 
 Source confirmation (accessed 2026-11-06): [Schenectady Quilters' PDF, "Determining the amount of fabric"](https://quiltschenectady.org/Patterns/BordersNBindings.pdf) gives `√(required binding length × full width)` as an **area method**. [TNAADO's continuous-bias reference](https://tools.tnaado.ca/calculators/general/continuous-bias-binding-fabric-calculator/) implements a comparable square-root estimate, but neither that analogy nor optional estimated waste percentages prove exact real-world post-seam yield on the current fabric.
 
 Acceptance: test source-isolation, monotonic theoretical area, failure for impossible WOF and lack of any `purchaseYards` / `verifiedYieldIn` / `cuttingPlan` contract. Confirm real browser disclosure, existing straight-grain cut CSV and noindex preview. **No physical sewn sample is required for acceptance of these limited software claims**; physical construction itself remains unverified.
+
+## 2026-11-07 corrected 2D tube geometry — software PASS, physical HOLD
+
+The research branch now contains a true coordinate-based 2D model for the sewn parallelogram, the first triangle-assembly seam, the second offset tube seam, the N-1 line connections, the developed strip panels and the two terminal trim wedges.
+
+**The earlier draft length formula is withdrawn.** The 2026-11-06 draft using `V=H-a√2`, `Q=L-2a√2` and the 331.254-inch worked result did not place the first seam's geometry correctly. Do not use that output.
+
+The corrected convention assumes one measured perpendicular allowance `a` for BOTH seams and equal `a)-tip overhang at both ends of the first triangle seam. With square side `S`, full cut width `W`, `L=S√2`, `H=S/√2`, `d=a√2`:
+```
+post-first-seam long edge L1 = L-d = √2(S-a)
+post-first-seam height H1   = H-d/2 = (S-a)/√2
+post-second-seam run Q      = L-3d = √2(S-3a)
+full band fit               N*W <= H1
+partial-width remainder     R = H1-N*W
+squared-end model length    N*Q-W
+```
+The source-area ledger independently accounts for:
+```
+first assembly seam:       S²-(S-a)²
+second tube seam:          2a(S-a)
+unused partial band:       RQ
+two terminal triangles:    W²
+usable strip area:         W(NQ-W)
+sum:                       S²
+```
+The first-seam source-triangle mappings are checked back against the original square; the tube seam verifies the one-line stitchline correspondence; the unfolded panels share exact edges. The output deliberately contains no purchase-yards field and remains a mathematical estimate, not a sewn-fabric guarantee.
+
+### Automated software evidence
+
+- **PASS** — GitHub Actions quality run [42308649658](https://github.com/garrison2025/Quilt_Calculator/actions/runs/42308649658): TypeScript, math/unit/property tests, Astro build, static index/HOLD gates, Chromium 375px UI/JSON download/WCAG smoke, and simulated WebKit/Android touch.
+- **PASS** — source-square triangle bounds, per-band area, two separate seam take-ups, partial-band waste, terminal wedge polygons, exact five-category area closure and tamper rejection.
+- **External benchmark match** — Geta's published 18in square / 2.5in strip measurement is 120in; this model predicts 119.476in (−0.44%). This is one published observation; end-trim measurement and fabric tension are unspecified, so it is not a project-controlled specimen or general physical signoff.
+- **PASS** — research page remains `noindex,follow`, without canonical or sitemap entry.
+- Pull request: [#26 — 2D sewn-face / unfolded strip geometry](https://github.com/garrison2025/Quilt_Calculator/pull/26).
+
+### Still not a released method
+
+- **NOT_RUN** — real fabric sample, actual first-seam tip overhang, both seam allowances, stitchline alignment, measured band width and final post-trim length.
+- **HOLD** — full Continuous Bias Binding purchase calculator, purchase rounding and purchase guidance.
+- **HOLD-BIAS** — all seven original bias keyword intents remain held; no new indexable bias landing page.
+- The physical comparison procedure and three reproducible sample configurations are in [CONTINUOUS_BIAS_TUBE_PHYSICAL_SPECIMEN_PROTOCOL_20261107.md](CONTINUOUS_BIAS_TUBE_PHYSICAL_SPECIMEN_PROTOCOL_20261107.md).
+
+**Decision:** the 2D software/geometry gate has passed its automated suite. The physical-yield gate has not passed. Do not proceed to buyer-facing purchase estimates until real specimens agree with the model and the measured error/safety margin is documented.
 
 ## Why the existing straight-grain engine cannot be reused
 

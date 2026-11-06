@@ -3067,10 +3067,10 @@ try{
     (await tubeOutput.innerText()).includes('360 in') &&
     await tubePage.locator('[data-tube-paths] li').count()===1 &&
     (await tubePage.locator('[data-tube-paths]').innerText()).includes('1 → 2 → 3 → 4 → 5 → 6 → 7 → 8') &&
-    await tubePage.locator('.tube-seam-svg').count()===1 &&
+    await tubeOutput.locator('.tube-seam-svg').count()===1 &&
     await tubePage.locator('.tube-connection-path').count()===7,
     'The 30in/2.5in eight-band model must create exactly ONE open 1-8 connection chain and seven seamline links.');
-  const tubeScroll=tubePage.locator('.tube-seam-table-scroll');
+  const tubeScroll=tubeOutput.locator('.tube-seam-table-scroll');
   check(await tubeScroll.getAttribute('tabindex')==='0' &&
     await tubeScroll.getAttribute('role')==='region' &&
     Boolean(await tubeScroll.getAttribute('aria-label')),
@@ -3088,13 +3088,53 @@ try{
     !tubeCsv.includes('source cutting vertices') &&
     tubeCsvRows.filter(row=>row.length===5&&/^[0-9]+$/.test(row[0])).length===7,
     'Downloaded tube checklist must describe exactly seven conceptual seamline links, NEVER polygons, shopping yards or actual fabric yield.');
+  await tubePage.waitForFunction(()=>
+    document.querySelector('[data-tube-development-status]')?.textContent?.includes('Software 2D'));
+  const developed=tubePage.locator('[data-tube-development-output]');
+  check((await developed.innerText()).includes('MODELED square-ended length') &&
+    (await developed.innerText()).includes('First triangle-assembly seam take-up') &&
+    (await developed.innerText()).includes('Second tube-closing seam take-up') &&
+    await developed.locator('.tube-development-svg').count()===1 &&
+    await developed.locator('.tube-unfolded-svg').count()===1 &&
+    await developed.locator('[data-unfolded-band]').count()===8 &&
+    await developed.locator('[data-terminal-offcut]').count()===2 &&
+    await developed.locator('[data-terminal-trim]').count()===2 &&
+    await developed.locator('[data-usable-strip]').count()===1 &&
+    await developed.locator('tbody tr').count()===9,
+    'The 30in tube must expose independent 2D geometry, both seam losses, terminal trim and nine numeric cut boundaries.');
+  const geometryDownloaded=tubePage.waitForEvent('download');
+  await tubePage.locator('[data-tube-development-download]').click();
+  const geometryFile=await geometryDownloaded;
+  const geometry=JSON.parse(await fs.readFile(await geometryFile.path(),'utf8'));
+  check(geometryFile.suggestedFilename().includes('NOT-PHYSICAL-YIELD') &&
+    geometry.verdict==='NUMERICAL_GEOMETRY_ONLY_PHYSICAL_VALIDATION_REQUIRED' &&
+    geometry.productionYieldVerified===false &&
+    geometry.sourceCuttingReady===false &&
+    !('purchaseYards' in geometry) &&
+    geometry.bands.length===8 &&
+    geometry.bands.every(b=>b.sourceRegions.length===2) &&
+    geometry.firstSeamTakeupSqIn>0 && geometry.secondTubeSeamTakeupSqIn>0 &&
+    geometry.terminalOffcutPolygons.start.length===3 &&
+    geometry.terminalOffcutPolygons.end.length===3 &&
+    geometry.cutBoundaries.filter(c=>c.tubeCrossing!==null).length===8 &&
+    geometry.tubeSeamSegments.length===7 &&
+    Math.abs(geometry.areaClosureErrorSqIn)<1e-7 &&
+    Math.abs(geometry.modeledSquareEndedLengthIn-
+      (8*geometry.postSecondSeamFullRunIn-2.5))<1e-7,
+    'JSON must preserve the exact 2D band polygons, seam identifications and conserved end-trim ledger without falsely claiming measured yield.');
   await auditWcag(tubePage,'/lab/continuous-bias-tube/ [375px one-offset chart]');
   await tubePage.screenshot({path:'artifacts/qa/continuous-bias-one-lane-seam.png',fullPage:true,animations:'disabled'});
   await tubePage.locator('[data-tube-input="offsetBands"]').selectOption('0');
+  check(await tubePage.locator('[data-tube-development-download]').isDisabled() &&
+    (await tubePage.locator('[data-tube-development-status]').innerText()).includes('STALE'),
+    'Changing seam offset must immediately invalidate and revoke the exported 2D coordinates.');
   check(await tubePage.locator('[data-tube-topology-download]').isDisabled() &&
     (await tubePage.locator('[data-tube-topology-status]').innerText()).includes('STALE'),
     'Changing tube line-offset must revoke previous checklist immediately.');
   await tubePage.locator('[data-tube-topology-form] button[type="submit"]').click();
+  check((await tubePage.locator('[data-tube-development-output]').innerText()).includes('2D MODEL REJECTED') &&
+    await tubePage.locator('[data-tube-development-download]').isDisabled(),
+    'Disconnected rings may never generate a 2D continuous-ribbon length.');
   check((await tubePage.locator('[data-tube-verdict]').innerText()).includes('CLOSED RINGS') &&
     await tubePage.locator('[data-tube-paths] li').count()===8,
     'No offset must produce eight closed rings, not a false continuous spiral.');
