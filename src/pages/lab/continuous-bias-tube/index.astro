@@ -3,7 +3,7 @@ import Base from '../../../layouts/Base.astro';
 ---
 <Base noIndex
  title="Continuous Bias Tube Seam Topology Lab — Nonindexed Engineering Preview | Quilt Studio"
- description="Noindex continuous bias tube seamline topology checker: one-strip offset produces one continuous spiral graph, zero offset forms rings, and two-strip offset splits the path. No physical yield or buying estimate.">
+ description="Noindex continuous bias tube research lab: one-strip offset topology, modeled 2D sewn-face and unfolded spiral coordinates, two-seam area ledger and end trims. Physical yield and buying remain unverified.">
 <div class="page-shell tube-topology-page" data-tube-topology-lab>
  <div class="page-intro page-intro--tool">
   <div class="page-heading">
@@ -15,7 +15,7 @@ import Base from '../../../layouts/Base.astro';
   </div>
  </div>
  <div class="warning-banner" role="note">
-  <strong>Engineering-only, NOINDEX:</strong> Do not use this tool to cut or buy continuous bias binding. It does not prove usable strip length, seam take-up, tube circumference, source cutting path or production yield. Enter the actual lane count observed after marking the fabric; the pre-seam theoretical upper limit is NOT a guarantee that this many lanes survive sewing.
+  <strong>Engineering-only, NOINDEX:</strong> Do not use this tool to buy continuous bias binding. It provides a numerical 2D construction model, but does not physically verify finished strip length, seam take-up, fabric stretch, cut quality or production yield. Enter the actual lane count observed after marking; the pre-seam theoretical upper limit is NOT a guarantee that this many lanes survive sewing.
  </div>
  <div class="workspace">
   <form class="input-card tube-topology-form" data-tube-topology-form novalidate>
@@ -49,7 +49,7 @@ import Base from '../../../layouts/Base.astro';
  <section class="content-block tube-2d-lab" data-tube-development-lab aria-label="Two-dimensional continuous bias tube geometry">
   <div class="editorial-head">
    <span class="eyebrow-with-line">— TWO-SEAM / TWO-DIMENSION ENGINEERING GATE</span>
-   <h2>Actual 2D coordinates: sewn parallelogram, unfolded spiral and end squaring</h2>
+   <h2>2D sewing-line coordinates: sewn parallelogram, unfolded spiral and end squaring</h2>
   </div>
   <p>Separate from the seam-connectivity graph above, this <strong>idealized geometric model</strong> draws the post-sewing face using inch coordinates, traces each marked line across the first seam, maps its one-lane continuation across the tube seam, and unfolds the complete bands into a single strip with squared ends. The JSON contains each full polygon and its original fabric-square triangle provenance.</p>
   <p class="warning-banner" role="note"><strong>Model ≠ measured yield.</strong> Two physical seam allowances and two terminal triangles are accounted for without using a generic percentage. This convention assumes exact 45° triangles, equal first-seam tip overhangs, the same perpendicular allowance on both seams, zero bias stretch and perfect stitch-line correspondence. The modeled length must not be treated as safe fabric purchasing length without independent sewn-sample validation.</p>
