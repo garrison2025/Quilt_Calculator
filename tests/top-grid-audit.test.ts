@@ -89,13 +89,20 @@ describe('manual rectangular grid from actual quilt-TOP numbered cuts',()=>{
   expect(r.coverage).toBe('PARTIAL_USER_REPORTED');
   expect(r.measuredInternalEdges).toBe(7);
   expect(r.predictedAssembledWidthIn).toBeUndefined();
-  expect(assessFabricAudit(audit(g)).status).toBe('USER_REPORTED_WITHIN_DECLARED_LIMITS');
+  expect(assessFabricAudit(audit(g)).status).toBe('USER_REPORTED_OPTIONAL_TOP_QA_PARTIAL');
+  expect(assessFabricAudit(audit(g)).message).toContain('NO verdict');
+  const partialEvidence=fabricAuditEvidence(audit(g),'2026-11-06T16:21:00Z');
+  expect(partialEvidence.selfReportedStatus).toBe('USER_REPORTED_OPTIONAL_TOP_QA_PARTIAL');
+  expect(partialEvidence.topGridCheck.measuredInternalEdges).toBe(7);
+  expect(partialEvidence.topGridCheck.predictedAssembledWidthIn).toBeUndefined();
+  expect(partialEvidence.independentPhysicalVerification).toBe(false);
   g.cells[2].seamRightIn=.25;g.measuredAssembledWidthIn=undefined;
   r=evaluateTopGrid(project(),g);
   expect(r.coverage).toBe('PARTIAL_USER_REPORTED');
   expect(r.predictedAssembledWidthIn).toBe(9.5);
   expect(r.independentRulerMismatch).toBeUndefined();
   expect(r.warnings.join(' ')).toContain('NOT VERIFIED');
+  expect(assessFabricAudit(audit(g)).status).toBe('USER_REPORTED_OPTIONAL_TOP_QA_PARTIAL');
  });
  it('rejects a duplicate or non-top/missing physical source cut and outer-edge take-up masquerading as a join',()=>{
   const g=grid();g.cells[3].pieceNumber=1;
