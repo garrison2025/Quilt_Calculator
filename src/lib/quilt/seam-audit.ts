@@ -1,4 +1,5 @@
 import type {ImportedFabricAudit, ManualRollReading} from './fabric-audit';
+import type {FinishingPlan} from './finishing-audit';
 
 /**
  * Independent physical-measurement worksheet support. This module reads the
@@ -22,6 +23,7 @@ export type JoinedSeamPlan={
  sourceProjectHash:string;
  calculationVersion:string;
  checks:PlannedSeamCheck[];
+ finishing:FinishingPlan;
 };
 export type UserJoinedSeamReading={
  kind:JoinedMaterialKind;
@@ -121,6 +123,12 @@ export function readJoinedSeamPlan(project:ImportedFabricAudit,json:string):Join
  const backingWidth=num(backing.targetWidthIn,'backing target width');
  const backingHeight=num(backing.targetHeightIn,'backing target height');
  const targetSpan=direction==='vertical'?backingWidth:backingHeight;
+ const dimensions=obj(root.dimensions,'resolved quilt-top dimensions');
+ const quiltTopW=num(dimensions.finalWidthIn,'sewn quilt-top planned outside width');
+ const quiltTopH=num(dimensions.finalHeightIn,'sewn quilt-top planned outside height');
+ if(backingWidth+1e-7<quiltTopW||backingHeight+1e-7<quiltTopH||
+   !close(backingWidth-quiltTopW,backingHeight-quiltTopH))
+  throw Error('Selected backing target does not reconcile to the quilt-top outside dimensions and equal edge overage.');
  comparableRoll(project,'backing',backingCount,backingWof,backingPanelLength);
  const modeledBackingLoss=backingCount*backingWof-joinedSpan;
  if(modeledBackingLoss< -1e-6 || joinedSpan+1e-6<targetSpan ||
@@ -141,6 +149,15 @@ export function readJoinedSeamPlan(project:ImportedFabricAudit,json:string):Join
   (stripCount===1&&!close(bindingJoined,bindingWof)) ||
   (stripCount>1&&modeledBindingLoss>=(stripCount-1)*bindingWof))
   throw Error('Binding assembled length does not reconcile with the cut list.');
+ const pretrimW=direction==='vertical'?joinedSpan:backingPanelLength;
+ const pretrimH=direction==='vertical'?backingPanelLength:joinedSpan;
+ if(pretrimW+1e-7<backingWidth||pretrimH+1e-7<backingHeight)
+  throw Error('Backing pretrim model is smaller than its required target.');
+ const finishing:FinishingPlan={
+  requiredBackingWidthIn:backingWidth,requiredBackingHeightIn:backingHeight,
+  plannedPretrimBackingWidthIn:pretrimW,plannedPretrimBackingHeightIn:pretrimH,
+  plannedQuiltTopWidthIn:quiltTopW,plannedQuiltTopHeightIn:quiltTopH
+ };
  // An internal plan can still be manipulated by a user; validate the entire
  // numeric model and mark the result NONCRYPTOGRAPHIC in every export.
  const checks:PlannedSeamCheck[]=[
@@ -151,7 +168,7 @@ export function readJoinedSeamPlan(project:ImportedFabricAudit,json:string):Join
    plannedFullWidthIn:bindingWof,plannedPretrimJoinedLengthIn:bindingJoined,
    requiredMinimumLengthIn:bindingRequired,modeledTotalJoinLossIn:Math.max(0,modeledBindingLoss)}
  ];
- return {sourceProjectHash:project.sourceProjectHash,calculationVersion:String(root.calculationVersion??'unknown'),checks};
+ return {sourceProjectHash:project.sourceProjectHash,calculationVersion:String(root.calculationVersion??'unknown'),checks,finishing};
 }
 /**
  * Evaluate actual physical seam observations. The overall pretrim joined span

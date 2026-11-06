@@ -727,7 +727,7 @@ try{
   const seamEvidencePromise=auditPage.waitForEvent('download');
   await auditDownload.click();
   const seamEvidence=JSON.parse(await fs.readFile(await (await seamEvidencePromise).path(),'utf8'));
-  check(seamEvidence.schemaVersion===3 && seamEvidence.cuttingPlanJsonMatchedByFingerprint===true &&
+  check(seamEvidence.schemaVersion===4 && seamEvidence.cuttingPlanJsonMatchedByFingerprint===true &&
     seamEvidence.seamVerificationCoverage==='ALL_USER_REPORTED' &&
     seamEvidence.seamChecks.length===2 &&
     seamEvidence.seamChecks.every(c=>c.perJoinCoverage==='ALL_USER_REPORTED' && !c.perJoinVsAssembledSpanMismatch) &&
@@ -768,6 +768,61 @@ try{
     await auditStatus.getAttribute('data-fabric-assessment')==='INCOMPLETE_USER_MEASUREMENTS',
     'Invalid user-seam tolerance must block export, not silently skip a bad measurement.');
   await seamTolerance.fill('0.0625');
+  const finishingArea=auditPage.locator('[data-fabric-finishing-area]');
+  check(await finishingArea.isVisible() &&
+    (await auditPage.locator('[data-fabric-finishing-plan]').textContent()).includes('Plan: sewn quilt TOP outside'),
+    'The nonindexed QA must expose separate model quilt-top and backing trim targets only with matching reviewed JSON.');
+  await finishingArea.locator('summary').click();
+  const fin=(name)=>finishingArea.locator('[data-fabric-finish="'+name+'"]');
+  const finishingStatus=auditPage.locator('[data-fabric-finishing-result]');
+  check((await fin('pretrimBackingWidthIn').inputValue())===''&&
+    (await finishingStatus.innerText()).includes('NOT_MEASURED'),
+    'No artificial real pretrim/final backing ruler values may be supplied by the cutting model.');
+  const bk=readyPlanJson.result.selectedBacking,model=readyPlanJson.dimensions;
+  const pretrimWidth=bk.direction==='vertical'?bk.finishedJoinedSpanIn:bk.panelLengthIn;
+  const pretrimHeight=bk.direction==='vertical'?bk.panelLengthIn:bk.finishedJoinedSpanIn;
+  const requiredWidth=bk.targetWidthIn,requiredHeight=bk.targetHeightIn;
+  await auditPage.locator('[data-fabric-finishing-tolerance]').fill('0.0625');
+  for(const [name,value] of Object.entries({
+   pretrimBackingWidthIn:pretrimWidth,pretrimBackingHeightIn:pretrimHeight,
+   trimLeftIn:0,trimRightIn:pretrimWidth-requiredWidth,
+   trimTopIn:0,trimBottomIn:pretrimHeight-requiredHeight,
+   trimmedBackingWidthIn:requiredWidth,trimmedBackingHeightIn:requiredHeight,
+   sewnQuiltTopWidthIn:model.finalWidthIn,sewnQuiltTopHeightIn:model.finalHeightIn
+  }))await fin(name).fill(String(value));
+  check(await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_WITHIN_DECLARED_LIMITS' &&
+    await finishingStatus.getAttribute('data-fabric-finishing-coverage')==='FULL_USER_REPORTED' &&
+    (await finishingStatus.innerText()).includes('Sewn quilt TOP outside measurement: FULL_USER_REPORTED'),
+    'Two independent physical backing size readings and sewn top outside size should reconcile on synthetic model-equal data.');
+  const finishDownloadPromise=auditPage.waitForEvent('download');
+  await auditDownload.click();
+  const finishJson=JSON.parse(await fs.readFile(await(await finishDownloadPromise).path(),'utf8'));
+  check(finishJson.schemaVersion===4 &&
+    finishJson.finishingCheck.backingCoverage==='FULL_USER_REPORTED' &&
+    finishJson.finishingCheck.topCoverage==='FULL_USER_REPORTED' &&
+    finishJson.finishingCheck.observedTrimAreaSqIn>=0 &&
+    finishJson.finishingCheck.backingIndependentMeasurementMismatch===false &&
+    finishJson.quiltCuttingApproval===false &&
+    finishJson.independentPhysicalVerification===false,
+    'Exported V4 evidence must preserve user-entered edge trims and independent sizes, never physical certification.');
+  await fin('trimmedBackingWidthIn').fill(String(requiredWidth-.25));
+  check(await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_FINISH_MEASUREMENTS_DISAGREE' &&
+    await auditDownload.isEnabled(),
+    'A contradictory independent after-trim ruler value must be exportable as negative evidence.');
+  await fin('trimRightIn').fill(String(pretrimWidth-requiredWidth+.25));
+  check(await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_BACKING_TRIM_SHORTFALL',
+    'A self-consistent over-trimmed backing below required target must still be flagged.');
+  await fin('trimmedBackingWidthIn').fill(String(requiredWidth));
+  await fin('trimRightIn').fill(String(pretrimWidth-requiredWidth));
+  await fin('sewnQuiltTopWidthIn').fill(String(model.finalWidthIn+.25));
+  check(await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_SEWN_TOP_SIZE_DEVIATION',
+    'Sewn quilt-top real outside size mismatch must be distinct from backing purchase or edge trim.');
+  await fin('sewnQuiltTopWidthIn').fill(String(model.finalWidthIn));
+  await fin('trimLeftIn').fill('');
+  check(await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_WITHIN_DECLARED_LIMITS' &&
+    (await finishingStatus.innerText()).includes('PARTIAL_USER_REPORTED'),
+    'Partially entered edge trimming must stay NOT VERIFIED and cannot masquerade as a full physical trim check.');
+  await fin('trimLeftIn').fill('0');
   const originalWof=Number(await firstAuditRoll.locator('[data-measurement="wof"]').inputValue());
   await firstAuditRoll.locator('[data-measurement="wof"]').fill(String(originalWof-0.125));
   check(await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_SHORTAGE_OR_DEVIATION' &&

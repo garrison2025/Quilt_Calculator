@@ -59,6 +59,21 @@ The noindex physical audit now extends the **optional, reviewed, same-project cu
 
 **Critical scope:** measured net length take-up is not a stitch-type classification or proof of each edge's exact seam allowance. These are manual notes only. Bias binding, mitered borders, diagonal backing, seam pressing, grain stretch, true 1:1 ruler calibration, fabric width variation along the roll, sewn-top assembly and physical finished dimensions require separate human tests. A simulated browser test never moves `MANUAL_NOT_RUN` to `PASS`.
 
+## Four-edge backing trimming and sewn quilt-TOP size (noindex self-check, 2026-11-06)
+
+The same **reviewed whole-project cut-plan JSON** includes `dimensions.finalWidthIn/finalHeightIn` for the planned **sewn quilt TOP outside** and `result.selectedBacking.targetWidthIn/targetHeightIn` for the REQUIRED **backing** coverage (which includes extra quilting/handling overage). They are **not the same dimensions**. The import now cross-checks that the backing plan has symmetric planned overage about the top and that its untrimmed full-panel width/height cover the backing targets. Invalid or mismatched calculated JSON is rejected. A matching eight-hex source fingerprint is NOT cryptographic source authentication.
+
+The optional noindex Fabric Cutting QA detail offers real-ruler inputs, all **initially empty**, for:
+
+1. **Joined backing before trimming:** independently measured assembled width and height, after sewing the backing panels but before removing its four edges. If the reviewer also measured the complete joined span in the previous seam-check section, the new ruler entry is compared with it along the selected vertical/horizontal joining axis.
+2. **Four separate edge removals:** actual LEFT, RIGHT, TOP and BOTTOM amounts. Zero is allowed and must be entered as an observed zero, not assumed. From these, compute `impliedWidth = measuredPretrimWidth − left − right`; `impliedHeight = measuredPretrimHeight − top − bottom`. This is a backed-out **physical area** estimate, not a claim that cutting was automatically witnessed.
+3. **Independent posttrim backing dimensions:** real measured width/height after trimming. These are compared with the implied values using a **user-declared 0–1 inch dimension tolerance**; missing any of the eight backing values means the entire four-edge reconciliation stays `PARTIAL_USER_REPORTED` / `NOT_MEASURED`. Actual posttrim backing smaller than either REQUIRED target is explicitly flagged regardless of user tolerance.
+4. **Sewn quilt TOP size:** independently measured outside width/height of the sewn quilt top BEFORE adding the batting, backing, quilting, or binding. Compared with the planned quilt-top outside dimensions, not with backing dimensions. Missing either measurement is partial/unverified; an out-of-tolerance actual top gets its own warning.
+
+Report states include `USER_REPORTED_FINISH_MEASUREMENTS_DISAGREE`, `USER_REPORTED_BACKING_TRIM_SHORTFALL`, and `USER_REPORTED_SEWN_TOP_SIZE_DEVIATION`. The self-report JSON is `schemaVersion: 4` and includes the separately user-entered measurements, inferred four-edge dimensions, coverage flags and warning details; complete negative evidence remains exportable. Invalid/negative, nonfinite or physically impossible cut removals are rejected for export.
+
+**No independent signoff:** Even fully populated, internally consistent numbers are self-reported only. Trimmed backing dimensions and sewn quilt-top dimensions do not guarantee the final sewn, quilted, washed or bound quilt will have precisely the planned dimensions. Actual pressed stitch allowances, battings, material grain, longarm loading, binding and real 1:1 paper calibration remain independently unverified. The physical release gate remains `MANUAL_NOT_RUN`.
+
 ## Measurement sheet — initially empty
 
 | Material / SKU | Expected from cutting CSV (in) | Actual postwash cut / seam measurement (in) | Actual source roll (in) | Difference and observations | Review sign-off |
