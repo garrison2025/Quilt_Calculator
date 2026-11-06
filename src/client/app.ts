@@ -181,16 +181,16 @@ function diagram(parent:Element,layout:Layout,title:string,sku?:string,scope:'cu
  });
 }
 function details(parent:Element,items:[string,string][]):void{stats(parent,items);}
-function downloadShoppingCsv(lines:ShoppingLine[]):void{
- const payload=shoppingCsv(lines);
+function downloadShoppingCsv(lines:ShoppingLine[],sourceProjectHash:string):void{
+ const payload=shoppingCsv(lines,sourceProjectHash);
  const blob=new Blob([payload],{type:'text/csv;charset=utf-8'});
  const url=URL.createObjectURL(blob),a=document.createElement('a');
  a.href=url;
- a.download=hasIncompleteShopping(lines)?'quilt-studio-INCOMPLETE-shopping-list.csv':'quilt-studio-shopping-list.csv';
+ a.download=hasIncompleteShopping(lines)?'quilt-studio-INCOMPLETE-shopping-list-'+sourceProjectHash+'.csv':'quilt-studio-shopping-list-'+sourceProjectHash+'.csv';
  document.body.appendChild(a);a.click();a.remove();
  setTimeout(()=>URL.revokeObjectURL(url),2000);
 }
-function shopping(parent:Element,lines:ShoppingLine[],{centralReadiness=false}:{centralReadiness?:boolean}={}):void{
+function shopping(parent:Element,lines:ShoppingLine[],{centralReadiness=false,sourceProjectHash}:{centralReadiness?:boolean;sourceProjectHash:string}):void{
  section(parent,'Material shopping list','Each material is purchased independently');
  // Optional border layers can all be deleted. An empty bill of materials is
  // not an exportable zero-dollar order: never show a CSV button which throws.
@@ -209,8 +209,9 @@ function shopping(parent:Element,lines:ShoppingLine[],{centralReadiness=false}:{
   'The CSV identifies each reason. This is a partial material estimate, not a complete project purchase order.',true);
  const tools=node('div','shopping-toolbar'),button=node('button','action-secondary',(unfit||notPlanned||notReviewed)?'Download INCOMPLETE shopping CSV':'Download shopping CSV');
  button.type='button';button.dataset.action='export-shopping';
- button.addEventListener('click',()=>downloadShoppingCsv(lines));
- append(tools,node('p','footer-note','Exact raw amount, rounded purchase, fabric-roll offcut and shop rounding are different measurements.'),button);
+ button.addEventListener('click',()=>downloadShoppingCsv(lines,sourceProjectHash));
+ tools.dataset.projectFingerprint=sourceProjectHash;
+ append(tools,node('p','footer-note','Exact raw amount, rounded purchase, fabric-roll offcut and shop rounding differ. Project snapshot: '+sourceProjectHash+'. Match it to the cut-list CSV and project calculation JSON before using either file; this short tag is not a digital signature.'),button);
  parent.appendChild(tools);
  const priceNote=prices.enteredPriceSubtotalUsd===undefined
   ?'No entered-price subtotal: add prices to feasible material lines to calculate a partial cost estimate.'
@@ -982,7 +983,7 @@ if(root){
      offcutSqIn:x.layout.isCutFeasible?x.layout.physicalOffcutAreaSqIn:undefined,
      roundingExtraIn:x.purchase?.purchaseRoundingExtraLengthIn,
      unitPrice:p.borders[i].pricePerYard
-    })));
+    })),{sourceProjectHash:hashProject(p)});
     if(b.layers.some(x=>!x.purchase))warning(resultRoot,'At least one layer is FIT_IMPOSSIBLE at its specified WOF. No yardage is offered for that layer.',true);
     section(resultRoot,'Cutting diagrams by border layer','Open each layer to inspect its physical coordinates');
     b.layers.forEach((x,i)=>materialPlan(resultRoot,x.sku,x.label,x.layout,i,x.purchase?.roundedPurchaseYards,physicalRollId('border',x.sku)));
@@ -995,10 +996,10 @@ if(root){
     topFabricMissing=needsTopFabricPlan(p.fabrics);
     if(!f.length){
      warning(resultRoot,'Quilt-top fabric is NOT PLANNED. Add a fabric SKU and positive-count cut pieces to generate a purchase plan.');
-     shopping(resultRoot,[missingTopFabricShoppingLine()]);
+     shopping(resultRoot,[missingTopFabricShoppingLine()],{sourceProjectHash:hashProject(p)});
     }else{
      hero(resultRoot,String(f.length),'SEPARATE FABRIC SKUS','Only cut pieces you entered are counted. Each fabric color is an independent WOF, shrinkage and purchase scenario.',f.length===1?'SKU':'SKUs');
-     shopping(resultRoot,f.map(x=>topFabricShoppingLine(x,p.fabrics.find(sku=>sku.id===x.fabricSku)?.pricePerYard)));
+     shopping(resultRoot,f.map(x=>topFabricShoppingLine(x,p.fabrics.find(sku=>sku.id===x.fabricSku)?.pricePerYard)),{sourceProjectHash:hashProject(p)});
      if(f.some(x=>!x.purchase))warning(resultRoot,'One or more fabric SKUs contain a piece that cannot fit in the specified WOF.',true);
      section(resultRoot,'Cutting diagrams by fabric SKU','Each roll has independent coordinates and yardage');
      f.forEach((x,i)=>materialPlan(resultRoot,x.fabricSku,x.label,x.layout,i,x.purchase?.roundedPurchaseYards,physicalRollId('fabric',x.fabricSku)));
@@ -1035,7 +1036,7 @@ if(root){
       rawYards:x.purchase?.rawPurchaseYards,offcutSqIn:x.layout.isCutFeasible?x.layout.physicalOffcutAreaSqIn:undefined,
       roundingExtraIn:x.purchase?.purchaseRoundingExtraLengthIn,unitPrice:p.borders[i].pricePerYard})),
      ...(fabric.length?fabric.map(x=>topFabricShoppingLine(x,p.fabrics.find(sku=>sku.id===x.fabricSku)?.pricePerYard,reviewedTop)):[missingTopFabricShoppingLine()])
-    ],{centralReadiness:true});
+    ],{centralReadiness:true,sourceProjectHash:hashProject(p)});
     section(resultRoot,'Cutting diagrams for every material','Individual fabric rolls · open each plan to inspect coordinates').id='project-material-diagrams';
     materialPlan(resultRoot,'backing','Backing · '+selectedBacking.direction+' seams',selectedBacking.layout,0,selectedBacking.purchase.roundedPurchaseYards);
     materialPlan(resultRoot,'binding','Straight-grain binding',binding.layout,1,binding.purchase.roundedPurchaseYards);
@@ -1229,9 +1230,10 @@ if(root){
  cutCsvButton.addEventListener('click',()=>{
   if(!cutExport || cutCsvButton.disabled || !requireCurrentOutput('download a cut list'))return;
   try{
-   const blob=new Blob([cutListCsv(materialCuts)],{type:'text/csv;charset=utf-8'});
+   const sourceProjectHash=hashProject(project);
+    const blob=new Blob([cutListCsv(materialCuts,sourceProjectHash)],{type:'text/csv;charset=utf-8'});
    const url=URL.createObjectURL(blob),a=document.createElement('a');
-   a.href=url;a.download='quilt-studio-cut-list.csv';document.body.appendChild(a);a.click();a.remove();
+   a.href=url;a.download='quilt-studio-cut-list-'+sourceProjectHash+'.csv';document.body.appendChild(a);a.click();a.remove();
    setTimeout(()=>URL.revokeObjectURL(url),2000);
   }catch(error){note(error instanceof Error?error.message:'Could not export cutting list.',true);}
  });
