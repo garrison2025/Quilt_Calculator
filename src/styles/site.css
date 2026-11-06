@@ -522,3 +522,20 @@
  .page-intro--tool .hero-main-cta{min-height:44px}
  .page-intro--tool+.calculator-wrap .workspace-steps{margin-bottom:11px}
 }
+
+/* Nonindex-changing utility features: example sizes + alternate backing preview. */
+.quick-sizing-panel{margin:1rem 0 1.15rem;padding:1rem;border:1px solid var(--line,#b9ada1);border-radius:14px}
+.size-example-buttons{display:flex;flex-wrap:wrap;gap:.45rem;margin-top:.7rem}
+.size-example-buttons .action-secondary{font-size:.79rem;padding:.45rem .65rem;white-space:normal;text-align:left}
+.backing-width-comparison{margin:1.2rem 0;padding:1rem;border:1px solid var(--line,#b9ada1);border-radius:14px;min-width:0}
+.backing-width-comparison .comparison-inputs{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:.35rem 1rem;margin:.75rem 0}
+.backing-width-comparison .comparison-inputs label{font-size:.79rem;font-weight:650}
+.backing-width-comparison .comparison-inputs input{width:100%;min-width:0}
+.backing-width-comparison .comparison-results{min-width:0}
+.backing-width-comparison .table-scroll{max-width:100%;overflow-x:auto}
+@media (max-width:700px){
+ .backing-width-comparison .comparison-inputs{grid-template-columns:1fr}
+ .backing-width-comparison .comparison-inputs label{margin-top:.35rem}
+ .quick-sizing-panel,.backing-width-comparison{padding:.75rem}
+}
+@media print{.quick-sizing-panel,.backing-width-comparison{display:none!important}}
