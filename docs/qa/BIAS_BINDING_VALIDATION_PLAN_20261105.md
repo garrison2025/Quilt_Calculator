@@ -44,6 +44,7 @@ The first-seam source-triangle mappings are checked back against the original sq
 
 - **PASS** — GitHub Actions quality run [42308649658](https://github.com/garrison2025/Quilt_Calculator/actions/runs/42308649658): TypeScript, math/unit/property tests, Astro build, static index/HOLD gates, Chromium 375px UI/JSON download/WCAG smoke, and simulated WebKit/Android touch.
 - **PASS** — source-square triangle bounds, per-band area, two separate seam take-ups, partial-band waste, terminal wedge polygons, exact five-category area closure and tamper rejection.
+- **External benchmark match** — Geta's published 18in square / 2.5in strip measurement is 120in; this model predicts 119.476in (−0.44%). This is one published observation, not a project-controlled specimen or general physical signoff.
 - **PASS** — research page remains `noindex,follow`, without canonical or sitemap entry.
 - Pull request: [#26 — 2D sewn-face / unfolded strip geometry](https://github.com/garrison2025/Quilt_Calculator/pull/26).
 
