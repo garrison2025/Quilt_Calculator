@@ -103,6 +103,41 @@ import Base from '../../../layouts/Base.astro';
     <p class="qa-fabric-small">Removing four backing edges and independently measuring the resulting dimensions are separate checks; a partially filled checklist stays unverified. Backing below its required size is always flagged regardless of tolerance.</p>
     <div data-fabric-finishing-result role="status" aria-live="polite">Finishing measurements NOT VERIFIED.</div>
    </details>
+   <details class="qa-fabric-roll" data-top-chain-area hidden>
+    <summary>Optional: manually ordered quilt-TOP seam chain — physical pieces to a sewn row or column</summary>
+    <p class="qa-fabric-small" data-top-chain-plan></p>
+    <p>Quilt-top cut-list CSV pieces have <strong>NO sewn placement/order</strong>. Select physical fabric pieces in your real sewn order; enter each piece's actual cut span along the chosen axis, and the <strong>net physical length consumed on both joining edges</strong> at each straight butt seam. Compare with a separately ruler-measured assembled chain before borders. No ruler values are prefilled; diagonal or overlap joins are not modeled here.</p>
+    <div class="qa-fabric-field-grid">
+     <label>Actual chain direction
+      <select data-top-chain-axis>
+       <option value="">Select width or height (required)</option>
+       <option value="width">Width — one horizontal row</option>
+       <option value="height">Height — one vertical column</option>
+      </select>
+     </label>
+     <label>Number of consecutive physical pieces (2–12)
+      <input type="number" data-top-chain-count min="2" max="12" step="1" value="2" />
+     </label>
+     <label>User-declared TOTAL chain dimensional tolerance (0–1 inch)
+      <input data-top-chain-tolerance type="number" min="0" max="1" step="any" placeholder="e.g. 0.0625" />
+     </label>
+     <label>Independently measured sewn chain span BEFORE borders (inches)
+      <input data-top-chain-joined type="number" min="0" step="any" placeholder="Actual ruler measurement" />
+     </label>
+    </div>
+    <label class="qa-fabric-confirm">
+     <input type="checkbox" data-top-chain-full-center />
+     This exact chain spans the COMPLETE quilt TOP CENTER before borders. Only if checked may it be compared with the model center width/height. An arbitrary row/column cannot prove whole-top construction.
+    </label>
+    <div class="qa-fabric-buttons">
+     <button type="button" class="header-cta" data-top-chain-create>Create blank chain from count</button>
+     <button type="button" class="header-cta" data-top-chain-clear>Clear this chain</button>
+    </div>
+    <div data-top-chain-pieces></div>
+    <div data-top-chain-joins></div>
+    <p class="qa-fabric-small">For each piece, choose its physical fabric SKU and printed cut-list piece number, then measure the actual cut span. For every join, measure the lost length at the previous piece's trailing edge and the next piece's leading edge (zero allowed). The listed cut dimensions are only reference data, never automatically treated as actual measurements.</p>
+    <div data-top-chain-result role="status" aria-live="polite">No real quilt-top seam chain reported: NOT VERIFIED.</div>
+   </details>
    <label class="qa-fabric-confirm"><input type="checkbox" data-fabric-confirm /> I actually measured the fabric and sample cuts with a physical ruler. I understand that browser and CSV calculations cannot independently verify my statements.</label>
    <h2>3. Review the user-reported results</h2>
    <div data-fabric-result role="status" aria-live="polite">No physical measurements entered.</div>
@@ -126,6 +161,7 @@ import Base from '../../../layouts/Base.astro';
   } from '../../../lib/quilt/fabric-audit';
   import {readJoinedSeamPlan,type PlannedSeamCheck} from '../../../lib/quilt/seam-audit';
   import type {UserFinishingReading} from '../../../lib/quilt/finishing-audit';
+  import type {UserTopChain} from '../../../lib/quilt/top-chain-audit';
   const parent=document.querySelector<HTMLElement>('[data-qa-fabric-audit]');
   const cutsFile=parent?.querySelector<HTMLInputElement>('[data-fabric-cuts]');
   const shoppingFile=parent?.querySelector<HTMLInputElement>('[data-fabric-shopping]');
@@ -139,6 +175,13 @@ import Base from '../../../layouts/Base.astro';
   const finishArea=parent?.querySelector<HTMLElement>('[data-fabric-finishing-area]');
   const finishPlan=parent?.querySelector<HTMLElement>('[data-fabric-finishing-plan]');
   const finishResult=parent?.querySelector<HTMLElement>('[data-fabric-finishing-result]');
+  const topArea=parent?.querySelector<HTMLElement>('[data-top-chain-area]');
+  const topPlan=parent?.querySelector<HTMLElement>('[data-top-chain-plan]');
+  const topPieces=parent?.querySelector<HTMLElement>('[data-top-chain-pieces]');
+  const topJoins=parent?.querySelector<HTMLElement>('[data-top-chain-joins]');
+  const topResult=parent?.querySelector<HTMLElement>('[data-top-chain-result]');
+  const topCreate=parent?.querySelector<HTMLButtonElement>('[data-top-chain-create]');
+  const topClear=parent?.querySelector<HTMLButtonElement>('[data-top-chain-clear]');
   const snapshot=parent?.querySelector<HTMLElement>('[data-fabric-snapshot]');
   const resultNode=parent?.querySelector<HTMLElement>('[data-fabric-result]');
   const exportButton=parent?.querySelector<HTMLButtonElement>('[data-fabric-download]');
