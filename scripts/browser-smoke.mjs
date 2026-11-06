@@ -2960,7 +2960,7 @@ try{
     'Stitch-flip must disable the inapplicable on-point oversize margin and its physical point audit.');
   const flipped=await squarePage.locator('[data-square-output]').innerText();
   check(flipped.includes('8.5 in')&&flipped.includes('4.5 in')&&
-    flipped.includes('16')&&flipped.includes('DO NOT pre-cut diagonals') &&
+    flipped.includes('16')&&flipped.includes('do NOT pre-cut diagonals') &&
     !flipped.includes('Triangles after diagonal split'),
     'Four 8in stitch-flip blocks must cut 4 bases at 8.5in and 16 intact corners at 4.5in, not 8 diagonal parent squares.');
   const foldedDownload=squarePage.waitForEvent('download');
