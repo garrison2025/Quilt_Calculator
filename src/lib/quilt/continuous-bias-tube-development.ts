@@ -339,7 +339,7 @@ export function verifyBiasTube2DDevelopment(m:BiasTubeDevelopment):boolean{
   const line=crossing?[left,crossing,right]:[left,right];
   if(c.line!==j||!samePolygon(c.sewnFacePolyline,line)||
    (crossing===null?c.assemblySeamIntersection!==null:
-    !P(c.assemblySeamIntersection,crossing)))return false;
+    (!c.assemblySeamIntersection||!P(c.assemblySeamIntersection,crossing))))return false;
   if(j>=1&&j<N){
    if(!c.tubeCrossing||!P(c.tubeCrossing.right,right)||
     !P(c.tubeCrossing.nextLeft,leftPoint(v+W,d)))return false;
