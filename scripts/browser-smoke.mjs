@@ -528,6 +528,13 @@ try{
   await geometryPage.getByLabel('I reviewed every quilt-top color, cut size and piece quantity.').check();
   check(await geometryPage.locator('[data-action="export-cut-csv"]').isEnabled(),
     'Reviewed, feasible border-inclusive project should allow a cut CSV.');
+  // Export after manual quilt-top coverage confirmation; the diagnostic JSON
+  // downloaded BEFORE review must be rejected by physical assembly QA.
+  const readyPlanPromise=geometryPage.waitForEvent('download');
+  await geometryPage.locator('[data-action="export-cut"]').click();
+  const readyPlanJson=JSON.parse(await fs.readFile(await (await readyPlanPromise).path(),'utf8'));
+  check(readyPlanJson.readiness.cutCsvReady===true&&readyPlanJson.tool==='hub',
+    'Joined-seam review requires the complete reviewed Project Planner calculation JSON.');
   const shoppingPromise=geometryPage.waitForEvent('download');
   await geometryPage.getByRole('button',{name:'Download shopping CSV',exact:true}).click();
   const shopFile=await shoppingPromise;
@@ -579,7 +586,7 @@ try{
   await auditImport.click();
   // File.text() resolves asynchronously; wait for a completed validation,
   // not the intentionally visible "Reading both CSV files locally…" status.
-  await auditPage.waitForFunction(()=>document.querySelector('[data-fabric-import-status]')?.textContent?.startsWith('CSV validation rejected:'),null,{timeout:15000});
+  await auditPage.waitForFunction(()=>document.querySelector('[data-fabric-import-status]')?.textContent?.startsWith('CSV or optional JSON validation rejected:'),null,{timeout:15000});
   const mismatchedMessage=await auditPage.locator('[data-fabric-import-status]').innerText();
   const mismatchedHidden=await auditPage.locator('[data-fabric-workspace]').isHidden();
   check(mismatchedMessage.includes('different project snapshots') && mismatchedHidden,
@@ -589,6 +596,29 @@ try{
    buffer:Buffer.from(originalShoppingCsv)});
   await auditImport.click();
   await auditPage.locator('[data-fabric-roll-id]').first().waitFor({state:'visible'});
+  // Wrong snapshot and unreviewed cutting-plan JSON must be rejected, even
+  // when both CSVs themselves match. Then attach the current real export.
+  const sidecarInput=auditPage.locator('[data-fabric-plan-json]');
+  await sidecarInput.setInputFiles({name:'wrong-project-cut-plan.json',mimeType:'application/json',
+   buffer:Buffer.from(JSON.stringify({...readyPlanJson,sourceProjectHash:'bad0cafe'}))});
+  await auditImport.click();
+  await auditPage.waitForFunction(()=>document.querySelector('[data-fabric-import-status]')?.textContent?.includes('JSON validation rejected:'),null,{timeout:15000});
+  check((await auditPage.locator('[data-fabric-import-status]').innerText()).includes('fingerprint') &&
+    await auditPage.locator('[data-fabric-workspace]').isHidden(),
+    'Cutting-plan JSON must NOT be accepted from an unrelated material snapshot.');
+  await sidecarInput.setInputFiles({name:'unreviewed-cut-plan.json',mimeType:'application/json',
+   buffer:Buffer.from(JSON.stringify({...baseJson,sourceProjectHash:shopFingerprint}))});
+  await auditImport.click();
+  await auditPage.waitForFunction(()=>document.querySelector('[data-fabric-import-status]')?.textContent?.includes('JSON validation rejected:'),null,{timeout:15000});
+  check((await auditPage.locator('[data-fabric-import-status]').innerText()).includes('not a complete'),
+    'Pre-review diagnostic JSON must not be used to certify sewn assembly.');
+  await sidecarInput.setInputFiles({name:'ready-project-cut-plan.json',mimeType:'application/json',
+   buffer:Buffer.from(JSON.stringify(readyPlanJson))});
+  await auditImport.click();
+  await auditPage.locator('[data-fabric-seam-area]').waitFor({state:'visible'});
+  check((await auditPage.locator('[data-fabric-import-status]').innerText()).includes('cutting-plan JSON also reconciles') &&
+    await auditPage.locator('[data-fabric-seam-kind]').count()===2,
+    'Matching Project Planner JSON must expose both backing and straight-grain sewn seam checks.');
   const recordedRolls=new Set(physicalRows.slice(1).map(r=>r[1]));
   check(await auditPage.locator('[data-fabric-roll-id]').count()===recordedRolls.size &&
     (await auditPage.locator('[data-fabric-snapshot]').innerText()).includes(shopFingerprint),
@@ -656,6 +686,38 @@ try{
   await beforeWash.fill('');
   check(await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_WITHIN_DECLARED_LIMITS',
     'Omitting the optional before-wash measurement must restore the explicitly shrinkage-unverified self-report.');
+  const seamBacking=auditPage.locator('[data-fabric-seam-kind="backing"] [data-fabric-joined-measurement]');
+  const seamBinding=auditPage.locator('[data-fabric-seam-kind="binding"] [data-fabric-joined-measurement]');
+  const seamTolerance=auditPage.locator('[data-fabric-seam-tolerance]');
+  await seamTolerance.fill('0.0625');
+  await seamBacking.fill(String(readyPlanJson.result.selectedBacking.finishedJoinedSpanIn));
+  await seamBinding.fill(String(readyPlanJson.result.binding.effectiveJoinedLengthIn));
+  check(await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_WITHIN_DECLARED_LIMITS' &&
+    (await auditStatus.innerText()).includes('USER REPORTED only'),
+    'Exactly modeled joined backing/binding spans should be labeled only user-reported.');
+  const seamEvidencePromise=auditPage.waitForEvent('download');
+  await auditDownload.click();
+  const seamEvidence=JSON.parse(await fs.readFile(await (await seamEvidencePromise).path(),'utf8'));
+  check(seamEvidence.schemaVersion===2 && seamEvidence.cuttingPlanJsonMatchedByFingerprint===true &&
+    seamEvidence.seamVerificationCoverage==='ALL_USER_REPORTED' &&
+    seamEvidence.seamChecks.length===2 &&
+    seamEvidence.independentPhysicalVerification===false &&
+    seamEvidence.quiltCuttingApproval===false,
+    'JSON must save both real-value seam self-reports and never claim independent physical signoff.');
+  await seamBinding.fill(String(readyPlanJson.result.binding.effectiveJoinedLengthIn-0.125));
+  check(await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_SEAM_LOSS_EXCEEDS_PLAN' &&
+    await auditDownload.isEnabled() &&
+    (await auditPage.locator('[data-fabric-seam-kind="binding"] [data-fabric-seam-result]').innerText()).includes('EXCEEDS'),
+    'Binding with greater than budgeted join take-up must be a distinct, exportable negative finding.');
+  await seamBinding.fill(String(readyPlanJson.result.binding.requiredLengthIn-.125));
+  check((await auditPage.locator('[data-fabric-seam-kind="binding"] [data-fabric-seam-result]').innerText()).includes('SHORTER THAN REQUIRED'),
+    'Joined binding shorter than perimeter plus tail allowance must always be flagged.');
+  await seamBinding.fill(String(readyPlanJson.result.binding.effectiveJoinedLengthIn));
+  await seamTolerance.fill('1.5');
+  check(await auditDownload.isDisabled()&&
+    await auditStatus.getAttribute('data-fabric-assessment')==='INCOMPLETE_USER_MEASUREMENTS',
+    'Invalid user-seam tolerance must block export, not silently skip a bad measurement.');
+  await seamTolerance.fill('0.0625');
   const originalWof=Number(await firstAuditRoll.locator('[data-measurement="wof"]').inputValue());
   await firstAuditRoll.locator('[data-measurement="wof"]').fill(String(originalWof-0.125));
   check(await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_SHORTAGE_OR_DEVIATION' &&
@@ -667,7 +729,8 @@ try{
   await auditPage.locator('[data-fabric-reset]').click();
   check(await auditPage.locator('[data-fabric-workspace]').isHidden() &&
     (await auditPage.locator('[data-fabric-cuts]').inputValue())==='' &&
-    (await auditPage.locator('[data-fabric-shopping]').inputValue())==='',
+    (await auditPage.locator('[data-fabric-shopping]').inputValue())==='' &&
+    (await auditPage.locator('[data-fabric-plan-json]').inputValue())==='',
     'Clear must remove all local imported files and invalidate prior measured evidence.');
   await auditCtx.close();
   console.log('PASS paired CSV imports, planned/observed shrinkage math, user-entered physical ruler limits, and local non-certified fabric evidence.');
