@@ -168,7 +168,9 @@ export function evaluateTopChain(project:ImportedFabricAudit,entered:UserTopChai
  root.coverage=complete?'ALL_USER_REPORTED':'PARTIAL_USER_REPORTED';
  if(root.cutSizeDeviationCount)
   root.warnings.push(root.cutSizeDeviationCount+' user-measured cut span(s) exceed the separate physical cut tolerance ('+cutPieceToleranceIn+' in), not the assembled-chain tolerance.');
- if(allCuts&&allJoins){
+ // An impossible single-cut edge take-up invalidates the construction math;
+ // a positive whole-chain sum must never produce a reassuring prediction.
+ if(allCuts&&allJoins&&root.invalid.length===0){
   const predicted=cutSum-seamLoss;
   if(predicted<=0){
    root.invalid.push('Measured seam edge take-up consumes the entire physical chain; check each entry.');
