@@ -555,6 +555,88 @@ try{
   check(physicalRows.slice(1).some(r=>r[1]==='backing')&&
     physicalRows.slice(1).some(r=>r[1]==='batting'),
     'Cutting CSV must include externally sized backing and batting rolls.');
+  // The *real* downloaded site CSV files, not synthetic in-memory layouts,
+  // must be consumable by the human-led, noindex physical fabric QA tool.
+  // Test measurements below are deliberately synthetic (NO physical signoff).
+  const auditCtx=await browser.newContext({viewport:{width:1150,height:830},acceptDownloads:true});
+  instrumentNetwork(auditCtx,'fabric-physical-local-audit');
+  const auditPage=await auditCtx.newPage();
+  auditPage.on('pageerror',err=>problems.push('Fabric physical QA: '+err.message));
+  const auditResponse=await auditPage.goto(ROOT+'/qa/fabric-cutting/',{waitUntil:'domcontentloaded'});
+  check(auditResponse.status()===200 &&
+    await auditPage.locator('meta[name="robots"]').getAttribute('content')==='noindex,follow' &&
+    await auditPage.locator('link[rel="canonical"]').count()===0 &&
+    await auditPage.locator('script[type="application/ld+json"]').count()===0,
+    'Human-only fabric QA page must be accessible but never published as indexable SEO content.');
+  const auditImport=auditPage.locator('[data-fabric-import]');
+  const auditCuts=auditPage.locator('[data-fabric-cuts]');
+  const auditShopping=auditPage.locator('[data-fabric-shopping]');
+  const originalCutCsv=await fs.readFile(await physicalFile.path(),'utf8');
+  const originalShoppingCsv=await fs.readFile(await shopFile.path(),'utf8');
+  await auditCuts.setInputFiles({name:'real-site-cut-list.csv',mimeType:'text/csv',buffer:Buffer.from(originalCutCsv)});
+  await auditShopping.setInputFiles({name:'mismatched-shopping.csv',mimeType:'text/csv',
+   buffer:Buffer.from(originalShoppingCsv.replaceAll(shopFingerprint,'deadbeef'))});
+  await auditImport.click();
+  check((await auditPage.locator('[data-fabric-import-status]').innerText()).includes('different project snapshots') &&
+    await auditPage.locator('[data-fabric-workspace]').isHidden(),
+    'Mismatched project CSVs must be rejected before entering or exporting fake physical measurements.');
+  await auditShopping.setInputFiles({name:'real-site-shopping.csv',mimeType:'text/csv',
+   buffer:Buffer.from(originalShoppingCsv)});
+  await auditImport.click();
+  await auditPage.locator('[data-fabric-roll-id]').first().waitFor({state:'visible'});
+  const recordedRolls=new Set(physicalRows.slice(1).map(r=>r[1]));
+  check(await auditPage.locator('[data-fabric-roll-id]').count()===recordedRolls.size &&
+    (await auditPage.locator('[data-fabric-snapshot]').innerText()).includes(shopFingerprint),
+    'Local fabric QA must import all actual rolls using the current shopping/cutting fingerprint.');
+  const auditDownload=auditPage.locator('[data-fabric-download]');
+  check(await auditDownload.isDisabled(),'File import alone can never count as real fabric measurement evidence.');
+  for(const roll of await auditPage.locator('[data-fabric-roll-id]').all()){
+   const id=await roll.getAttribute('data-fabric-roll-id');
+   const piece=physicalRows.slice(1).find(row=>row[1]===id);
+   check(Boolean(piece),'Every QA roll must correspond to an actual CSV physical cut.');
+   await roll.locator('[data-measurement="wof"]').fill(piece[9]);
+   await roll.locator('[data-measurement="run"]').fill(piece[10]);
+   await roll.locator('[data-measurement="width"]').fill(piece[6]);
+   await roll.locator('[data-measurement="height"]').fill(piece[7]);
+  }
+  await auditPage.locator('[data-fabric-date]').fill('2026-11-06');
+  await auditPage.locator('[data-fabric-condition]').selectOption('postwash');
+  await auditPage.locator('[data-fabric-tolerance]').fill('0.0625');
+  check(await auditDownload.isDisabled(),
+    'Even perfectly typed synthetic measurements without a physical-ruler acknowledgement are incomplete.');
+  await auditPage.locator('[data-fabric-confirm]').check();
+  const auditStatus=auditPage.locator('[data-fabric-result]');
+  check(await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_WITHIN_DECLARED_LIMITS' &&
+    await auditDownload.isEnabled(),
+    'All user-entered matching measurements must be called SELF-REPORTED, never independently certified.');
+  await auditPage.screenshot({path:'artifacts/qa/physical-fabric-user-check-synthetic.png',fullPage:true,animations:'disabled'});
+  const auditFilePromise=auditPage.waitForEvent('download');
+  await auditDownload.click();
+  const auditFile=await auditFilePromise;
+  const auditEvidence=JSON.parse(await fs.readFile(await auditFile.path(),'utf8'));
+  check(auditEvidence.kind==='user-reported-fabric-cutting-check' &&
+    auditEvidence.projectFingerprint===shopFingerprint &&
+    auditEvidence.checks.length===recordedRolls.size &&
+    auditEvidence.sourceSnapshotIsCryptographicallyAuthenticated===false &&
+    auditEvidence.independentPhysicalVerification===false &&
+    auditEvidence.quiltCuttingApproval===false,
+    'Downloaded manual fabric evidence must preserve original revision and never claim physical certification.');
+  const firstAuditRoll=auditPage.locator('[data-fabric-roll-id]').first();
+  const originalWof=Number(await firstAuditRoll.locator('[data-measurement="wof"]').inputValue());
+  await firstAuditRoll.locator('[data-measurement="wof"]').fill(String(originalWof-0.125));
+  check(await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_SHORTAGE_OR_DEVIATION' &&
+    await auditDownload.isEnabled(),
+    'A too-narrow physical roll must be flagged while keeping negative evidence exportable.');
+  await auditPage.locator('[data-fabric-condition]').selectOption('not-postwashed');
+  check(await auditStatus.getAttribute('data-fabric-assessment')==='INCONCLUSIVE_NOT_POSTWASHED',
+    'Unwashed/uncertain material cannot be labeled within postwash cutting limits.');
+  await auditPage.locator('[data-fabric-reset]').click();
+  check(await auditPage.locator('[data-fabric-workspace]').isHidden() &&
+    (await auditPage.locator('[data-fabric-cuts]').inputValue())==='' &&
+    (await auditPage.locator('[data-fabric-shopping]').inputValue())==='',
+    'Clear must remove all local imported files and invalidate prior measured evidence.');
+  await auditCtx.close();
+  console.log('PASS paired real exported CSV import, snapshot mismatch rejection, human-only ruler limits and local non-certified fabric evidence.');
   await geometryPage.emulateMedia({media:'print'});
   check((await geometryPage.locator('[data-final-quilt-dimensions]').innerText()).includes('Final outside: 66 × 86'),
     'Printed material plan must preserve the same final exterior dimensions.');
