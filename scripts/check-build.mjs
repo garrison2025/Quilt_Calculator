@@ -279,7 +279,7 @@ for(const literal of [
  'Reverse quilt block size calculator',
  'target center width',
  '10.4 × 18.5 inches',
- 'before any borders',
+ 'before any outside borders',
  'finished BLOCK',
 ]){
  if(!sashingHtml.toLowerCase().includes(literal.toLowerCase()))
