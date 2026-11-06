@@ -1,4 +1,6 @@
 # Quilt Studio — verification evidence and release blockers
+
+> **Acceptance update (2026-11-06): SOFTWARE SCOPE PASS.** See [the owner's stage-specific software acceptance decision](qa/SOFTWARE_ACCEPTANCE_DECISION_20261106.md). Physical printed-paper, sewn fabric, human hardware and original production/advertising/GSC gates remain unverified or unconfigured; they are not prerequisites for accepting the tested nine-calculator software scope. The older verification tables below are chronological records and do not override this decision.
 Last verified: 2026-11-05 · 184/184 tests + local Chromium 41967645708; public exact-SHA Cloudflare pageshow 41967645681; real physical ruler/paper validation remains NOT_RUN.
 
 ## What is actually verified
