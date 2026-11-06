@@ -27,6 +27,16 @@ Use the same nominal ¼-inch allowance on BOTH seams for these first comparisons
 
 These are predicted values for the current convention, not a claim that the fabric will produce them. The expected number of full bands is `floor(H1/W)`; count the actual full-width bands on the sewn/marked piece. If the observed count differs, record it and stop to investigate rather than forcing the input to the expected count.
 
+## Published comparison fixture (not a project-run sample)
+
+[Geta's Quilting Studio](https://www.getasquiltingstudio.com/2018/04/continuous-bias-binding.html) reports measuring **120in of 2.5in-wide continuous bias from an 18in × 18in square**. Under the current model convention (`a=0.25in`, `N=5`), the prediction is **119.476in**, 0.524in / 0.44% below the published measurement.
+
+| Reference | S | W | a | N | Model length | Published measured length | Difference |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Geta 18in square | 18in | 2.5in | 0.25in | 5 | 119.476in | 120in | −0.524in |
+
+This is a single external reference point, not a controlled specimen made for this project. Use it as a regression benchmark, then make the project specimens below to test repeatability and boundary cases.
+
 ## Measurements to record
 
 ### A. Before sewing
