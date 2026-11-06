@@ -3116,7 +3116,8 @@ try{
     geometry.firstSeamTakeupSqIn>0 && geometry.secondTubeSeamTakeupSqIn>0 &&
     geometry.terminalOffcutPolygons.start.length===3 &&
     geometry.terminalOffcutPolygons.end.length===3 &&
-    geometry.cutBoundaries.filter(c=>c.tubeCrossing!==null).length===7 &&
+    geometry.cutBoundaries.filter(c=>c.tubeCrossing!==null).length===8 &&
+    geometry.tubeSeamSegments.length===7 &&
     Math.abs(geometry.areaClosureErrorSqIn)<1e-7 &&
     Math.abs(geometry.modeledSquareEndedLengthIn-
       (8*geometry.postSecondSeamFullRunIn-2.5))<1e-7,
