@@ -154,6 +154,12 @@ The second seam term is the two allowances along the post-first-seam short edge,
 | Usable full-width strip area | 821.064933988 sq in |
 | Total source-square area accounted | **900.000000000 sq in** |
 
+### Independent published measured-length comparison
+
+[Geta's Quilting Studio's continuous-bias tutorial](https://www.getasquiltingstudio.com/2018/04/continuous-bias-binding.html) reports an actual measured result of **120in of 2½in-wide bias binding from an 18in × 18in square**. Applying the current model convention to `S=18`, `a=0.25`, `W=2.5`, `N=5` gives **119.476in**, a difference of **−0.524in (−0.44%)** from that published measurement.
+
+This is a useful independent one-point benchmark and is now a regression fixture in `tests/continuous-bias-tube-development.test.ts`. It is not a controlled test of our implementation, and it does not prove agreement across fabrics, sizes, seam execution or operators. The real-fabric signoff therefore remains **NOT_RUN**.
+
 For comparison, Geta's practical rectangular-piece rule subtracts ½in from both dimensions; for this square that gives `(30-0.5)^2=870.25 sq in`. The present explicit seam convention gives post-two-seam face area `(S-a)(S-3a)=870.1875 sq in` before the partial-width and terminal trims. The 0.0625 sq in difference is small, but it is not silently rounded away or used to claim physical agreement.
 
 ## Implemented engineering assertions
