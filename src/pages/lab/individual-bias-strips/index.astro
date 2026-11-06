@@ -1,0 +1,53 @@
+---
+import Base from '../../../layouts/Base.astro';
+---
+<Base noIndex
+ title="Individual 45° Bias Strip Geometry Lab — Nonindexed Preview | Quilt Studio"
+ description="Noindex engineering lab: verify individual 45-degree bias rectangle geometry, modeled straight crosswise seam losses, fabric square fit and conservative source-square sizing. NOT continuous-tube yield or guaranteed sewn binding.">
+<div class="page-shell bias-geometry-page" data-individual-bias-lab>
+ <div class="page-intro page-intro--tool">
+  <div class="page-heading">
+   <span class="eyebrow-with-line">— RESEARCH LAB / NOINDEX</span>
+   <h1>Individual 45° Bias Strip Geometry Lab</h1>
+   <p>Model real <strong>full-width rectangles at 45° to fabric grain</strong> cut from one square, rather than treating ideal cloth area as usable strip length. The optional join calculation assumes each strip is sewn square-end-to-square-end using a <strong>plain CROSSWISE seam</strong> with your exact stated seam allowance.</p>
+   <div class="feature-pills"><span>✓ Exact 45° source polygons</span><span>✓ Explicit join loss</span><span>✓ No physical certification</span></div>
+   <p><a href="/quilt-binding-calculator/">Back to the approved straight-grain binding calculator</a></p>
+  </div>
+ </div>
+ <div class="warning-banner" role="note"><strong>Two different techniques:</strong> This is the <em>individual 45° strips from a square</em> method, NOT the offset-seam <em>continuous bias tube</em>. It intentionally trims tapered ends into square-ended, full-width strips and calculates <em>crosswise</em> joins. Standard diagonal joins have different loss and bulk. There is no claim of physically measured yield, safe sewn fit or guaranteed store purchase quantities. Never use this screen's modeled source run as the approved straight-grain shopping output.</div>
+ <div class="workspace">
+  <form class="input-card bias-geometry-form" data-bias-geometry-form novalidate>
+   <div class="card-heading"><span class="eyebrow-with-dot">● INDEPENDENT BIAS METHOD</span>
+    <h2>Source fabric and target length</h2>
+    <p>Post-trim usable fabric measurements in inches. The model does not shrink or prewash cloth.</p>
+   </div>
+   <div class="bias-geometry-fields">
+    <div class="field-wrap"><label for="bias-source-side">Source square cut side (in)</label><input id="bias-source-side" class="field-control" data-bias-geometry-input="squareSideIn" inputmode="decimal" value="30" aria-describedby="bias-source-help"/><small class="hint" id="bias-source-help">6–96 in, must fit the measured usable WOF</small></div>
+    <div class="field-wrap"><label for="bias-strip-cut">Full UNFOLDED bias strip cut width (in)</label><input id="bias-strip-cut" class="field-control" data-bias-geometry-input="fullCutStripWidthIn" inputmode="decimal" value="2.5" aria-describedby="bias-strip-help"/><small class="hint" id="bias-strip-help">¾–6 in, not the folded finish width</small></div>
+    <div class="field-wrap"><label for="bias-source-wof">Usable fabric width after selvages (in)</label><input id="bias-source-wof" class="field-control" data-bias-geometry-input="usableWofIn" inputmode="decimal" value="43" aria-describedby="bias-wof-help"/><small class="hint" id="bias-wof-help">6–120 in; must be measured after any shrinkage</small></div>
+    <div class="field-wrap"><label for="bias-join-seam">Each CROSSWISE end-join seam allowance (in)</label><input id="bias-join-seam" class="field-control" data-bias-geometry-input="crosswiseJoinSeamIn" inputmode="decimal" value="0.25" aria-describedby="bias-seam-help"/><small class="hint" id="bias-seam-help">⅛–½ in. Each join consumes twice this length.</small></div>
+    <div class="field-wrap"><label for="bias-length-target">Needed joined length, including finishing tail (in)</label><input id="bias-length-target" class="field-control" data-bias-geometry-input="requiredJoinedLengthIn" inputmode="decimal" value="316" aria-describedby="bias-target-help"/><small class="hint" id="bias-target-help">1–10,000 in. Enter actual curved perimeter when applicable.</small></div>
+   </div>
+   <div class="input-actions"><button class="action-primary" type="submit">Verify 45° rectangles ↗</button></div>
+   <div class="local-controls"><h3>Construction contract</h3><p>Cut full-width 45° rectangles with their short ends perpendicular to the strip axis; discard tapered ends. Sew those square ends <strong>crosswise</strong>, consuming two seam allowances per join. Typical diagonal-joined binding and continuous bias tubes are NOT represented by these numbers.</p></div>
+  </form>
+  <section class="result-card bias-geometry-result" aria-label="45 degree individual bias geometry results">
+   <div class="results-topline"><span class="eyebrow-with-dot">● EXACT SOURCE GEOMETRY</span><span class="result-version">SOFTWARE MODEL · NOINDEX</span></div>
+   <p role="status" aria-live="polite" data-bias-geometry-status>Preparing geometry…</p>
+   <div data-bias-geometry-output><p>Results calculate privately in your browser.</p></div>
+   <div class="results-footer"><button type="button" class="action-secondary" data-bias-geometry-download disabled>Download 45° source vertices CSV · model only</button></div>
+  </section>
+ </div>
+ <section class="content-block bias-geometry-explanation">
+  <div class="editorial-head"><span class="eyebrow-with-line">— GEOMETRIC PROOF, NOT A TUBE ESTIMATE</span>
+   <h2>How full-width 45° rectangles fit inside a source square</h2>
+   <p>Everything below describes <strong>individual full-width bias rectangles</strong> before sewing.</p></div>
+  <p>Place fabric grain along the x and y axes of an S × S inch source square. Rotate its axes by 45°: u=(x+y)/√2 runs along each bias strip, while v=(y−x)/√2 runs across the width. For a fixed strip band v₀ to v₁, let M=max(|v₀|,|v₁|). Every point inside the rectangle M ≤ u ≤ √2·S−M remains inside the original square. This proves that the full-width rectangular strip length is <strong>√2·S − 2M</strong>.</p>
+  <p>The calculator centers its first strip on the diagonal and lays further bands at exactly the user-specified cut width. Each rectangle is cut entirely inside the source square. The partial tapered ends and any too-short end pieces are discarded. The aggregate full-width rectangle area is never greater than S²; no leftover area is assumed to turn into usable binding.</p>
+  <p><strong>Crosswise joined length</strong> is the sum of those rectangular lengths minus <strong>2 × seam allowance × (strip count − 1)</strong>, for plain square-ended, end-to-end seams. This is <strong>not</strong> the amount obtained from diagonal joins or a continuous spiral, and it is not measured fabric behavior. Square selection is scanned at ⅛-inch intervals for this fixed centered-band layout; it is not the mathematical optimum of all possible nesting/cutting methods.</p>
+  <p><strong>Worked software example:</strong> with a 30-inch square, 2½-inch cut width and ¼-inch plain crosswise joining, the algorithm yields 15 full-width rectangles, approximately 318.896 inches of unjoined length and <strong>311.896 inches after 14 modeled joins</strong>. Therefore a 316-inch target is NOT met by that square. The first ⅛-inch candidate meeting the target under these same assumptions is <strong>30¼ inches</strong>, if it fits the post-trim usable fabric width. A loss-free area-only square would be about 28.107 inches, but cannot establish actual joined strip length.</p>
+  <p><strong>Construction references:</strong> <a href="https://www.apqs.com/a-guide-to-bias-binding/" target="_blank" rel="noopener noreferrer">APQS on individual 45° strips vs continuous tube</a> · <a href="https://www.allpeoplequilt.com/how-to-quilt/finishing/how-to-cut-bias-binding-step-step-guide" target="_blank" rel="noopener noreferrer">American Patchwork &amp; Quilting on cutting diagonal strips</a> · <a href="https://www.sewing.org/files/guidelines/9_230_making_bias_and_bias_binding.pdf" target="_blank" rel="noopener noreferrer">Sewing &amp; Craft Alliance on diagonal versus crosswise joins</a>. These references support the construction-method distinction; the conservative inscribed-rectangle mathematics is explicitly documented and independently tested in this repository.</p>
+ </section>
+</div>
+</Base>
+<script>import {initIndividualBiasGeometryLab} from '../../../client/individual-bias-lab';initIndividualBiasGeometryLab();</script>
