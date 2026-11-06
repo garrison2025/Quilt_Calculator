@@ -98,6 +98,21 @@ if(fabricQaHtml.includes('rel="canonical"')||
    fabricQaHtml.includes('application/ld+json'))
  throw Error('Physical ruler and fabric QA tool must never be indexable or emit structured-data keywords.');
 
+// The printable paper record is a NOINDEX manual form, not a new calculator,
+// a true-scale cutting pattern, or self-signed fabric evidence.
+const gridSheetPath='dist/qa/2x2-measurement-sheet/index.html';
+if(!fs.existsSync(gridSheetPath))throw Error('Missing blank 2×2 physical-measurement worksheet.');
+const gridSheetHtml=fs.readFileSync(gridSheetPath,'utf8');
+for(const marker of ['noindex,follow','data-qa-physical-2x2-sheet','data-sheet-cut-measurements',
+ 'data-sheet-seam-measurements','data-measure-blank','NOT_MEASURED','MANUAL_NOT_RUN',
+ 'NOT_RUN','NOT_RECORDED','data-sheet-print']){
+ if(!gridSheetHtml.includes(marker))throw Error('Physical 2×2 paper record missing blank or noindex safety marker: '+marker);
+}
+if(gridSheetHtml.includes('rel="canonical"')||gridSheetHtml.includes('application/ld+json'))
+ throw Error('Blank physical sheet cannot be indexable or advertise a WebApplication.');
+if(!fabricQaHtml.includes('href="/qa/2x2-measurement-sheet/"')||
+   !fabricQaHtml.includes('data-physical-grid-worksheet-link'))
+ throw Error('Physical QA tool must link directly to the printable blank human record.');
 const privacy=fs.readFileSync('dist/privacy/index.html','utf8');
 if(production && !privacy.includes('href="'+site+'/privacy/"'))throw Error('Privacy canonical must not point to undefined.');
 if(!fs.existsSync('dist/404.html'))throw Error('Missing Cloudflare Pages 404.html: unknown URLs would silently fall back to homepage.');
