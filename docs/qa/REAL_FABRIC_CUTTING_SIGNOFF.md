@@ -34,6 +34,19 @@ A higher observed length shrinkage rate produces `USER_REPORTED_SHRINKAGE_EXCEED
 
 This audit does **not** measure joined seam take-up, fabric grain movement or every single cut; those remain distinct requirements for human verification. User-entered synthetic/browser test data do not close the physical `MANUAL_NOT_RUN` release gate.
 
+## Manual backing & straight-grain binding joined-seam check — 2026-11-06
+
+The existing user-run [Fabric Cutting QA worksheet](https://quilt-calculator-566.pages.dev/qa/fabric-cutting/) now optionally reads a **third file** from the same reviewed whole-quilt project: `quilt-studio-cut-plan-v2.json`. The JSON is explicitly checked against both previously imported physical cut-list and shopping CSV files by the short project fingerprint, the required whole-project reviewed cut-list status, actual backing/binding physical roll IDs, panel/strip counts, usable widths and cut piece/run dimensions. Any mismatch blocks importing the assembly plan. This is **not** cryptographic verification; malicious or independently altered inputs can still agree.
+
+With that matching calculation JSON, the worksheet displays two independently measured construction targets:
+
+- **Backing:** chosen vertical/horizontal join orientation, count of full-width panels, modeled finished joined span **before edge trimming**, required backing target span and modeled TOTAL seam take-up. The reviewer may input actual joined span measured **after joining all full-width panels but before edge trimming**. A one-panel backing has **zero joins** and does not require a made-up seam measurement.
+- **Straight-grain binding:** full-width strip count, modeled joined strip length **before any end trimming**, actual binding length required to cover the perimeter and tail allowance, and modeled TOTAL loss from the straight strip joins. The actual assembled binding length is measured before trimming the ends.
+
+For either type, `actual observed total loss = number of full-width pieces × measured real postwash usable WOF − real measured assembled span`. The user may select an additional total-loss deviation allowance from **0 to 1 inch**, not a per-seam allowance or an industry standard. A material whose **actual joined span is shorter than the required minimum** is flagged even if the calculated loss remains within the declared tolerance. `USER_REPORTED_SEAM_LOSS_EXCEEDS_PLAN` preserves these negative results as exportable user reports. If the reviewer skips one/both joined measurements, the report identifies `NOT_MEASURED` or `PARTIAL_USER_REPORTED`; if no JSON is supplied the result stays `NOT_IMPORTED`. The evidence format is now `schemaVersion: 2` with both material and joined-seam checks, all marked user-reported; `independentPhysicalVerification: false` and `quiltCuttingApproval: false` always remain.
+
+**Scope:** This comparison only applies to the listed **full-width** backing and straight-grain binding methods and the same **postwash measured WOF** of the actually joined strips. It assumes no end trimming occurred before measuring. It does not independently inspect real stitching, seam allowances, fabric grain, pieced borders, batting, mixed-width strip trimming, washing/ironing deformation, or sample verification across every piece. Separate real measurements and a qualified human review are still necessary; `MANUAL_NOT_RUN` remains.
+
 ## Measurement sheet — initially empty
 
 | Material / SKU | Expected from cutting CSV (in) | Actual postwash cut / seam measurement (in) | Actual source roll (in) | Difference and observations | Review sign-off |
