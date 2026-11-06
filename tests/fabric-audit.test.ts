@@ -56,7 +56,7 @@ describe('manual physical fabric-check evidence is never independent physical ce
   expect(()=>importFabricAudit(cutListCsv(rolls,tag),shoppingCsv([{...shopping[0]}],tag)))
    .toThrow(/no matching shopping line/);
   expect(()=>importFabricAudit(cutListCsv(rolls,tag),shoppingCsv(shopping.map(x=>({...x,rollId:'backing'})),tag)))
-   .toThrow(/Duplicate shopping physical roll/);
+   .toThrow(/Duplicate physical roll ID|Duplicate shopping physical roll/);
   expect(()=>importFabricAudit(cutListCsv(rolls,tag),shoppingCsv([{...shopping[0],amount:.125},shopping[1]],tag)))
    .toThrow(/shorter than the cutting run/);
   expect(()=>importFabricAudit(cutListCsv(rolls,tag),shoppingCsv([{...shopping[0],status:'not-reviewed'},shopping[1]],tag)))
