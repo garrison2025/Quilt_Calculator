@@ -12,6 +12,12 @@
 
 Matching all numbered CSV source cuts is only an **identity coverage prerequisite**. It does **not** authenticate the CSV, establish actual sewn placement/order, prove a rectangular quilt-center topology, or certify seam work. Compare a truly complete grid against the planned **center** width/height, never the border-inclusive outside quilt or backing dimensions.
 
+## Printable 2×2 paper record (2026-11-06)
+
+Use the optional [blank 2×2 measurement sheet](/qa/2x2-measurement-sheet/) on the noindexed preview (or [open it directly](https://quilt-calculator-566.pages.dev/qa/2x2-measurement-sheet/)). Print it as a **writing/measurement form**, not a 1:1 cut pattern. The sheet contains four blank row/column cut records and eight **separate** internal seam-edge loss blanks, two independent assembled-size blanks, and an **unsigned** human-decision record. It performs no software validation and pre-fills no ruler numbers or material source IDs.
+
+Complete the physical sheet with actual fabric and preserve a scanned copy or signed paper locally. Then enter the same readings into [the browser-only noncertifying QA tool](/qa/fabric-cutting/). A submitted user-report JSON cannot replace independent physical review. Until actual measurements and an independent reviewer exist, retain `MANUAL_NOT_RUN`.
+
 ## 2. Preserve source and physical measurements
 
 Collect all three exports from one reviewed Project Planner snapshot: cut-list CSV, shopping CSV and the optional matching cutting-plan JSON. Preserve copies of the exact source files. The eight-character project fingerprint is only a consistency tag, **not** an authentication mechanism.
