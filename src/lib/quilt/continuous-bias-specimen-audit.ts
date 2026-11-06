@@ -101,7 +101,7 @@ function samples(
  if(v===null)return;
  if(!Array.isArray(v)||v.length!==expected)
   throw Error(label+' requires exactly '+expected+' measured values, or an empty observation.');
- v.forEach((n,i)=>finiteOrNull(n,label+' #'+(i+1),max));
+ v.forEach((n,i)=>{if(n===null)throw Error(label+' #'+(i+1)+' is missing.');finiteOrNull(n,label+' #'+(i+1),max);});
 }
 const addIf=(issues:string[],fail:boolean,message:string)=>{
  if(fail)issues.push(message);
@@ -253,7 +253,7 @@ export function auditBiasSpecimenObservation(
    o.endTrimLengthEquivalentIn-o.finishedCenterLengthIn
   )>T.lengthClosureToleranceIn+EPS,
   'Untrimmed length minus both measured end trims does not reconcile with finished center length.');
- const empty=missing.length===scalars.length+3+3+3+2+8&&issues.length===0&&
+ const empty=missing.length===scalars.length+3+1+Object.keys(tol).length+3+2&&issues.length===0&&
   o.prewashStatus===''&&o.operatorCode===''&&o.fabricDescription===''&&o.evidenceReferences==='';
  const status:BiasSpecimenAudit['status']=empty?'NOT_RUN':issues.length>0
   ?'OBSERVATION_HOLD':missing.length>0?'INCOMPLETE':'READY_FOR_HUMAN_REVIEW';
