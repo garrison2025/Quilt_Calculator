@@ -125,7 +125,7 @@ for(const token of [
 if(biasPhysicalHtml.includes('rel="canonical"')||
    biasPhysicalHtml.includes('application/ld+json'))
  throw Error('Real specimen record worksheet must not be indexable or published as an approved app.');
-for(const source of ['lab/continuous-bias-tube','lab/continuous-bias-planner','lab/continuous-bias-physical']){
+for(const source of ['lab/continuous-bias-tube','lab/continuous-bias-planner']){
  const html=fs.readFileSync('dist/'+source+'/index.html','utf8');
  if(!html.includes('href="/lab/continuous-bias-physical/"'))
   throw Error('Numerical research must link to the separate real specimen evidence method: '+source);
@@ -382,7 +382,7 @@ console.log('PASS: 218 source keyword records, 202 mapped to 9 unique tool inten
  */
 const seenTitles=new Set();
 const internalRoutes=new Set([...slugs.map(slug=>'/'+(slug?slug+'/':'')),'/about/','/privacy/','/qa/print-calibration/','/qa/fabric-cutting/','/qa/2x2-measurement-sheet/','/lab/individual-bias-strips/','/lab/continuous-bias-tube/','/lab/continuous-bias-planner/','/lab/continuous-bias-physical/']);
-for(const slug of [...slugs,'about','privacy','qa/print-calibration','qa/fabric-cutting','qa/2x2-measurement-sheet','lab/individual-bias-strips','lab/continuous-bias-tube','lab/continuous-bias-planner']){
+for(const slug of [...slugs,'about','privacy','qa/print-calibration','qa/fabric-cutting','qa/2x2-measurement-sheet','lab/individual-bias-strips','lab/continuous-bias-tube','lab/continuous-bias-planner','lab/continuous-bias-physical']){
  const html=fs.readFileSync('dist/'+(slug?slug+'/':'')+'index.html','utf8');
  const title=html.match(/<title>([^<]+)<\/title>/)?.[1];
  if(!title||seenTitles.has(title))throw Error('Missing/duplicate page title: '+slug);
