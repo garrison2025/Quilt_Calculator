@@ -160,7 +160,7 @@ import Base from '../../../layouts/Base.astro';
      </label>
     </div>
     <label class="qa-fabric-confirm"><input type="checkbox" data-top-grid-full-center />
-     I affirm this exact 2D grid is the COMPLETE quilt TOP CENTER, not a small sample. Only then compare to the reviewed plan's center width/height, never to its border-inclusive outside dimensions.
+     I affirm this exact 2D grid is the COMPLETE quilt TOP CENTER, not a small sample. The tool also requires EVERY planned TOP source cut-list piece to be uniquely mapped here before attempting a whole-center dimension comparison. If any source piece is missing, the claim is flagged and the comparison is suppressed. A source match is NOT proof of real sewn placement. Never compare with border-inclusive outside dimensions.
     </label>
     <div class="qa-fabric-buttons">
      <button type="button" class="header-cta" data-top-grid-create>Create empty measured-grid cells</button>
@@ -560,6 +560,13 @@ import Base from '../../../layouts/Base.astro';
      ', physical cut-pair ruler measurements '+rectangular.measuredCells+'/'+rectangular.expectedCellCount+
      ', individual internal seam-edge readings '+rectangular.measuredInternalEdges+'/'+rectangular.expectedInternalEdges+'.'
     ];
+    if(rectangular.sourceTopCutCount>0){
+     notes.push('Mapped unique numbered source TOP cuts: '+rectangular.mappedSourceTopCutCount+'/'+
+      rectangular.sourceTopCutCount+'; '+rectangular.unmappedSourceTopCutCount+
+      ' cut-list IDs not in this selected grid. Source-ID completeness is NOT physical evidence of sewn placement.');
+     if(rectangular.fullCenterSourceCoverageMismatch)
+      notes.push('FULL-CENTER CLAIM REJECTED: source cuts are missing from this grid; NO planned CENTER dimension comparison.');
+    }
     if(rectangular.predictedAssembledWidthIn!==undefined)
      notes.push('Derived sewn rectangle width '+rectangular.predictedAssembledWidthIn.toFixed(3)+
       ' in and height '+rectangular.predictedAssembledHeightIn?.toFixed(3)+
