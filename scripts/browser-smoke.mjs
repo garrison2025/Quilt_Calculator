@@ -74,7 +74,7 @@ async function assertSvgCorrespondsToCutCsv(page,route){
  const cutFingerprint=[...fromRows][0];
  check(file.suggestedFilename().includes(cutFingerprint),
   'Cut CSV filename must identify its project snapshot, not silently overwrite an older cut plan.');
- const audit=await page.locator('[data-calculation-audit]').innerText();
+ const audit=await page.locator('[data-calculation-audit]').textContent();
  check(audit.includes('Source project hash: '+cutFingerprint),
   'Cut-list project fingerprint must match current on-screen calculation JSON provenance.');
  const bySku=new Map();
@@ -549,7 +549,7 @@ try{
     shopRows.slice(1).every(row=>row[11]===shopFingerprint)&&
     physicalRows.slice(1).every(row=>row[11]===cutFingerprint),
     'Current shopping and physical cuts must share the same source project fingerprint in every CSV row and filename.');
-  const sameProjectAudit=await geometryPage.locator('[data-calculation-audit]').innerText();
+  const sameProjectAudit=await geometryPage.locator('[data-calculation-audit]').textContent();
   check(sameProjectAudit.includes('Source project hash: '+shopFingerprint),
     'Shopping and cut CSV fingerprint must reconcile to the on-screen approved V2 project.');
   check(physicalRows.slice(1).some(r=>r[1]==='backing')&&
