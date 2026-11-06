@@ -2903,6 +2903,9 @@ try{
     !straightSource.includes('true bias') &&
     !straightSource.includes('bias area'),
     'Bias disclosure must never change physical straight-grain cut CSV geometry or labels.');
+  const cutTargetBox=await biasPage.locator('[data-cut-row]').first().boundingBox();
+  check(Boolean(cutTargetBox)&&cutTargetBox.height>=36&&cutTargetBox.width>=36,
+    'The original source cut-row preview buttons must preserve 36px keyboard/touch targets with bias disclosure expanded.');
   await auditWcag(biasPage,'/quilt-binding-calculator/ [bias area disclosure expanded]');
   await biasCtx.close();
   // The noindex Square lab retains one specific construction method: one
