@@ -50,7 +50,10 @@ export type BiasSpecimenObservation={
  observedTubeCrossings:number|null;
  maxMarkMismatchIn:number|null;
  measuredBandRunIn:number|null;
+ /** Start + end + TEN evenly spaced strip width positions. */
  stripWidthSamplesIn:number[]|null;
+ /** Separately measured strip widths at EACH of the N-1 tube seam crossings. */
+ seamCrossingWidthSamplesIn:number[]|null;
  untrimmedLengthIn:number|null;
  startTrimLengthEquivalentIn:number|null;
  endTrimLengthEquivalentIn:number|null;
@@ -124,7 +127,7 @@ export function emptyBiasSpecimenObservation(id:BiasSpecimenId):BiasSpecimenObse
   observedFullBands:null,secondSeamSamplesIn:null,
   observedTubeCrossings:null,maxMarkMismatchIn:null,
   measuredBandRunIn:null,stripWidthSamplesIn:null,
-  untrimmedLengthIn:null,startTrimLengthEquivalentIn:null,
+  seamCrossingWidthSamplesIn:null,untrimmedLengthIn:null,startTrimLengthEquivalentIn:null,
   endTrimLengthEquivalentIn:null,finishedCenterLengthIn:null,
   finishedLeftLengthIn:null,finishedRightLengthIn:null,
   pressedSeamsOpen:null,continuousSingleLayerCut:null
@@ -170,11 +173,12 @@ export function auditBiasSpecimenObservation(
   throw Error('Observed stitch-line crossings must be a whole number.');
  samples(o.firstSeamSamplesIn,5,'First-seam five-position allowance',5);
  samples(o.secondSeamSamplesIn,5,'Tube-seam five-position allowance',5);
- samples(o.stripWidthSamplesIn,12,'Unfolded strip 12-position width',6);
+ samples(o.stripWidthSamplesIn,12,'Start/end + ten evenly spaced strip widths',6);
  boolOrNull(o.pressedSeamsOpen,'Seams pressed open');
  boolOrNull(o.continuousSingleLayerCut,'One-layer cut continuity');
  const N=Math.floor(((cfg.sourceSquareSideIn-cfg.seamAllowanceIn)/Math.SQRT2+1e-9)/
   cfg.fullStripCutWidthIn);
+ samples(o.seamCrossingWidthSamplesIn,N-1,'Tube seam crossing strip widths',6);
  const m=calculateBiasTube2DDevelopment({
   sourceSquareSideIn:cfg.sourceSquareSideIn,usableWofIn:cfg.usableWofIn,
   fullStripCutWidthIn:cfg.fullStripCutWidthIn,seamAllowanceIn:cfg.seamAllowanceIn,
@@ -195,7 +199,7 @@ export function auditBiasSpecimenObservation(
   if(v===null)missing.push('tolerances.'+key);
  for(const [key] of scalars)
   if(o[key]===null)missing.push(key);
- for(const key of ['firstSeamSamplesIn','secondSeamSamplesIn','stripWidthSamplesIn'] as const)
+ for(const key of ['firstSeamSamplesIn','secondSeamSamplesIn','stripWidthSamplesIn','seamCrossingWidthSamplesIn'] as const)
   if(o[key]===null)missing.push(key);
  for(const key of ['pressedSeamsOpen','continuousSingleLayerCut'] as const)
   if(o[key]===null)missing.push(key);
@@ -231,9 +235,15 @@ export function auditBiasSpecimenObservation(
   'Stitch-line mark mismatch exceeds predeclared tolerance.');
  checkDelta(o.measuredBandRunIn,predicted.bandRunIn,
   T.faceDimensionToleranceIn,'Measured full-band run differs from modeled tube run.');
- if(o.stripWidthSamplesIn&&T.stripWidthToleranceIn!==null)
-  addIf(issues,o.stripWidthSamplesIn.some(v=>Math.abs(v-cfg.fullStripCutWidthIn)>
-   T.stripWidthToleranceIn!+EPS),'Some observed full-width strip positions exceed predeclared tolerance.');
+ if(T.stripWidthToleranceIn!==null){
+  for(const [label,values] of [
+   ['Evenly spaced width samples',o.stripWidthSamplesIn],
+   ['Tube seam crossing widths',o.seamCrossingWidthSamplesIn]
+  ] as const){
+   if(values)addIf(issues,values.some(v=>Math.abs(v-cfg.fullStripCutWidthIn)>
+    T.stripWidthToleranceIn!+EPS),label+' exceed predeclared strip-width tolerance.');
+  }
+ }
  addIf(issues,o.pressedSeamsOpen===false,'Seams not pressed open as modeled.');
  addIf(issues,o.continuousSingleLayerCut===false,'Cut is not a continuous one-layer spiral.');
  addIf(issues,T.declaredBeforeCutting===false,
@@ -253,7 +263,7 @@ export function auditBiasSpecimenObservation(
    o.endTrimLengthEquivalentIn-o.finishedCenterLengthIn
   )>T.lengthClosureToleranceIn+EPS,
   'Untrimmed length minus both measured end trims does not reconcile with finished center length.');
- const empty=missing.length===scalars.length+3+1+Object.keys(tol).length+3+2&&issues.length===0&&
+ const empty=missing.length===scalars.length+3+1+Object.keys(tol).length+4+2&&issues.length===0&&
   o.prewashStatus===''&&o.operatorCode===''&&o.fabricDescription===''&&o.evidenceReferences==='';
  const status:BiasSpecimenAudit['status']=empty?'NOT_RUN':issues.length>0
   ?'OBSERVATION_HOLD':missing.length>0?'INCOMPLETE':'READY_FOR_HUMAN_REVIEW';
