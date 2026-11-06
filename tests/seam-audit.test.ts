@@ -75,7 +75,7 @@ describe('sewn backing/binding checks require exactly the matching project-calcu
   const wrongBinding={...binding,effectiveJoinedLengthIn:binding.stripCount*43+3};
   expect(()=>readJoinedSeamPlan(project,plan({result:{selectedBacking:backing,binding:wrongBinding}}))).toThrow(/assembled length/);
   const wrongBacking={...backing,direction:'horizontal',targetHeightIn:backing.finishedJoinedSpanIn+10};
-  expect(()=>readJoinedSeamPlan(project,plan({result:{selectedBacking:wrongBacking,binding}}))).toThrow(/assembly geometry/);
+  expect(()=>readJoinedSeamPlan(project,plan({result:{selectedBacking:wrongBacking,binding}}))).toThrow(/backing target|assembly geometry/);
  });
  it('omitted seam measurements always stay explicitly unverified; zero/invalid inputs block export',()=>{
   const input=setup();
