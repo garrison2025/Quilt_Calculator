@@ -2137,6 +2137,65 @@ try{
   await priceCtx.close();
   console.log('PASS independent material price fields, rounded totals, CSV, JSON and cleared-price semantics.');
 
+  // Cross-calculator backing choice: manual orientation is part of the saved
+  // V2 project, not a tab-only button. Planner, shopping, physical cuts and
+  // downloadable JSON must all honor the same intentionally selected seam.
+  const backingChoiceCtx=await browser.newContext({viewport:{width:1160,height:850},acceptDownloads:true});
+  instrumentNetwork(backingChoiceCtx,'backing-direction-persistence');
+  const backingChoicePage=await backingChoiceCtx.newPage();
+  backingChoicePage.on('pageerror',err=>problems.push('Backing seam persistence JS exception: '+err.message));
+  await hydrated(backingChoicePage,'/quilt-backing-calculator/');
+  const modeField=backingChoicePage.getByLabel('Backing seam direction (saved with project)',{exact:true});
+  check(await modeField.inputValue()==='auto','Fresh V2 project must start with explicit Auto backing seams.');
+  check(await backingChoicePage.locator('[data-backing-option="auto"][aria-pressed="true"]').count()===1,
+    'Auto recommended backing must have a selectable, visibly pressed control.');
+  await backingChoicePage.locator('[data-backing-option="horizontal"]').click();
+  check(await modeField.inputValue()==='horizontal' &&
+    await backingChoicePage.locator('[data-backing-option="horizontal"][aria-pressed="true"]').count()===1,
+    'Selecting manual horizontal seams must update the visible backing control and project preference.');
+  check((await backingChoicePage.locator('[data-results] .result-hero').innerText()).includes('6 ¼'),
+    'Manual horizontal backing must show 6.25 yd for the 66×86 outer sample, rather than recommended 5.25 yd.');
+  const choiceBackup=backingChoicePage.waitForEvent('download');
+  await backingChoicePage.locator('[data-action="save"]').click();
+  const savedChoice=JSON.parse(await fs.readFile(await (await choiceBackup).path(),'utf8'));
+  check(savedChoice.options.backingDirection==='horizontal','V2 JSON project backup must preserve manual horizontal selection.');
+  check(await backingChoicePage.evaluate(()=>JSON.parse(localStorage.getItem('quilt-studio-v2')).options.backingDirection)==='horizontal',
+    'The manual backing orientation must be saved to localStorage.');
+  await hydrated(backingChoicePage,'/calculators/',{incomplete:true});
+  check(await backingChoicePage.getByLabel('Backing seam direction (saved with project)').inputValue()==='horizontal',
+    'Project Planner must load the exact manual backing choice from the shared project.');
+  const selectedPlanPromise=backingChoicePage.waitForEvent('download');
+  await backingChoicePage.locator('[data-action="export-cut"]').click();
+  const selectedPlan=JSON.parse(await fs.readFile(await (await selectedPlanPromise).path(),'utf8'));
+  check(selectedPlan.result.selectedBacking.direction==='horizontal' &&
+    selectedPlan.result.selectedBacking.layout.exactFabricRunLengthIn===222 &&
+    selectedPlan.result.selectedBacking.purchase.roundedPurchaseYards===6.25 &&
+    selectedPlan.result.backing.recommended.purchase.roundedPurchaseYards===5.25,
+    'The planner JSON must distinguish the manual 6.25-yard selection from the 5.25-yard recommendation.');
+  const selectedShopPromise=backingChoicePage.waitForEvent('download');
+  await backingChoicePage.locator('[data-action="export-shopping"]').click();
+  const selectedShop=csvRecords(await fs.readFile(await (await selectedShopPromise).path(),'utf8'));
+  const chosenLine=selectedShop.find(row=>row[0].startsWith('Backing · '));
+  check(chosenLine?.[0].includes('horizontal seams') && Number(chosenLine[3])===6.25,
+    'Shopping CSV must purchase the chosen horizontal backing, never silently revert to auto.');
+  await backingChoicePage.getByLabel('I reviewed every quilt-top color, cut size and piece quantity.').check();
+  const selectedCutsPromise=backingChoicePage.waitForEvent('download');
+  await backingChoicePage.locator('[data-action="export-cut-csv"]').click();
+  const selectedCuts=csvRecords(await fs.readFile(await (await selectedCutsPromise).path(),'utf8'));
+  const physicalBackingRows=selectedCuts.slice(1).filter(row=>row[1]==='backing');
+  check(physicalBackingRows.length===3 && physicalBackingRows.every(row=>Number(row[10])===222),
+    'Physical cut-list CSV must use three 43×74-inch horizontal backing panels and the 222-inch roll.');
+  await backingChoicePage.getByLabel('One-way fabric print',{exact:true}).check();
+  check(!(await backingChoicePage.locator('[data-action="export-cut-csv"]').isEnabled()) &&
+    (await backingChoicePage.locator('[data-results]').innerText()).includes('BACKING DIRECTION CONFLICT'),
+    'Directional print must block a previously selected horizontal seam instead of silently replacing it.');
+  await backingChoicePage.getByLabel('Backing seam direction (saved with project)').selectOption('auto');
+  check((await backingChoicePage.locator('[data-results] .result-hero').innerText()).includes('5 ¼') &&
+    await backingChoicePage.locator('[data-action="export-cut-csv"]').isEnabled(),
+    'Explicitly returning to Auto must restore a feasible vertical seam and safe cut export.');
+  await backingChoiceCtx.close();
+  console.log('PASS backing seam choice persists across pages, JSON, shopping/cut CSV; directional print fails safely.');
+
   const dark=await browser.newContext({viewport:{width:1280,height:800},colorScheme:'dark'});
   instrumentNetwork(dark,'dark');
   const darkPage=await dark.newPage();
