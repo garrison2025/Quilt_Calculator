@@ -3224,6 +3224,89 @@ try{
   await planCtx.close();
   console.log('PASS noindex inverse-square planning, scenario export, WOF rejection, prewash distinction and mobile WCAG.');
 
+  // Never report that physical fabric was tested merely because software
+  // passed or the user typed a plausible ruler result. All A/B/C real data
+  // must initialize EMPTY; audit statuses are not purchase authorization.
+  const physicalCtx=await browser.newContext({viewport:{width:375,height:780},acceptDownloads:true});
+  instrumentNetwork(physicalCtx,'bias-physical');
+  const physical=await physicalCtx.newPage();
+  physical.on('pageerror',err=>problems.push('Bias real specimen worksheet: '+err.message));
+  const physicalResponse=await physical.goto(ROOT+'/lab/continuous-bias-physical/',{waitUntil:'domcontentloaded'});
+  check(physicalResponse.status()===200 &&
+    await physical.locator('meta[name="robots"]').getAttribute('content')==='noindex,follow' &&
+    await physical.locator('link[rel="canonical"]').count()===0 &&
+    await physical.locator('script[type="application/ld+json"]').count()===0 &&
+    (await physical.locator('h1').innerText()).includes('Physical Specimen Verification Worksheet'),
+    'Real specimen evidence lab must remain noindex, distinct from production purchasing.');
+  await physical.waitForFunction(()=>
+    document.querySelector('[data-bias-physical-status]')?.textContent?.includes('NOT_RUN'));
+  const statusLabels=physical.locator('[data-bias-sample-status]');
+  check(await statusLabels.count()===3 &&
+    (await statusLabels.allTextContents()).every(s=>s==='NOT_RUN') &&
+    (await physical.locator('[data-bias-physical-status]').innerText()).includes('Sample A / NOT_RUN') &&
+    await physical.locator('[data-bias-physical-verdict="NOT_RUN"]').count()===1 &&
+    (await physical.locator('[data-bias-physical-output]').innerText()).includes('NOT MEASURED') &&
+    (await physical.locator('[data-bias-physical-output]').innerText()).includes('328.426') &&
+    (await physical.locator('[data-bias-physical-form] [data-bias-obs="finishedCenterLengthIn"]').inputValue())==='',
+    'All three model-configured cloth specimens must start as unmeasured, not invented physical data.');
+  await auditWcag(physical,'/lab/continuous-bias-physical/ [375px blank]');
+  await physical.screenshot({path:'artifacts/qa/continuous-bias-physical-empty-mobile.png',fullPage:true,animations:'disabled'});
+  await physical.locator('[data-bias-obs="measuredSquareWidthIn"]').fill('30');
+  check((await physical.locator('[data-bias-physical-status]').innerText()).includes('UNREVIEWED CHANGES'),
+    'Editing real observations must invalidate the visible previous status until explicitly audited.');
+  await physical.locator('[data-bias-physical-form] button[type="submit"]').click();
+  check((await physical.locator('[data-bias-physical-status]').innerText()).includes('INCOMPLETE') &&
+    (await physical.locator('[data-bias-physical-output]').innerText()).includes('Missing actual measurements'),
+    'One measured side cannot make physical specimen A pass.');
+  for(const [key,value] of [
+   ['finishedCenterLengthIn','320'],['finishedLeftLengthIn','321'],['finishedRightLengthIn','322']
+  ])await physical.locator('[data-bias-obs="'+key+'"]').fill(value);
+  await physical.locator('[data-bias-physical-form] button[type="submit"]').click();
+  check((await physical.locator('[data-bias-physical-status]').innerText()).includes('OBSERVATION_HOLD') &&
+    (await physical.locator('[data-bias-physical-output]').innerText()).includes('CRITICAL: model predicts more') &&
+    (await physical.locator('[data-bias-sample-status="A"]').innerText())==='OBSERVATION_HOLD',
+    'The modeled 328in overstates measured shortest length 320in and MUST block.');
+  await physical.locator('[data-bias-physical-select]').selectOption('B');
+  check((await physical.locator('[data-bias-physical-status]').innerText()).includes('Sample B / NOT_RUN') &&
+    (await physical.locator('[data-bias-physical-output]').innerText()).includes('227.913') &&
+    (await physical.locator('[data-bias-sample-status="A"]').innerText())==='OBSERVATION_HOLD',
+    'A/B/C drafts must retain independence and display distinct model fixtures.');
+  const downloadPromise=physical.waitForEvent('download');
+  await physical.locator('[data-bias-physical-export]').click();
+  const draftFile=await downloadPromise;
+  const draft=JSON.parse(await fs.readFile(await draftFile.path(),'utf8'));
+  check(draftFile.suggestedFilename().includes('UNVERIFIED-DRAFT') &&
+    draft.format==='CONTINUOUS_BIAS_USER_OBSERVATION_DRAFT_V1' &&
+    draft.source==='UNVERIFIED_USER_TYPED_NOT_PHYSICAL_CERTIFICATION' &&
+    draft.physicallyCertified===false && draft.safeToPurchase===false &&
+    draft.auditsForReferenceOnly[0].auditStatus==='OBSERVATION_HOLD' &&
+    draft.auditsForReferenceOnly[1].auditStatus==='NOT_RUN' &&
+    draft.auditsForReferenceOnly[2].auditStatus==='NOT_RUN' &&
+    draft.rawDrafts.A.finishedCenterLengthIn==='320' &&
+    !('purchaseYards' in draft),
+    'Draft JSON must preserve raw evidence states, flag unverified provenance and never create retail purchasing.');
+  draft.safeToPurchase=true;
+  draft.physicallyCertified=true;
+  draft.auditsForReferenceOnly[0].auditStatus='FAKE_PASS';
+  await physical.locator('[data-bias-physical-import]').setInputFiles({
+   name:'untrusted-approval-claim.json',mimeType:'application/json',
+   buffer:Buffer.from(JSON.stringify(draft),'utf8')
+  });
+  await physical.waitForFunction(()=>
+    document.querySelector('[data-bias-physical-status]')?.textContent?.includes('ignored'));
+  await physical.locator('[data-bias-physical-select]').selectOption('A');
+  check((await physical.locator('[data-bias-physical-status]').innerText()).includes('OBSERVATION_HOLD') &&
+    (await physical.locator('[data-bias-physical-output]').innerText()).includes('CRITICAL: model predicts more') &&
+    (await physical.locator('[data-bias-sample-status="A"]').innerText())==='OBSERVATION_HOLD',
+    'Import must ignore forged approval fields and re-audit only raw observations.');
+  await physical.locator('[data-bias-obs="firstSeamSamplesIn"]').fill('0.25, 0.25');
+  await physical.locator('[data-bias-physical-form] button[type="submit"]').click();
+  check((await physical.locator('[data-bias-physical-status]').innerText()).includes('INVALID_DRAFT') &&
+    (await physical.locator('[data-bias-physical-output]').innerText()).includes('exactly 5'),
+    'Incomplete seam-checkpoint lists must be rejected, not silently shortened.');
+  await auditWcag(physical,'/lab/continuous-bias-physical/ [375px invalid]');
+  await physicalCtx.close();
+  console.log('PASS real A/B/C sample blank state, synthetic under-yield HOLD, draft JSON integrity, malicious import rejection and mobile WCAG.');
   const dark=await browser.newContext({viewport:{width:1280,height:800},colorScheme:'dark'});
   instrumentNetwork(dark,'dark');
   const darkPage=await dark.newPage();
