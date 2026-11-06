@@ -2923,7 +2923,7 @@ try{
     'Six one-round reference sizes must be discoverable in a NOINDEX lab without creating a public keyword doorway.');
   await squarePage.waitForFunction(()=>
     document.querySelector('[data-square-status]')?.textContent?.includes('Calculated preview'),{timeout:20000});
-  const tableArea=squarePage.locator('.square-lab-chart-scroll');
+  const tableArea=squarePage.locator('[data-square-reference-chart] .square-lab-chart-scroll');
   check(await tableArea.getAttribute('tabindex')==='0' &&
     await tableArea.getAttribute('role')==='region'&&
     Boolean(await tableArea.getAttribute('aria-label')),
