@@ -21,6 +21,14 @@ export type UserTopGrid={
  spansEntireCenter:boolean;
 };
 export type TopGridCoverage='NOT_STARTED'|'PARTIAL_USER_REPORTED'|'ALL_USER_REPORTED';
+/** Source reference versus independently entered ruler values, never auto-filled. */
+export type TopGridCutComparison={
+ row:number;column:number;rollId:string;pieceNumber:number;
+ expectedCutWidthIn:number;expectedCutHeightIn:number;
+ measuredCutWidthIn?:number;measuredCutHeightIn?:number;
+ widthDifferenceIn?:number;heightDifferenceIn?:number;
+ exceedsPieceTolerance:boolean;
+};
 export type TopGridAudit={
  source:'NOT_IMPORTED'|'MATCHING_CUTTING_PLAN';
  coverage:TopGridCoverage;
@@ -28,6 +36,9 @@ export type TopGridAudit={
  expectedCellCount:number;
  knownSourceCells:number;measuredCells:number;measuredInternalEdges:number;expectedInternalEdges:number;
  reading?:UserTopGrid;
+ /** Separate from the 0–1 in assembled-grid tolerance. */
+ cutPieceToleranceIn:number;
+ cutComparisons:TopGridCutComparison[];
  cutSizeDeviationCount:number;
  /** Derived ONLY from complete actual-ruler measurements. */
  rowAssembledWidthsIn?:number[];
@@ -58,17 +69,19 @@ function edgeKeys(r:number,c:number,rows:number,cols:number):EdgeKey[]{
  if(r<rows-1)result.push('seamBottomIn');
  return result;
 }
-export function evaluateTopGrid(project:ImportedFabricAudit,reading:UserTopGrid|undefined):TopGridAudit{
+export function evaluateTopGrid(project:ImportedFabricAudit,reading:UserTopGrid|undefined,cutPieceToleranceIn=0):TopGridAudit{
  const result:TopGridAudit={
   source:project.seamPlan?'MATCHING_CUTTING_PLAN':'NOT_IMPORTED',
   coverage:'NOT_STARTED',expectedCellCount:0,knownSourceCells:0,measuredCells:0,
-  measuredInternalEdges:0,expectedInternalEdges:0,cutSizeDeviationCount:0,
+  measuredInternalEdges:0,expectedInternalEdges:0,cutPieceToleranceIn,cutComparisons:[],cutSizeDeviationCount:0,
   invalid:[],warnings:[]
  };
  if(!reading){
   result.warnings.push('No user-specified rectangular quilt-top arrangement. Cut-list CSV does not supply sewing positions.');
   return result;
  }
+ if(!nonneg(cutPieceToleranceIn)||cutPieceToleranceIn>0.25)
+  result.invalid.push('Declare a separate physical cut-piece tolerance from 0 to 0.25 inch.');
  const {rows,columns,cells}=reading;
  result.rows=rows;result.columns=columns;
  result.reading={
@@ -120,12 +133,24 @@ export function evaluateTopGrid(project:ImportedFabricAudit,reading:UserTopGrid|
    if(!source){result.invalid.push('Unknown quilt-top physical source cut at '+tag+': '+key+'.');measuredAll=false;}
    else{
     result.knownSourceCells++;
-    if(fields.every(name=>pos(cell[name]))){
-     result.measuredCells++;
-     if(Math.abs(cell.measuredCutWidthIn!-source.widthIn)>(reading.declaredTotalToleranceIn??0)+EPS||
-        Math.abs(cell.measuredCutHeightIn!-source.heightIn)>(reading.declaredTotalToleranceIn??0)+EPS)
-      result.cutSizeDeviationCount++;
-    }
+    const hasWidth=pos(cell.measuredCutWidthIn);
+    const hasHeight=pos(cell.measuredCutHeightIn);
+    if(hasWidth&&hasHeight)result.measuredCells++;
+    const widthDifferenceIn=hasWidth?cell.measuredCutWidthIn!-source.widthIn:undefined;
+    const heightDifferenceIn=hasHeight?cell.measuredCutHeightIn!-source.heightIn:undefined;
+    const exceedsPieceTolerance=
+     (widthDifferenceIn!==undefined&&Math.abs(widthDifferenceIn)>cutPieceToleranceIn+EPS)||
+     (heightDifferenceIn!==undefined&&Math.abs(heightDifferenceIn)>cutPieceToleranceIn+EPS);
+    result.cutComparisons.push({
+     row:r+1,column:c+1,rollId:cell.rollId,pieceNumber:cell.pieceNumber,
+     expectedCutWidthIn:source.widthIn,expectedCutHeightIn:source.heightIn,
+     measuredCutWidthIn:hasWidth?cell.measuredCutWidthIn:undefined,
+     measuredCutHeightIn:hasHeight?cell.measuredCutHeightIn:undefined,
+     widthDifferenceIn,heightDifferenceIn,exceedsPieceTolerance
+    });
+    // One measured axis is sufficient to flag an actual cut error, even
+    // while its other dimension or a different patch remains unmeasured.
+    if(exceedsPieceTolerance)result.cutSizeDeviationCount++;
    }
   }
   for(const dim of fields){
@@ -172,7 +197,7 @@ export function evaluateTopGrid(project:ImportedFabricAudit,reading:UserTopGrid|
   heights.push(cell?.measuredCutHeightIn??NaN);
  }
  if(result.cutSizeDeviationCount)
-  result.warnings.push(result.cutSizeDeviationCount+' user-measured top-piece width/height pair(s) differ from their physical CSV cut sizes.');
+  result.warnings.push(result.cutSizeDeviationCount+' user-measured top-piece(s) exceed the SEPARATE 0–0.25 in physical cut tolerance ('+cutPieceToleranceIn+' in), independent of assembled-grid tolerance.');
  const independentlyMeasured=reading.measuredAssembledWidthIn!==undefined&&reading.measuredAssembledHeightIn!==undefined;
  const inputReady=measuredAll&&result.invalid.length===0;
  result.coverage=inputReady&&independentlyMeasured?'ALL_USER_REPORTED':'PARTIAL_USER_REPORTED';

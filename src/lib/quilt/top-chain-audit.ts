@@ -30,6 +30,11 @@ export type UserTopChain={
  declaredTotalToleranceIn?:number;
 };
 export type TopChainCoverage='NOT_STARTED'|'PARTIAL_USER_REPORTED'|'ALL_USER_REPORTED';
+export type TopChainCutComparison={
+ position:number;rollId:string;pieceNumber:number;
+ expectedCutSpanIn:number;measuredCutSpanIn?:number;
+ differenceIn?:number;exceedsPieceTolerance:boolean;
+};
 export type TopChainAudit={
  source:'NOT_IMPORTED'|'MATCHING_CUTTING_PLAN';
  coverage:TopChainCoverage;
@@ -48,6 +53,8 @@ export type TopChainAudit={
  joinedSpanDifferenceIn?:number;
  independentJoinMismatch?:boolean;
  cutSizeDeviationCount:number;
+ cutPieceToleranceIn:number;
+ cutComparisons:TopChainCutComparison[];
  centerSpanDifferenceIn?:number;
  centerSpanMismatch?:boolean;
  invalid:string[];
@@ -56,14 +63,16 @@ export type TopChainAudit={
  reading?:UserTopChain;
 };
 const finite=(n:unknown):n is number=>typeof n==='number'&&Number.isFinite(n)&&n>=0&&n<=100000;
-export function evaluateTopChain(project:ImportedFabricAudit,entered:UserTopChain|undefined):TopChainAudit{
+export function evaluateTopChain(project:ImportedFabricAudit,entered:UserTopChain|undefined,cutPieceToleranceIn=0):TopChainAudit{
  const root:TopChainAudit={
   source:project.seamPlan?'MATCHING_CUTTING_PLAN':'NOT_IMPORTED',
   coverage:'NOT_STARTED',cutPieceCount:0,recordedPieceCount:0,
-  recordedJoinEdgeCount:0,joinCount:0,cutSizeDeviationCount:0,
+  recordedJoinEdgeCount:0,joinCount:0,cutSizeDeviationCount:0,cutPieceToleranceIn,cutComparisons:[],
   invalid:[],warnings:[]
  };
  if(!entered){root.warnings.push('No manually ordered quilt-top chain. Cut files cannot establish quilt-top sewing order.');return root;}
+ if(!finite(cutPieceToleranceIn)||cutPieceToleranceIn>0.25)
+  root.invalid.push('Declare a separate physical cut-piece tolerance from 0 to 0.25 inch.');
  root.reading={
   axis:entered.axis,spansEntireCenter:entered.spansEntireCenter,
   pieces:Array.isArray(entered.pieces)?entered.pieces.map(x=>({...x})):[],
@@ -113,14 +122,21 @@ export function evaluateTopChain(project:ImportedFabricAudit,entered:UserTopChai
   }
   root.recordedPieceCount++;
   const measured=piece.observedCutSpanIn;
+  const target=entered.axis==='width'?source.widthIn:source.heightIn;
+  const measuredValid=measured!==undefined&&finite(measured)&&measured>0;
+  const differenceIn=measuredValid?measured-target:undefined;
+  const exceedsPieceTolerance=differenceIn!==undefined&&Math.abs(differenceIn)>cutPieceToleranceIn+1e-8;
+  root.cutComparisons.push({
+   position:i+1,rollId:id,pieceNumber:number,expectedCutSpanIn:target,
+   measuredCutSpanIn:measuredValid?measured:undefined,
+   differenceIn,exceedsPieceTolerance
+  });
+  if(exceedsPieceTolerance)root.cutSizeDeviationCount++;
   if(measured===undefined){allCuts=false;continue;}
-  if(!finite(measured)||measured===0){
+  if(!measuredValid){
    root.invalid.push('Invalid measured pre-sew cut span for piece #'+(i+1));allCuts=false;continue;
   }
   cutSum+=measured;
-  const target=entered.axis==='width'?source.widthIn:source.heightIn;
-  if(Math.abs(measured-target)>(entered.declaredTotalToleranceIn??0)+1e-8)
-   root.cutSizeDeviationCount++;
  }
  if(entered.joins?.length===n-1){
   for(const [i,j] of entered.joins.entries()){
@@ -141,7 +157,7 @@ export function evaluateTopChain(project:ImportedFabricAudit,entered:UserTopChai
  const complete=allCuts&&allJoins&&entered.observedJoinedSpanIn!==undefined&&root.invalid.length===0;
  root.coverage=complete?'ALL_USER_REPORTED':'PARTIAL_USER_REPORTED';
  if(root.cutSizeDeviationCount)
-  root.warnings.push(root.cutSizeDeviationCount+' user-measured cut span(s) differ from their selected native CSV cut sizes beyond the declared tolerance.');
+  root.warnings.push(root.cutSizeDeviationCount+' user-measured cut span(s) exceed the separate physical cut tolerance ('+cutPieceToleranceIn+' in), not the assembled-chain tolerance.');
  if(allCuts&&allJoins){
   const predicted=cutSum-seamLoss;
   if(predicted<=0){
