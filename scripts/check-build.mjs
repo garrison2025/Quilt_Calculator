@@ -110,6 +110,37 @@ for(const token of [
  if(!biasPlanSource.includes(token))
   throw Error('Bias inverse square planner must remain non-purchasing: '+token);
 }
+// Real specimen observations never count as independent proof. The route stays
+// NOINDEX even if the approved nine calculators later launch a proper domain.
+const biasPhysicalHtml=fs.readFileSync('dist/lab/continuous-bias-physical/index.html','utf8');
+for(const token of [
+ 'data-bias-physical','noindex,follow','Physical Specimen Verification Worksheet',
+ 'NO SAMPLE HAS BEEN PHYSICALLY TESTED','READY FOR HUMAN REVIEW',
+ 'data-bias-physical-export','data-bias-physical-import',
+ 'href="/lab/continuous-bias-planner/"'
+]){
+ if(!biasPhysicalHtml.toLowerCase().includes(token.toLowerCase()))
+  throw Error('Physical observation lab missing status and noindex evidence safeguards: '+token);
+}
+if(biasPhysicalHtml.includes('rel="canonical"')||
+   biasPhysicalHtml.includes('application/ld+json'))
+ throw Error('Real specimen record worksheet must not be indexable or published as an approved app.');
+for(const source of ['lab/continuous-bias-tube','lab/continuous-bias-planner','lab/continuous-bias-physical']){
+ const html=fs.readFileSync('dist/'+source+'/index.html','utf8');
+ if(!html.includes('href="/lab/continuous-bias-physical/"'))
+  throw Error('Numerical research must link to the separate real specimen evidence method: '+source);
+}
+const biasPhysicalSource=fs.readFileSync('src/lib/quilt/continuous-bias-specimen-audit.ts','utf8');
+for(const token of [
+ 'CONTINUOUS_BIAS_PHYSICAL_OBSERVATION_AUDIT',
+ 'USER_ENTERED_UNVERIFIED_NOT_INDEPENDENT_EVIDENCE',
+ "status:'NOT_RUN'|'INCOMPLETE'|'OBSERVATION_HOLD'|'READY_FOR_HUMAN_REVIEW'",
+ 'humanReviewCompleted:false','physicallyCertified:false','safeToPurchase:false',
+ 'verifiedUsableLengthIn?:never','purchaseYards?:never'
+]){
+ if(!biasPhysicalSource.includes(token))
+  throw Error('Physical sample worksheet cannot self-certify production or purchase: '+token);
+}
 const individualBiasLabHtml=fs.readFileSync('dist/lab/individual-bias-strips/index.html','utf8');
 for(const token of [
  'noindex,follow','data-individual-bias-lab','Individual 45° Bias Strip Geometry Lab',
@@ -350,7 +381,7 @@ console.log('PASS: 218 source keyword records, 202 mapped to 9 unique tool inten
  * Asset hrefs are intentionally excluded; internal navigation URLs must be valid.
  */
 const seenTitles=new Set();
-const internalRoutes=new Set([...slugs.map(slug=>'/'+(slug?slug+'/':'')),'/about/','/privacy/','/qa/print-calibration/','/qa/fabric-cutting/','/qa/2x2-measurement-sheet/','/lab/individual-bias-strips/','/lab/continuous-bias-tube/','/lab/continuous-bias-planner/']);
+const internalRoutes=new Set([...slugs.map(slug=>'/'+(slug?slug+'/':'')),'/about/','/privacy/','/qa/print-calibration/','/qa/fabric-cutting/','/qa/2x2-measurement-sheet/','/lab/individual-bias-strips/','/lab/continuous-bias-tube/','/lab/continuous-bias-planner/','/lab/continuous-bias-physical/']);
 for(const slug of [...slugs,'about','privacy','qa/print-calibration','qa/fabric-cutting','qa/2x2-measurement-sheet','lab/individual-bias-strips','lab/continuous-bias-tube','lab/continuous-bias-planner']){
  const html=fs.readFileSync('dist/'+(slug?slug+'/':'')+'index.html','utf8');
  const title=html.match(/<title>([^<]+)<\/title>/)?.[1];
@@ -364,7 +395,7 @@ for(const slug of [...slugs,'about','privacy','qa/print-calibration','qa/fabric-
   if(!internalRoutes.has(href))throw Error('Broken internal page link '+href+' from '+slug);
  }
 }
-console.log('PASS: 18 uniquely titled static pages including noindex About, print-scale, fabric QA, blank 2×2 record and three bias research labs, one H1 each, internal link destinations verified.');
+console.log('PASS: 19 uniquely titled static pages including noindex About, print-scale, fabric QA, blank 2×2 record and four bias research labs, one H1 each, internal link destinations verified.');
 
 // Feature enhancements must deepen approved existing SEO routes; never
 // create three isolated thin keyword pages or make the preview indexable.
