@@ -67,19 +67,6 @@ function drawUnfoldedChart(parent:HTMLElement,m:BiasTubeDevelopment):void{
  const total=N*Q+W,sx=660/total,sy=92/W;
  const px=(v:number)=>44+v*sx,py=(v:number)=>72+v*sy;
  const map=(p:BiasPoint[])=>p.map(v=>px(v.xIn)+','+py(v.yIn)).join(' ');
- const polygon=(vertices:BiasPoint[],fill:string,stroke:string,width=1.2)=>{
-  const el=svgEl('polygon');el.setAttribute('points',map(vertices));
-  el.setAttribute('fill',fill);el.setAttribute('stroke',stroke);
-  el.setAttribute('stroke-width',String(width));svg.appendChild(el);
- };
- const line=(x1:number,y1:number,x2:number,y2:number,stroke:string,width:number,dash='')=>{
-  const el=svgEl('line');
-  for(const [key,value] of [['x1',x1],['y1',y1],['x2',x2],['y2',y2]] as const)
-   el.setAttribute(key,String(value));
-  el.setAttribute('stroke',stroke);el.setAttribute('stroke-width',String(width));
-  if(dash)el.setAttribute('stroke-dasharray',dash);
-  svg.appendChild(el);
- };
  const label=(x:number,y:number,value:string,color='#214536',size=11)=>{
   const el=svgEl('text');el.setAttribute('x',String(x));el.setAttribute('y',String(y));
   el.setAttribute('font-size',String(size));el.setAttribute('fill',color);
