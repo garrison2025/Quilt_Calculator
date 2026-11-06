@@ -40,7 +40,7 @@ Before seam allowance, the ideal parallelogram chart has vertices:
 ```
 (0,0), (L,0), (L+H,H), (H,H)
 ```
-The first assembly stitch line is `x+y=L-d`. With the equal `a)-tip-overhang alignment, the sewn-face parallelogram becomes:
+The first assembly stitch line is `x+y=L-d`. With the equal `a` tip-overhang alignment, the sewn-face parallelogram becomes:
 ```
 A = (0,0)
 B = (L-d,0)
@@ -172,4 +172,4 @@ For comparison, Geta's practical rectangular-piece rule subtracts ½in from both
 5. Only after physical agreement and manual signoff may the result be integrated into the production Binding calculator with yard rounding and purchase guidance.
 6. Keep all seven `HOLD-BIAS` SEO intents held, and keep this research route `noindex,follow` with no canonical or sitemap entry.
 
-**Current decision: corrected numerical 2D gate is ready for software validation; real sewn-fabric yield and purchasing remain HOLD.**
+**Current decision: corrected numerical 2D gate PASSed software validation in CI run [42308649658](https://github.com/garrison2025/Quilt_Calculator/actions/runs/42308649658); real sewn-fabric yield and purchasing remain HOLD.**
