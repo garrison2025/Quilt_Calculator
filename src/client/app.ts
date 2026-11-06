@@ -879,7 +879,9 @@ if(root){
   height.type='text';height.inputMode='decimal';height.id='reverse-center-height';
   height.dataset.reverseCenterHeight='';height.value=reverseBlockTargetH;
   heightLabel.htmlFor=height.id;
-  inputs.append(widthLabel,width,heightLabel,height);
+  const widthGroup=node('div','reverse-block-field');widthGroup.append(widthLabel,width);
+  const heightGroup=node('div','reverse-block-field');heightGroup.append(heightLabel,height);
+  inputs.append(widthGroup,heightGroup);
   panel.appendChild(inputs);
   const buttons=node('div','reverse-block-actions');
   const source=node('button','action-secondary','Use saved project CENTER as target');
