@@ -723,6 +723,22 @@ import Base from '../../../layouts/Base.astro';
     if(finishArea){finishArea.hidden=!parsed.seamPlan;finishArea.removeAttribute('open');}
     topPieces?.replaceChildren();topJoins?.replaceChildren();
     if(topArea){topArea.hidden=!parsed.seamPlan;topArea.removeAttribute('open');}
+    gridCells?.replaceChildren();
+    if(gridArea){gridArea.hidden=!parsed.seamPlan;gridArea.removeAttribute('open');}
+    if(gridPlan&&parsed.seamPlan){
+     const plan=parsed.seamPlan.finishing;
+     gridPlan.textContent='Reviewed CENTER before borders: '+plan.plannedCenterWidthIn+
+      ' × '+plan.plannedCenterHeightIn+' inches. Quilt TOP outside including any borders: '+
+      plan.plannedQuiltTopWidthIn+' × '+plan.plannedQuiltTopHeightIn+
+      ' inches. Actual grid piece placement and real seams are NOT recorded in any source CSV.';
+    }
+    for(const selector of ['[data-top-grid-tolerance]','[data-top-grid-measured-width]','[data-top-grid-measured-height]']){
+     const el=query<HTMLInputElement>(selector);if(el)el.value='';
+    }
+    for(const key of ['[data-top-grid-rows]','[data-top-grid-columns]']){
+     const el=query<HTMLInputElement>(key);if(el)el.value='2';
+    }
+    const covered=query<HTMLInputElement>('[data-top-grid-full-center]');if(covered)covered.checked=false;
     if(topPlan&&parsed.seamPlan){
      const expected=parsed.seamPlan.finishing;
      topPlan.textContent='Current reviewed plan: quilt TOP CENTER '+expected.plannedCenterWidthIn+' × '+
@@ -756,6 +772,18 @@ import Base from '../../../layouts/Base.astro';
   }
   importButton?.addEventListener('click',()=>{void load();});
   topCreate?.addEventListener('click',createTopChainRows);
+  gridCreate?.addEventListener('click',createTopGridRows);
+  gridClear?.addEventListener('click',()=>{
+   gridCells?.replaceChildren();
+   for(const key of ['[data-top-grid-tolerance]','[data-top-grid-measured-width]','[data-top-grid-measured-height]']){
+    const control=query<HTMLInputElement>(key);if(control)control.value='';
+   }
+   const claimed=query<HTMLInputElement>('[data-top-grid-full-center]');if(claimed)claimed.checked=false;
+   for(const key of ['[data-top-grid-rows]','[data-top-grid-columns]']){
+    const control=query<HTMLInputElement>(key);if(control)control.value='2';
+   }
+   render();
+  });
   topClear?.addEventListener('click',()=>{
    topPieces?.replaceChildren();topJoins?.replaceChildren();
    for(const selector of ['[data-top-chain-axis]','[data-top-chain-tolerance]','[data-top-chain-joined]']){
@@ -769,13 +797,18 @@ import Base from '../../../layouts/Base.astro';
   workspace?.addEventListener('change',render);
   resetButton?.addEventListener('click',()=>{
    ++attempt;imported=null;if(cutsFile)cutsFile.value='';if(shoppingFile)shoppingFile.value='';if(planJsonFile)planJsonFile.value='';
-   for(const selector of ['[data-fabric-date]','[data-fabric-tolerance]','[data-fabric-seam-tolerance]','[data-fabric-finishing-tolerance]','[data-top-chain-tolerance]','[data-top-chain-joined]','[data-fabric-reviewer]']){
+   for(const selector of ['[data-fabric-date]','[data-fabric-tolerance]','[data-fabric-seam-tolerance]','[data-fabric-finishing-tolerance]','[data-top-chain-tolerance]','[data-top-chain-joined]','[data-top-grid-tolerance]','[data-top-grid-measured-width]','[data-top-grid-measured-height]','[data-fabric-reviewer]']){
     const input=query<HTMLInputElement>(selector);if(input)input.value='';
    }
    const condition=query<HTMLSelectElement>('[data-fabric-condition]');if(condition)condition.value='';
    const checked=query<HTMLInputElement>('[data-fabric-confirm]');if(checked)checked.checked=false;
    for(const input of finishArea?.querySelectorAll<HTMLInputElement>('[data-fabric-finish]')??[])input.value='';
-   topPieces?.replaceChildren();topJoins?.replaceChildren();
+   topPieces?.replaceChildren();topJoins?.replaceChildren();gridCells?.replaceChildren();
+   const centerGrid=query<HTMLInputElement>('[data-top-grid-full-center]');if(centerGrid)centerGrid.checked=false;
+   for(const key of ['[data-top-grid-rows]','[data-top-grid-columns]']){
+    const control=query<HTMLInputElement>(key);if(control)control.value='2';
+   }
+   if(gridArea){gridArea.hidden=true;gridArea.removeAttribute('open');}
    const axis=query<HTMLSelectElement>('[data-top-chain-axis]');if(axis)axis.value='';
    const count=query<HTMLInputElement>('[data-top-chain-count]');if(count)count.value='2';
    const claimed=query<HTMLInputElement>('[data-top-chain-full-center]');if(claimed)claimed.checked=false;
@@ -823,8 +856,10 @@ import Base from '../../../layouts/Base.astro';
  .qa-fabric-join-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:12px 0}
  @media(max-width:600px){.qa-fabric-join-grid{grid-template-columns:1fr}}
  [data-fabric-finishing-area] summary{font-weight:700;cursor:pointer;line-height:1.6;color:#24523a}
- [data-fabric-finishing-result],[data-top-chain-result]{padding:12px;border:1px solid #cddccc;border-radius:9px;line-height:1.6;overflow-wrap:anywhere}
- [data-top-chain-area] summary{font-weight:700;cursor:pointer;line-height:1.6;color:#24523a}
+ [data-fabric-finishing-result],[data-top-chain-result],[data-top-grid-result]{padding:12px;border:1px solid #cddccc;border-radius:9px;line-height:1.6;overflow-wrap:anywhere}
+ .qa-top-grid-cell{padding:14px;margin:12px 0;border:1px solid #cddccc;border-radius:9px}
+ .qa-top-grid-cell h4{font-size:14px;line-height:1.5;margin:0 0 10px}
+ [data-top-chain-area] summary,[data-top-grid-area] summary{font-weight:700;cursor:pointer;line-height:1.6;color:#24523a}
  .qa-top-chain-row{margin:14px 0;padding:14px;border:1px solid #d0ddce;border-radius:9px}
  .qa-top-chain-row h4{font-size:14px;line-height:1.5;margin:0 0 9px}
  .qa-top-chain-row [data-top-chain-piece-info]{font-size:12px;line-height:1.6;overflow-wrap:anywhere}
@@ -844,11 +879,15 @@ import Base from '../../../layouts/Base.astro';
  [data-fabric-assessment="USER_REPORTED_TOP_CHAIN_MEASUREMENTS_DISAGREE"],
  [data-fabric-assessment="USER_REPORTED_TOP_CHAIN_CENTER_SIZE_DEVIATION"],
  [data-fabric-assessment="USER_REPORTED_TOP_CHAIN_CUT_SIZE_DEVIATION"],
+ [data-fabric-assessment="USER_REPORTED_TOP_GRID_SHAPE_MISMATCH"],
+ [data-fabric-assessment="USER_REPORTED_TOP_GRID_RULER_MISMATCH"],
+ [data-fabric-assessment="USER_REPORTED_TOP_GRID_CENTER_SIZE_DEVIATION"],
+ [data-fabric-assessment="USER_REPORTED_TOP_GRID_CUT_SIZE_DEVIATION"],
  [data-fabric-assessment="INCONCLUSIVE_NOT_POSTWASHED"]{border-color:#d1ad79;background:#fff0df;color:#7d3e16}
  @media(max-width:650px){.qa-fabric-field-grid{grid-template-columns:1fr}.qa-fabric-audit{padding-block:22px 55px}}
  @media(prefers-color-scheme:dark){
   .qa-fabric-audit-card,.qa-fabric-roll{background:#1e3225;border-color:#52745a;color:#e4f1e6}
-  .qa-fabric-audit-intro h1,.qa-fabric-audit-card h2,.qa-fabric-field-grid label,.qa-fabric-roll h3,[data-fabric-finishing-area] summary,[data-top-chain-area] summary{color:#e3f0e3}
+  .qa-fabric-audit-intro h1,.qa-fabric-audit-card h2,.qa-fabric-field-grid label,.qa-fabric-roll h3,[data-fabric-finishing-area] summary,[data-top-chain-area] summary,[data-top-grid-area] summary{color:#e3f0e3}
   .qa-fabric-field-grid input,.qa-fabric-field-grid select,.qa-fabric-seam-item input,.qa-fabric-seam-item select{background:#132c1c;color:#fff;border-color:#72917a}
   [data-fabric-result],[data-fabric-import-status]{background:#244630;color:#e7f5e9;border-color:#67936a}
   [data-fabric-assessment="USER_REPORTED_SHORTAGE_OR_DEVIATION"],
@@ -862,6 +901,10 @@ import Base from '../../../layouts/Base.astro';
   [data-fabric-assessment="USER_REPORTED_TOP_CHAIN_MEASUREMENTS_DISAGREE"],
   [data-fabric-assessment="USER_REPORTED_TOP_CHAIN_CENTER_SIZE_DEVIATION"],
   [data-fabric-assessment="USER_REPORTED_TOP_CHAIN_CUT_SIZE_DEVIATION"],
+  [data-fabric-assessment="USER_REPORTED_TOP_GRID_SHAPE_MISMATCH"],
+  [data-fabric-assessment="USER_REPORTED_TOP_GRID_RULER_MISMATCH"],
+  [data-fabric-assessment="USER_REPORTED_TOP_GRID_CENTER_SIZE_DEVIATION"],
+  [data-fabric-assessment="USER_REPORTED_TOP_GRID_CUT_SIZE_DEVIATION"],
   [data-fabric-assessment="INCONCLUSIVE_NOT_POSTWASHED"]{background:#463522;color:#ffdbb9;border-color:#a98251}
  }
  @media print{.qa-fabric-audit{display:none!important}}
