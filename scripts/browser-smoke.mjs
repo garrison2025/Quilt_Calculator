@@ -963,11 +963,19 @@ try{
   const changeHeight=page.getByLabel('Quilt height (in)',{exact:true});
   await changeWidth.fill('80');await changeWidth.press('Tab');
   await changeHeight.fill('60');await changeHeight.press('Tab');
-  const directions=page.locator('.option-buttons button');
-  check((await directions.nth(1).getAttribute('aria-pressed'))==='true','Backing UI must initially select the mathematically cheapest horizontal seams.');
-  check((await directions.nth(1).innerText()).includes('Best use'),'Recommended direction should be labeled.');
-  await directions.nth(0).click();
-  check((await directions.nth(0).getAttribute('aria-pressed'))==='true','Users must be able to override recommended seam direction.');
+  const recommended=page.locator('.option-buttons [data-backing-option="horizontal"]');
+  const auto=page.locator('.option-buttons [data-backing-option="auto"]');
+  const vertical=page.locator('.option-buttons [data-backing-option="vertical"]');
+  check((await auto.getAttribute('aria-pressed'))==='true' &&
+    (await page.getByLabel('Backing seam direction (saved with project)').inputValue())==='auto',
+    'Auto mode must initially choose and persist the mathematically cheapest horizontal seams.');
+  check((await recommended.innerText()).includes('Best use'),'Mathematically recommended direction should be labeled.');
+  await vertical.click();
+  check((await vertical.getAttribute('aria-pressed'))==='true' &&
+    (await page.getByLabel('Backing seam direction (saved with project)').inputValue())==='vertical',
+    'Users must be able to persist a manual override instead of keeping the auto recommendation.');
+  check(await page.evaluate(()=>JSON.parse(localStorage.getItem('quilt-studio-v2')).options.backingDirection)==='vertical',
+    'Manual seam override must persist before the later reset test.');
   await page.locator('[data-action="reset"]').click();
   const width=page.getByLabel('Quilt width (in)',{exact:true});
   const initial=await page.locator('[data-results] .result-big').innerText();
