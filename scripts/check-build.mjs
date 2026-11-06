@@ -98,6 +98,21 @@ if(fabricQaHtml.includes('rel="canonical"')||
    fabricQaHtml.includes('application/ld+json'))
  throw Error('Physical ruler and fabric QA tool must never be indexable or emit structured-data keywords.');
 
+// The printable paper record is a NOINDEX manual form, not a new calculator,
+// a true-scale cutting pattern, or self-signed fabric evidence.
+const gridSheetPath='dist/qa/2x2-measurement-sheet/index.html';
+if(!fs.existsSync(gridSheetPath))throw Error('Missing blank 2×2 physical-measurement worksheet.');
+const gridSheetHtml=fs.readFileSync(gridSheetPath,'utf8');
+for(const marker of ['noindex,follow','data-qa-physical-2x2-sheet','data-sheet-cut-measurements',
+ 'data-sheet-seam-measurements','data-measure-blank','NOT_MEASURED','MANUAL_NOT_RUN',
+ 'NOT_RUN','NOT_RECORDED','data-sheet-print']){
+ if(!gridSheetHtml.includes(marker))throw Error('Physical 2×2 paper record missing blank or noindex safety marker: '+marker);
+}
+if(gridSheetHtml.includes('rel="canonical"')||gridSheetHtml.includes('application/ld+json'))
+ throw Error('Blank physical sheet cannot be indexable or advertise a WebApplication.');
+if(!fabricQaHtml.includes('href="/qa/2x2-measurement-sheet/"')||
+   !fabricQaHtml.includes('data-physical-grid-worksheet-link'))
+ throw Error('Physical QA tool must link directly to the printable blank human record.');
 const privacy=fs.readFileSync('dist/privacy/index.html','utf8');
 if(production && !privacy.includes('href="'+site+'/privacy/"'))throw Error('Privacy canonical must not point to undefined.');
 if(!fs.existsSync('dist/404.html'))throw Error('Missing Cloudflare Pages 404.html: unknown URLs would silently fall back to homepage.');
@@ -227,8 +242,8 @@ console.log('PASS: 218 source keyword records, 202 mapped to 9 unique tool inten
  * Asset hrefs are intentionally excluded; internal navigation URLs must be valid.
  */
 const seenTitles=new Set();
-const internalRoutes=new Set([...slugs.map(slug=>'/'+(slug?slug+'/':'')),'/about/','/privacy/','/qa/print-calibration/','/qa/fabric-cutting/']);
-for(const slug of [...slugs,'about','privacy','qa/print-calibration','qa/fabric-cutting']){
+const internalRoutes=new Set([...slugs.map(slug=>'/'+(slug?slug+'/':'')),'/about/','/privacy/','/qa/print-calibration/','/qa/fabric-cutting/','/qa/2x2-measurement-sheet/']);
+for(const slug of [...slugs,'about','privacy','qa/print-calibration','qa/fabric-cutting','qa/2x2-measurement-sheet']){
  const html=fs.readFileSync('dist/'+(slug?slug+'/':'')+'index.html','utf8');
  const title=html.match(/<title>([^<]+)<\/title>/)?.[1];
  if(!title||seenTitles.has(title))throw Error('Missing/duplicate page title: '+slug);
@@ -241,7 +256,7 @@ for(const slug of [...slugs,'about','privacy','qa/print-calibration','qa/fabric-
   if(!internalRoutes.has(href))throw Error('Broken internal page link '+href+' from '+slug);
  }
 }
-console.log('PASS: 14 uniquely titled static pages including noindex About, print-scale and fabric QA pages, one H1 each, internal link destinations verified.');
+console.log('PASS: 15 uniquely titled static pages including noindex About, print-scale, fabric QA and blank 2×2 record, one H1 each, internal link destinations verified.');
 
 const primaryHeadings=new Map([
  ['calculators','Quilt calculator'],

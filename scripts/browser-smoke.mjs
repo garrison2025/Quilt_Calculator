@@ -900,6 +900,30 @@ try{
   check(await gridArea.isVisible() &&
     (await auditPage.locator('[data-top-grid-plan]').textContent()).includes('Reviewed CENTER before borders: 60 × 80'),
     'Rectangular grid QA must use the same reviewed center size but NOT invent physical sewn placements.');
+  check(await auditPage.locator('[data-physical-grid-worksheet-link]').getAttribute('href')==='/qa/2x2-measurement-sheet/',
+    'The real-fabric QA view must link its separately printable blank measurement record.');
+  const paperSheet=await auditCtx.newPage();
+  await paperSheet.goto(ROOT+'/qa/2x2-measurement-sheet/');
+  check(await paperSheet.locator('[data-qa-physical-2x2-sheet]').isVisible() &&
+    await paperSheet.locator('meta[name="robots"]').getAttribute('content')==='noindex,follow' &&
+    await paperSheet.locator('link[rel="canonical"]').count()===0 &&
+    await paperSheet.locator('script[type="application/ld+json"]').count()===0,
+    'Physical measurement paper form must stay visible but NOINDEX and not advertise a search-intent calculator.');
+  check(await paperSheet.locator('[data-sheet-cut-measurements] tbody tr').count()===4 &&
+    await paperSheet.locator('[data-sheet-seam-measurements] tbody tr').count()===4 &&
+    (await paperSheet.locator('[data-measure-blank]').count())>=20 &&
+    (await paperSheet.locator('[data-measure-blank]').allTextContents()).every(t=>!t.trim()||/^(NOT_MEASURED|NOT_RECORDED|NOT_RUN)/.test(t.trim())),
+    'A 2×2 real-paper sheet must reserve four empty cuts and eight separately noted join-edge ruler losses without fabricated physical observations.');
+  await paperSheet.evaluate(()=>{window.__quiltPaperPrinted=false;window.print=()=>{window.__quiltPaperPrinted=true;};});
+  await paperSheet.locator('[data-sheet-print]').click();
+  check(await paperSheet.evaluate(()=>window.__quiltPaperPrinted===true),
+    'The on-page print button must invoke native print, not a fake PDF or source-model measurement.');
+  await paperSheet.emulateMedia({media:'print'});
+  check(await paperSheet.locator('[data-sheet-print]').isHidden() &&
+    await paperSheet.locator('[data-sheet-seam-measurements]').isVisible(),
+    'Paper output must hide the print action and keep separate physical seam observations visible.');
+  await paperSheet.close();
+  console.log('PASS blank noindex 2×2 human measurement form, source slots, seam-edge slots and print behavior.');
   await gridArea.locator(':scope > summary').click();
   check(await gridStatus.getAttribute('data-top-grid-coverage')==='NOT_STARTED',
     'Cut-list roll coordinates alone must NOT construct a 2D quilt top.');
