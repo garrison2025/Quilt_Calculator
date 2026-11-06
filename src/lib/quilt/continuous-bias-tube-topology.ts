@@ -29,6 +29,7 @@ export type TubeSeamLink = {
   rightMarkDistanceIn:number;
   leftMarkDistanceIn:number;
   offsetDistanceIn:number;
+  /** Position of a MARKED CUT-LINE intersection on the sewing line, not a band midpoint. */
   alignment:'ON_SEAM_LINE_NOT_RAW_EDGE';
 };
 export type TubeChain = {
@@ -84,7 +85,7 @@ export function calculateBiasTubeTopology(data:TubeTopologyInput):TubeTopology{
   for(let i=1;i<=N;i++){
    seamLinks.push({
     fromBand:i,toBand:i,
-    rightMarkDistanceIn:(i-.5)*W,leftMarkDistanceIn:(i-.5)*W,
+    rightMarkDistanceIn:i*W,leftMarkDistanceIn:i*W,
     offsetDistanceIn:0,alignment:'ON_SEAM_LINE_NOT_RAW_EDGE'
    });
    chains.push({kind:'closed-ring',bandOrder:[i]});
@@ -93,8 +94,8 @@ export function calculateBiasTubeTopology(data:TubeTopologyInput):TubeTopology{
   for(let i=1;i<=N-k;i++){
    seamLinks.push({
     fromBand:i,toBand:i+k,
-    rightMarkDistanceIn:(i-.5)*W,
-    leftMarkDistanceIn:(i+k-.5)*W,
+    rightMarkDistanceIn:i*W,
+    leftMarkDistanceIn:(i+k)*W,
     offsetDistanceIn:seamOffsetIn,alignment:'ON_SEAM_LINE_NOT_RAW_EDGE'
    });
   }
@@ -145,8 +146,8 @@ export function verifyBiasTubeTopology(result:TubeTopology):boolean{
      !Number.isInteger(link.fromBand)||!Number.isInteger(link.toBand)||
      link.fromBand<1||link.fromBand>N||link.toBand<1||link.toBand>N||
      link.toBand-link.fromBand!==k||
-     !close(link.rightMarkDistanceIn,(link.fromBand-.5)*W)||
-     !close(link.leftMarkDistanceIn,(link.toBand-.5)*W)||
+     !close(link.rightMarkDistanceIn,link.fromBand*W)||
+     !close(link.leftMarkDistanceIn,link.toBand*W)||
      !close(link.offsetDistanceIn,k*W))return false;
   const key=link.fromBand+':'+link.toBand;
   if(seenLinks.has(key))return false;
