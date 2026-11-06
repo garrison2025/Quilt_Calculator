@@ -1,5 +1,11 @@
 # Quilt Studio — verified release status
 
+## Current governing decision: SOFTWARE ACCEPTANCE PASS (2026-11-06)
+
+**ACCEPTED for the nine approved calculators and browser-only planner software at the noindex preview stage.** The owner explicitly accepted successful software engineering validation as this milestone's completion standard, with no prerequisite for real 2×2 fabric cutting, sewing or physical paper calibration. Those experiments remain `MANUAL_NOT_RUN`, not `PASS`, but they are **out of scope for accepted software completion**. No purchased domain, Google indexing, production ads, real SEO rankings or independent physical certification is implied.
+
+[Decision, 271 passed automated test cases, PR-branch and deployed-main evidence, and outstanding nonsoftware gates](qa/SOFTWARE_ACCEPTANCE_DECISION_20261106.md). The following dated 2026-11-05 text is retained as an historical engineering log and is superseded wherever it still refers to physical signoff as a blocker to accepting the software.
+
 Updated: 2026-11-05. **Final scoped status: preview software engineering accepted; actual physical testing and public-production signoff still open.** The 47 original gates are not all closed; historical items below remain a chronological engineering changelog.
 
 ## Final engineering acceptance / scope freeze
