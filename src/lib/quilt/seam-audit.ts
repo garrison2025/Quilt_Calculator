@@ -27,6 +27,12 @@ export type UserJoinedSeamReading={
  kind:JoinedMaterialKind;
  /** Measured after sewing all joins, BEFORE trimming either end/side. */
  measuredPretrimJoinedLengthIn?:number;
+ /** The observed line of backing seam joins, not the orientation of the cut bolt. */
+ observedBackingJoinDirection?:'vertical'|'horizontal';
+ /** Individually user-measured NET length lost at each join. This is NOT
+  * automatically twice a seam allowance: diagonal binding joins can differ.
+  * Each index is join #1, #2 etc in physical assembly order. */
+ perJoinObservedLossesIn?:Array<number|undefined>;
 };
 export type JoinedSeamObservation=PlannedSeamCheck & {
  measuredPretrimJoinedLengthIn?:number;
@@ -34,12 +40,24 @@ export type JoinedSeamObservation=PlannedSeamCheck & {
  observedTotalJoinLossIn?:number;
  observedLossExceedsModel?:boolean;
  assembledSpanShortfall?:boolean;
+ observedBackingJoinDirection?:'vertical'|'horizontal';
+ backingDirectionMismatch?:boolean;
+ perJoinObservedLossesIn?:Array<number|undefined>;
+ perJoinMeasuredCount:number;
+ perJoinCoverage:'NO_JOINS'|'NOT_MEASURED'|'PARTIAL_USER_REPORTED'|'ALL_USER_REPORTED';
+ perJoinTotalLossIn?:number;
+ predictedJoinedSpanFromPerJoinIn?:number;
+ perJoinLossExceedsModel?:boolean;
+ perJoinVsAssembledSpanDifferenceIn?:number;
+ perJoinVsAssembledSpanMismatch?:boolean;
  measurementState:'NOT_MEASURED'|'USER_REPORTED_WITHIN_ASSUMPTION'|'USER_REPORTED_EXCESS_LOSS_OR_SHORTFALL';
 };
 export type JoinedSeamEvaluation={
  observations:JoinedSeamObservation[];
  missing:string[];
  anyExcessOrShortfall:boolean;
+ anyBackingDirectionMismatch:boolean;
+ anyJoinReconciliationMismatch:boolean;
  verificationCoverage:'NOT_IMPORTED'|'NOT_MEASURED'|'PARTIAL_USER_REPORTED'|'ALL_USER_REPORTED';
 };
 const MAX_BYTES=2_000_000;
@@ -135,13 +153,26 @@ export function readJoinedSeamPlan(project:ImportedFabricAudit,json:string):Join
  ];
  return {sourceProjectHash:project.sourceProjectHash,calculationVersion:String(root.calculationVersion??'unknown'),checks};
 }
+/**
+ * Evaluate actual physical seam observations. The overall pretrim joined span
+ * and per-join net losses are INDEPENDENT USER INPUTS; neither is filled from
+ * the model. They can disagree, which is a valuable error signal.
+ *
+ * A complete per-join log predicts span = n × measured postwash WOF − Σ join
+ * take-up. This does not measure individual fabric pieces or validate stitch
+ * technique. The selected tolerance is for the entire assembly, not per seam.
+ */
 export function evaluateJoinedSeams(
  plan:JoinedSeamPlan|undefined,
  readings:readonly ManualRollReading[],
  entered:readonly UserJoinedSeamReading[],
  allowanceIn:number|undefined
 ):JoinedSeamEvaluation{
- if(!plan)return {observations:[],missing:[],anyExcessOrShortfall:false,verificationCoverage:'NOT_IMPORTED'};
+ if(!plan)return {
+  observations:[],missing:[],anyExcessOrShortfall:false,
+  anyBackingDirectionMismatch:false,anyJoinReconciliationMismatch:false,
+  verificationCoverage:'NOT_IMPORTED'
+ };
  const missing:string[]=[];
  const map=new Map<JoinedMaterialKind,UserJoinedSeamReading>();
  for(const r of entered){
@@ -151,37 +182,94 @@ export function evaluateJoinedSeams(
  }
  const actualRolls=new Map(readings.map(r=>[r.id,r]));
  let anyReported=0,expectedReports=0,anyExcessOrShortfall=false;
+ let anyBackingDirectionMismatch=false,anyJoinReconciliationMismatch=false;
  const observations=plan.checks.map(spec=>{
-  const observation:JoinedSeamObservation={...spec,measurementState:'NOT_MEASURED'};
+  const observation:JoinedSeamObservation={
+   ...spec,measurementState:'NOT_MEASURED',
+   perJoinCoverage:spec.joinCount===0?'NO_JOINS':'NOT_MEASURED',
+   perJoinMeasuredCount:0
+  };
   if(spec.joinCount===0)return observation;
   expectedReports++;
   const current=map.get(spec.kind);
+  if(spec.kind==='backing'&&current?.observedBackingJoinDirection!==undefined){
+   const direction=current.observedBackingJoinDirection;
+   if(direction!=='vertical'&&direction!=='horizontal')
+    missing.push('Valid observed backing seam direction');
+   else{
+    observation.observedBackingJoinDirection=direction;
+    observation.backingDirectionMismatch=direction!==spec.direction;
+    if(observation.backingDirectionMismatch)anyBackingDirectionMismatch=true;
+   }
+  }else if(spec.kind==='binding'&&current?.observedBackingJoinDirection!==undefined){
+   missing.push('Binding does not support a backing panel direction');
+  }
   const joined=current?.measuredPretrimJoinedLengthIn;
+  const entries=current?.perJoinObservedLossesIn;
+  const hasPerJoin=entries!==undefined;
+  if(hasPerJoin&&(!Array.isArray(entries)||entries.length!==spec.joinCount))
+   missing.push('Individual '+spec.kind+' seam count does not match the current project plan.');
+  const validEntries=hasPerJoin&&Array.isArray(entries)&&entries.length===spec.joinCount;
+  const values=validEntries?entries:undefined;
+  const nMeasured=values?.filter(v=>v!==undefined).length??0;
+  observation.perJoinMeasuredCount=nMeasured;
+  if(values)observation.perJoinObservedLossesIn=[...values];
+  if(nMeasured>0)
+   observation.perJoinCoverage=nMeasured===spec.joinCount?'ALL_USER_REPORTED':'PARTIAL_USER_REPORTED';
+  const wof=actualRolls.get(spec.rollId)?.actualUsableWofIn;
+  const needsWof=joined!==undefined||nMeasured>0;
+  const validWof=typeof wof==='number'&&Number.isFinite(wof)&&wof>0&&wof<=100000;
+  if(needsWof&&!validWof)
+   missing.push('Valid measured postwash usable WOF for '+spec.rollId+' before evaluating joins');
+  const validTolerance=allowanceIn!==undefined&&Number.isFinite(allowanceIn)&&allowanceIn>=0&&allowanceIn<=1;
+  if(needsWof&&!validTolerance)
+   missing.push('Declared joined-length deviation allowance, 0 to 1 inch');
+  if(values){
+   for(let i=0;i<values.length;i++){
+    const v=values[i];
+    if(v===undefined)continue;
+    if(typeof v!=='number'||!Number.isFinite(v)||v<0||v>100000||
+      (validWof&&v>=wof!))
+     missing.push('Invalid net length loss for '+spec.kind+' join #'+(i+1));
+   }
+   if(nMeasured===spec.joinCount&&validWof&&validTolerance&&
+     values.every(v=>typeof v==='number'&&Number.isFinite(v)&&v>=0&&v<wof!)){
+    const sum=values.reduce<number>((a,b)=>a+(b??0),0);
+    observation.perJoinTotalLossIn=sum;
+    observation.predictedJoinedSpanFromPerJoinIn=spec.sectionCount*wof!-sum;
+    observation.perJoinLossExceedsModel=sum>spec.modeledTotalJoinLossIn+allowanceIn!+1e-8;
+    if(observation.perJoinLossExceedsModel)anyExcessOrShortfall=true;
+   }
+  }
   if(joined===undefined)return observation;
   if(typeof joined!=='number'||!Number.isFinite(joined)||joined<=0||joined>100000){
    missing.push('Valid physical assembled '+spec.kind+' length before trimming');return observation;
   }
-  const wof=actualRolls.get(spec.rollId)?.actualUsableWofIn;
-  if(typeof wof!=='number'||!Number.isFinite(wof)||wof<=0||wof>100000){
-   missing.push('Valid measured postwash usable WOF for '+spec.rollId+' before evaluating joins');
-   return observation;
-  }
-  if(allowanceIn===undefined||!Number.isFinite(allowanceIn)||allowanceIn<0||allowanceIn>1){
-   missing.push('Declared joined-length deviation allowance, 0 to 1 inch');
-   return observation;
-  }
+  if(!validWof||!validTolerance)return observation;
   observation.measuredPretrimJoinedLengthIn=joined;
   observation.actualFullWidthIn=wof;
-  observation.observedTotalJoinLossIn=spec.sectionCount*wof-joined;
-  observation.observedLossExceedsModel=observation.observedTotalJoinLossIn>spec.modeledTotalJoinLossIn+allowanceIn+1e-8;
+  observation.observedTotalJoinLossIn=spec.sectionCount*wof!-joined;
+  observation.observedLossExceedsModel=observation.observedTotalJoinLossIn>spec.modeledTotalJoinLossIn+allowanceIn!+1e-8;
   observation.assembledSpanShortfall=joined+1e-8<spec.requiredMinimumLengthIn;
-  const issue=observation.observedLossExceedsModel||observation.assembledSpanShortfall;
+  if(observation.predictedJoinedSpanFromPerJoinIn!==undefined){
+   observation.perJoinVsAssembledSpanDifferenceIn=
+    joined-observation.predictedJoinedSpanFromPerJoinIn;
+   observation.perJoinVsAssembledSpanMismatch=
+    Math.abs(observation.perJoinVsAssembledSpanDifferenceIn)>allowanceIn!+1e-8;
+   if(observation.perJoinVsAssembledSpanMismatch)anyJoinReconciliationMismatch=true;
+  }
+  const issue=observation.observedLossExceedsModel||observation.assembledSpanShortfall||
+   observation.perJoinLossExceedsModel===true;
   if(issue)anyExcessOrShortfall=true;
   observation.measurementState=issue?'USER_REPORTED_EXCESS_LOSS_OR_SHORTFALL':'USER_REPORTED_WITHIN_ASSUMPTION';
   anyReported++;
   return observation;
  });
- if(!expectedReports)return {observations,missing,anyExcessOrShortfall,verificationCoverage:'ALL_USER_REPORTED'};
- return {observations,missing,anyExcessOrShortfall,
-  verificationCoverage:anyReported===0?'NOT_MEASURED':anyReported===expectedReports?'ALL_USER_REPORTED':'PARTIAL_USER_REPORTED'};
+ return {
+  observations,missing,anyExcessOrShortfall,
+  anyBackingDirectionMismatch,anyJoinReconciliationMismatch,
+  verificationCoverage:expectedReports===0?'ALL_USER_REPORTED':
+   anyReported===0?'NOT_MEASURED':
+   anyReported===expectedReports?'ALL_USER_REPORTED':'PARTIAL_USER_REPORTED'
+ };
 }
