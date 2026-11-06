@@ -105,6 +105,10 @@ export function evaluateTopChain(project:ImportedFabricAudit,entered:UserTopChai
  const refs=new Set<string>();
  let allCuts=true,allJoins=true;
  let cutSum=0,seamLoss=0;
+ // Accumulate only individually entered valid seam losses. This separate
+ // per-piece check is required even when the remaining joins are unmeasured:
+ // total chain length can stay positive while one cut has been consumed.
+ const knownTakeupByPiece=Array<number>(n).fill(0);
  for(const [i,piece] of entered.pieces.entries()){
   const id=piece?.rollId,number=piece?.pieceNumber;
   if(typeof id!=='string'||!id.startsWith('fabric:')||
@@ -148,9 +152,15 @@ export function evaluateTopChain(project:ImportedFabricAudit,entered:UserTopChai
     }
     root.recordedJoinEdgeCount++;
     seamLoss+=value;
+    knownTakeupByPiece[i+side]+=value;
    }
   }
  }else allJoins=false;
+ for(const [i,piece] of entered.pieces.entries()){
+  const span=piece?.observedCutSpanIn;
+  if(span!==undefined&&finite(span)&&span>0&&knownTakeupByPiece[i]>=span-1e-8)
+   root.invalid.push('Known measured seam-edge take-up consumes the entire physical span of quilt-TOP chain piece #'+(i+1)+'.');
+ }
  if(allCuts)root.measuredCutSpanSumIn=cutSum;
  if(allJoins)root.summedNetSeamTakeupIn=seamLoss;
  root.measuredJoinedSpanIn=entered.observedJoinedSpanIn;
@@ -158,7 +168,9 @@ export function evaluateTopChain(project:ImportedFabricAudit,entered:UserTopChai
  root.coverage=complete?'ALL_USER_REPORTED':'PARTIAL_USER_REPORTED';
  if(root.cutSizeDeviationCount)
   root.warnings.push(root.cutSizeDeviationCount+' user-measured cut span(s) exceed the separate physical cut tolerance ('+cutPieceToleranceIn+' in), not the assembled-chain tolerance.');
- if(allCuts&&allJoins){
+ // An impossible single-cut edge take-up invalidates the construction math;
+ // a positive whole-chain sum must never produce a reassuring prediction.
+ if(allCuts&&allJoins&&root.invalid.length===0){
   const predicted=cutSum-seamLoss;
   if(predicted<=0){
    root.invalid.push('Measured seam edge take-up consumes the entire physical chain; check each entry.');

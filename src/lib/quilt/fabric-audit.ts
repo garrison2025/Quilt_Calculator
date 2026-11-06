@@ -203,6 +203,7 @@ export type FabricAuditStatus=
  'USER_REPORTED_TOP_CHAIN_MEASUREMENTS_DISAGREE'|
  'USER_REPORTED_TOP_CHAIN_CENTER_SIZE_DEVIATION'|
  'USER_REPORTED_TOP_CHAIN_CUT_SIZE_DEVIATION'|
+ 'USER_REPORTED_OPTIONAL_TOP_QA_PARTIAL'|
  'USER_REPORTED_TOP_GRID_SOURCE_COVERAGE_MISMATCH'|
  'USER_REPORTED_TOP_GRID_SHAPE_MISMATCH'|
  'USER_REPORTED_TOP_GRID_RULER_MISMATCH'|
@@ -354,6 +355,18 @@ export function assessFabricAudit(input:ManualFabricAuditInput):FabricAuditAsses
  if(checks.some(c=>c.observedShrinkageExceedsPlan))return {
   ...seamDetails,status:'USER_REPORTED_SHRINKAGE_EXCEEDS_PLAN',canExport:true,checks,missing,
   message:'The user-measured prewash/postwash length decrease exceeds the shrinkage percentage assumed by the shopping estimate. Recheck the source roll and purchasing buffer; enough actual postwash material may still remain. This is NOT a physical approval.'};
+ // A reviewer who started an optional construction audit has not established
+ // that its real seams or ruler data fit limits until ALL readings exist.
+ // Do not call that audit "WITHIN_DECLARED_LIMITS" on a missing seam edge.
+ if(topChain.coverage==='PARTIAL_USER_REPORTED'||topGrid.coverage==='PARTIAL_USER_REPORTED'){
+  const partialNames=[
+   ...(topChain.coverage==='PARTIAL_USER_REPORTED'?['straight-seam chain']:[]),
+   ...(topGrid.coverage==='PARTIAL_USER_REPORTED'?['rectangular quilt-TOP grid']:[])
+  ];
+  return {...seamDetails,status:'USER_REPORTED_OPTIONAL_TOP_QA_PARTIAL',canExport:true,checks,missing,
+   message:'PARTIAL USER-REPORTED TOP CONSTRUCTION CHECK: '+partialNames.join(' and ')+
+    ' has been started but not fully measured. Cut-piece dimensions, all actual internal seam edges and independently measured sewn span are required. Other separately entered roll data may fit their own limits, but NO verdict on the incomplete top construction is available. This negative/incomplete record may be exported for human follow-up; it is NOT physical approval.'};
+ }
  const unmeasured=checks.filter(c=>c.measuredPrewashRunIn===undefined).length;
  const perJoinIncomplete=seams.observations.filter(o=>o.joinCount>0&&o.perJoinCoverage!=='ALL_USER_REPORTED').length;
  const backingUnconfirmed=seams.observations.some(o=>o.kind==='backing'&&o.joinCount>0&&!o.observedBackingJoinDirection);

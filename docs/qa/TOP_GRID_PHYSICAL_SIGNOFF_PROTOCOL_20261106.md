@@ -18,6 +18,14 @@ Use the optional [blank 2×2 measurement sheet](/qa/2x2-measurement-sheet/) on t
 
 Complete the physical sheet with actual fabric and preserve a scanned copy or signed paper locally. Then enter the same readings into [the browser-only noncertifying QA tool](/qa/fabric-cutting/). A submitted user-report JSON cannot replace independent physical review. Until actual measurements and an independent reviewer exist, retain `MANUAL_NOT_RUN`.
 
+## Incomplete real measurement handling and individual-cut safety
+
+**Started is not passed.** When the optional single-chain or rectangular-grid physical QA has been opened and some required measurements are blank, the local audit status is `USER_REPORTED_OPTIONAL_TOP_QA_PARTIAL` (unless a more specific measured error takes precedence). An optional QA never started still remains `NOT_STARTED`; neither outcome implies independently verified cutting or construction. Incomplete but otherwise valid entries may be exported as **partial negative/inconclusive evidence**, not as a passing quilt-top check.
+
+**No physical piece may have a zero or negative remaining span.** In a quilt-top single-chain, compare each actual cut span against the sum of all **already measured net take-up edges belonging to that one cut**. If the known losses at its leading/trailing edges consume its entire real span, stop and correct the measurement—even if the overall sewn chain would mathematically remain positive or the adjacent seam's other loss value is still blank. Missing seam losses are never treated as measured zero. This supplements the 2D grid's identical per-cell fail-closed check.
+
+Software testing of these safeguards uses **synthetic fixture numbers** and cannot constitute a real fabric ruler test or human sign-off.
+
 ## 2. Preserve source and physical measurements
 
 Collect all three exports from one reviewed Project Planner snapshot: cut-list CSV, shopping CSV and the optional matching cutting-plan JSON. Preserve copies of the exact source files. The eight-character project fingerprint is only a consistency tag, **not** an authentication mechanism.
