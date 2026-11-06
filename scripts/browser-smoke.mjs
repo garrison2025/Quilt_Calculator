@@ -934,6 +934,9 @@ try{
   await gridArea.locator(':scope > summary').click();
   check(await gridStatus.getAttribute('data-top-grid-coverage')==='NOT_STARTED',
     'Cut-list roll coordinates alone must NOT construct a 2D quilt top.');
+  // The grid tolerance is required before exporting partial evidence;
+  // leaving it blank correctly yields INCOMPLETE_USER_MEASUREMENTS.
+  await auditPage.locator('[data-top-grid-tolerance]').fill('0.0625');
   await auditPage.locator('[data-top-grid-create]').click();
   const gridCells=auditPage.locator('[data-top-grid-cell]');
   check(await gridCells.count()===4 &&
