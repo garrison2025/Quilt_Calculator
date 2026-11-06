@@ -87,7 +87,7 @@ describe('sewn backing/binding checks require exactly the matching project-calcu
   expect(assessFabricAudit(input).seamVerificationCoverage).toBe('PARTIAL_USER_REPORTED');
   const evidence=fabricAuditEvidence(input,'2026-11-06T11:00:00Z');
   expect(evidence).toMatchObject({
-   schemaVersion:2,cuttingPlanJsonMatchedByFingerprint:true,
+   schemaVersion:3,cuttingPlanJsonMatchedByFingerprint:true,
    seamVerificationCoverage:'PARTIAL_USER_REPORTED',
    sourceSnapshotIsCryptographicallyAuthenticated:false,
    independentPhysicalVerification:false,quiltCuttingApproval:false
@@ -119,6 +119,105 @@ describe('sewn backing/binding checks require exactly the matching project-calcu
   bindingMeasure.measuredPretrimJoinedLengthIn=binding.effectiveJoinedLengthIn;
   input.allowedSeamDeviationIn=2;
   expect(assessFabricAudit(input).canExport).toBe(false);
+ });
+ it('checks individual backing seam direction and preserves a mismatching direction as negative evidence',()=>{
+  const input=setup();
+  input.allowedSeamDeviationIn=1/16;
+  input.joinedSeamReadings=[
+   {kind:'backing',measuredPretrimJoinedLengthIn:backing.finishedJoinedSpanIn,
+    observedBackingJoinDirection:backing.direction==='vertical'?'horizontal':'vertical'}
+  ];
+  const result=assessFabricAudit(input);
+  expect(result.status).toBe('USER_REPORTED_SEAM_DIRECTION_MISMATCH');
+  expect(result.canExport).toBe(true);
+  const b=result.seamChecks.find(c=>c.kind==='backing')!;
+  expect(b.backingDirectionMismatch).toBe(true);
+  expect(b.perJoinCoverage).toBe('NOT_MEASURED');
+  expect(fabricAuditEvidence(input,'2026-11-06T11:45:00Z').quiltCuttingApproval).toBe(false);
+  input.joinedSeamReadings[0].observedBackingJoinDirection=backing.direction;
+  expect(assessFabricAudit(input).status).toBe('USER_REPORTED_WITHIN_DECLARED_LIMITS');
+  expect(assessFabricAudit(input).message).toContain('individual seam take-up logs');
+ });
+ it('reconciles measured individual take-up with independent assembled span across all joins',()=>{
+  const input=setup();
+  input.allowedSeamDeviationIn=1/16;
+  input.joinedSeamReadings=[
+   {kind:'backing',measuredPretrimJoinedLengthIn:backing.finishedJoinedSpanIn,
+    observedBackingJoinDirection:backing.direction,
+    perJoinObservedLossesIn:Array(backing.panelCount-1).fill(1)},
+   {kind:'binding',measuredPretrimJoinedLengthIn:binding.effectiveJoinedLengthIn,
+    perJoinObservedLossesIn:Array(binding.stripCount-1).fill(2.5)}
+  ];
+  const result=assessFabricAudit(input);
+  expect(result.status).toBe('USER_REPORTED_WITHIN_DECLARED_LIMITS');
+  expect(result.seamVerificationCoverage).toBe('ALL_USER_REPORTED');
+  for(const check of result.seamChecks){
+   expect(check.perJoinCoverage).toBe('ALL_USER_REPORTED');
+   expect(check.perJoinMeasuredCount).toBe(check.joinCount);
+   expect(check.perJoinLossExceedsModel).toBe(false);
+   expect(check.predictedJoinedSpanFromPerJoinIn).toBeCloseTo(check.measuredPretrimJoinedLengthIn!);
+   expect(check.perJoinVsAssembledSpanMismatch).toBe(false);
+  }
+  const evidence=fabricAuditEvidence(input,'2026-11-06T12:00:00Z');
+  expect(evidence.schemaVersion).toBe(3);
+  expect(evidence.seamChecks[1].perJoinObservedLossesIn).toHaveLength(binding.stripCount-1);
+  expect(evidence.sourceSnapshotIsCryptographicallyAuthenticated).toBe(false);
+  expect(evidence.independentPhysicalVerification).toBe(false);
+ });
+ it('detects a separate cumulative-vs-overall ruler discrepancy even when total assembly still fits',()=>{
+  const input=setup();
+  input.allowedSeamDeviationIn=.0625;
+  input.joinedSeamReadings=[
+   {kind:'backing',observedBackingJoinDirection:backing.direction,
+    measuredPretrimJoinedLengthIn:backing.finishedJoinedSpanIn,
+    perJoinObservedLossesIn:[1.125]}
+  ];
+  const result=assessFabricAudit(input);
+  expect(result.status).toBe('USER_REPORTED_SEAM_MEASUREMENTS_DISAGREE');
+  expect(result.canExport).toBe(true);
+  expect(result.seamChecks[0].perJoinVsAssembledSpanMismatch).toBe(true);
+  expect(result.seamChecks[0].perJoinVsAssembledSpanDifferenceIn).toBeCloseTo(.125);
+  expect(result.seamChecks[0].assembledSpanShortfall).toBe(false);
+  expect(fabricAuditEvidence(input,'2026-11-06T12:00:00Z').selfReportedStatus)
+   .toBe('USER_REPORTED_SEAM_MEASUREMENTS_DISAGREE');
+ });
+ it('records missing/partial joints without manufacturing totals, and validates bad inputs',()=>{
+  const input=setup();
+  input.allowedSeamDeviationIn=.0625;
+  input.joinedSeamReadings=[{
+   kind:'binding',measuredPretrimJoinedLengthIn:binding.effectiveJoinedLengthIn,
+   perJoinObservedLossesIn:[2.5,...Array(binding.stripCount-2).fill(undefined)]
+  }];
+  let result=assessFabricAudit(input);
+  expect(result.status).toBe('USER_REPORTED_WITHIN_DECLARED_LIMITS');
+  expect(result.seamChecks[1].perJoinMeasuredCount).toBe(1);
+  expect(result.seamChecks[1].perJoinCoverage).toBe('PARTIAL_USER_REPORTED');
+  expect(result.seamChecks[1].perJoinTotalLossIn).toBeUndefined();
+  input.joinedSeamReadings[0].perJoinObservedLossesIn=[2.5];
+  expect(assessFabricAudit(input).canExport).toBe(false);
+  input.joinedSeamReadings[0].perJoinObservedLossesIn=Array(binding.stripCount-1).fill(2.5);
+  input.joinedSeamReadings[0].perJoinObservedLossesIn![1]=-0.01;
+  expect(assessFabricAudit(input).status).toBe('INCOMPLETE_USER_MEASUREMENTS');
+  input.joinedSeamReadings[0].perJoinObservedLossesIn![1]=2.5;
+  expect(assessFabricAudit(input).status).toBe('USER_REPORTED_WITHIN_DECLARED_LIMITS');
+  input.joinedSeamReadings[0].perJoinObservedLossesIn![1]=Infinity;
+  expect(assessFabricAudit(input).canExport).toBe(false);
+  input.joinedSeamReadings[0].perJoinObservedLossesIn![1]=0;
+  expect(assessFabricAudit(input).canExport).toBe(true);
+ });
+ it('flags excessive sum of individual join losses even without measured full joined length',()=>{
+  const input=setup();
+  input.allowedSeamDeviationIn=.0625;
+  input.joinedSeamReadings=[{
+   kind:'backing',observedBackingJoinDirection:backing.direction,
+   perJoinObservedLossesIn:[1.25]
+  }];
+  const result=assessFabricAudit(input);
+  expect(result.status).toBe('USER_REPORTED_SEAM_LOSS_EXCEEDS_PLAN');
+  expect(result.seamVerificationCoverage).toBe('NOT_MEASURED');
+  expect(result.seamChecks[0].perJoinLossExceedsModel).toBe(true);
+  expect(result.seamChecks[0].measurementState).toBe('NOT_MEASURED');
+  expect(result.seamChecks[0].perJoinCoverage).toBe('ALL_USER_REPORTED');
  });
  it('the absence of cutting-plan JSON never implies that sewing was physically verified',()=>{
   const input=setup();
