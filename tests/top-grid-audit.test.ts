@@ -9,8 +9,8 @@ import {
 import {evaluateTopGrid,type UserTopGrid} from '../src/lib/quilt/top-grid-audit';
 
 const tag='deaf2140';
-function project():ImportedFabricAudit{
- const layout=layoutRectangles(43,[{widthIn:5,heightIn:5,count:9,label:'Real test squares'}]);
+function project(pieceCount=9):ImportedFabricAudit{
+ const layout=layoutRectangles(43,[{widthIn:5,heightIn:5,count:pieceCount,label:'Real test squares'}]);
  const p=importFabricAudit(
   cutListCsv([{material:'Quilt TOP',sku:'fabric:blue',layout}],tag),
   shoppingCsv([{rollId:'fabric:blue',label:'Top blue',hint:'9 squares',rawYards:15/36,amount:.5}],tag)
@@ -128,14 +128,46 @@ describe('manual rectangular grid from actual quilt-TOP numbered cuts',()=>{
   expect(r.independentWidthDifferenceIn).toBeCloseTo(.25);
   expect(assessFabricAudit(audit(g)).status).toBe('USER_REPORTED_TOP_GRID_RULER_MISMATCH');
  });
- it('compares to planned center only on explicit full-center claim; never equates borders with center',()=>{
-  const g=grid();const p=project();p.seamPlan!.finishing.plannedCenterWidthIn=10;
+ it('rejects a partial sample falsely claimed as complete center, preserving a negative evidence record',()=>{
+  const g=grid();const p=project();
+  expect(evaluateTopGrid(p,g).actualCenterWidthDifferenceIn).toBeUndefined();
+  g.spansEntireCenter=true;
+  const r=evaluateTopGrid(p,g);
+  expect(r.coverage).toBe('ALL_USER_REPORTED');
+  expect(r.sourceTopCutCount).toBe(9);
+  expect(r.mappedSourceTopCutCount).toBe(4);
+  expect(r.unmappedSourceTopCutCount).toBe(5);
+  expect(r.fullCenterSourceCoverageMismatch).toBe(true);
+  expect(r.actualCenterWidthDifferenceIn).toBeUndefined();
+  expect(r.centerSizeMismatch).toBeUndefined();
+  expect(r.warnings.join(' ')).toContain('SUPPRESSED');
+  const input=audit(g,p);
+  const result=assessFabricAudit(input);
+  expect(result.status).toBe('USER_REPORTED_TOP_GRID_SOURCE_COVERAGE_MISMATCH');
+  expect(result.canExport).toBe(true);
+  const evidence=fabricAuditEvidence(input,'2026-11-06T13:35:00Z');
+  expect(evidence.selfReportedStatus).toBe('USER_REPORTED_TOP_GRID_SOURCE_COVERAGE_MISMATCH');
+  expect(evidence.topGridCheck.unmappedSourceTopCutCount).toBe(5);
+  expect(evidence.quiltCuttingApproval).toBe(false);
+  expect(evidence.independentPhysicalVerification).toBe(false);
+ });
+ it('compares to planned CENTER only when reviewer claims whole center AND all source patch IDs are present',()=>{
+  const g=grid();const p=project(4);p.seamPlan!.finishing.plannedCenterWidthIn=10;
   let r=evaluateTopGrid(p,g);
+  expect(r.sourceTopCutCount).toBe(4);
+  expect(r.mappedSourceTopCutCount).toBe(4);
   expect(r.actualCenterWidthDifferenceIn).toBeUndefined();
   g.spansEntireCenter=true;r=evaluateTopGrid(p,g);
+  expect(r.fullCenterSourceCoverageMismatch).toBeUndefined();
   expect(r.centerSizeMismatch).toBe(true);
   expect(r.actualCenterWidthDifferenceIn).toBe(-.5);
   expect(assessFabricAudit(audit(g,p)).status).toBe('USER_REPORTED_TOP_GRID_CENTER_SIZE_DEVIATION');
+  p.seamPlan!.finishing.plannedCenterWidthIn=9.5;
+  r=evaluateTopGrid(p,g);
+  expect(r.centerSizeMismatch).toBe(false);
+  expect(assessFabricAudit(audit(g,p)).status).toBe('USER_REPORTED_WITHIN_DECLARED_LIMITS');
+  // Even this source-ID and ruler match never asserts observed sewing topology.
+  expect(fabricAuditEvidence(audit(g,p),'2026-11-06T13:36:00Z').quiltCuttingApproval).toBe(false);
  });
  it('flags sampled individual cut width or height inconsistent with original physical CSV',()=>{
   const g=grid();
