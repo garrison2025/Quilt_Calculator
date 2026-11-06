@@ -160,7 +160,7 @@ export function initIndividualBiasGeometryLab():void{
     ['Source offcut area',fmt(computed.offcutAreaSqIn)+' in²']
    ]);
    const feasibility=node('p',enough?'footer-note':'warning-banner');
-   feasibility.dataset.bias-geometry-target='';
+   feasibility.dataset.biasGeometryTarget='';
    feasibility.textContent=enough
     ?'GEOMETRY TARGET MET: This square supplies at least '+fmt(requiredJoinedLengthIn)+
      ' inches under the particular centered-strip CROSSWISE-join model, NOT a certified sewn-fabric yield.'
@@ -168,7 +168,7 @@ export function initIndividualBiasGeometryLab():void{
      ' inches after the explicitly assumed crosswise joins. Do not infer sufficiency from the smaller area-only square.';
    output.appendChild(feasibility);
    const suggestion=node('p','footer-note');
-   suggestion.dataset.bias-geometry-minimum='';
+   suggestion.dataset.biasGeometryMinimum='';
    suggestion.textContent=searched.matched
     ?'For this exact centered-band, ⅛-inch-grid, crosswise-join method, the FIRST source square meeting '+fmt(requiredJoinedLengthIn)+
      ' inches is '+fmt(searched.matched.sourceSquareSideIn)+
