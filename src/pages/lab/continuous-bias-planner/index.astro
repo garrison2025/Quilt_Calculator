@@ -1,0 +1,81 @@
+---
+import Base from '../../../layouts/Base.astro';
+---
+<Base noIndex
+ title="Continuous Bias Binding Planning Lab — Mathematical Scenario Only | Quilt Studio"
+ description="Noindex continuous bias binding research planner: inverse square sizing, width fit, modeled full bands, seam losses and hypothetical rounded roll lengths. Not verified for fabric buying.">
+<div class="page-shell bias-plan-page" data-bias-plan>
+ <div class="page-intro page-intro--tool">
+  <div class="page-heading">
+   <span class="eyebrow-with-line">— QUILT BINDING / EXPERIMENTAL PLANNING</span>
+   <h1>Continuous Bias Binding Planning Lab</h1>
+   <p>Start with a finished quilt size. This experimental tool reverses the two-seam geometry to find the smallest <strong>⅛-inch grid square in the numerical model</strong> that reaches the binding length target — then checks your usable fabric width and shows the assumptions behind the result.</p>
+   <div class="feature-pills"><span>✓ Reverse square-size search</span><span>✓ Two-seam 2D audit</span><span>✓ Width and margin scenarios</span></div>
+   <p><a href="/quilt-binding-calculator/">Verified straight-grain Binding calculator</a> · <a href="/lab/continuous-bias-tube/">Inspect tube seam geometry and unfolded spiral</a></p>
+  </div>
+ </div>
+ <div class="warning-banner bias-plan-warning" role="note">
+  <strong>NUMERICAL SCENARIO ONLY · NOT SAFE TO BUY FROM.</strong> The displayed square, binding length, bolt run, rounded yards and possible cost are mathematical planning outputs, <strong>not a verified fabric-yield or purchasing recommendation</strong>. Real bias stretch, press/rolling effects, seam accuracy, cutting tolerance and terminal trim must be tested on sewn specimens. A chosen extra percentage is not a certified safety factor. This research page is <strong>noindex</strong>.
+ </div>
+ <div class="workspace bias-plan-workspace">
+  <form class="input-card bias-plan-form" data-bias-plan-form novalidate>
+   <div class="card-heading">
+    <span class="eyebrow-with-dot">● STEP 01 / INPUT</span>
+    <h2>Finished quilt &amp; fabric</h2>
+    <p>Enter the finished outside quilt dimensions, not the backing or cut-piece dimensions. All numeric measurements are in inches unless noted.</p>
+   </div>
+   <fieldset class="bias-plan-fieldset">
+    <legend>Quilt edge and length target</legend>
+    <div class="bias-plan-fields">
+     <div class="field-wrap"><label for="bias-plan-quilt-width">Finished quilt width (in)</label><input id="bias-plan-quilt-width" class="field-control" data-bias-plan-input="quiltWidthIn" inputmode="decimal" value="60"/><small class="hint">Outer quilt width; 1–180 inches.</small></div>
+     <div class="field-wrap"><label for="bias-plan-quilt-height">Finished quilt height (in)</label><input id="bias-plan-quilt-height" class="field-control" data-bias-plan-input="quiltHeightIn" inputmode="decimal" value="80"/><small class="hint">Outer quilt height; 1–180 inches.</small></div>
+     <div class="field-wrap"><label for="bias-plan-tail">Total additional tail / joining length (in)</label><input id="bias-plan-tail" class="field-control" data-bias-plan-input="tailAllowanceIn" inputmode="decimal" value="12"/><small class="hint">Added once to the full perimeter; 0–120 inches.</small></div>
+     <div class="field-wrap"><label for="bias-plan-margin">Additional model target margin (%)</label><input id="bias-plan-margin" class="field-control" data-bias-plan-input="extraMarginPct" inputmode="decimal" value="0"/><small class="hint">0–35%. For scenario sensitivity only, not a tested safety factor.</small></div>
+    </div>
+   </fieldset>
+   <fieldset class="bias-plan-fieldset">
+    <legend>Construction and source cloth</legend>
+    <div class="bias-plan-fields">
+     <div class="field-wrap"><label for="bias-plan-strip-width">Full unfolded bias strip CUT width (in)</label><input id="bias-plan-strip-width" class="field-control" data-bias-plan-input="fullStripCutWidthIn" inputmode="decimal" value="2.5"/><small class="hint">0.75–6 inches. This is not the folded finished binding width.</small></div>
+     <div class="field-wrap"><label for="bias-plan-seam">Per-edge allowance for BOTH seams (in)</label><input id="bias-plan-seam" class="field-control" data-bias-plan-input="seamAllowanceIn" inputmode="decimal" value="0.25"/><small class="hint">0.125–0.5 inches, measured perpendicular to each raw edge.</small></div>
+     <div class="field-wrap"><label for="bias-plan-wof">Usable WOF after trimming / prewash (in)</label><input id="bias-plan-wof" class="field-control" data-bias-plan-input="usableWofIn" inputmode="decimal" value="43"/><small class="hint">Measure the post-prewash usable width. We do NOT apply shrinkage to it twice.</small></div>
+     <div class="field-wrap"><label for="bias-plan-shrink">Prewash fabric LENGTH shrinkage (%)</label><input id="bias-plan-shrink" class="field-control" data-bias-plan-input="lengthShrinkPct" inputmode="decimal" value="0"/><small class="hint">0–25%. Applies only to unwashed bolt-run illustration; enter 0 if already prewashed.</small></div>
+    </div>
+   </fieldset>
+   <fieldset class="bias-plan-fieldset">
+    <legend>Hypothetical retail conversion — NOT a shopping order</legend>
+    <div class="bias-plan-fields">
+     <div class="field-wrap"><label for="bias-plan-step">Illustrative retail rounding step (yards)</label><select id="bias-plan-step" class="field-control" data-bias-plan-input="retailIncrementYd">
+      <option value="0.125" selected>⅛ yd</option>
+      <option value="0.25">¼ yd</option>
+      <option value="0.5">½ yd</option>
+      <option value="1">1 yd</option>
+     </select><small class="hint">Applied once after length shrinkage; never treated as safety clearance.</small></div>
+     <div class="field-wrap"><label for="bias-plan-price">Illustrative fabric price (USD / yd)</label><input id="bias-plan-price" class="field-control" data-bias-plan-input="pricePerYardUsd" inputmode="decimal" value="12"/><small class="hint">Optional price scenario only; excludes tax, shipping and failure waste.</small></div>
+    </div>
+   </fieldset>
+   <div class="input-actions"><button type="submit" class="action-primary">Calculate model-only scenario ↗</button></div>
+  </form>
+  <section class="result-card bias-plan-result" aria-label="Mathematical continuous bias scenario">
+   <div class="results-topline"><span class="eyebrow-with-dot">● STEP 02 / REVIEW</span><span class="result-version">NO PHYSICAL YIELD · NOINDEX</span></div>
+   <p data-bias-plan-status role="status" aria-live="polite">Evaluating the mathematical model…</p>
+   <div data-bias-plan-output></div>
+   <div class="results-footer">
+    <button type="button" class="action-secondary" data-bias-plan-download disabled>Export numerical scenario JSON · NOT a purchase list</button>
+   </div>
+  </section>
+ </div>
+ <section class="content-block bias-plan-method">
+  <div class="editorial-head"><span class="eyebrow-with-line">— STEP 03 / REPRODUCE</span><h2>What the optimizer actually solves</h2></div>
+  <p>The length target is <strong>2 × (quilt width + quilt height) + user-entered total tail allowance</strong>, with an optional separate percentage added to the <em>target</em>. The algorithm tries source square sides in ascending ⅛-inch increments. Every candidate must fit your measured usable WOF, leave at least two complete full-width marked lanes after the first seam, and remain within the currently tested software envelope (6–96-inch square, at most 32 modelled lanes).</p>
+  <p>For square side <code>S</code>, unfolded cut width <code>W</code> and the same perpendicular allowance <code>a</code> on both seams, the model uses full lanes <code>N = min(32, floor((S − a)/(√2 × W)))</code> and predicted square-ended strip length <code>N × √2 × (S − 3a) − W</code>. The first candidate meeting the requested <em>model target</em> is shown. This is an inversion of the separate <a href="/lab/continuous-bias-tube/">2D seam-development model</a>; its polygon and area ledger are independently verified before a successful result is accepted.</p>
+  <p>For a chosen square, <strong>one square fits across the post-trim usable WOF</strong> and requires a hypothetical bolt-run of exactly its side length after prewash. If a prewash LENGTH shrinkage percentage is entered, the model converts this to an illustrative unwashed run by dividing by <code>(1 − shrinkage)</code>, then rounds upward once to the selected retail step. This is a <em>dimensional conversion</em>, not verified yardage to purchase. It does not model piecing multiple smaller squares from one bolt or using offcuts for additional continuous bias strips.</p>
+  <p><strong>Not supported:</strong> curved/scalloped quilt edges unless you already have an independently measured total edge length, non-square/rectangle source construction, different allowances for seam 1 and seam 2, fabric directional prints, true fabric movement, real-world stitch discrepancies, measured operator losses, and any approved purchasing recommendation. The accepted nine-tool software scope remains separate.</p>
+  <p>Evidence and remaining experiments: <a href="https://github.com/garrison2025/Quilt_Calculator/blob/main/docs/qa/CONTINUOUS_BIAS_TUBE_2D_DEVELOPMENT_20261106.md" target="_blank" rel="noopener noreferrer">2D geometry derivation</a> and <a href="https://github.com/garrison2025/Quilt_Calculator/blob/main/docs/qa/CONTINUOUS_BIAS_TUBE_PHYSICAL_SPECIMEN_PROTOCOL_20261107.md" target="_blank" rel="noopener noreferrer">three-specimen physical test protocol</a>. The software may pass its full test suite without establishing measured physical yield.</p>
+ </section>
+</div>
+</Base>
+<script>
+ import {initContinuousBiasPlannerLab} from '../../../client/continuous-bias-planner-lab';
+ initContinuousBiasPlannerLab();
+</script>
