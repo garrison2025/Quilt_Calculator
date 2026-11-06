@@ -2818,7 +2818,7 @@ try{
   const widthProof=quickPage.waitForEvent('download');
   await quickPage.locator('[data-action="export-cut"]').click();
   const currentProof=JSON.parse(await fs.readFile(await (await widthProof).path(),'utf8'));
-  check(currentProof.result.options.every(x=>x.layout.wofIn===43) &&
+  check(currentProof.result.options.every(x=>x.layout.usableWofIn===43) &&
     !JSON.stringify(currentProof).includes('alternateWofIn'),
     'Hypothetical 108in backing must never contaminate the CURRENT 43in physical source export.');
   await hydrated(quickPage,'/quilt-sashing-calculator/');
