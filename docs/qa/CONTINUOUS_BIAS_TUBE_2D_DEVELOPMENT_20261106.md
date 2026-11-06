@@ -158,7 +158,7 @@ The second seam term is the two allowances along the post-first-seam short edge,
 
 ### Independent published measured-length comparison
 
-[Geta's Quilting Studio's continuous-bias tutorial](https://www.getasquiltingstudio.com/2018/04/continuous-bias-binding.html) reports an actual measured result of **120in of 2½in-wide bias binding from an 18in × 18in square**. The article does not specify a measured terminal-trim allowance, fabric stretch or measuring tension. Applying the current model convention to `S=18`, `a=0.25`, `W=2.5`, `N=5` gives **119.476in**, a difference of **−0.524in (−0.44%)** from that published measurement.
+[Geta's Quilting Studio's continuous-bias tutorial](https://www.getasquiltingstudio.com/2018/04/continuous-bias-binding-cheat-sheets-formulas-and-more.html) reports an actual measured result of **120in of 2½in-wide bias binding from an 18in × 18in square**. The article does not specify a measured terminal-trim allowance, fabric stretch or measuring tension. Applying the current model convention to `S=18`, `a=0.25`, `W=2.5`, `N=5` gives **119.476in**, a difference of **−0.524in (−0.44%)** from that published measurement.
 
 This is a useful independent one-point benchmark and is now a regression fixture in `tests/continuous-bias-tube-development.test.ts`. It is not a controlled test of our implementation, and it does not prove agreement across fabrics, sizes, seam execution or operators. The real-fabric signoff therefore remains **NOT_RUN**.
 
