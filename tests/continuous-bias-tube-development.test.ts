@@ -86,6 +86,19 @@ describe('continuous bias tube: exact 2D sewn face, two seam take-ups, offset jo
    }
   }
  });
+ it('matches the published 18in-square / 2.5in-strip physical reference within 1in',()=>{
+  // Geta's Quilting Studio reports measuring 120in of 2.5in bias from an
+  // 18in x 18in square using the two-seam continuous-bias method.
+  // This is a single external reference point, not universal fabric proof.
+  const m=calculateBiasTube2DDevelopment({
+   ...sample,sourceSquareSideIn:18,usableWofIn:43,
+   fullStripCutWidthIn:2.5,seamAllowanceIn:.25,markedBands:5
+  });
+  expect(m.actualFullBands).toBe(5);
+  approx(m.modeledSquareEndedLengthIn,119.47591975467945);
+  expect(Math.abs(m.modeledSquareEndedLengthIn-120)).toBeLessThan(1);
+  expect(verifyBiasTube2DDevelopment(m)).toBe(true);
+ });
  it('rejects a band count that only fits the pre-seam sheet but not the sewn face',()=>{
   const marginal={...sample,sourceSquareSideIn:8,usableWofIn:43,
    fullStripCutWidthIn:2.5,markedBands:2};
