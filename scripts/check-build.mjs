@@ -271,6 +271,23 @@ for(const [slug,marker,phrase] of [
  if(page.includes('content="index,follow'))
   throw Error('Preview tool unexpectedly exposed indexing: '+slug);
 }
+// Reverse blocks solve a real mathematical question, but the unverified
+// "quilt square size calculator" search query remains HOLD until proper US
+// SERP and keyword-intent evidence supports a new public landing route.
+const sashingHtml=fs.readFileSync('dist/quilt-sashing-calculator/index.html','utf8');
+for(const literal of [
+ 'Reverse quilt block size calculator',
+ 'target center width',
+ '10.4 × 18.5 inches',
+ 'before any outside borders',
+ 'finished BLOCK',
+]){
+ if(!sashingHtml.toLowerCase().includes(literal.toLowerCase()))
+  throw Error('Missing clear, crawlable block reverse-size methodology on approved sashing route: '+literal);
+}
+if(fs.existsSync('dist/quilt-square-size-calculator/index.html')||
+   fs.existsSync('dist/quilt-block-size-calculator/index.html'))
+ throw Error('Premature block size keyword landing route: validate US SERP and search intent first.');
 const newHelper=fs.readFileSync('src/lib/quilt/quick-planning.ts','utf8');
 if(!newHelper.includes('hypotheticalOnly:true')||
    !newHelper.includes('topCutsReviewFingerprint=undefined')||

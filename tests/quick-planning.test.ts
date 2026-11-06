@@ -3,7 +3,8 @@ import {calculateSashing} from '../src/lib/quilt/math';
 import {resolveQuiltDimensions} from '../src/lib/quilt/dimensions';
 import {sampleProject,quiltTopReviewFingerprint,validateProject} from '../src/lib/quilt/project';
 import {
- FINISHED_SIZE_EXAMPLES,applyFinishedSizeExample,applyBlockGridAsCenter,compareBackingPurchases
+ FINISHED_SIZE_EXAMPLES,applyFinishedSizeExample,applyBlockGridAsCenter,compareBackingPurchases,
+ solveBlockSizeForCenter,applyTargetBlockSize
 } from '../src/lib/quilt/quick-planning';
 
 describe('noncertifying quick quilt planning',()=>{
@@ -54,6 +55,59 @@ describe('noncertifying quick quilt planning',()=>{
   expect(original.quilt.finishedWidth).toBe(60);
   expect(()=>applyBlockGridAsCenter(original,Infinity,46)).toThrow();
   expect(()=>applyBlockGridAsCenter(original,-1,46)).toThrow();
+ });
+ it('solves target quilt CENTER to independent finished rectangular block dimensions and forward-checks',()=>{
+  const p=structuredClone(sampleProject);
+  const solved=solveBlockSizeForCenter({centerWidthIn:60,centerHeightIn:80,rows:4,columns:5,finishedSashIn:2});
+  expect(solved).toMatchObject({finishedBlockWidthIn:10.4,finishedBlockHeightIn:18.5,totalBlocks:20});
+  const forward=calculateSashing({
+   rows:4,columns:5,blockWidthIn:solved.finishedBlockWidthIn,blockHeightIn:solved.finishedBlockHeightIn,
+   finishedSashIn:2,seamIn:p.options.seam,wofIn:p.options.usableWof,step:p.options.step
+  });
+  expect(forward.layout.isCutFeasible).toBe(true);
+  expect([forward.finishedWidthIn,forward.finishedHeightIn]).toEqual([60,80]);
+  const outside=resolveQuiltDimensions(p);
+  expect([outside.centerWidthIn,outside.centerHeightIn,outside.finalWidthIn,outside.finalHeightIn])
+   .toEqual([60,80,66,86]);
+  const one=solveBlockSizeForCenter({centerWidthIn:12,centerHeightIn:9,rows:1,columns:1,finishedSashIn:2});
+  expect([one.finishedBlockWidthIn,one.finishedBlockHeightIn,one.totalBlocks]).toEqual([12,9,1]);
+ });
+ it('applies only block finished dimensions, revokes prior top review, never fabricates cuts or changes quilt borders',()=>{
+  const p=structuredClone(sampleProject);
+  p.quilt.topCutsReviewed=true;p.quilt.topCutsReviewFingerprint=quiltTopReviewFingerprint(p);
+  const original=JSON.stringify(p);
+  const updated=applyTargetBlockSize(p,60,80);
+  expect(updated.sashing).toMatchObject({rows:4,columns:5,width:2,blockWidth:10.4,blockHeight:18.5});
+  expect(updated.quilt.finishedWidth).toBe(60);
+  expect(updated.quilt.finishedHeight).toBe(80);
+  expect(updated.quilt.sizeBasis).toBe('before-borders');
+  expect(updated.quilt.topCutsReviewed).toBe(false);
+  expect(updated.quilt.topCutsReviewFingerprint).toBeUndefined();
+  expect(updated.fabrics).toEqual(p.fabrics);
+  expect(updated.borders).toEqual(p.borders);
+  expect(updated.options).toEqual(p.options);
+  expect(JSON.stringify(p)).toBe(original);
+  expect(validateProject(updated).sashing.blockWidth).toBe(10.4);
+ });
+ it('rejects target centers eaten by internal sashing, invalid counts and non-finite numbers',()=>{
+  const p=structuredClone(sampleProject);
+  const dims={centerWidthIn:60,centerHeightIn:80,rows:4,columns:5,finishedSashIn:2};
+  for(const bad of [0,-1,NaN,Infinity,100001]){
+   expect(()=>solveBlockSizeForCenter({...dims,centerWidthIn:bad})).toThrow();
+  }
+  for(const bad of [-1,0,1.5,101,Infinity]){
+   expect(()=>solveBlockSizeForCenter({...dims,rows:bad})).toThrow();
+  }
+  expect(()=>solveBlockSizeForCenter({...dims,centerWidthIn:8})).toThrow(/sashing alone consumes/);
+  expect(()=>solveBlockSizeForCenter({...dims,centerHeightIn:6})).toThrow(/sashing alone consumes/);
+  expect(()=>solveBlockSizeForCenter({...dims,finishedSashIn:0})).toThrow();
+  expect(()=>applyTargetBlockSize(p,8,80)).toThrow();
+  expect(p.sashing.blockWidth).toBe(10);
+  // Project V2 still rejects an impossible piece-count layout when a
+  // supplied saved grid already exceeds its supported 2000-cut cap.
+  const many=structuredClone(p);
+  many.sashing.rows=100;many.sashing.columns=100;
+  expect(()=>applyTargetBlockSize(many,1000,1000)).toThrow(/2,000/);
  });
  it('compares alternate wide backing with the SAME model, overage, direction and shopping step without altering current exports',()=>{
   const project=structuredClone(sampleProject);

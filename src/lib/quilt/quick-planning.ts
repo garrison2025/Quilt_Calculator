@@ -39,6 +39,45 @@ export function applyBlockGridAsCenter(project:Project,widthIn:number,heightIn:n
  return withDimensions(project,widthIn,heightIn,'before-borders');
 }
 
+/** Solve the SAME unframed, straight-set, internal-sashing grid used by
+ * calculateSashing. Width/height are a quilt CENTER, never the outer quilt
+ * including border layers, nor an unfinished cutting dimension. */
+export function solveBlockSizeForCenter(input:{
+ centerWidthIn:number;centerHeightIn:number;rows:number;columns:number;finishedSashIn:number
+}):{finishedBlockWidthIn:number;finishedBlockHeightIn:number;totalBlocks:number;centerWidthIn:number;centerHeightIn:number}{
+ const {centerWidthIn:W,centerHeightIn:H,rows:R,columns:C,finishedSashIn:S}=input;
+ if(!Number.isFinite(W)||!Number.isFinite(H)||W<=0||H<=0||W>100000||H>100000)
+  throw Error('Target quilt CENTER width and height must be finite positive inches.');
+ if(!Number.isInteger(R)||!Number.isInteger(C)||R<1||C<1||R>100||C>100)
+  throw Error('Sashing rows and columns must be whole numbers from 1 to 100.');
+ if(!Number.isFinite(S)||S<=0||S>100000)
+  throw Error('Finished internal sashing width must be positive and finite.');
+ const freeW=W-(C-1)*S,freeH=H-(R-1)*S;
+ if(freeW<=0||freeH<=0)
+  throw Error('Target center is too small: internal sashing alone consumes the available width or height.');
+ const blockW=freeW/C,blockH=freeH/R;
+ if(blockW<=0||blockH<=0)
+  throw Error('No positive finished block fits inside the target center.');
+ return {finishedBlockWidthIn:blockW,finishedBlockHeightIn:blockH,totalBlocks:R*C,
+  centerWidthIn:W,centerHeightIn:H};
+}
+/** Only edits the saved finished BLOCK measurements. It neither changes the
+ * declared quilt center/outside, nor silently creates colored fabric cuts. */
+export function applyTargetBlockSize(project:Project,targetCenterWidthIn:number,targetCenterHeightIn:number):Project{
+ const s=project.sashing;
+ const solved=solveBlockSizeForCenter({
+  centerWidthIn:targetCenterWidthIn,centerHeightIn:targetCenterHeightIn,
+  rows:s.rows,columns:s.columns,finishedSashIn:s.width
+ });
+ const candidate:Project=structuredClone(project);
+ candidate.sashing.blockWidth=solved.finishedBlockWidthIn;
+ candidate.sashing.blockHeight=solved.finishedBlockHeightIn;
+ candidate.quilt.topCutsReviewed=false;
+ candidate.quilt.topCutsReviewFingerprint=undefined;
+ validateProject(candidate);
+ return candidate;
+}
+
 export type WideBackingScenario={
  usableWofIn:number;
  selectedDirection:'vertical'|'horizontal';

@@ -2838,8 +2838,45 @@ try{
     await quickPage.getByLabel('What do your quilt measurements include?').inputValue()==='before-borders' &&
     await quickPage.locator('#quilt-top-review').isChecked()===false,
     'Only computed block+internal-sash grid CENTER transfers; 3in outside borders remain separate and old cuts unreviewed.');
+  // Reverse a target center into exact finished block sizes, then separately
+  // transfer that recomputed grid; the first click must not alter quilt size.
+  await hydrated(quickPage,'/quilt-sashing-calculator/');
+  const reverse=quickPage.locator('[data-reverse-block-size]');
+  check(await reverse.isVisible()&&
+    await reverse.locator('[data-reverse-center-width]').inputValue()==='58' &&
+    await reverse.locator('[data-reverse-center-height]').inputValue()==='46',
+    'Reverse sizing must begin at the currently saved quilt CENTER (excluding borders).');
+  await reverse.locator('[data-reverse-center-width]').fill('8');
+  check(await reverse.locator('[data-reverse-apply]').isDisabled()&&
+    (await reverse.locator('[data-reverse-error]').innerText()).includes('sashing alone consumes'),
+    'When internal sashing consumes target center width, block sizes cannot be applied.');
+  await reverse.locator('[data-reverse-center-width]').fill('60');
+  await reverse.locator('[data-reverse-center-height]').fill('80');
+  check(await reverse.locator('[data-reverse-apply]').isEnabled()&&
+    (await reverse.locator('[data-reverse-solved]').innerText()).includes('10.4 × 18.5 in'),
+    '4×5 block grid with 2in internal sash must reverse-solve a 60×80 center to 10.4×18.5in finished blocks.');
+  await reverse.locator('[data-reverse-apply]').click();
+  check((await quickPage.getByLabel('Finished block width (in)').inputValue())==='10.4'&&
+    (await quickPage.getByLabel('Finished block height (in)').inputValue())==='18.5'&&
+    (await quickPage.locator('[data-results]').innerText()).includes('60 × 80 in'),
+    'Reverse apply must actually change the shared finished block dimensions and forward grid.');
+  const reverseBackup=quickPage.waitForEvent('download');
+  await quickPage.locator('[data-action="save"]').click();
+  const reverseSaved=JSON.parse(await fs.readFile(await (await reverseBackup).path(),'utf8'));
+  check(reverseSaved.sashing.blockWidth===10.4 && reverseSaved.sashing.blockHeight===18.5 &&
+    reverseSaved.quilt.finishedWidth===58 && reverseSaved.quilt.finishedHeight===46 &&
+    reverseSaved.quilt.topCutsReviewed===false && reverseSaved.fabrics.length===2 &&
+    reverseSaved.borders.length===1,
+    'Reverse target Apply must change only saved block sizes; quilt center/outside and fabric SKUs stay unchanged.');
+  await quickPage.locator('[data-use-sashing-center]').click();
+  await hydrated(quickPage,'/calculators/',{incomplete:true});
+  const reverseTransferred=await quickPage.locator('[data-final-quilt-dimensions]').innerText();
+  check(reverseTransferred.includes('Center before borders: 60 × 80')&&
+    reverseTransferred.includes('Final outside: 66 × 86')&&
+    await quickPage.locator('#quilt-top-review').isChecked()===false,
+    'Explicit second action transfers the reverse-solved grid center and preserves 3in borders with no implied physical certification.');
   await quickCtx.close();
-  console.log('PASS finished-size presets, wideback price what-if isolation and sashing-grid center handoff.');
+  console.log('PASS finished-size presets, wideback what-if isolation, forward/reverse sashing and user-confirmed center handoff.');
 
   const dark=await browser.newContext({viewport:{width:1280,height:800},colorScheme:'dark'});
   instrumentNetwork(dark,'dark');
