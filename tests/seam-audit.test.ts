@@ -24,7 +24,7 @@ function plan(overrides:Record<string,unknown>={}){
  return JSON.stringify({
   tool:'hub',sourceProjectHash:fingerprint,calculationVersion:'test-V2',
   readiness:{status:'LISTED_CUTS_FEASIBLE',cutCsvReady:true},
-  dimensions:{finalWidthIn:66,finalHeightIn:86},
+  dimensions:{finalWidthIn:66,finalHeightIn:86,centerWidthIn:66,centerHeightIn:86,borderPerSideIn:0},
   result:{selectedBacking:backing,binding},...overrides
  });
 }
@@ -92,7 +92,7 @@ describe('sewn backing/binding checks require exactly the matching project-calcu
   expect(assessFabricAudit(input).seamVerificationCoverage).toBe('PARTIAL_USER_REPORTED');
   const evidence=fabricAuditEvidence(input,'2026-11-06T11:00:00Z');
   expect(evidence).toMatchObject({
-   schemaVersion:4,cuttingPlanJsonMatchedByFingerprint:true,
+   schemaVersion:5,cuttingPlanJsonMatchedByFingerprint:true,
    seamVerificationCoverage:'PARTIAL_USER_REPORTED',
    sourceSnapshotIsCryptographicallyAuthenticated:false,
    independentPhysicalVerification:false,quiltCuttingApproval:false
@@ -164,7 +164,7 @@ describe('sewn backing/binding checks require exactly the matching project-calcu
    expect(check.perJoinVsAssembledSpanMismatch).toBe(false);
   }
   const evidence=fabricAuditEvidence(input,'2026-11-06T12:00:00Z');
-  expect(evidence.schemaVersion).toBe(4);
+  expect(evidence.schemaVersion).toBe(5);
   expect(evidence.seamChecks[1].perJoinObservedLossesIn).toHaveLength(binding.stripCount-1);
   expect(evidence.sourceSnapshotIsCryptographicallyAuthenticated).toBe(false);
   expect(evidence.independentPhysicalVerification).toBe(false);
