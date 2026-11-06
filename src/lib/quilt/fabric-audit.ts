@@ -64,6 +64,11 @@ function positiveNumber(value:string,what:string,{zero=false,max=100000}:{zero?:
 type AuditedPiece=Rect & {pieceNumber:number};
 export type FabricAuditRoll={
  id:string;material:string;usableWofIn:number;requiredRunIn:number;
+ /** The source shopping CSV's exact planned prewash length and rounded buying
+  * amount. Derived planned shrinkage is never a measured physical rate. */
+ plannedRawPurchaseYards?:number;
+ plannedRoundedPurchaseYards?:number;
+ plannedLengthShrinkagePct?:number;
  pieces:AuditedPiece[];
 };
 export type ImportedFabricAudit={
@@ -125,9 +130,20 @@ export function importFabricAudit(cutsCsv:string,purchasesCsv:string):ImportedFa
   if(!matched)throw Error('Shopping roll '+rollId+' has no matching physical cuts.');
   if(status!=='FEASIBLE_LAYOUT'&&status!=='TOP_CUT_LIST_NOT_REVIEWED')
    throw Error('Shopping roll '+rollId+' is not purchase-ready.');
-  const amount=positiveNumber(row[3],'purchased yardage');
+  const amount=positiveNumber(row[3],'rounded purchased yardage');
+  const raw=positiveNumber(row[2],'exact prewash yardage');
+  if(amount+1e-8<raw)
+   throw Error('Rounded purchased yardage for '+rollId+' is less than the exact prewash requirement.');
+  if(raw*36+1e-7<matched.requiredRunIn)
+   throw Error('Exact prewash yardage for '+rollId+' is shorter than the postwash cutting run.');
   if(amount*36+1e-7<matched.requiredRunIn)
    throw Error('Purchased yardage for '+rollId+' is shorter than the cutting run.');
+  const plannedPct=100*(1-matched.requiredRunIn/(raw*36));
+  if(!Number.isFinite(plannedPct)||plannedPct< -1e-7||plannedPct>=100)
+   throw Error('Unreasonable shrinkage coverage in shopping roll '+rollId+'.');
+  matched.plannedRawPurchaseYards=raw;
+  matched.plannedRoundedPurchaseYards=amount;
+  matched.plannedLengthShrinkagePct=Math.max(0,plannedPct);
  }
  for(const id of rolls.keys())
   if(!shoppingIds.has(id))throw Error('Physical cuts for '+id+' have no matching shopping line.');
@@ -145,6 +161,9 @@ export function importFabricAudit(cutsCsv:string,purchasesCsv:string):ImportedFa
 }
 export type ManualRollReading={
  id:string;actualUsableWofIn?:number;actualUsableRunIn?:number;
+ /** Optional actual length before wash, from the same physical bolt segment
+  * whose actualUsableRunIn is now measured after wash. */
+ measuredPrewashRunIn?:number;
  sampledPieceNumber?:number;measuredPieceWidthIn?:number;measuredPieceHeightIn?:number;
 };
 export type ManualFabricAuditInput={
@@ -160,10 +179,15 @@ export type FabricAuditStatus=
  'INCOMPLETE_USER_MEASUREMENTS'|
  'INCONCLUSIVE_NOT_POSTWASHED'|
  'USER_REPORTED_SHORTAGE_OR_DEVIATION'|
+ 'USER_REPORTED_SHRINKAGE_EXCEEDS_PLAN'|
  'USER_REPORTED_WITHIN_DECLARED_LIMITS';
 export type RollAuditCheck={
  id:string;material:string;requiredWofIn:number;requiredRunIn:number;
  actualUsableWofIn?:number;actualUsableRunIn?:number;
+ plannedRawPurchaseYards?:number;plannedRoundedPurchaseYards?:number;
+ plannedLengthShrinkagePct?:number;
+ measuredPrewashRunIn?:number;observedLengthShrinkagePct?:number;
+ observedShrinkageExceedsPlan?:boolean;
  sampledPieceNumber?:number;expectedPieceWidthIn?:number;expectedPieceHeightIn?:number;
  measuredPieceWidthIn?:number;measuredPieceHeightIn?:number;
  widthDifferenceIn?:number;heightDifferenceIn?:number;
@@ -193,7 +217,10 @@ export function assessFabricAudit(input:ManualFabricAuditInput):FabricAuditAsses
  for(const roll of input.project.rolls){
   const r=given.get(roll.id);
   const check:RollAuditCheck={
-   id:roll.id,material:roll.material,requiredWofIn:roll.usableWofIn,requiredRunIn:roll.requiredRunIn
+   id:roll.id,material:roll.material,requiredWofIn:roll.usableWofIn,requiredRunIn:roll.requiredRunIn,
+   plannedRawPurchaseYards:roll.plannedRawPurchaseYards,
+   plannedRoundedPurchaseYards:roll.plannedRoundedPurchaseYards,
+   plannedLengthShrinkagePct:roll.plannedLengthShrinkagePct
   };
   if(!r||!reading(r.actualUsableWofIn)||!reading(r.actualUsableRunIn)){
    missing.push('Actual usable fabric width and length for '+roll.id);
@@ -202,6 +229,19 @@ export function assessFabricAudit(input:ManualFabricAuditInput):FabricAuditAsses
    check.actualUsableRunIn=r.actualUsableRunIn;
    check.hasShortage=r.actualUsableWofIn!+1e-8<roll.usableWofIn ||
     r.actualUsableRunIn!+1e-8<roll.requiredRunIn;
+  }
+  if(r?.measuredPrewashRunIn!==undefined){
+   if(!reading(r.measuredPrewashRunIn)){
+    missing.push('Valid real before-wash length for '+roll.id);
+   }else if(reading(r.actualUsableRunIn)){
+    const observed=100*(1-r.actualUsableRunIn!/r.measuredPrewashRunIn);
+    check.measuredPrewashRunIn=r.measuredPrewashRunIn;
+    check.observedLengthShrinkagePct=observed;
+    // Compare signed rates without hiding material expansion. The purchase
+    // model assumed one length-shrinkage rate, not a universal fabric standard.
+    if(roll.plannedLengthShrinkagePct!==undefined)
+     check.observedShrinkageExceedsPlan=observed>roll.plannedLengthShrinkagePct+1e-7;
+   }
   }
   const piece=roll.pieces.find(p=>p.pieceNumber===r?.sampledPieceNumber);
   if(!piece||!reading(r?.measuredPieceWidthIn)||!reading(r?.measuredPieceHeightIn)){
@@ -227,8 +267,13 @@ export function assessFabricAudit(input:ManualFabricAuditInput):FabricAuditAsses
  if(checks.some(c=>c.hasShortage||c.sampleOutsideAllowance))return {
   status:'USER_REPORTED_SHORTAGE_OR_DEVIATION',canExport:true,checks,missing,
   message:'User-reported material shortage or sampled piece dimension exceeds the stated allowance. Do not treat this plan as approved for real cutting.'};
+ if(checks.some(c=>c.observedShrinkageExceedsPlan))return {
+  status:'USER_REPORTED_SHRINKAGE_EXCEEDS_PLAN',canExport:true,checks,missing,
+  message:'The user-measured prewash/postwash length decrease exceeds the shrinkage percentage assumed by the shopping estimate. Recheck the source roll and purchasing buffer; enough actual postwash material may still remain. This is NOT a physical approval.'};
+ const unmeasured=checks.filter(c=>c.measuredPrewashRunIn===undefined).length;
  return {status:'USER_REPORTED_WITHIN_DECLARED_LIMITS',canExport:true,checks,missing,
-  message:'All user-entered postwash roll measurements and one sampled piece per roll are within the declared limits. This is NOT independent certification, does NOT verify every individual cut, and does NOT approve fabric purchase or production.'};
+  message:'User-entered postwash roll dimensions and sampled cuts fit the declared limits. '+(unmeasured?unmeasured+' roll(s) have no measured before-wash length; actual shrinkage was NOT verified. ':'')+
+   'Seam take-up and all individual cuts are NOT verified. This is NOT independent certification, and does NOT approve fabric purchase or production.'};
 }
 export function fabricAuditEvidence(input:ManualFabricAuditInput,recordedAtUtc:string){
  const result=assessFabricAudit(input);
