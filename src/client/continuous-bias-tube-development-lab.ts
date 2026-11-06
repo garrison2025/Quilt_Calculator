@@ -55,6 +55,64 @@ function drawChart(parent:HTMLElement,m:BiasTubeDevelopment):void{
  label(24,340,'Green: tube stitch lines · Orange: first seam · Dashes: strip cut lines');
  parent.appendChild(svg);
 }
+function drawUnfoldedChart(parent:HTMLElement,m:BiasTubeDevelopment):void{
+ parent.appendChild(make('h3','Unfolded continuous spiral — band joins and terminal square-off'));
+ const svg=svgEl('svg');svg.setAttribute('viewBox','0 0 760 245');
+ svg.setAttribute('role','img');
+ svg.classList.add('tube-seam-svg','tube-unfolded-svg');
+ svg.setAttribute('aria-label',
+  'Unfolded continuous bias strip made from adjacent parallelogram bands, with one-lane seam joins, two triangular terminal offcuts and perpendicular end trim lines. Horizontal and vertical scales are intentionally different for visibility; JSON coordinates are authoritative.');
+ const N=m.actualFullBands,W=m.stripPitchIn,Q=m.postSecondSeamFullRunIn;
+ const total=N*Q+W,sx=660/total,sy=92/W;
+ const px=(v:number)=>44+v*sx,py=(v:number)=>72+v*sy;
+ const map=(p:BiasPoint[])=>p.map(v=>px(v.xIn)+','+py(v.yIn)).join(' ');
+ const polygon=(vertices:BiasPoint[],fill:string,stroke:string,width=1.2)=>{
+  const el=svgEl('polygon');el.setAttribute('points',map(vertices));
+  el.setAttribute('fill',fill);el.setAttribute('stroke',stroke);
+  el.setAttribute('stroke-width',String(width));svg.appendChild(el);
+ };
+ const line=(x1:number,y1:number,x2:number,y2:number,stroke:string,width:number,dash='')=>{
+  const el=svgEl('line');
+  for(const [key,value] of [['x1',x1],['y1',y1],['x2',x2],['y2',y2]] as const)
+   el.setAttribute(key,String(value));
+  el.setAttribute('stroke',stroke);el.setAttribute('stroke-width',String(width));
+  if(dash)el.setAttribute('stroke-dasharray',dash);
+  svg.appendChild(el);
+ };
+ const label=(x:number,y:number,value:string,color='#214536',size=11)=>{
+  const el=svgEl('text');el.setAttribute('x',String(x));el.setAttribute('y',String(y));
+  el.setAttribute('font-size',String(size));el.setAttribute('fill',color);
+  el.textContent=value;svg.appendChild(el);
+ };
+ // Band polygons are drawn first; their sloping end edges show the one-lane
+ // offset joins. The unequal chart scales are explicitly disclosed.
+ for(const [i,b] of m.bands.entries()){
+  polygon(b.unfoldedPolygon,i%2===0?'#dcebdc':'#c8e0d1','#5e8d73');
+  const cx=px(i*Q+Q/2+W/2),cy=py(W/2)+4;
+  label(cx,cy,String(b.number),'#244c38',Math.max(9,Math.min(12,12*sx/1.5)));
+ }
+ polygon(m.terminalOffcutPolygons.start,'#f4d5b9','#b06032',1.8);
+ polygon(m.terminalOffcutPolygons.end,'#f4d5b9','#b06032',1.8);
+ // Remaining full-width rectangle after both end cuts.
+ const usable=svgEl('rect');
+ usable.setAttribute('x',String(px(W)));
+ usable.setAttribute('y',String(py(0)));
+ usable.setAttribute('width',String((N*Q-W)*sx));
+ usable.setAttribute('height',String(W*sy));
+ usable.setAttribute('fill','none');usable.setAttribute('stroke','#1f6949');
+ usable.setAttribute('stroke-width','2');
+ svg.appendChild(usable);
+ line(px(W),py(0),px(W),py(W),'#b06032',2.2);
+ line(px(N*Q),py(0),px(N*Q),py(W),'#b06032',2.2);
+ label(24,28,'UNFOLDED STRIP · x scale and width scale are exaggerated independently');
+ label(px(W)+3,py(W)+24,'START TRIM');
+ label(px(N*Q)+3,py(W)+24,'END TRIM');
+ label(24,228,'Orange: W²/2 terminal wedges · Green outline: retained full-width rectangle · Band numbers: cut order');
+ parent.appendChild(svg);
+ parent.appendChild(make('p',
+  'The N developed panels share their sloping edges in cut order. The two orange end wedges each have area W²/2. The green-outlined rectangle is the retained full-width strip: length NQ−W, width W. The chart is intentionally not a 1:1 pattern; use the JSON inch coordinates for numerical review.',
+  'hint'));
+}
 function show(parent:HTMLElement,m:BiasTubeDevelopment):void{
  parent.replaceChildren();
  parent.appendChild(make('p',
@@ -77,7 +135,9 @@ function show(parent:HTMLElement,m:BiasTubeDevelopment):void{
   cell.append(make('span',name),make('strong',value));stats.appendChild(cell);
  }
  parent.appendChild(stats);
+ parent.appendChild(make('h3','Sewn-face view — first assembly seam and second tube stitch lines'));
  drawChart(parent,m);
+ drawUnfoldedChart(parent,m);
  parent.appendChild(make('p',
   'Each polygon is indexed in exact inch coordinates and split at seam 1 into two raw-square triangle provenance regions. The 2D unfolded band polygons join at seam 2 using the single-lane offset. Download the JSON for every vertex, sewing-line intersection and terminal trimming coordinate.',
   'hint'));
