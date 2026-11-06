@@ -26,6 +26,23 @@ const related=guides[route.id].related.map(id=>routes.find(t=>t.id===id)!);
   <div class="seo-direct-answer-metric" aria-label="One yard equals 36 inches"><strong>1 yd</strong><span>=</span><strong>36 in</strong><small>Exact linear measure</small></div>
 </section>}
 <Calculator tool={route.id} sample={route.sample}/>
+{route.id==='hub'&&
+<section class="content-block" data-seo-size-examples>
+ <h2>Pick a familiar quilt size, then adjust it for your pattern</h2>
+ <p>Baby/crib, throw, twin, queen and king are <strong>illustrative finished OUTSIDE quilt sizes, not standardized dimensions</strong>. The quick examples in the planner fill in overall quilt measurements; existing borders and color-by-color fabric cut lists are not recreated. Check your pattern, batting and backing requirements before buying.</p>
+</section>}
+{route.id==='backing'&&
+<section class="content-block" data-seo-backing-width-comparison>
+ <h2>Is 108-inch wide backing cheaper than regular quilting cotton?</h2>
+ <p>Not always. Compare the <strong>usable fabric width after trimming selvedges</strong>, the panel/seam count, rounded purchase yardage and the price per yard for each real bolt. Wide backing may need fewer seams and fewer yards, but its price per yard can be higher. The calculator's second-width table is a hypothetical estimate only: the current width still owns the cutting plan and exported shopping list.</p>
+ <p>Both scenarios preserve the same quilt outside dimensions, backing overage, seam take-up, one-way print restriction, selected seam direction and purchase rounding step. Taxes, shipping, seam labor and pattern matching are not included.</p>
+</section>}
+{route.id==='sashing'&&
+<section class="content-block" data-seo-block-grid-handoff>
+ <h2>From finished blocks and sashing to your quilt size</h2>
+ <p>Center width = columns × finished block width + (columns − 1) × finished sashing width. Center height = rows × finished block height + (rows − 1) × finished sashing width. For a 4-row × 5-column grid of 10-inch blocks with 2-inch internal sashing, the quilt center is <strong>58 × 46 inches</strong>, before any outside borders.</p>
+ <p>Use the button in the calculator to pass these center measurements into your shared Project Planner. Outer borders are added afterwards. That action does not create any fabric color/SKU cutting list or confirm a sewing layout.</p>
+</section>}
 <section class="content-block"><div class="editorial-head"><span class="eyebrow-with-line">— UNDER THE STITCHES</span><h2>Clear math. Better cuts.</h2><p>Understand the calculation before cutting into fabric.</p></div>
 <div class="story-grid"><article class="story-panel"><span class="story-number">01 / FORMULA</span><h3>How it works</h3><p>{route.formula}</p></article><article class="story-panel"><span class="story-number">02 / METHOD</span><h3>From measurements to fabric</h3><p>{route.method}</p></article><article class="story-panel disclaimer-panel"><span class="story-number">03 / IMPORTANT</span><h3>What it does not assume</h3><p>{route.caution}</p></article></div>
 </section>
