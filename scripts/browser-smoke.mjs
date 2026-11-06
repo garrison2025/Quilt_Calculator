@@ -607,7 +607,7 @@ try{
     await auditPage.locator('[data-fabric-workspace]').isHidden(),
     'Cutting-plan JSON must NOT be accepted from an unrelated material snapshot.');
   await sidecarInput.setInputFiles({name:'unreviewed-cut-plan.json',mimeType:'application/json',
-   buffer:Buffer.from(JSON.stringify(baseJson))});
+   buffer:Buffer.from(JSON.stringify({...baseJson,sourceProjectHash:shopFingerprint}))});
   await auditImport.click();
   await auditPage.waitForFunction(()=>document.querySelector('[data-fabric-import-status]')?.textContent?.includes('JSON validation rejected:'),null,{timeout:15000});
   check((await auditPage.locator('[data-fabric-import-status]').innerText()).includes('not a complete'),
