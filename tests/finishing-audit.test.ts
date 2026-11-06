@@ -6,7 +6,8 @@ const seamPlan:JoinedSeamPlan={
  finishing:{
   requiredBackingWidthIn:74,requiredBackingHeightIn:94,
   plannedPretrimBackingWidthIn:85,plannedPretrimBackingHeightIn:94,
-  plannedQuiltTopWidthIn:66,plannedQuiltTopHeightIn:86
+  plannedQuiltTopWidthIn:66,plannedQuiltTopHeightIn:86,
+  plannedCenterWidthIn:66,plannedCenterHeightIn:86
  },
  checks:[{
   kind:'backing',rollId:'backing',direction:'vertical',sectionCount:2,joinCount:1,

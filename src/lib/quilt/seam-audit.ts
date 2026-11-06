@@ -126,6 +126,11 @@ export function readJoinedSeamPlan(project:ImportedFabricAudit,json:string):Join
  const dimensions=obj(root.dimensions,'resolved quilt-top dimensions');
  const quiltTopW=num(dimensions.finalWidthIn,'sewn quilt-top planned outside width');
  const quiltTopH=num(dimensions.finalHeightIn,'sewn quilt-top planned outside height');
+ const centerW=num(dimensions.centerWidthIn,'sewn quilt center planned width');
+ const centerH=num(dimensions.centerHeightIn,'sewn quilt center planned height');
+ const borderSide=num(dimensions.borderPerSideIn,'finished border per side',{zero:true});
+ if(!close(centerW+2*borderSide,quiltTopW)||!close(centerH+2*borderSide,quiltTopH))
+  throw Error('Center and border dimensions do not reconcile to the planned finished top outside.');
  if(backingWidth+1e-7<quiltTopW||backingHeight+1e-7<quiltTopH||
    !close(backingWidth-quiltTopW,backingHeight-quiltTopH))
   throw Error('Selected backing target does not reconcile to the quilt-top outside dimensions and equal edge overage.');
@@ -156,7 +161,8 @@ export function readJoinedSeamPlan(project:ImportedFabricAudit,json:string):Join
  const finishing:FinishingPlan={
   requiredBackingWidthIn:backingWidth,requiredBackingHeightIn:backingHeight,
   plannedPretrimBackingWidthIn:pretrimW,plannedPretrimBackingHeightIn:pretrimH,
-  plannedQuiltTopWidthIn:quiltTopW,plannedQuiltTopHeightIn:quiltTopH
+  plannedQuiltTopWidthIn:quiltTopW,plannedQuiltTopHeightIn:quiltTopH,
+  plannedCenterWidthIn:centerW,plannedCenterHeightIn:centerH
  };
  // An internal plan can still be manipulated by a user; validate the entire
  // numeric model and mark the result NONCRYPTOGRAPHIC in every export.

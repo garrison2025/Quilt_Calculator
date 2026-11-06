@@ -85,6 +85,8 @@ for(const marker of [
  'noindex,follow','data-qa-fabric-audit','data-fabric-cuts',
  'data-fabric-shopping','data-fabric-plan-json','data-fabric-seam-area',
  'data-fabric-finishing-area','data-fabric-finishing-tolerance',
+ 'data-top-chain-area','data-top-chain-axis','data-top-chain-create',
+ 'data-top-chain-joined',
  'data-fabric-seam-tolerance','data-fabric-workspace','data-fabric-download',
  'MANUAL_NOT_RUN','not</strong> a cryptographic signature'
 ]){

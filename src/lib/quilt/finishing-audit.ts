@@ -6,6 +6,8 @@ export type FinishingPlan={
  requiredBackingWidthIn:number;requiredBackingHeightIn:number;
  plannedPretrimBackingWidthIn:number;plannedPretrimBackingHeightIn:number;
  plannedQuiltTopWidthIn:number;plannedQuiltTopHeightIn:number;
+ /** Source dimension basis resolves sewn quilt CENTER before borders. */ 
+ plannedCenterWidthIn:number;plannedCenterHeightIn:number;
 };
 export type UserFinishingReading={
  /** Physically measured joined backing BEFORE trimming any of its four edges. */
