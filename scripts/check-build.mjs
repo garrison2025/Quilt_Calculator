@@ -64,6 +64,12 @@ if(!squareLabHtml.includes('data-square-reference-chart')||
   !squareLabHtml.includes('6⅞-inch')||
   !squareLabHtml.includes('noindex,follow'))
  throw Error('Noindex square lab must retain six engine-generated size examples, noncertifying description and noindex.');
+if(!squareLabHtml.includes('data-square-folded-reference-chart')||
+   (squareLabHtml.match(/data-square-folded-size="/g)||[]).length!==6||
+   !squareLabHtml.includes('Stitch-and-flip cutting chart')||
+   !squareLabHtml.includes('four 4½-inch corner squares')||
+   !squareLabHtml.includes('data-square-method'))
+ throw Error('Noindex square lab must show an independent 1-base/4-uncut-corner stitch-flip chart with explicit method choice.');
 if(fs.existsSync('dist/bias-binding-calculator/index.html')||
    fs.existsSync('dist/continuous-bias-binding-calculator/index.html'))
  throw Error('Unvalidated 45-degree bias yield cannot become a public target page.');
