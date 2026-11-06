@@ -383,6 +383,70 @@ import Base from '../../../layouts/Base.astro';
    if(topResult)topResult.textContent='Blank chain created. Select real cut pieces and enter independent ruler readings; NOT VERIFIED until recorded.';
    render();
   }
+  function createTopGridRows():void{
+   if(!imported?.seamPlan||!gridCells)return;
+   const rows=Number(fieldValue('[data-top-grid-rows]'));
+   const columns=Number(fieldValue('[data-top-grid-columns]'));
+   if(!Number.isSafeInteger(rows)||!Number.isSafeInteger(columns)||rows<2||rows>4||columns<2||columns>4){
+    if(gridResult)gridResult.textContent='Enter actual whole grid row/column counts from 2 to 4.';
+    return;
+   }
+   const sourceRolls=imported.rolls.filter(r=>r.id.startsWith('fabric:')&&r.pieces.length>0);
+   if(!sourceRolls.length){
+    if(gridResult)gridResult.textContent='No numbered physical quilt-TOP cut pieces are in the current paired CSV files.';
+    return;
+   }
+   const blocks:HTMLElement[]=[];
+   const edges=[
+    {field:'left',label:'LEFT internal seam net loss (inches)',active:(r:number,c:number)=>c>0},
+    {field:'right',label:'RIGHT internal seam net loss (inches)',active:(r:number,c:number)=>c<columns-1},
+    {field:'top',label:'TOP internal seam net loss (inches)',active:(r:number,c:number)=>r>0},
+    {field:'bottom',label:'BOTTOM internal seam net loss (inches)',active:(r:number,c:number)=>r<rows-1}
+   ];
+   for(let r=0;r<rows;r++){
+    for(let c=0;c<columns;c++){
+     const block=document.createElement('section');
+     block.className='qa-top-grid-cell';block.dataset.topGridCell=String(r*columns+c);
+     const h=document.createElement('h4');
+     h.textContent='Sewn grid ROW '+(r+1)+' / COLUMN '+(c+1);
+     const inputs=document.createElement('div');inputs.className='qa-fabric-field-grid';
+     const rollLabel=labelFor('Actual physical fabric roll / SKU');
+     const select=document.createElement('select');select.dataset.gridRoll='';
+     const initial=document.createElement('option');initial.value='';initial.textContent='Select real fabric roll';
+     select.append(initial);
+     for(const source of sourceRolls){
+      const option=document.createElement('option');option.value=source.id;
+      option.textContent=source.material+' · '+source.id+' ('+source.pieces.length+' pieces)';
+      select.append(option);
+     }
+     rollLabel.append(select);
+     const numberLabel=numericField('Printed CSV piece # (do not reuse IDs)','topGridPieceNum');
+     const number=numberLabel.querySelector('input');
+     if(number){number.step='1';number.min='1';number.max='2000';number.dataset.gridPieceNum='';}
+     const widthLabel=numericField('ACTUAL pre-sew cut WIDTH (inches)','topGridW');
+     const width=widthLabel.querySelector('input');
+     if(width)width.dataset.gridWidth='';
+     const heightLabel=numericField('ACTUAL pre-sew cut HEIGHT (inches)','topGridH');
+     const height=heightLabel.querySelector('input');
+     if(height)height.dataset.gridHeight='';
+     inputs.append(rollLabel,numberLabel,widthLabel,heightLabel);
+     for(const e of edges){
+      if(!e.active(r,c))continue;
+      const label=numericField(e.label,'topGridEdge');
+      const input=label.querySelector('input');
+      if(input){input.min='0';input.dataset.gridEdge=e.field;}
+      inputs.append(label);
+     }
+     const info=document.createElement('p');info.className='qa-fabric-small';
+     info.dataset.gridSourceInfo='';
+     info.textContent='No source quilt-TOP cut selected; NO physical ruler measurements entered.';
+     block.append(h,inputs,info);blocks.push(block);
+    }
+   }
+   gridCells.replaceChildren(...blocks);
+   if(gridResult)gridResult.textContent='Empty user-specified rectangular grid created. All real cut and sewn measurements remain NOT VERIFIED.';
+   render();
+  }
   function readManual():ManualFabricAuditInput|null{
    if(!imported)return null;
    const readings:ManualRollReading[]=[];
