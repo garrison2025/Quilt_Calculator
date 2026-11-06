@@ -59,7 +59,7 @@ describe('exact individual 45-degree bias strips: NOT a continuous tube',()=>{
   });
   expect(conservative.matched).toBeNull();
   expect(conservative.examinedCandidateCount).toBeGreaterThan(0);
-  expect(calculateIndividualBiasSquare({...defaultSource,squareSideIn:29.25,usableWofIn:29})).toThrow();
+  expect(()=>calculateIndividualBiasSquare({...defaultSource,squareSideIn:29.25,usableWofIn:29})).toThrow();
  });
  it('proves every rectangle vertex is inside the same source square, and v-bands cannot overlap',()=>{
   for(const square of [8,12,18,24,30,36,43,72,96]){
