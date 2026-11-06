@@ -78,7 +78,7 @@ import Base from '../../../layouts/Base.astro';
      <input data-qa-printer type="text" maxlength="200" placeholder="Printer model and driver" autocomplete="off" />
     </label>
     <label>Paper size
-     <select data-qa-paper><option value="">Choose</option><option value="A4">A4</option><option value="US Letter">US Letter</option><option value="Other (specify in printer field)">Other paper (describe in printer field)</option></select>
+     <select data-qa-paper-size><option value="">Choose</option><option value="A4">A4</option><option value="US Letter">US Letter</option><option value="Other (specify in printer field)">Other paper (describe in printer field)</option></select>
     </label>
     <label>Actual printer scale setting
      <select data-qa-scale><option value="">Choose</option><option value="actual-size">100% / Actual Size</option><option value="other">Other / Not sure (result inconclusive)</option></select>
@@ -139,7 +139,7 @@ import Base from '../../../layouts/Base.astro';
   return {
    readingsMm,
    printer:inputValue<HTMLInputElement>('[data-qa-printer]'),
-   paper:inputValue<HTMLSelectElement>('[data-qa-paper]'),
+   paper:inputValue<HTMLSelectElement>('[data-qa-paper-size]'),
    scaleMode:inputValue<HTMLSelectElement>('[data-qa-scale]') as PrintScaleMode,
    measuredOn:inputValue<HTMLInputElement>('[data-qa-date]'),
    reviewer:inputValue<HTMLInputElement>('[data-qa-reviewer]'),
