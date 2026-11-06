@@ -478,6 +478,8 @@ import Base from '../../../layouts/Base.astro';
  .qa-fabric-individual-joins summary{font-weight:700;cursor:pointer}
  .qa-fabric-join-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:12px 0}
  @media(max-width:600px){.qa-fabric-join-grid{grid-template-columns:1fr}}
+ [data-fabric-finishing-area] summary{font-weight:700;cursor:pointer;line-height:1.6;color:#24523a}
+ [data-fabric-finishing-result]{padding:12px;border:1px solid #cddccc;border-radius:9px;line-height:1.6;overflow-wrap:anywhere}
  .qa-fabric-confirm{display:flex;gap:10px;align-items:start;line-height:1.7;font-size:13px;font-weight:650;margin:23px 0;cursor:pointer}
  .qa-fabric-confirm input{width:19px;height:19px;flex-shrink:0;accent-color:#25774e;margin-top:2px}
  .qa-fabric-buttons{display:flex;gap:12px;flex-wrap:wrap;margin:17px 0}
@@ -488,11 +490,14 @@ import Base from '../../../layouts/Base.astro';
  [data-fabric-assessment="USER_REPORTED_SEAM_LOSS_EXCEEDS_PLAN"],
  [data-fabric-assessment="USER_REPORTED_SEAM_DIRECTION_MISMATCH"],
  [data-fabric-assessment="USER_REPORTED_SEAM_MEASUREMENTS_DISAGREE"],
+ [data-fabric-assessment="USER_REPORTED_FINISH_MEASUREMENTS_DISAGREE"],
+ [data-fabric-assessment="USER_REPORTED_BACKING_TRIM_SHORTFALL"],
+ [data-fabric-assessment="USER_REPORTED_SEWN_TOP_SIZE_DEVIATION"],
  [data-fabric-assessment="INCONCLUSIVE_NOT_POSTWASHED"]{border-color:#d1ad79;background:#fff0df;color:#7d3e16}
  @media(max-width:650px){.qa-fabric-field-grid{grid-template-columns:1fr}.qa-fabric-audit{padding-block:22px 55px}}
  @media(prefers-color-scheme:dark){
   .qa-fabric-audit-card,.qa-fabric-roll{background:#1e3225;border-color:#52745a;color:#e4f1e6}
-  .qa-fabric-audit-intro h1,.qa-fabric-audit-card h2,.qa-fabric-field-grid label,.qa-fabric-roll h3{color:#e3f0e3}
+  .qa-fabric-audit-intro h1,.qa-fabric-audit-card h2,.qa-fabric-field-grid label,.qa-fabric-roll h3,[data-fabric-finishing-area] summary{color:#e3f0e3}
   .qa-fabric-field-grid input,.qa-fabric-field-grid select,.qa-fabric-seam-item input,.qa-fabric-seam-item select{background:#132c1c;color:#fff;border-color:#72917a}
   [data-fabric-result],[data-fabric-import-status]{background:#244630;color:#e7f5e9;border-color:#67936a}
   [data-fabric-assessment="USER_REPORTED_SHORTAGE_OR_DEVIATION"],
@@ -500,6 +505,9 @@ import Base from '../../../layouts/Base.astro';
   [data-fabric-assessment="USER_REPORTED_SEAM_LOSS_EXCEEDS_PLAN"],
   [data-fabric-assessment="USER_REPORTED_SEAM_DIRECTION_MISMATCH"],
   [data-fabric-assessment="USER_REPORTED_SEAM_MEASUREMENTS_DISAGREE"],
+  [data-fabric-assessment="USER_REPORTED_FINISH_MEASUREMENTS_DISAGREE"],
+  [data-fabric-assessment="USER_REPORTED_BACKING_TRIM_SHORTFALL"],
+  [data-fabric-assessment="USER_REPORTED_SEWN_TOP_SIZE_DEVIATION"],
   [data-fabric-assessment="INCONCLUSIVE_NOT_POSTWASHED"]{background:#463522;color:#ffdbb9;border-color:#a98251}
  }
  @media print{.qa-fabric-audit{display:none!important}}
