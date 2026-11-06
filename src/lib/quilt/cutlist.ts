@@ -12,6 +12,15 @@ export function physicalRollId(category:'fabric'|'border',userSku:string):string
  if(typeof userSku!=='string'||!userSku.trim())throw Error('Physical roll requires a nonempty user SKU.');
  return category+':'+encodeURIComponent(userSku);
 }
+/** A quick correspondence tag, NOT a cryptographic signature or proof of
+ * physical correctness. The snapshot tag must be identical for shopping and
+ * cutting exports derived from the same committed Project V2 state.
+ */
+export function assertExportProjectFingerprint(value:string|undefined):void{
+ if(value!==undefined && !/^[0-9a-f]{8}$/.test(value))
+  throw Error('Source project fingerprint must be eight lowercase hexadecimal characters.');
+}
+export const EXPORT_FINGERPRINT_HEADER='Source project fingerprint (8-hex; not a digital signature)' as const;
 export type CsvCell = string | number | undefined;
 export const CUT_LIST_HEADERS=[
  'Material','Fabric SKU / roll','Piece number on this roll','Piece label',
@@ -45,8 +54,14 @@ export function cutListRows(plans:readonly MaterialCutPlan[]):CsvCell[][]{
  }
  return rows;
 }
-export function cutListCsv(plans:readonly MaterialCutPlan[]):string{
+export function cutListCsv(plans:readonly MaterialCutPlan[],sourceProjectHash?:string):string{
+ assertExportProjectFingerprint(sourceProjectHash);
  const rows=cutListRows(plans);
  if(rows.length===0)throw Error('No physical cut pieces are available to export.');
- return csvDocument([CUT_LIST_HEADERS,...rows]);
+ // Older standalone API consumers can continue reading the historical 11
+ // columns; production project exports add a 12th snapshot marker.
+ return sourceProjectHash===undefined
+  ? csvDocument([CUT_LIST_HEADERS,...rows])
+  : csvDocument([[...CUT_LIST_HEADERS,EXPORT_FINGERPRINT_HEADER],
+     ...rows.map(row=>[...row,sourceProjectHash])]);
 }

@@ -67,10 +67,20 @@ async function assertSvgCorrespondsToCutCsv(page,route){
  const file=await pending, csv=await fs.readFile(await file.path(),'utf8');
  const rows=csvRecords(csv);
  check(rows.length>1,'Missing real cutting rows at '+route);
- check(rows[0].length===11,'Unexpected cutting CSV columns at '+route);
+ check(rows[0].length===12&&rows[0][11]==='Source project fingerprint (8-hex; not a digital signature)',
+   'Cutting CSV must carry the actual committed Project V2 fingerprint: '+route);
+ const fromRows=new Set(rows.slice(1).map(row=>row[11]));
+ check(fromRows.size===1,'Mixed project fingerprint values within one physical cut-list CSV.');
+ const cutFingerprint=[...fromRows][0];
+ check(file.suggestedFilename().includes(cutFingerprint),
+  'Cut CSV filename must identify its project snapshot, not silently overwrite an older cut plan.');
+ const audit=await page.locator('[data-calculation-audit]').textContent();
+ check(audit.includes('Source project hash: '+cutFingerprint),
+  'Cut-list project fingerprint must match current on-screen calculation JSON provenance.');
  const bySku=new Map();
  for(const row of rows.slice(1)){
-  check(row.length===11,'Malformed real cutting row '+row.join('|'));
+  check(row.length===12&&/^[0-9a-f]{8}$/.test(row[11]),
+    'Malformed physical cutting row or missing project fingerprint '+row.join('|'));
   const sku=row[1];
   if(!bySku.has(sku))bySku.set(sku,[]);
   bySku.get(sku).push(row);
@@ -520,14 +530,28 @@ try{
     'Reviewed, feasible border-inclusive project should allow a cut CSV.');
   const shoppingPromise=geometryPage.waitForEvent('download');
   await geometryPage.getByRole('button',{name:'Download shopping CSV',exact:true}).click();
-  const shopRows=csvRecords(await fs.readFile(await (await shoppingPromise).path(),'utf8'));
+  const shopFile=await shoppingPromise;
+  const shopRows=csvRecords(await fs.readFile(await shopFile.path(),'utf8'));
   const findShopping=name=>shopRows.slice(1).find(r=>r[0].startsWith(name));
   check(Number(findShopping('Backing ·')[3])===5.25&&Number(findShopping('Batting ·')[3])===2.625&&
     Number(findShopping('Straight-grain binding')[3])>=0.125,
     'Shopping CSV amounts must reconcile to 66×86 finished exterior, not old 60×80 center.');
   const physicalPromise=geometryPage.waitForEvent('download');
   await geometryPage.locator('[data-action="export-cut-csv"]').click();
-  const physicalRows=csvRecords(await fs.readFile(await (await physicalPromise).path(),'utf8'));
+  const physicalFile=await physicalPromise;
+  const physicalRows=csvRecords(await fs.readFile(await physicalFile.path(),'utf8'));
+  const shopFingerprint=shopRows[1][11],cutFingerprint=physicalRows[1][11];
+  const validHash=/^[0-9a-f]{8}$/;
+  check(validHash.test(shopFingerprint)&&shopFingerprint===cutFingerprint &&
+    shopFile.suggestedFilename().includes(shopFingerprint) &&
+    physicalFile.suggestedFilename().includes(cutFingerprint) &&
+    shopRows[0][11]===physicalRows[0][11] &&
+    shopRows.slice(1).every(row=>row[11]===shopFingerprint)&&
+    physicalRows.slice(1).every(row=>row[11]===cutFingerprint),
+    'Current shopping and physical cuts must share the same source project fingerprint in every CSV row and filename.');
+  const sameProjectAudit=await geometryPage.locator('[data-calculation-audit]').textContent();
+  check(sameProjectAudit.includes('Source project hash: '+shopFingerprint),
+    'Shopping and cut CSV fingerprint must reconcile to the on-screen approved V2 project.');
   check(physicalRows.slice(1).some(r=>r[1]==='backing')&&
     physicalRows.slice(1).some(r=>r[1]==='batting'),
     'Cutting CSV must include externally sized backing and batting rolls.');
@@ -542,6 +566,15 @@ try{
   const geometryBorderWidth=geometryPage.getByLabel('Finished border width (in)',{exact:true}).first();
   await geometryBorderWidth.fill('4');await geometryBorderWidth.press('Tab');
   await hydrated(geometryPage,'/calculators/',{incomplete:true});
+  const newerShoppingPromise=geometryPage.waitForEvent('download');
+  await geometryPage.getByRole('button',{name:'Download INCOMPLETE shopping CSV'}).click();
+  const newerShoppingFile=await newerShoppingPromise;
+  const newerShopRows=csvRecords(await fs.readFile(await newerShoppingFile.path(),'utf8'));
+  check(newerShopRows[1][11]!==shopFingerprint &&
+    newerShopRows.slice(1).every(row=>row[11]===newerShopRows[1][11]) &&
+    newerShoppingFile.suggestedFilename().includes(newerShopRows[1][11]) &&
+    newerShoppingFile.suggestedFilename().includes('INCOMPLETE'),
+    'Editing border geometry must visibly change the shopping snapshot and retain incomplete-purchase filename.');
   check((await geometryPage.locator('[data-final-quilt-dimensions]').innerText()).includes('Final outside: 68 × 88') &&
     !(await geometryPage.getByLabel('I reviewed every quilt-top color, cut size and piece quantity.').isChecked()) &&
     !(await geometryPage.locator('[data-action="export-cut-csv"]').isEnabled()),

@@ -1,4 +1,4 @@
-import {csvDocument} from './cutlist';
+import {csvDocument, assertExportProjectFingerprint, EXPORT_FINGERPRINT_HEADER} from './cutlist';
 
 export type ShoppingLine = {
  label:string; hint:string; rollId?:string; amount?:number; rawYards?:number; offcutSqIn?:number;
@@ -64,7 +64,8 @@ export function needsTopFabricPlan(fabrics:readonly {pieces:readonly {count:numb
 /** Retain all material rows while clearly marking those with no verified fit.
  * An incomplete shopping CSV is a diagnostic, never an implied purchase order.
  */
-export function shoppingCsv(lines:readonly ShoppingLine[]):string {
+export function shoppingCsv(lines:readonly ShoppingLine[],sourceProjectHash?:string):string {
+ assertExportProjectFingerprint(sourceProjectHash);
  if(!lines.length)throw Error('No materials in shopping list.');
  // CSV rows and screen subtotal share the same finite-number validation.
  shoppingPriceSummary(lines);
@@ -81,7 +82,8 @@ export function shoppingCsv(lines:readonly ShoppingLine[]):string {
   'Material / SKU','Notes','Exact raw yards','Rounded purchase yards','Roll offcut sq in',
   'Purchase rounding excess in','Post-assembly trim sq in',
   'User entered price USD per yd','Estimated cost USD','Cut-fit / purchase status',
-  'Physical roll ID (matches cut-list CSV)'
+  'Physical roll ID (matches cut-list CSV)',
+  ...(sourceProjectHash===undefined?[]:[EXPORT_FINGERPRINT_HEADER])
  ];
  const rows=lines.map(line=>{
   const status=shoppingLineStatus(line);
@@ -90,7 +92,8 @@ export function shoppingCsv(lines:readonly ShoppingLine[]):string {
   return [
    line.label,line.hint,feasible?line.rawYards:undefined,feasible?line.amount:undefined,
    feasible?line.offcutSqIn:undefined,feasible?line.roundingExtraIn:undefined,
-   feasible?line.assemblyTrimSqIn:undefined,line.unitPrice,estimated,status,line.rollId
+   feasible?line.assemblyTrimSqIn:undefined,line.unitPrice,estimated,status,line.rollId,
+   ...(sourceProjectHash===undefined?[]:[sourceProjectHash])
   ];
  });
  return csvDocument([headers,...rows]);
