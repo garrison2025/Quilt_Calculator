@@ -19,6 +19,7 @@ export type SquareLabInput = {
  stepYards?: number;
 };
 export type SquareLabResult = {
+ method:'on-point-triangles'|'stitch-and-flip';
  finishedOuterIn: number;
  unfinishedOutsideIn: number;
  seamIn: number;
@@ -65,10 +66,58 @@ export function calculateSquareLab(input: SquareLabInput): SquareLabResult {
  if(center.isCutFeasible&&!verifyLayout(center))throw Error('Center cutting-roll verification failed.');
  if(corners.isCutFeasible&&!verifyLayout(corners))throw Error('Corner cutting-roll verification failed.');
  return {
+  method:'on-point-triangles',
   finishedOuterIn:B,unfinishedOutsideIn:B+2*SEAM,seamIn:SEAM,rulerStepIn:GRID,
   centerCutIn,cornerSquareCutIn,
   intendedFinishedCenterIn:centerCutIn-2*SEAM,
   centerSquares:blocks,cornerParentSquares:2*blocks,resultingCornerTriangles:4*blocks,
+  center:{layout:center,purchase:center.isCutFeasible?purchase(center.exactFabricRunLengthIn,step):undefined},
+  corners:{layout:corners,purchase:corners.isCutFeasible?purchase(corners.exactFabricRunLengthIn,step):undefined}
+ };
+}
+
+/**
+ * Distinct STITCH-AND-FLIP / folded-corners construction.
+ * Source: Generations Quilt Patterns and Scissortail Quilting "quick corner":
+ *  - 1 BASE square (finished B + 2 * seam allowance)
+ *  - 4 smaller CORNER squares (finished B / 2 + 2 * seam allowance)
+ * Corner squares are sewn to the base along their marked diagonals and then
+ * folded; they are NOT pre-split into the two-parent/four-triangle method.
+ *
+ * The optional on-point corner oversize does NOT have a corresponding
+ * stitch-and-flip geometry: reject rather than silently consuming it.
+ * This calculates ONLY separate parent-square roll placements, not seam
+ * accuracy, sewing waste, pattern matching, or actual bulk project yield.
+ */
+export function calculateFoldedCornerSquareLab(input:SquareLabInput):SquareLabResult{
+ const B=safeNumber(input.finishedOuterIn,'Finished outer block',2,120);
+ const blocks=safeNumber(input.blocks,'Block quantity',1,200);
+ if(!Number.isInteger(blocks))throw Error('Block quantity must be a whole number.');
+ const centerWof=safeNumber(input.centerWofIn,'Center usable WOF',2,120);
+ const cornerWof=safeNumber(input.cornerWofIn,'Corner usable WOF',2,120);
+ const extra=safeNumber(input.cornerExtraIn,'Extra corner-square cut size',0,2);
+ if(extra!==0)throw Error('Stitch-and-flip corners do not support the on-point oversized-triangle margin. Set extra to zero.');
+ const step=safeNumber(input.stepYards??.125,'Shop increment',.0625,1);
+ const centerCutIn=cutCeilInches(B+2*SEAM);
+ const cornerSquareCutIn=cutCeilInches(B/2+2*SEAM);
+ const center=layoutRectangles(centerWof,[{
+  widthIn:centerCutIn,heightIn:centerCutIn,count:blocks,
+  label:'Stitch-and-flip base square (not an on-point diamond)',allowRotate:false
+ }]);
+ const corners=layoutRectangles(cornerWof,[{
+  widthIn:cornerSquareCutIn,heightIn:cornerSquareCutIn,count:4*blocks,
+  label:'Stitch-and-flip corner square (SEW before trimming; do NOT pre-split)',allowRotate:false
+ }]);
+ if(center.isCutFeasible&&!verifyLayout(center))throw Error('Stitch-and-flip base roll verification failed.');
+ if(corners.isCutFeasible&&!verifyLayout(corners))throw Error('Stitch-and-flip corner roll verification failed.');
+ return {
+  method:'stitch-and-flip',
+  finishedOuterIn:B,unfinishedOutsideIn:B+2*SEAM,seamIn:SEAM,rulerStepIn:GRID,
+  centerCutIn,cornerSquareCutIn,
+  // The finished base side is a different measurement from the exposed
+  // on-point diamond side; never present this number as the diamond size.
+  intendedFinishedCenterIn:B,
+  centerSquares:blocks,cornerParentSquares:4*blocks,resultingCornerTriangles:0,
   center:{layout:center,purchase:center.isCutFeasible?purchase(center.exactFabricRunLengthIn,step):undefined},
   corners:{layout:corners,purchase:corners.isCutFeasible?purchase(corners.exactFabricRunLengthIn,step):undefined}
  };
