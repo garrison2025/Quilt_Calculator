@@ -2799,6 +2799,11 @@ try{
     (await comparison.innerText()).includes('Price not supplied') &&
     await quickPage.getByLabel('What do your quilt measurements include?').inputValue()==='includes-borders',
     'Backing wide-fabric comparison must use the persisted outside-size project without inventing prices.');
+  const compareScroller=comparison.locator('.table-scroll');
+  check(await compareScroller.getAttribute('tabindex')==='0' &&
+    await compareScroller.getAttribute('role')==='region' &&
+    Boolean(await compareScroller.getAttribute('aria-label')),
+    'Narrow backing what-if table must be keyboard focusable and accessibly named.');
   await comparison.locator('[data-backing-alt-price]').fill('18');
   check((await comparison.innerText()).includes('Enter the current price'),
     'Showing an alternate price without a current price cannot invent a cost saving.');
