@@ -33,7 +33,7 @@ export const guides:Record<ToolId,Guide>={
   lead:'Backing yardage depends on finished quilt size, the allowance around it, usable bolt width, seam take-up and panel direction. An area-only estimate misses the number of panels that must be joined.',
   sections:[
    {heading:'A reproducible 60 × 80 inch backing example',paragraphs:[
-    'This independent example treats 60 × 80 inches as the finished OUTSIDE quilt size, without the planner's 3-inch border. With 4 inches of overage on each side, the backing must cover 68 × 88 inches. At 43 inches of usable WOF and 1 inch of total take-up per joined seam, two vertical panels can make a joined width of 85 inches. Cut two 88-inch lengths: 176 inches of roll length, or about 4.89 yards raw, rounded to 5 yards in eighth-yard increments.',
+    'This independent example treats 60 × 80 inches as the finished OUTSIDE quilt size, without the planner’s 3-inch border. With 4 inches of overage on each side, the backing must cover 68 × 88 inches. At 43 inches of usable WOF and 1 inch of total take-up per joined seam, two vertical panels can make a joined width of 85 inches. Cut two 88-inch lengths: 176 inches of roll length, or about 4.89 yards raw, rounded to 5 yards in eighth-yard increments.',
     'Turning the construction gives three panels, each 68 inches long: 204 inches total. That is 5⅔ yards raw, rounded to 5¾ yards. Select the shorter permitted plan; a one-way print may prohibit the alternative orientation.'
    ]},
    {heading:'What changes with 108-inch wide backing?',paragraphs:[
@@ -50,7 +50,7 @@ export const guides:Record<ToolId,Guide>={
   lead:'Work from the quilt perimeter, add the intended finishing tail once, subtract the usable length consumed by diagonal strip joins, then count how many full WOF strips are required.',
   sections:[
    {heading:'Why 8 strips are needed in the worked example',paragraphs:[
-    'In this separate unbordered example, 60 × 80 inches is the OUTSIDE quilt size (not the planner's 60 × 80 inch center). The perimeter is 2 × (60 + 80) = 280 inches. Add a 12-inch finishing tail allowance for a required joined length of 292 inches. With 43-inch full-width strips and 2.5 inches lost at each join, 7 strips give only 286 inches; 8 strips give 326.5 inches.',
+    'In this separate unbordered example, 60 × 80 inches is the OUTSIDE quilt size (not the planner’s 60 × 80 inch center). The perimeter is 2 × (60 + 80) = 280 inches. Add a 12-inch finishing tail allowance for a required joined length of 292 inches. With 43-inch full-width strips and 2.5 inches lost at each join, 7 strips give only 286 inches; 8 strips give 326.5 inches.',
     'At a cut strip width of 2.5 inches, eight strips use 20 inches of fabric along the bolt. That is 20 ÷ 36 = 0.5556 yards before rounding, so an eighth-yard purchase increment gives ⅝ yard.'
    ]},
    {heading:'What the strip width does—and does not—control',paragraphs:[
