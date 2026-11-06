@@ -105,6 +105,10 @@ export function evaluateTopChain(project:ImportedFabricAudit,entered:UserTopChai
  const refs=new Set<string>();
  let allCuts=true,allJoins=true;
  let cutSum=0,seamLoss=0;
+ // Accumulate only individually entered valid seam losses. This separate
+ // per-piece check is required even when the remaining joins are unmeasured:
+ // total chain length can stay positive while one cut has been consumed.
+ const knownTakeupByPiece=Array<number>(n).fill(0);
  for(const [i,piece] of entered.pieces.entries()){
   const id=piece?.rollId,number=piece?.pieceNumber;
   if(typeof id!=='string'||!id.startsWith('fabric:')||
@@ -148,9 +152,15 @@ export function evaluateTopChain(project:ImportedFabricAudit,entered:UserTopChai
     }
     root.recordedJoinEdgeCount++;
     seamLoss+=value;
+    knownTakeupByPiece[i+side]+=value;
    }
   }
  }else allJoins=false;
+ for(const [i,piece] of entered.pieces.entries()){
+  const span=piece?.observedCutSpanIn;
+  if(span!==undefined&&finite(span)&&span>0&&knownTakeupByPiece[i]>=span-1e-8)
+   root.invalid.push('Known measured seam-edge take-up consumes the entire physical span of quilt-TOP chain piece #'+(i+1)+'.');
+ }
  if(allCuts)root.measuredCutSpanSumIn=cutSum;
  if(allJoins)root.summedNetSeamTakeupIn=seamLoss;
  root.measuredJoinedSpanIn=entered.observedJoinedSpanIn;
