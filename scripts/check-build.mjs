@@ -80,6 +80,36 @@ for(const expected of ['CONTINUOUS_BIAS_TUBE_TOPOLOGY_ONLY',
  if(!tubeTopologySource.includes(expected))
   throw Error('Tube model cannot claim verified usable yield, source cuts or shopping: '+expected);
 }
+// Reverse-square continuous-bias numerical prototype stays a lab on EVERY
+// build, even if the nine approved calculator pages are later indexable.
+const biasPlanHtml=fs.readFileSync('dist/lab/continuous-bias-planner/index.html','utf8');
+for(const token of [
+ 'data-bias-plan','noindex,follow','Continuous Bias Binding Planning Lab',
+ 'NOT SAFE TO BUY FROM','numerical model','noindex',
+ 'NOT a shopping order','not a verified fabric-yield',
+ 'href="/lab/continuous-bias-tube/"'
+]){
+ if(!biasPlanHtml.toLowerCase().includes(token.toLowerCase()))
+  throw Error('Continuous bias planning lab missing noindex/non-purchase contract: '+token);
+}
+if(biasPlanHtml.includes('rel="canonical"')||
+   biasPlanHtml.includes('application/ld+json'))
+ throw Error('Mathematical bias planning prototype cannot acquire a canonical or indexable structured data.');
+for(const slug of ['quilt-binding-calculator','lab/continuous-bias-tube']){
+ const page=fs.readFileSync('dist/'+slug+'/index.html','utf8');
+ if(!page.includes('href="/lab/continuous-bias-planner/"'))
+  throw Error('Bias planning research page must remain visibly linked to its method disclosure: '+slug);
+}
+const biasPlanSource=fs.readFileSync('src/lib/quilt/continuous-bias-planner.ts','utf8');
+for(const token of [
+ 'NOT_VERIFIED_FOR_PHYSICAL_YIELD_OR_PURCHASE',
+ 'safeToPurchase:false','physicalSpecimenVerified:false',
+ 'verifiedUsableLengthIn?:never','purchaseYards?:never',
+ 'calculateBiasTube2DDevelopment','searchStepIn:0.125'
+]){
+ if(!biasPlanSource.includes(token))
+  throw Error('Bias inverse square planner must remain non-purchasing: '+token);
+}
 const individualBiasLabHtml=fs.readFileSync('dist/lab/individual-bias-strips/index.html','utf8');
 for(const token of [
  'noindex,follow','data-individual-bias-lab','Individual 45° Bias Strip Geometry Lab',
@@ -320,8 +350,8 @@ console.log('PASS: 218 source keyword records, 202 mapped to 9 unique tool inten
  * Asset hrefs are intentionally excluded; internal navigation URLs must be valid.
  */
 const seenTitles=new Set();
-const internalRoutes=new Set([...slugs.map(slug=>'/'+(slug?slug+'/':'')),'/about/','/privacy/','/qa/print-calibration/','/qa/fabric-cutting/','/qa/2x2-measurement-sheet/','/lab/individual-bias-strips/','/lab/continuous-bias-tube/']);
-for(const slug of [...slugs,'about','privacy','qa/print-calibration','qa/fabric-cutting','qa/2x2-measurement-sheet','lab/individual-bias-strips','lab/continuous-bias-tube']){
+const internalRoutes=new Set([...slugs.map(slug=>'/'+(slug?slug+'/':'')),'/about/','/privacy/','/qa/print-calibration/','/qa/fabric-cutting/','/qa/2x2-measurement-sheet/','/lab/individual-bias-strips/','/lab/continuous-bias-tube/','/lab/continuous-bias-planner/']);
+for(const slug of [...slugs,'about','privacy','qa/print-calibration','qa/fabric-cutting','qa/2x2-measurement-sheet','lab/individual-bias-strips','lab/continuous-bias-tube','lab/continuous-bias-planner']){
  const html=fs.readFileSync('dist/'+(slug?slug+'/':'')+'index.html','utf8');
  const title=html.match(/<title>([^<]+)<\/title>/)?.[1];
  if(!title||seenTitles.has(title))throw Error('Missing/duplicate page title: '+slug);
@@ -334,7 +364,7 @@ for(const slug of [...slugs,'about','privacy','qa/print-calibration','qa/fabric-
   if(!internalRoutes.has(href))throw Error('Broken internal page link '+href+' from '+slug);
  }
 }
-console.log('PASS: 17 uniquely titled static pages including noindex About, print-scale, fabric QA, blank 2×2 record and two bias research labs, one H1 each, internal link destinations verified.');
+console.log('PASS: 18 uniquely titled static pages including noindex About, print-scale, fabric QA, blank 2×2 record and three bias research labs, one H1 each, internal link destinations verified.');
 
 // Feature enhancements must deepen approved existing SEO routes; never
 // create three isolated thin keyword pages or make the preview indexable.
