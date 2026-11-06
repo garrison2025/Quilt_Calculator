@@ -727,7 +727,7 @@ try{
   const seamEvidencePromise=auditPage.waitForEvent('download');
   await auditDownload.click();
   const seamEvidence=JSON.parse(await fs.readFile(await (await seamEvidencePromise).path(),'utf8'));
-  check(seamEvidence.schemaVersion===5 && seamEvidence.cuttingPlanJsonMatchedByFingerprint===true &&
+  check(seamEvidence.schemaVersion===6 && seamEvidence.cuttingPlanJsonMatchedByFingerprint===true &&
     seamEvidence.seamVerificationCoverage==='ALL_USER_REPORTED' &&
     seamEvidence.seamChecks.length===2 &&
     seamEvidence.seamChecks.every(c=>c.perJoinCoverage==='ALL_USER_REPORTED' && !c.perJoinVsAssembledSpanMismatch) &&
@@ -797,7 +797,7 @@ try{
   const finishDownloadPromise=auditPage.waitForEvent('download');
   await auditDownload.click();
   const finishJson=JSON.parse(await fs.readFile(await(await finishDownloadPromise).path(),'utf8'));
-  check(finishJson.schemaVersion===5 &&
+  check(finishJson.schemaVersion===6 &&
     finishJson.finishingCheck.backingCoverage==='FULL_USER_REPORTED' &&
     finishJson.finishingCheck.topCoverage==='FULL_USER_REPORTED' &&
     finishJson.finishingCheck.observedTrimAreaSqIn>=0 &&
@@ -864,7 +864,7 @@ try{
   const chainPromise=auditPage.waitForEvent('download');
   await auditDownload.click();
   const chainProof=JSON.parse(await fs.readFile(await (await chainPromise).path(),'utf8'));
-  check(chainProof.schemaVersion===5 &&
+  check(chainProof.schemaVersion===6 &&
     chainProof.topChainCheck.coverage==='ALL_USER_REPORTED' &&
     chainProof.topChainCheck.recordedPieceCount===2 &&
     chainProof.topChainCheck.recordedJoinEdgeCount===2 &&
