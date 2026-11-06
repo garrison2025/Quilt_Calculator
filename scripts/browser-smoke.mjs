@@ -2802,8 +2802,8 @@ try{
   await comparison.locator('[data-backing-alt-price]').fill('18');
   check((await comparison.innerText()).includes('Enter the current price'),
     'Showing an alternate price without a current price cannot invent a cost saving.');
-  await quickPage.getByLabel('Backing price (USD/yd, optional)').fill('10');
-  await quickPage.getByLabel('Backing price (USD/yd, optional)').press('Tab');
+  await quickPage.getByLabel('Backing price (USD/yd, optional)',{exact:true}).fill('10');
+  await quickPage.getByLabel('Backing price (USD/yd, optional)',{exact:true}).press('Tab');
   check((await comparison.innerText()).includes('material cost') &&
     (await comparison.innerText()).includes('WHAT-IF · 108 in') &&
     await comparison.locator('[data-backing-alt-price]').inputValue()==='18',
