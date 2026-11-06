@@ -594,3 +594,10 @@
 }
 .cut-coordinate-link:hover{border-color:currentColor}
 .cut-coordinate-link:focus-visible{outline:2px solid currentColor;outline-offset:2px}
+
+/* Square methods never share one cut list: hidden audit is on-point only. */
+.square-method-selector{margin:0 0 1rem}
+.square-method-selector select{max-width:100%;min-height:44px;white-space:normal}
+.square-lab [hidden]{display:none!important}
+.square-lab-folded-reference{margin-top:1.4rem}
+.square-lab-folded-reference .square-lab-chart{min-width:620px}
