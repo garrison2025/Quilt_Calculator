@@ -382,9 +382,26 @@ import Base from '../../../layouts/Base.astro';
     const value=numberValue(query<HTMLInputElement>('[data-fabric-finish="'+key+'"]'));
     if(value!==undefined)finishingReading[key]=value;
    }
+   const selectedPieces=[...(topPieces?.querySelectorAll<HTMLElement>('[data-top-chain-piece]')??[])];
+   const selectedJoins=[...(topJoins?.querySelectorAll<HTMLElement>('[data-top-chain-join]')??[])];
+   const topChain:UserTopChain|undefined=selectedPieces.length?{
+    axis:fieldValue('[data-top-chain-axis]') as UserTopChain['axis'],
+    spansEntireCenter:query<HTMLInputElement>('[data-top-chain-full-center]')?.checked??false,
+    declaredTotalToleranceIn:numberValue(query<HTMLInputElement>('[data-top-chain-tolerance]')),
+    observedJoinedSpanIn:numberValue(query<HTMLInputElement>('[data-top-chain-joined]')),
+    pieces:selectedPieces.map(row=>({
+     rollId:row.querySelector<HTMLSelectElement>('[data-top-chain-roll]')?.value??'',
+     pieceNumber:numberValue(row.querySelector<HTMLInputElement>('[data-top-chain-piece-num]'))??0,
+     observedCutSpanIn:numberValue(row.querySelector<HTMLInputElement>('[data-top-chain-cut-span]'))
+    })),
+    joins:selectedJoins.map(row=>({
+     previousEdgeTakeupIn:numberValue(row.querySelector<HTMLInputElement>('[data-top-chain-loss-previous]')),
+     nextEdgeTakeupIn:numberValue(row.querySelector<HTMLInputElement>('[data-top-chain-loss-next]'))
+    }))
+   }:undefined;
    return {
     project:imported,readings,
-    joinedSeamReadings,
+    topChain,joinedSeamReadings,
     allowedSeamDeviationIn:numberValue(query<HTMLInputElement>('[data-fabric-seam-tolerance]')),
     finishingReading,allowedFinishingDeviationIn:numberValue(query<HTMLInputElement>('[data-fabric-finishing-tolerance]')),
     date:fieldValue('[data-fabric-date]'),
@@ -400,6 +417,45 @@ import Base from '../../../layouts/Base.astro';
    resultNode.dataset.fabricAssessment=outcome.status;
    resultNode.textContent=outcome.message+(outcome.missing.length?' Missing: '+outcome.missing.join('; ')+'.':'');
    exportButton.disabled=!outcome.canExport;
+   const chain=outcome.topChainCheck;
+   if(topResult){
+    topResult.dataset.topChainCoverage=chain.coverage;
+    const notes=[
+     'Top chain: '+chain.coverage+'. Source: '+chain.source+'.',
+     'User-selected physical cuts '+chain.recordedPieceCount+'/'+chain.cutPieceCount+
+      ', measured joining edges '+chain.recordedJoinEdgeCount+'/'+(chain.joinCount*2)+'.'
+    ];
+    if(chain.measuredCutSpanSumIn!==undefined)
+     notes.push('Total ACTUAL cut spans '+chain.measuredCutSpanSumIn.toFixed(3)+' in.');
+    if(chain.summedNetSeamTakeupIn!==undefined)
+     notes.push('Two-sided measured seam losses summed '+chain.summedNetSeamTakeupIn.toFixed(3)+' in.');
+    if(chain.predictedJoinedSpanFromMeasuredPartsIn!==undefined)
+     notes.push('Predicted assembled span from ACTUAL cuts − ACTUAL seam edges '+
+      chain.predictedJoinedSpanFromMeasuredPartsIn.toFixed(3)+' in.');
+    if(chain.joinedSpanDifferenceIn!==undefined)
+     notes.push('Independent joined-span ruler minus predicted '+chain.joinedSpanDifferenceIn.toFixed(3)+' in.');
+    if(chain.centerSpanDifferenceIn!==undefined)
+     notes.push('User-claimed complete CENTER chain vs planned center difference '+
+      chain.centerSpanDifferenceIn.toFixed(3)+' in.');
+    if(chain.cutSizeDeviationCount>0)
+     notes.push(chain.cutSizeDeviationCount+' selected real cut spans outside native CSV size tolerance.');
+    notes.push(...chain.warnings);
+    if(chain.invalid.length)notes.push('Invalid: '+chain.invalid.join('; '));
+    topResult.textContent=notes.join(' ')+' All physical results USER REPORTED; NOT independent quilt-top verification.';
+    for(const row of topPieces?.querySelectorAll<HTMLElement>('[data-top-chain-piece]')??[]){
+     const info=row.querySelector<HTMLElement>('[data-top-chain-piece-info]');
+     if(!info)continue;
+     const rid=row.querySelector<HTMLSelectElement>('[data-top-chain-roll]')?.value??'';
+     const pieceNo=numberValue(row.querySelector<HTMLInputElement>('[data-top-chain-piece-num]'));
+     const piece=imported?.rolls.find(x=>x.id===rid)?.pieces.find(x=>x.pieceNumber===pieceNo);
+     const axis=fieldValue('[data-top-chain-axis]');
+     info.textContent=piece?
+      'Reference CSV cut #'+pieceNo+': width '+piece.widthIn+' × height '+piece.heightIn+
+       ' in; expected '+axis+' span '+(axis==='width'?piece.widthIn:piece.heightIn)+
+       ' in. This is NOT the real measured span.':
+      'Select an actual fabric SKU and valid physical cut-list piece number; ruler span NOT inferred.';
+    }
+   }
    const finish=outcome.finishingCheck;
    if(finishResult){
     finishResult.dataset.fabricFinishingCoverage=finish.backingCoverage;
