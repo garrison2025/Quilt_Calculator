@@ -5,6 +5,7 @@ import { cutListCsv, physicalRollId, type MaterialCutPlan } from '../lib/quilt/c
 import { shoppingCsv, shoppingPriceSummary, hasIncompleteShopping, shoppingLineStatus, needsTopFabricPlan, type ShoppingLine } from '../lib/quilt/shopping';
 import type { ToolId } from './types';
 import {attachCutWalkthrough} from './diagram-playback';
+import {FINISHED_SIZE_EXAMPLES,applyFinishedSizeExample,applyBlockGridAsCenter,compareBackingPurchases} from '../lib/quilt/quick-planning';
 type Kind = 'length' | 'whole' | 'number' | 'pct' | 'check' | 'text';
 type Field = { label: string; path: string; kind?: Kind; note?: string };
 const num = (n: number, digits = 3): string => Number(n.toFixed(digits)).toLocaleString('en-US', {maximumFractionDigits: digits});
@@ -322,6 +323,9 @@ if(root){
  }
  let project:Project=structuredClone(sampleProject);
  let sample=true,conv='1/4';
+ // Read-only alternate width/price scenario; never included in shopping, cut CSV,
+ // the saved V2 project or physical cutting-plan JSON until explicitly edited.
+ let alternateBackingWofText='108',alternateBackingPriceText='';
  let cutExport:unknown=null;
  let materialCuts:MaterialCutPlan[]=[];
  // Keep the last accepted headline across an in-progress input draft, so a
@@ -713,6 +717,28 @@ if(root){
   renderEditor();
   update();
  }
+ function renderSizeExamples():void{
+  const wrap=node('section','quick-sizing-panel');
+  wrap.dataset.sizePresets='';
+  wrap.appendChild(node('h3','group-title','Common quilt size examples'));
+  wrap.appendChild(node('p','hint',
+   'Illustrative FINISHED OUTSIDE sizes in inches, not industry standards. Applying one sets the outside size, keeps your existing borders/fabric SKUs and revokes any previous quilt-top cut-list review. Check your pattern before buying.'));
+  const buttons=node('div','size-example-buttons');
+  for(const example of FINISHED_SIZE_EXAMPLES){
+   const button=node('button','action-secondary',example.label+' · '+example.widthIn+' × '+example.heightIn+' in');
+   button.type='button';button.dataset.sizePreset=example.id;
+   button.addEventListener('click',()=>{
+    if(!requireCommittedDraft('apply a finished quilt size')||!requireCurrentOutput('apply a finished quilt size'))return;
+    try{
+     const next=applyFinishedSizeExample(project,example.id);
+     project=next;persist();renderEditor();update();
+     note('Applied illustrative '+example.label+' finished OUTSIDE size. Your original fabric cuts and borders are unchanged; review quilt-top piece coverage again before full export.');
+    }catch(e){note('Size example rejected: '+(e instanceof Error?e.message:'Invalid dimensions'),true);}
+   });
+   buttons.appendChild(button);
+  }
+  wrap.appendChild(buttons);fieldsRoot.appendChild(wrap);
+ }
  function renderEditor():void{
   fieldsRoot.replaceChildren();
   unitsSelect.value=project.units;
@@ -778,6 +804,8 @@ if(root){
    wrap.append(label,select,help);
    fieldsRoot.appendChild(wrap);
   }
+  if(['hub','backing','binding','batting','borders','fabric'].includes(tool))
+   renderSizeExamples();
   for(const group of groups[tool])fieldsRoot.appendChild(makeGroup(group.title,group.fields));
   if(tool==='fabric')renderFabricEditor();
   if(tool==='borders')renderBorderEditor();
@@ -820,6 +848,66 @@ if(root){
    fieldsRoot.appendChild(review);
    fieldsRoot.appendChild(node('p','footer-note','Need fabric colors or additional borders? Edit them on the dedicated Quilt Fabric and Borders pages; your local project is shared across all tools.'));
   }
+ }
+ function renderBackingWidthComparison(parent:HTMLElement,outsideW:number,outsideH:number):void{
+  const box=node('section','backing-width-comparison');
+  box.dataset.backingWidthComparison='';
+  box.appendChild(node('h3','group-title','Compare a second usable backing width and purchase cost'));
+  box.appendChild(node('p','hint',
+   'Hypothetical comparison ONLY. Both scenarios use this project's current outside quilt size, backing overage, seam/grain rules, direction preference, prewash length shrinkage and shop increment. Width is usable AFTER selvedges and prewash. Only the CURRENT backing WOF appears in cut CSV, shopping and print.'));
+  const inputRow=node('div','comparison-inputs');
+  const widthLabel=node('label','','Alternate usable WOF (in)');
+  const widthInput=node('input','field-control');widthInput.type='text';widthInput.inputMode='decimal';
+  widthInput.id='comparison-backing-wof';widthInput.dataset.backingAltWof='';
+  widthInput.value=alternateBackingWofText;widthLabel.htmlFor=widthInput.id;
+  const priceLabel=node('label','','Alternate backing price (USD/yd, optional)');
+  const priceInput=node('input','field-control');priceInput.type='text';priceInput.inputMode='decimal';
+  priceInput.id='comparison-backing-price';priceInput.dataset.backingAltPrice='';
+  priceInput.value=alternateBackingPriceText;priceLabel.htmlFor=priceInput.id;
+  inputRow.append(widthLabel,widthInput,priceLabel,priceInput);box.appendChild(inputRow);
+  const output=node('div','comparison-results');output.dataset.backingComparisonResults='';box.appendChild(output);
+  const calculate=()=>{
+   alternateBackingWofText=widthInput.value;alternateBackingPriceText=priceInput.value;
+   output.replaceChildren();
+   try{
+    const otherWidth=parseMeasure(alternateBackingWofText);
+    const altPrice=alternateBackingPriceText.trim()?parseMeasure(alternateBackingPriceText):undefined;
+    const o=project.options;
+    const summary=compareBackingPurchases({
+     widthIn:outsideW,heightIn:outsideH,overageIn:o.overage,
+     currentWofIn:o.usableWof,alternateWofIn:otherWidth,
+     joinTakeupIn:o.joinTakeup,oneWayPrint:o.oneWayPrint,step:o.step,
+     lengthShrinkagePct:o.lengthShrinkage,backingDirection:o.backingDirection??'auto',
+     currentUnitPriceUsd:o.backingPricePerYard,alternateUnitPriceUsd:altPrice
+    });
+    const describe=(item:typeof summary.current)=>[
+     num(item.usableWofIn)+' in',item.selectedDirection,
+     String(item.panelCount),String(item.joinedSeamCount),
+     yd(item.purchaseYards)+' yd',
+     item.costUsd===undefined?'Price not supplied':money(item.costUsd)
+    ];
+    table(output,['Scenario','Seam direction','Panels','Seams','Buy','Fabric cost'],[
+     ['CURRENT · '+describe(summary.current)[0],...describe(summary.current).slice(1)],
+     ['WHAT-IF · '+describe(summary.alternate)[0],...describe(summary.alternate).slice(1)]
+    ]);
+    const yardsChange=Math.abs(summary.extraPurchaseYards)<1e-8?'same purchase yardage':
+     Math.abs(summary.extraPurchaseYards).toFixed(3)+' yd '+(summary.extraPurchaseYards<0?'less':'more')+' in what-if.';
+    output.appendChild(node('p','footer-note','Alternate versus current: '+yardsChange+
+     (summary.costDifferenceUsd!==undefined?' · '+money(Math.abs(summary.costDifferenceUsd))+
+      (summary.costDifferenceUsd<0?' less':' more')+' material cost.':
+      ' · Enter the current price in Shopping and alternate price above for a cost comparison.')));
+    output.appendChild(node('p','hint',
+     'Cost means rounded yards × your own USD/yard price only: excludes taxes, shipping, seam labor and pattern matching. No comparison scenario changes the physical cut/export plan.'));
+   }catch(e){
+    const warningText=node('p','warning-banner',
+     'Hypothetical width unavailable: '+(e instanceof Error?e.message:'Invalid width or price')+
+     '. Correct the comparison values; your CURRENT purchase/export remains unaffected.');
+    warningText.dataset.backingComparisonError='';output.appendChild(warningText);
+   }
+  };
+  widthInput.addEventListener('input',calculate);
+  priceInput.addEventListener('input',calculate);
+  calculate();parent.appendChild(box);
  }
  function purchasesTitle(result:HTMLElement,buy:{rawPurchaseYards:number;roundedPurchaseYards:number;purchaseRoundingExtraLengthIn:number},name:string,unitPrice?:number){
   hero(result,yd(buy.roundedPurchaseYards),'ROUNDED PURCHASE · '+name,'Exact raw requirement: '+num(buy.rawPurchaseYards,4)+' yd. Purchase rounded upward to the chosen shop increment.');
@@ -929,7 +1017,9 @@ if(root){
      button.addEventListener('click',()=>changeBackingDirection(direction.direction));
      options.appendChild(button);
     }
-    resultRoot.appendChild(options);layout=selected.layout;materialCuts=[{material:'Backing · '+selected.direction+' seams',sku:'backing',layout:selected.layout}];
+    resultRoot.appendChild(options);
+    renderBackingWidthComparison(resultRoot,outerW,outerH);
+    layout=selected.layout;materialCuts=[{material:'Backing · '+selected.direction+' seams',sku:'backing',layout:selected.layout}];
     warning(resultRoot,'The fabric-roll offcut shown does not include trimming the panel assembly after sewing. Assembly trim: '+num(selected.postAssemblyTrimAreaSqIn)+' in². Do not add it to roll offcuts.');
     plan={options:b.options,selected:selected.direction,backingDirectionMode:o.backingDirection??'auto'};
    }else if(tool==='binding'){
@@ -973,7 +1063,21 @@ if(root){
    }else if(tool==='sashing'){
     const s=p.sashing,r=calculateSashing({rows:s.rows,columns:s.columns,blockWidthIn:s.blockWidth,blockHeightIn:s.blockHeight,finishedSashIn:s.width,seamIn:o.seam,wofIn:o.usableWof,step:o.step});
     if(r.purchase)purchasesTitle(resultRoot,r.purchase,'SASHING FABRIC');else warning(resultRoot,r.layout.error||'FIT_IMPOSSIBLE',true);
-    stats(resultRoot,[['Vertical strips',String(r.vertical)],['Horizontal strips',String(r.horizontal)],['Cornerstones',String(r.cornerstones)],['Finished grid',num(r.finishedWidthIn)+' × '+num(r.finishedHeightIn)+' in']]);layout=r.layout;materialCuts=[{material:'Sashing and cornerstones',sku:'sashing',layout:r.layout}];plan=r;
+    stats(resultRoot,[['Vertical strips',String(r.vertical)],['Horizontal strips',String(r.horizontal)],['Cornerstones',String(r.cornerstones)],['Finished grid',num(r.finishedWidthIn)+' × '+num(r.finishedHeightIn)+' in']]);
+    const useGrid=node('button','action-secondary','Use this sashing grid as quilt CENTER');
+    useGrid.type='button';useGrid.dataset.useSashingCenter='';
+    useGrid.addEventListener('click',()=>{
+     if(!requireCommittedDraft('use this grid as the quilt center')||!requireCurrentOutput('use this grid as the quilt center'))return;
+     try{
+      const next=applyBlockGridAsCenter(project,r.finishedWidthIn,r.finishedHeightIn);
+      project=next;persist();renderEditor();update();
+      note('Applied '+num(r.finishedWidthIn)+' × '+num(r.finishedHeightIn)+
+       ' in sashing grid as quilt CENTER. Existing border layers are added outside; quilt fabric cuts were NOT generated. Quilt-top review revoked; check every color and cut quantity before export.');
+     }catch(e){note('Could not apply sashing center: '+(e instanceof Error?e.message:'Invalid grid'),true);}
+    });
+    resultRoot.appendChild(useGrid);
+    resultRoot.appendChild(node('p','footer-note','This grid includes blocks, internal sashing and cornerstones only. The action transfers CENTER dimensions to all tools; borders are still added separately. It does NOT create or review colored fabric cut pieces.'));
+    layout=r.layout;materialCuts=[{material:'Sashing and cornerstones',sku:'sashing',layout:r.layout}];plan=r;
    }else if(tool==='borders'){
     const b=calculateBorders({widthIn:dimensions!.centerWidthIn,heightIn:dimensions!.centerHeightIn,seamIn:o.seam,layers:p.borders,step:o.step});
     hero(resultRoot,String(b.layers.length),'BUTTED BORDER LAYERS','Final quilt '+num(b.finishedWidthIn)+' × '+num(b.finishedHeightIn)+' in. Side strips are attached before top and bottom strips.',b.layers.length===1?'layer':'layers');
