@@ -4,6 +4,8 @@ Free US-English quilting tools built with Astro static pages and a browser-based
 
 ## Project acceptance / current deployment
 
+**CURRENT DECISION (2026-11-06): SOFTWARE ACCEPTANCE — PASS.** The project owner approved automated engineering verification as the acceptance criterion for the present Quilt Calculator website stage; a physical 2×2 sewn sample and printed-paper ruler signoff are **not required to accept the software**. This acceptance covers the nine approved calculators and browser-only Project Planner as a tested **noindex preview**. Production-domain indexing, real SEO performance, advertising and unverified methods are separate later stages. Physical tests remain truthfully `MANUAL_NOT_RUN` but are no longer blockers for this software milestone. See [the authoritative 2026-11-06 acceptance decision and exact CI evidence](docs/qa/SOFTWARE_ACCEPTANCE_DECISION_20261106.md).
+
 **Software engineering complete for the nine approved calculator intents; automated preview acceptance PASSED (2026-11-05). Physical validation and production release remain PENDING.** This is a development freeze for the accepted preview scope, not a claim that all 47 original production gates are closed.
 
 - [Official acceptance decision and evidence](docs/qa/PREVIEW_ENGINEERING_ACCEPTANCE_20261105.md) — 187/187 unit/property checks, all 10 approved page reflow checks at 320 CSS px, browser import/export, automated accessibility checks and print/preview protection.
