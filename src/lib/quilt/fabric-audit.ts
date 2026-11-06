@@ -203,6 +203,7 @@ export type FabricAuditStatus=
  'USER_REPORTED_TOP_CHAIN_MEASUREMENTS_DISAGREE'|
  'USER_REPORTED_TOP_CHAIN_CENTER_SIZE_DEVIATION'|
  'USER_REPORTED_TOP_CHAIN_CUT_SIZE_DEVIATION'|
+ 'USER_REPORTED_TOP_GRID_SOURCE_COVERAGE_MISMATCH'|
  'USER_REPORTED_TOP_GRID_SHAPE_MISMATCH'|
  'USER_REPORTED_TOP_GRID_RULER_MISMATCH'|
  'USER_REPORTED_TOP_GRID_CENTER_SIZE_DEVIATION'|
@@ -335,6 +336,9 @@ export function assessFabricAudit(input:ManualFabricAuditInput):FabricAuditAsses
  if(topChain.cutSizeDeviationCount>0)return {
   ...seamDetails,status:'USER_REPORTED_TOP_CHAIN_CUT_SIZE_DEVIATION',canExport:true,checks,missing,
   message:'At least one quilt-top cut piece is user-measured outside the native cut-list span tolerance. Inspect the actual cut piece and its selected SKU/number before sewing.'};
+ if(topGrid.fullCenterSourceCoverageMismatch)return {
+  ...seamDetails,status:'USER_REPORTED_TOP_GRID_SOURCE_COVERAGE_MISMATCH',canExport:true,checks,missing,
+  message:'A user-claimed complete quilt TOP center grid omits planned numbered TOP cut-list pieces. The whole-center dimension comparison is suppressed; reclassify this as a SAMPLE or reconcile all source pieces with a qualified human. A source-identity match alone would still not prove sewn topology or physical workmanship.'};
  if(topGrid.shapeMismatch)return {
   ...seamDetails,status:'USER_REPORTED_TOP_GRID_SHAPE_MISMATCH',canExport:true,checks,missing,
   message:'User-reported row widths, column heights or aligned piece cell spans do not form a consistent straight-seam rectangular quilt-top grid. Check actual placement and each measured seam edge. No physical approval.'};
