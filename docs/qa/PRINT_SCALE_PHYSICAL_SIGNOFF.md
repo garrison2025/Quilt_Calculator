@@ -22,6 +22,16 @@ Open /qa/print-calibration/ on the Cloudflare Pages preview and print the worksh
 
 Printer/driver: NOT_RECORDED. Paper/print scale: NOT_RECORDED. Reviewer/date: NOT_RECORDED.
 
+## Optional browser-based ruler result recording (2026-11-06)
+
+The same [noindex worksheet](https://quilt-calculator-566.pages.dev/qa/print-calibration/) now includes a **screen-only** form below the printed reference sheet. A human should first print the sheet and use a real physical ruler to measure all four targets. Enter those readings in **mm**, together with the actual printer/driver, paper size, print scaling and measurement date, and explicitly confirm that a physical ruler was used.
+
+- The form shows the absolute difference for each mark and compares against the **suggested** tolerances above. Exact boundary values count as within tolerance. A measurement outside any limit is reported as `USER_REPORTED_OUTSIDE_TOLERANCE`.
+- Unknown/other printer scale records remain `INCONCLUSIVE_NON_ACTUAL_SIZE`, even if the four entered dimensions happen to match; use **100% / Actual Size** and remeasure.
+- A record is **incomplete and cannot be downloaded** if any measurement/metadata or ruler confirmation is missing. Failing and inconclusive complete records **can** be downloaded, so negative evidence is never silently lost.
+- The downloaded JSON has `kind: "user-reported-physical-print-scale-check"`, four physical readings, differences and tolerances, and explicitly sets `independentPhysicalVerification: false` and `quiltCuttingApproval: false`. The site does not transmit or autosave the data. This JSON can accompany a later independent manual review; it **does not itself close the original release gate**.
+- The automated browser QA fills **synthetic** measurements only to test input and file logic. That exercise is not a claim that a printer, paper, physical ruler or real fabric was used.
+
 **Physical sign-off remains MANUAL_NOT_RUN.**
 
 ## Independent sewing evidence

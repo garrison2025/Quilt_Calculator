@@ -57,12 +57,124 @@ import Base from '../../../layouts/Base.astro';
    <p class="qa-calibration-note">Only print scale is being tested. It does NOT prove quilt sewing geometry, physical cutting suitability or an exact-size pattern. Cutting diagrams elsewhere remain schematic.</p>
   </section>
  </article>
+ <section class="qa-calibration-screen qa-evidence-panel" data-qa-evidence aria-labelledby="qa-evidence-title">
+  <h2 id="qa-evidence-title">Record measurements from your real printed page</h2>
+  <p>Print the worksheet above first, measure it with a physical ruler, then enter your <strong>actual paper readings in millimeters</strong>. This browser does not read a printer or verify that measurements are genuine. The resulting JSON is a <strong>self-reported evidence record, not independent certification</strong>.</p>
+  <form data-qa-evidence-form novalidate>
+   <div class="qa-evidence-grid">
+    <label>One-inch square — measured width (mm)
+     <input data-qa-reading="squareWidth" type="number" min="0.01" max="500" step="any" inputmode="decimal" placeholder="Example: 25.4" />
+    </label>
+    <label>One-inch square — measured height (mm)
+     <input data-qa-reading="squareHeight" type="number" min="0.01" max="500" step="any" inputmode="decimal" placeholder="Example: 25.4" />
+    </label>
+    <label>100-mm line — measured length (mm)
+     <input data-qa-reading="metricLine" type="number" min="0.01" max="500" step="any" inputmode="decimal" placeholder="Example: 100" />
+    </label>
+    <label>Six-inch line — measured length (mm)
+     <input data-qa-reading="imperialLine" type="number" min="0.01" max="500" step="any" inputmode="decimal" placeholder="Example: 152.4" />
+    </label>
+    <label>Printer / driver
+     <input data-qa-printer type="text" maxlength="200" placeholder="Printer model and driver" autocomplete="off" />
+    </label>
+    <label>Paper size
+     <select data-qa-paper-size><option value="">Choose</option><option value="A4">A4</option><option value="US Letter">US Letter</option><option value="Other (specify in printer field)">Other paper (describe in printer field)</option></select>
+    </label>
+    <label>Actual printer scale setting
+     <select data-qa-scale><option value="">Choose</option><option value="actual-size">100% / Actual Size</option><option value="other">Other / Not sure (result inconclusive)</option></select>
+    </label>
+    <label>Date physically measured
+     <input data-qa-date type="date" />
+    </label>
+    <label>Reviewer (optional)
+     <input data-qa-reviewer type="text" maxlength="200" placeholder="For your own local record" autocomplete="off" />
+    </label>
+   </div>
+   <label class="qa-evidence-confirm"><input data-qa-physical-confirm type="checkbox" /> I personally measured all four references on real printed paper using a physical ruler. I understand the software cannot verify this claim.</label>
+  </form>
+  <h3 class="qa-evidence-result-title">Manual measurement assessment</h3>
+  <div data-qa-status aria-live="polite" role="status">No physical measurements have been recorded.</div>
+  <div class="table-scroll">
+   <table class="qa-evidence-table" aria-label="Reported measurement comparison">
+    <thead><tr><th>Printed reference</th><th>Target (mm)</th><th>Allowed deviation</th><th>Reported difference</th><th>Result</th></tr></thead>
+    <tbody>
+     <tr data-qa-check="squareWidth"><th>1″ square width</th><td>25.4</td><td>±0.5 mm</td><td data-qa-difference>—</td><td data-qa-judgment>Not recorded</td></tr>
+     <tr data-qa-check="squareHeight"><th>1″ square height</th><td>25.4</td><td>±0.5 mm</td><td data-qa-difference>—</td><td data-qa-judgment>Not recorded</td></tr>
+     <tr data-qa-check="metricLine"><th>100-mm line</th><td>100</td><td>±1 mm</td><td data-qa-difference>—</td><td data-qa-judgment>Not recorded</td></tr>
+     <tr data-qa-check="imperialLine"><th>6″ line</th><td>152.4</td><td>±1 mm</td><td data-qa-difference>—</td><td data-qa-judgment>Not recorded</td></tr>
+    </tbody>
+   </table>
+  </div>
+  <div class="qa-calibration-actions">
+   <button type="button" class="action-primary" data-qa-download-evidence disabled>Download user-reported evidence JSON</button>
+   <button type="button" class="header-cta" data-qa-clear-evidence>Clear entered readings</button>
+  </div>
+  <p class="qa-evidence-disclaimer">All data stays in this browser until you choose to download a JSON file. No data is uploaded or automatically saved. Even a within-tolerance report is <strong>not</strong> the independent print or fabric-cutting sign-off and cannot approve production indexing.</p>
+ </section>
  <div class="qa-calibration-navigation qa-calibration-screen">
   <strong>Release-checklist status</strong>
   <p>Rendering this page and PDF is engineering evidence, not physical sign-off. The original V2 print gate remains <strong>MANUAL_NOT_RUN</strong> until a human measures and records the printed sheet.</p>
  </div>
 </section>
 <script>
+ import {
+  PRINT_REFERENCES, evaluatePrintCalibration, printCalibrationEvidence,
+  type PrintCalibrationInput, type PrintReferenceKey, type PrintScaleMode
+ } from '../../../lib/quilt/print-calibration';
  document.querySelector<HTMLButtonElement>('[data-qa-print]')?.addEventListener('click',()=>window.print());
+ const panel=document.querySelector<HTMLElement>('[data-qa-evidence]');
+ const form=panel?.querySelector<HTMLFormElement>('[data-qa-evidence-form]');
+ const status=panel?.querySelector<HTMLElement>('[data-qa-status]');
+ const download=panel?.querySelector<HTMLButtonElement>('[data-qa-download-evidence]');
+ const clear=panel?.querySelector<HTMLButtonElement>('[data-qa-clear-evidence]');
+ const refKeys=Object.keys(PRINT_REFERENCES) as PrintReferenceKey[];
+ function inputValue<T extends HTMLInputElement|HTMLSelectElement>(selector:string):string{
+  return form?.querySelector<T>(selector)?.value ?? '';
+ }
+ function currentRecord():PrintCalibrationInput {
+  const readingsMm=Object.fromEntries(refKeys.map(key=>{
+   const raw=inputValue<HTMLInputElement>('[data-qa-reading="'+key+'"]').trim();
+   return [key,raw===''?undefined:Number(raw)];
+  })) as PrintCalibrationInput['readingsMm'];
+  return {
+   readingsMm,
+   printer:inputValue<HTMLInputElement>('[data-qa-printer]'),
+   paper:inputValue<HTMLSelectElement>('[data-qa-paper-size]'),
+   scaleMode:inputValue<HTMLSelectElement>('[data-qa-scale]') as PrintScaleMode,
+   measuredOn:inputValue<HTMLInputElement>('[data-qa-date]'),
+   reviewer:inputValue<HTMLInputElement>('[data-qa-reviewer]'),
+   physicallyMeasured:form?.querySelector<HTMLInputElement>('[data-qa-physical-confirm]')?.checked??false
+  };
+ }
+ function renderRecord():void{
+  if(!panel||!status||!download)return;
+  const result=evaluatePrintCalibration(currentRecord());
+  status.dataset.qaAssessment=result.status;
+  status.textContent=result.message+(result.missing.length?' Missing: '+result.missing.join('; ')+'.':'');
+  download.disabled=!result.canExport;
+  for(const check of result.checks){
+   const row=panel.querySelector<HTMLElement>('[data-qa-check="'+check.key+'"]');
+   const diff=row?.querySelector<HTMLElement>('[data-qa-difference]');
+   const judgment=row?.querySelector<HTMLElement>('[data-qa-judgment]');
+   if(diff)diff.textContent=check.differenceMm===undefined?'—':check.differenceMm.toFixed(2)+' mm';
+   if(judgment)judgment.textContent=check.withinTolerance===undefined?'Not recorded':check.withinTolerance?'Within suggested tolerance':'Outside suggested tolerance';
+  }
+ }
+ form?.addEventListener('input',renderRecord);
+ form?.addEventListener('change',renderRecord);
+ clear?.addEventListener('click',()=>{form?.reset();renderRecord();});
+ download?.addEventListener('click',()=>{
+  const record=currentRecord();
+  const evaluation=evaluatePrintCalibration(record);
+  if(!evaluation.canExport){renderRecord();return;}
+  const evidence=printCalibrationEvidence(record,new Date().toISOString());
+  const blob=new Blob([JSON.stringify(evidence,null,2)+'\n'],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const anchor=document.createElement('a');
+  anchor.href=url;anchor.download='quilt-user-reported-print-scale-'+record.measuredOn+'.json';
+  document.body.appendChild(anchor);anchor.click();anchor.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+ });
+ renderRecord();
 </script>
 </Base>

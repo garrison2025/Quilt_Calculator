@@ -1069,6 +1069,51 @@ try{
   await page.emulateMedia({media:'screen'});
   check(await page.locator('[data-qa-print]').isVisible(),'Worksheet print action must be visible on screen.');
   console.log('PASS independent noindex 1in / 100mm / 6in print worksheet and browser PDF; real ruler MANUAL_NOT_RUN.');
+  // Browser automation intentionally enters SYNTHETIC data; it never
+  // verifies a printer or replaces a person measuring physical paper.
+  const measureDownload=page.locator('[data-qa-download-evidence]');
+  check(await measureDownload.isDisabled(),'A blank QA self-report must never be downloadable as an accepted measurement.');
+  await page.locator('[data-qa-reading="squareWidth"]').fill('25.9');
+  await page.locator('[data-qa-reading="squareHeight"]').fill('24.9');
+  await page.locator('[data-qa-reading="metricLine"]').fill('101');
+  await page.locator('[data-qa-reading="imperialLine"]').fill('151.4');
+  await page.locator('[data-qa-printer]').fill('SYNTHETIC BROWSER TEST — NOT A REAL PRINTER');
+  await page.locator('[data-qa-paper-size]').selectOption('A4');
+  await page.locator('[data-qa-scale]').selectOption('actual-size');
+  await page.locator('[data-qa-date]').fill('2026-11-06');
+  check(await measureDownload.isDisabled(),'Without explicit real-ruler confirmation the record must remain incomplete.');
+  await page.locator('[data-qa-physical-confirm]').check();
+  const measureStatus=page.locator('[data-qa-status]');
+  check(await measureStatus.getAttribute('data-qa-assessment')==='USER_REPORTED_WITHIN_TOLERANCE' &&
+    await measureDownload.isEnabled() &&
+    (await measureStatus.innerText()).includes('NOT independently certified'),
+    'Boundary values may be classified as a user self-report, never certified pass.');
+  const evidencePromise=page.waitForEvent('download');
+  await measureDownload.click();
+  const evidenceDownload=await evidencePromise;
+  const evidence=JSON.parse(await fs.readFile(await evidenceDownload.path(),'utf8'));
+  check(evidence.kind==='user-reported-physical-print-scale-check' &&
+    evidence.selfReportedStatus==='USER_REPORTED_WITHIN_TOLERANCE' &&
+    evidence.independentPhysicalVerification===false && evidence.quiltCuttingApproval===false &&
+    evidence.measurements.length===4,
+    'Downloaded evidence must contain precisely four user-entered measurements without claiming independent physical sign-off.');
+  await page.locator('[data-qa-reading="metricLine"]').fill('102');
+  check(await measureStatus.getAttribute('data-qa-assessment')==='USER_REPORTED_OUTSIDE_TOLERANCE' &&
+    await measureDownload.isEnabled(),
+    'Out-of-tolerance readings must visibly fail yet be exportable as genuine negative self-reported evidence.');
+  await page.locator('[data-qa-reading="metricLine"]').fill('100');
+  await page.locator('[data-qa-scale]').selectOption('other');
+  check(await measureStatus.getAttribute('data-qa-assessment')==='INCONCLUSIVE_NON_ACTUAL_SIZE',
+    'Other/unknown paper scaling must not be misrepresented as within-tolerance sign-off.');
+  await page.emulateMedia({media:'print'});
+  check(await page.locator('[data-qa-evidence]').evaluate(el=>getComputedStyle(el).display)==='none',
+    'The interactive measurement form must not alter the physical printable calibration worksheet.');
+  await page.emulateMedia({media:'screen'});
+  await page.locator('[data-qa-clear-evidence]').click();
+  check(await measureDownload.isDisabled() &&
+    await measureStatus.getAttribute('data-qa-assessment')==='INCOMPLETE_MANUAL_RECORD',
+    'Clear action must erase the entered readings and invalidate the downloadable evidence report.');
+  console.log('PASS synthetic QA form, edge tolerances, downloadable LOCAL JSON, inconclusive print scale and no false certification.');
   await hydrated(page,'/calculators/',{incomplete:true});
   await page.getByLabel('I reviewed every quilt-top color, cut size and piece quantity.').check();
   check(await page.locator('details.sku-plan').count()===6,'Project print must contain all six material plans.');
