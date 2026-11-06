@@ -831,7 +831,8 @@ try{
     (await auditPage.locator('[data-top-chain-plan]').textContent()).includes('quilt TOP CENTER 60 × 80'),
     'A matched cut-plan must expose the center BEFORE borders but never infer top patch adjacency.');
   await chainArea.locator('summary').click();
-  check(await chainResult.innerText()==='No real quilt-top seam chain reported: NOT VERIFIED.',
+  check(await chainResult.getAttribute('data-top-chain-coverage')==='NOT_STARTED' &&
+    (await chainResult.innerText()).includes('Cut files cannot establish quilt-top sewing order'),
     'Before user initiation the source cutting CSV must not generate a fictional assembled quilt top.');
   await auditPage.locator('[data-top-chain-axis]').selectOption('width');
   await auditPage.locator('[data-top-chain-create]').click();
