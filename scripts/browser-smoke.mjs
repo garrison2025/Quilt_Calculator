@@ -752,6 +752,7 @@ try{
     (await bindingJoinBlock.locator('[data-fabric-seam-result]').innerText()).includes('Full per-join take-up NOT VERIFIED'),
     'Missing one join must disable complete cumulative take-up claims without blocking older assembly-only checks.');
   await bindJoinInputs.first().fill(String(modelBindLoss));
+  await bindJoinInputs.first().fill(String(modelBindLoss+0.125));
   await seamBinding.fill(String(readyPlanJson.result.binding.effectiveJoinedLengthIn-0.125));
   check(await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_SEAM_LOSS_EXCEEDS_PLAN' &&
     await auditDownload.isEnabled() &&
@@ -761,6 +762,7 @@ try{
   check((await auditPage.locator('[data-fabric-seam-kind="binding"] [data-fabric-seam-result]').innerText()).includes('SHORTER THAN REQUIRED'),
     'Joined binding shorter than perimeter plus tail allowance must always be flagged.');
   await seamBinding.fill(String(readyPlanJson.result.binding.effectiveJoinedLengthIn));
+  await bindJoinInputs.first().fill(String(modelBindLoss));
   await seamTolerance.fill('1.5');
   check(await auditDownload.isDisabled()&&
     await auditStatus.getAttribute('data-fabric-assessment')==='INCOMPLETE_USER_MEASUREMENTS',
