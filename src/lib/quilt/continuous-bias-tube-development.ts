@@ -44,12 +44,23 @@ export type BiasDevelopedBand={
  sourceRegions:BiasSourceRegion[];
  firstAssemblySeamMidpoint:BiasPoint;
 };
+export type BiasTubeSeamSegment={
+ fromBand:number;
+ toBand:number;
+ rightEdge:[BiasPoint,BiasPoint];
+ leftEdge:[BiasPoint,BiasPoint];
+ endpointMatches:[
+  {right:BiasPoint;left:BiasPoint},
+  {right:BiasPoint;left:BiasPoint}
+ ];
+ unfoldedSharedEdge:[BiasPoint,BiasPoint];
+};
 export type BiasCutBoundary={
  line:number;
  /** Left edge -> first seam if crossed -> right edge. */
  sewnFacePolyline:BiasPoint[];
  assemblySeamIntersection:BiasPoint|null;
- /** Right mark j is sewn to left mark j+1, at the stitching lines. */
+ /** Boundary endpoint match j -> j+1; j=0..N-1. N matches define N-1 seam segments. */
  tubeCrossing:null|{right:BiasPoint;nextLeft:BiasPoint};
 };
 export type BiasTubeDevelopment={
@@ -73,6 +84,7 @@ export type BiasTubeDevelopment={
  unusedTransverseWidthIn:number;
  bands:BiasDevelopedBand[];
  cutBoundaries:BiasCutBoundary[];
+ tubeSeamSegments:BiasTubeSeamSegment[];
  unfoldedTerminalSquares:{startCutXIn:number;endCutXIn:number};
  terminalOffcutPolygons:{start:BiasPolygon;end:BiasPolygon};
  firstSeamTakeupSqIn:number;
@@ -213,9 +225,27 @@ export function calculateBiasTube2DDevelopment(input:TubeTopologyInput):BiasTube
    ?[leftEdge,intersection,rightEdge]:[leftEdge,rightEdge];
   cutBoundaries.push({
    line:j,sewnFacePolyline,assemblySeamIntersection:intersection,
-   tubeCrossing:j>=1&&j<N?{
+   tubeCrossing:j>=0&&j<N?{
     right:rightEdge,nextLeft:leftPoint(v+W,d)
    }:null
+  });
+ }
+ const tubeSeamSegments:BiasTubeSeamSegment[]=[];
+ for(let i=0;i<N-1;i++){
+  const v0=i*W,v1=(i+1)*W,v2=(i+2)*W;
+  const rightStart=rightPoint(v0,L,d),rightEnd=rightPoint(v1,L,d);
+  const leftStart=leftPoint(v1,d),leftEnd=leftPoint(v2,d);
+  tubeSeamSegments.push({
+   fromBand:i+1,toBand:i+2,
+   rightEdge:[rightStart,rightEnd],
+   leftEdge:[leftStart,leftEnd],
+   endpointMatches:[
+    {right:rightStart,left:leftStart},
+    {right:rightEnd,left:leftEnd}
+   ],
+   unfoldedSharedEdge:[
+    point((i+1)*Q,0),point((i+1)*Q+W,W)
+   ]
   });
  }
  const firstSeamTakeupSqIn=S*S-(S-a)*(S-a);
@@ -242,7 +272,7 @@ export function calculateBiasTube2DDevelopment(input:TubeTopologyInput):BiasTube
   postSecondSeamFullRunIn:Q,
   stripPitchIn:W,actualFullBands:N,
   unusedTransverseWidthIn:Math.max(0,unused),
-  bands,cutBoundaries,
+  bands,cutBoundaries,tubeSeamSegments,
   unfoldedTerminalSquares:{startCutXIn:W,endCutXIn:N*Q},
   terminalOffcutPolygons:{
    start:[point(0,0),point(W,0),point(W,W)],
@@ -305,7 +335,8 @@ export function verifyBiasTube2DDevelopment(m:BiasTubeDevelopment):boolean{
   !samePolygon(m.terminalOffcutPolygons.end,expectedEnd)||
   !nearly(area(m.terminalOffcutPolygons.start),W*W/2)||
   !nearly(area(m.terminalOffcutPolygons.end),W*W/2))return false;
- if(m.bands.length!==N||m.cutBoundaries.length!==N+1)return false;
+ if(m.bands.length!==N||m.cutBoundaries.length!==N+1||
+  m.tubeSeamSegments.length!==N-1||m.tubeSeamSegments.length!==t.seamLinks.length)return false;
  for(let i=0;i<N;i++){
   const b=m.bands[i],low=i*W,high=(i+1)*W,mid=(low+high)/2;
   const face=expectedBandPolygon(low,high,d,L);
@@ -340,10 +371,32 @@ export function verifyBiasTube2DDevelopment(m:BiasTubeDevelopment):boolean{
   if(c.line!==j||!samePolygon(c.sewnFacePolyline,line)||
    (crossing===null?c.assemblySeamIntersection!==null:
     (!c.assemblySeamIntersection||!P(c.assemblySeamIntersection,crossing))))return false;
-  if(j>=1&&j<N){
+  if(j>=0&&j<N){
    if(!c.tubeCrossing||!P(c.tubeCrossing.right,right)||
     !P(c.tubeCrossing.nextLeft,leftPoint(v+W,d)))return false;
   }else if(c.tubeCrossing!==null)return false;
+ }
+ for(let i=0;i<N-1;i++){
+  const segment=m.tubeSeamSegments[i];
+  const v0=i*W,v1=(i+1)*W,v2=(i+2)*W;
+  const rightStart=rightPoint(v0,L,d),rightEnd=rightPoint(v1,L,d);
+  const leftStart=leftPoint(v1,d),leftEnd=leftPoint(v2,d);
+  const shared:[BiasPoint,BiasPoint]=[
+   point((i+1)*Q,0),point((i+1)*Q+W,W)
+  ];
+  if(segment.fromBand!==i+1||segment.toBand!==i+2||
+   !P(segment.rightEdge[0],rightStart)||!P(segment.rightEdge[1],rightEnd)||
+   !P(segment.leftEdge[0],leftStart)||!P(segment.leftEdge[1],leftEnd)||
+   !P(segment.endpointMatches[0].right,rightStart)||
+   !P(segment.endpointMatches[0].left,leftStart)||
+   !P(segment.endpointMatches[1].right,rightEnd)||
+   !P(segment.endpointMatches[1].left,leftEnd)||
+   !P(segment.unfoldedSharedEdge[0],shared[0])||
+   !P(segment.unfoldedSharedEdge[1],shared[1])||
+   !P(m.bands[i].unfoldedPolygon[1],shared[0])||
+   !P(m.bands[i].unfoldedPolygon[2],shared[1])||
+   !P(m.bands[i+1].unfoldedPolygon[0],shared[0])||
+   !P(m.bands[i+1].unfoldedPolygon[3],shared[1]))return false;
  }
  const accounted=m.firstSeamTakeupSqIn+m.secondTubeSeamTakeupSqIn+
   m.unusedPartialBandAreaSqIn+m.terminalEndTrimAreaSqIn+
