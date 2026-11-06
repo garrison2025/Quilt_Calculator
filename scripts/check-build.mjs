@@ -53,6 +53,26 @@ if(!squareLabHtml.includes('noindex,follow')||squareLabHtml.includes('rel="canon
    !squareLabHtml.includes('Square-in-a-Square Cutting Lab'))
  throw Error('Square trial must remain unindexed and clearly provisional.');
 if(fs.existsSync('dist/square-in-a-square-calculator/index.html'))throw Error('Premature public SQUARE keyword route.');
+const biasHtml=fs.readFileSync('dist/quilt-binding-calculator/index.html','utf8');
+for(const fragment of ['data-seo-bias-area-bound','square-root fabric estimate','loss-free theoretical area equivalents',
+ 'straight-grain only']){
+ if(!biasHtml.toLowerCase().includes(fragment.toLowerCase()))
+  throw Error('Bias area preview must be described as non-purchasing on the existing binding page: '+fragment);
+}
+if(!squareLabHtml.includes('data-square-reference-chart')||
+  (squareLabHtml.match(/data-square-reference-size="/g)||[]).length!==6||
+  !squareLabHtml.includes('6⅞-inch')||
+  !squareLabHtml.includes('noindex,follow'))
+ throw Error('Noindex square lab must retain six engine-generated size examples, noncertifying description and noindex.');
+if(fs.existsSync('dist/bias-binding-calculator/index.html')||
+   fs.existsSync('dist/continuous-bias-binding-calculator/index.html'))
+ throw Error('Unvalidated 45-degree bias yield cannot become a public target page.');
+// The educational square-root result must have no purchase/cutting return
+// values, even while the accepted straight-grain tool exports real cuts.
+const biasSource=fs.readFileSync('src/lib/quilt/bias-area-bound.ts','utf8');
+for(const fragment of ['BIAS_AREA_LOWER_BOUND_ONLY','purchaseYards?:never','verifiedYieldIn?:never','cuttingPlan?:never'])
+ if(!biasSource.includes(fragment))throw Error('Bias math contract must never represent verified yield or purchases.');
+
 if(!fs.existsSync('dist/privacy/index.html'))throw Error('Missing privacy page');
 if(!fs.existsSync('dist/about/index.html'))throw Error('Missing publicly accessible source/method/feedback page');
 const aboutHtml=fs.readFileSync('dist/about/index.html','utf8');

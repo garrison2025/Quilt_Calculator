@@ -1,6 +1,11 @@
 ---
 import Base from '../../../layouts/Base.astro';
 import SquareAudit from '../../../components/SquareAudit.astro';
+import {calculateSquareLab} from '../../../lib/quilt/square-lab';
+const referenceSizes=[4,6,8,10,12,16].map(finishedOuterIn=>({
+ finishedOuterIn,
+ result:calculateSquareLab({finishedOuterIn,blocks:1,centerWofIn:43,cornerWofIn:43,cornerExtraIn:0})
+}));
 ---
 <Base noIndex title="Square-in-a-Square Cutting Lab — Unverified Preview | Quilt Studio" description="Non-indexed one-round square-in-a-square quilt block prototype: calculate center and corner parent squares, trim allowances and two independent fabric roll layouts. Physical sewing validation pending.">
 <div class="page-shell square-lab" data-square-lab>
@@ -32,6 +37,23 @@ import SquareAudit from '../../../components/SquareAudit.astro';
     <div class="results-footer"><button type="button" class="action-secondary" data-square-download disabled>Download trial parent-square cut list CSV</button></div>
   </section>
  </div>
+ <section class="content-block square-lab-reference" data-square-reference-chart>
+   <div class="editorial-head">
+    <span class="eyebrow-with-line">— SOFTWARE-REPRODUCIBLE SIZE CHART</span>
+    <h2>Square-in-a-square cut sizes: 4–16 inch finished blocks</h2>
+    <p>One center square plus two corner-parent squares per block, each corner square split diagonally ONCE into two triangles. The chart uses exactly ¼-inch seams, no extra oversized-corner allowance, and always rounds both parent CUT sides upward to the next ⅛ inch.</p>
+   </div>
+   <div class="table-scroll square-lab-chart-scroll" tabindex="0" role="region" aria-label="Square in a square cut sizes by finished block size">
+    <table class="breakdown-table square-lab-chart">
+     <caption>Cut measurements in inches. These are parent squares, not resulting sewn-edge or triangle lengths.</caption>
+     <thead><tr><th scope="col">FINISHED outer block</th><th scope="col">CENTER square cut ×1</th><th scope="col">CORNER square cut ×2</th><th scope="col">Unfinished outside target</th><th scope="col">Try this size</th></tr></thead>
+     <tbody>{referenceSizes.map(({finishedOuterIn,result})=>
+      <tr><th scope="row">{finishedOuterIn} in</th><td>{result.centerCutIn} in</td><td>{result.cornerSquareCutIn} in</td><td>{result.unfinishedOutsideIn} in</td><td><button type="button" class="action-secondary" data-square-reference-size={finishedOuterIn}>Use {finishedOuterIn} in</button></td></tr>
+     )}</tbody>
+    </table>
+   </div>
+   <p class="footer-note">The cut numbers above are reproducible SOFTWARE math and agree with published one-round dimensional charts (for example, a 12-inch finished block uses a 9-inch center cut and two 6⅞-inch corner-parent squares). Clicking a row also resets the extra corner-square margin to zero so that the calculator agrees with the chart. You can add a separate oversize margin afterwards. This does not make the dimensions a certified sewing pattern or guarantee physical point alignment.</p>
+ </section>
  <SquareAudit />
  <section class="content-block square-lab-method">
   <div class="editorial-head"><span class="eyebrow-with-line">— CHECK BEFORE CUTTING</span><h2>A single round of corner triangles.</h2><p>Construction sequence and the difference between cutting fit and sewn fit.</p></div>

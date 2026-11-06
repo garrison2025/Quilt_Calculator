@@ -5,6 +5,7 @@ import { cutListCsv, physicalRollId, type MaterialCutPlan } from '../lib/quilt/c
 import { shoppingCsv, shoppingPriceSummary, hasIncompleteShopping, shoppingLineStatus, needsTopFabricPlan, type ShoppingLine } from '../lib/quilt/shopping';
 import type { ToolId } from './types';
 import {attachCutWalkthrough} from './diagram-playback';
+import {calculateBiasAreaLowerBound} from '../lib/quilt/bias-area-bound';
 import {FINISHED_SIZE_EXAMPLES,applyFinishedSizeExample,applyBlockGridAsCenter,compareBackingPurchases,solveBlockSizeForCenter,applyTargetBlockSize} from '../lib/quilt/quick-planning';
 type Kind = 'length' | 'whole' | 'number' | 'pct' | 'check' | 'text';
 type Field = { label: string; path: string; kind?: Kind; note?: string };
@@ -966,6 +967,32 @@ if(root){
   panel.append(buttons,result);parent.appendChild(panel);
   recalculate();
  }
+ function renderBiasAreaReference(parent:HTMLElement,requiredIn:number,stripWidthIn:number,usableWofIn:number,oneWayPrint:boolean):void{
+  const box=node('details','bias-area-reference');
+  box.dataset.biasAreaReference='';
+  const summary=node('summary','','Explore a theoretical TRUE-BIAS area lower bound (not cutting yardage)');
+  box.appendChild(summary);
+  box.appendChild(node('p','hint',
+   'This is NOT a bias-binding cutting calculator. For 45° bias strips the ideal conservation-of-area floor is required joined length × full CUT strip width. It ignores diagonal/tube joins, offcuts, overlap, sewing losses, corners, and the actual path of a spiral. It cannot give verified yield, safe square cut size, purchase yardage or a printable bias pattern.'));
+  const r=calculateBiasAreaLowerBound({
+   requiredLengthIn:requiredIn,fullCutStripWidthIn:stripWidthIn,usableWofIn
+  });
+  stats(box,[
+   ['Binding length (including tail)',num(r.requiredLengthIn)+' in'],
+   ['Full strip CUT width',num(r.fullCutStripWidthIn)+' in'],
+   ['Loss-free theoretical area',num(r.idealAreaSqIn)+' in²'],
+   ['Ideal area-equivalent square side',num(r.idealSquareSideIn,4)+' in'],
+   ['1/8-in rounded area FLOOR',num(r.roundedAreaLowerBoundSideIn,3)+' in']
+  ]);
+  box.appendChild(node('p','footer-note',r.idealSquareFitsUsableWof
+   ?'The ideal square-side floor fits inside '+num(r.usableWofIn)+' in usable WOF ON PAPER. This does NOT verify the real source square, seam/tube construction, yields or fabric buying.'
+   :'Even the loss-free ideal area square exceeds your '+num(r.usableWofIn)+' in usable WOF. A single square of that minimum size cannot fit on this roll. No substitute bias layout or purchase estimate is provided.'));
+  if(oneWayPrint)box.appendChild(node('p','warning-banner',
+   'Your source project marks fabric one-way/directional. Cutting at 45° changes motif/grain orientation: do not assume a permissible bias construction.'));
+  box.appendChild(node('p','warning-banner',
+   'METHOD_NOT_VERIFIED: This educational area calculation is not part of the straight-grain shopping quote, CSV/PDF, JSON cutting plan, nor a release of any bias SEO keyword. Choose an independently verified bias construction before buying material.'));
+  parent.appendChild(box);
+ }
  function renderBackingWidthComparison(parent:HTMLElement,outsideW:number,outsideH:number):void{
   const box=node('section','backing-width-comparison');
   box.dataset.backingWidthComparison='';
@@ -1148,7 +1175,8 @@ if(root){
     const b=calculateStraightBinding({widthIn:outerW,heightIn:outerH,wofIn:o.usableWof,stripWidthIn:o.stripWidth,tailAllowanceIn:o.tailAllowance,joinLossIn:o.stripJoinLoss,...buyArgs});
     purchasesTitle(resultRoot,b.purchase,'STRAIGHT BINDING',o.bindingPricePerYard);
     stats(resultRoot,[['Required binding',num(b.requiredLengthIn)+' in'],['Strips',String(b.stripCount)],['Length after joins',num(b.effectiveJoinedLengthIn)+' in']]);
-    warning(resultRoot,'Straight-grain binding only. Bias binding is NOT calculated.');layout=b.layout;materialCuts=[{material:'Straight-grain binding',sku:'binding',layout:b.layout}];plan=b;
+    renderBiasAreaReference(resultRoot,b.requiredLengthIn,o.stripWidth,o.usableWof,o.oneWayPrint);
+    warning(resultRoot,'Shopping, strips and exports on this page are STRAIGHT-GRAIN ONLY. The optional TRUE-BIAS panel is an area-only lower bound, not safe bias purchase yardage.');layout=b.layout;materialCuts=[{material:'Straight-grain binding',sku:'binding',layout:b.layout}];plan=b;
    }else if(tool==='yardage'){
     const y=p.yardage;
     const comparison=compareYardageWidths({

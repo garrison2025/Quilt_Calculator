@@ -562,3 +562,35 @@
  .reverse-block-actions .action-secondary{width:100%;white-space:normal;text-align:center}
 }
 @media print{.reverse-block-size{display:none!important}}
+
+/* Area-conservation preview only; binding results remain straight-grain. */
+.bias-area-reference{margin:1rem 0;padding:.8rem 1rem;border:1px solid #d2ddcf;border-radius:12px;background:#f5f8f2;min-width:0}
+.bias-area-reference>summary{cursor:pointer;font-weight:750;line-height:1.5;padding:.4rem 0}
+.bias-area-reference .stat-grid{margin:.75rem 0}
+.bias-area-reference .footer-note,.bias-area-reference .hint{line-height:1.6}
+.square-lab-chart-scroll{max-width:100%;overflow-x:auto;margin:.7rem 0}
+.square-lab-chart{min-width:620px}
+.square-lab-chart td,.square-lab-chart th{text-align:left;white-space:normal}
+.square-lab-chart td:last-child{white-space:nowrap}
+.square-lab-chart button{padding:.35rem .65rem;min-height:38px}
+@media screen and (prefers-color-scheme:dark){
+ .bias-area-reference{background:#203529;border-color:#536e57;color:#e3f2e5}
+ .bias-area-reference>summary{color:#e3f2e5}
+}
+@media screen and (max-width:700px){
+ .bias-area-reference{padding:.65rem .75rem}
+}
+@media print{.bias-area-reference{display:none!important}}
+
+/* Tiny inline numeric cut-row buttons can fall below WCAG 2.2 AA touch
+ * dimensions when the adjacent optional disclosure changes page layout.
+ * Use a robust keyboard focus and 36px click target for EVERY cut-list row. */
+.cut-coordinate-link{
+ display:inline-flex;align-items:center;justify-content:flex-start;
+ min-height:36px;min-width:36px;box-sizing:border-box;
+ padding:7px 8px;line-height:1.45;
+ background:transparent;color:inherit;border:1px solid transparent;
+ border-radius:6px;font:inherit;text-align:left;cursor:pointer
+}
+.cut-coordinate-link:hover{border-color:currentColor}
+.cut-coordinate-link:focus-visible{outline:2px solid currentColor;outline-offset:2px}

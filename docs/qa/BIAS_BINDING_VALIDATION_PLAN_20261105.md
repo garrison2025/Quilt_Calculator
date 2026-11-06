@@ -4,6 +4,16 @@
 
 This file is a new assessment alongside the original V2 product specification, not a modification of the original 218-keyword sheet, its 7 bias HOLD terms or historical testing status.
 
+## 2026-11-06 software-only area-floor improvement (not a bias method release)
+
+The accepted `/quilt-binding-calculator/` now includes an **opt-in, explicitly non-purchasing** square-root bias area LOWER BOUND, using its already validated current binding length and full **cut** strip width. The standalone pure function `calculateBiasAreaLowerBound` computes `area = L × stripWidth`, `idealSquareSide = √area` and a display-only ⅛-inch upward area-equivalent square, plus whether **even this ideal lower-bound side** fits the current usable WOF. It returns no actual yield, usable strip length, bias sewing layout, bias purchase yards, export JSON or cutting plan.
+
+This does **not** complete the one-round/continuous-tube 45-degree construction research listed below, and **does not** turn any `HOLD-BIAS` keyword into a launched SEO page. The original 2026-11-05 `METHOD_RESEARCH_ONLY` status below remains true **for any usable or purchase-ready 45-degree bias method**. A mathematically sound lower bound must not be read as a sufficient purchase quantity.
+
+Source confirmation (accessed 2026-11-06): [Schenectady Quilters' PDF, "Determining the amount of fabric"](https://quiltschenectady.org/Patterns/BordersNBindings.pdf) gives `√(required binding length × full width)` as an **area method**. [TNAADO's continuous-bias reference](https://tools.tnaado.ca/calculators/general/continuous-bias-binding-fabric-calculator/) implements a comparable square-root estimate, but neither that analogy nor optional estimated waste percentages prove exact real-world post-seam yield on the current fabric.
+
+Acceptance: test source-isolation, monotonic theoretical area, failure for impossible WOF and lack of any `purchaseYards` / `verifiedYieldIn` / `cuttingPlan` contract. Confirm real browser disclosure, existing straight-grain cut CSV and noindex preview. **No physical sewn sample is required for acceptance of these limited software claims**; physical construction itself remains unverified.
+
 ## Why the existing straight-grain engine cannot be reused
 
 The approved `calculateStraightBinding` layout cuts full-width rectangles across the usable WOF and subtracts measured strip-join loss. Bias strips are cut at approximately 45 degrees to fabric grain; continuous bias additionally folds, joins and helically cuts a reassembled panel. Neither strip dimensions nor purchased roll length can be determined safely by silently reusing the straight-grain cutting layout.

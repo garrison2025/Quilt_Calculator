@@ -94,6 +94,20 @@ export function initSquareLab():void{
   current=null;download.disabled=true;status.textContent='Values changed. Calculate again before exporting.';
   output.replaceChildren(make('p','warning-banner','Trial input changed. Recalculate; the previous results are no longer current.'));
  }));
+ // The cut-size chart uses ZERO extra corner trim, unlike the default
+ // oversize trial form. Update both inputs together so the table never
+ // silently disagrees with the current calculation or stale CSV download.
+ root.querySelectorAll<HTMLButtonElement>('[data-square-reference-size]').forEach(button=>{
+  button.addEventListener('click',()=>{
+   const finished=form.querySelector<HTMLInputElement>('[data-square-input="finishedOuterIn"]')!;
+   const extra=form.querySelector<HTMLInputElement>('[data-square-input="cornerExtraIn"]')!;
+   finished.value=button.dataset.squareReferenceSize||'';
+   extra.value='0';
+   finished.dispatchEvent(new Event('input',{bubbles:true}));
+   extra.dispatchEvent(new Event('input',{bubbles:true}));
+   form.requestSubmit();
+  });
+ });
  download.addEventListener('click',()=>{
   if(!current||download.disabled)return;
   const plans:MaterialCutPlan[]=[

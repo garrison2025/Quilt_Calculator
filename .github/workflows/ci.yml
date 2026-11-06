@@ -26,12 +26,19 @@ jobs:
         run: node scripts/check-build.mjs
       - name: Install isolated browser smoke-test dependency
         run: npm install --no-save --package-lock=false playwright axe-core
-      - name: Install Chromium and Linux browser libraries
-        run: npx playwright install --with-deps chromium
+      # GitHub ubuntu-latest normally ships standard browser system libraries.
+      # Avoid a full apt mirror update/install on EVERY PR: it can stall CI for
+      # minutes before any real browser interaction is exercised. Browser
+      # launch itself is still required, and missing native libs fail the QA.
+      - name: Install isolated Chromium browser
+        run: npx playwright install chromium
       - name: Test real calculator interactions, downloads, mobile and print
         timeout-minutes: 6
         run: node scripts/browser-smoke.mjs
-      - name: Install WebKit for mobile Safari-engine emulation
+      # WebKit needs additional GTK/GStreamer/native runtime packages on
+      # ubuntu-latest, unlike Chromium. Install its dependencies explicitly;
+      # the mobile smoke MUST launch real WebKit or fail CI.
+      - name: Install WebKit and its required native system libraries
         run: npx playwright install --with-deps webkit
       - name: Exercise touch and pan in simulated iPhone WebKit and Android Chrome
         timeout-minutes: 5
