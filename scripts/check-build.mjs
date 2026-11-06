@@ -350,8 +350,8 @@ console.log('PASS: 218 source keyword records, 202 mapped to 9 unique tool inten
  * Asset hrefs are intentionally excluded; internal navigation URLs must be valid.
  */
 const seenTitles=new Set();
-const internalRoutes=new Set([...slugs.map(slug=>'/'+(slug?slug+'/':'')),'/about/','/privacy/','/qa/print-calibration/','/qa/fabric-cutting/','/qa/2x2-measurement-sheet/','/lab/individual-bias-strips/','/lab/continuous-bias-tube/']);
-for(const slug of [...slugs,'about','privacy','qa/print-calibration','qa/fabric-cutting','qa/2x2-measurement-sheet','lab/individual-bias-strips','lab/continuous-bias-tube']){
+const internalRoutes=new Set([...slugs.map(slug=>'/'+(slug?slug+'/':'')),'/about/','/privacy/','/qa/print-calibration/','/qa/fabric-cutting/','/qa/2x2-measurement-sheet/','/lab/individual-bias-strips/','/lab/continuous-bias-tube/','/lab/continuous-bias-planner/']);
+for(const slug of [...slugs,'about','privacy','qa/print-calibration','qa/fabric-cutting','qa/2x2-measurement-sheet','lab/individual-bias-strips','lab/continuous-bias-tube','lab/continuous-bias-planner']){
  const html=fs.readFileSync('dist/'+(slug?slug+'/':'')+'index.html','utf8');
  const title=html.match(/<title>([^<]+)<\/title>/)?.[1];
  if(!title||seenTitles.has(title))throw Error('Missing/duplicate page title: '+slug);
@@ -364,7 +364,7 @@ for(const slug of [...slugs,'about','privacy','qa/print-calibration','qa/fabric-
   if(!internalRoutes.has(href))throw Error('Broken internal page link '+href+' from '+slug);
  }
 }
-console.log('PASS: 17 uniquely titled static pages including noindex About, print-scale, fabric QA, blank 2×2 record and two bias research labs, one H1 each, internal link destinations verified.');
+console.log('PASS: 18 uniquely titled static pages including noindex About, print-scale, fabric QA, blank 2×2 record and three bias research labs, one H1 each, internal link destinations verified.');
 
 // Feature enhancements must deepen approved existing SEO routes; never
 // create three isolated thin keyword pages or make the preview indexable.
