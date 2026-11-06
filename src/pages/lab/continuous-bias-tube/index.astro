@@ -27,7 +27,7 @@ import Base from '../../../layouts/Base.astro';
     <div class="field-wrap"><label for="tube-square">Original straight-grain square side (in)</label><input id="tube-square" class="field-control" data-tube-input="sourceSquareSideIn" inputmode="decimal" value="30"/><small class="hint">6–96 in. Must fit usable fabric WOF.</small></div>
     <div class="field-wrap"><label for="tube-wof">Post-trim usable WOF (in)</label><input id="tube-wof" class="field-control" data-tube-input="usableWofIn" inputmode="decimal" value="43"/><small class="hint">6–120 in, measured on fabric.</small></div>
     <div class="field-wrap"><label for="tube-width">Full UNFOLDED strip width / marked line pitch (in)</label><input id="tube-width" class="field-control" data-tube-input="fullStripCutWidthIn" inputmode="decimal" value="2.5"/><small class="hint">¾–6 in; not folded binding width.</small></div>
-    <div class="field-wrap"><label for="tube-seam">Tube closing seam allowance (in)</label><input id="tube-seam" class="field-control" data-tube-input="seamAllowanceIn" inputmode="decimal" value="0.25"/><small class="hint">⅛–½ in from each raw edge; check line intersections ON this sewing line.</small></div>
+    <div class="field-wrap"><label for="tube-seam">Seam allowance per raw edge — BOTH seams (in)</label><input id="tube-seam" class="field-control" data-tube-input="seamAllowanceIn" inputmode="decimal" value="0.25"/><small class="hint">⅛–½ in perpendicular to each raw edge. This model applies the same allowance to the triangle-assembly seam and the tube-closing seam.</small></div>
     <div class="field-wrap"><label for="tube-bands">Actual fully marked strip lanes</label><input id="tube-bands" class="field-control" data-tube-input="markedBands" inputmode="numeric" value="8"/><small class="hint">2–32 whole lanes. Count full-width bands actually present after sewing.</small></div>
     <div class="field-wrap"><label for="tube-offset">Offset in whole marked lanes</label><select id="tube-offset" class="field-control" data-tube-input="offsetBands">
       <option value="1" selected>1 lane — intended continuous spiral</option>
@@ -37,7 +37,7 @@ import Base from '../../../layouts/Base.astro';
     </select><small class="hint">Compare 0, 1, 2 or 3. Actual continuous tube requires one-lane shift.</small></div>
    </div>
    <div class="input-actions"><button type="submit" class="action-primary">Verify seam-line connections ↗</button></div>
-   <p class="hint">The short edges are stitched into a tube with the cut-line intersections matched at the <strong>SEWING LINE</strong> (not just the raw edges). Draw the cutting line on the wrong side, check one-layer cutting, and follow the sewing instructions from your pattern.</p>
+   <p class="hint">The first seam joins the two triangle short edges with equal tip overhangs; the second seam closes the parallelogram into a tube with one marked-line offset. Match cut-line intersections at each <strong>SEWING LINE</strong>, not at raw edges. This model assumes the same perpendicular allowance on both seams.</p>
   </form>
   <section class="result-card tube-topology-result" aria-label="Continuous bias tube connection results">
    <div class="results-topline"><span class="eyebrow-with-dot">● MARKING GRAPH</span><span class="result-version">NO YIELD · NOINDEX</span></div>
@@ -52,7 +52,7 @@ import Base from '../../../layouts/Base.astro';
    <h2>Actual 2D coordinates: sewn parallelogram, unfolded spiral and end squaring</h2>
   </div>
   <p>Separate from the seam-connectivity graph above, this <strong>idealized geometric model</strong> draws the post-sewing face using inch coordinates, traces each marked line across the first seam, maps its one-lane continuation across the tube seam, and unfolds the complete bands into a single strip with squared ends. The JSON contains each full polygon and its original fabric-square triangle provenance.</p>
-  <p class="warning-banner" role="note"><strong>Model ≠ measured yield.</strong> Two physical seam allowances and two terminal triangles are accounted for without using a generic percentage. This convention assumes accurate 45° triangle assembly, zero bias stretch and perfect stitch-line correspondence. The modeled length must not be treated as safe fabric purchasing length without independent sewn-sample validation.</p>
+  <p class="warning-banner" role="note"><strong>Model ≠ measured yield.</strong> Two physical seam allowances and two terminal triangles are accounted for without using a generic percentage. This convention assumes exact 45° triangles, equal first-seam tip overhangs, the same perpendicular allowance on both seams, zero bias stretch and perfect stitch-line correspondence. The modeled length must not be treated as safe fabric purchasing length without independent sewn-sample validation.</p>
   <p data-tube-development-status role="status" aria-live="polite">Evaluating sewn-face coordinates…</p>
   <div data-tube-development-output></div>
   <div class="results-footer"><button type="button" class="action-secondary" data-tube-development-download disabled>Download complete 2D polygons / seam &amp; trim ledger JSON · NOT a cutting template</button></div>
