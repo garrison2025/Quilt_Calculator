@@ -1,6 +1,6 @@
 # Continuous bias binding — V2 method validation and release gate
 
-**Status: METHOD_RESEARCH_ONLY · NOT IMPLEMENTED · HOLD-BIAS · NOT_RELEASED (2026-11-05).**
+**Status: METHOD_RESEARCH_ONLY · 2D RESEARCH LAB IMPLEMENTED · PHYSICAL YIELD NOT VERIFIED · HOLD-BIAS · NOT_RELEASED (2026-11-07).**
 
 This file is a new assessment alongside the original V2 product specification, not a modification of the original 218-keyword sheet, its 7 bias HOLD terms or historical testing status.
 
