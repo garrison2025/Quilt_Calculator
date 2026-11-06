@@ -147,6 +147,34 @@ describe('manual rectangular grid from actual quilt-TOP numbered cuts',()=>{
   expect(r.independentRulerMismatch).toBe(false);
   expect(assessFabricAudit(audit(g)).status).toBe('USER_REPORTED_TOP_GRID_CUT_SIZE_DEVIATION');
  });
+ it('blocks physically impossible partial grid readings without treating blank edges as measured zero',()=>{
+  let g=grid();
+  g.cells[2].seamRightIn=undefined; // another cell is still incomplete
+  g.cells[0].seamRightIn=5; // one known loss already consumes full measured width
+  let r=evaluateTopGrid(project(),g);
+  expect(r.coverage).toBe('PARTIAL_USER_REPORTED');
+  expect(r.predictedAssembledWidthIn).toBeUndefined();
+  expect(r.invalid.join(' ')).toContain('consumes the entire physical width');
+  expect(assessFabricAudit(audit(g)).canExport).toBe(false);
+  g=grid();
+  g.cells[0].seamRightIn=undefined; // even the second side of this join is unknown
+  g.cells[1].seamLeftIn=5;
+  r=evaluateTopGrid(project(),g);
+  expect(r.invalid.join(' ')).toContain('entire physical width');
+  expect(assessFabricAudit(audit(g)).status).toBe('INCOMPLETE_USER_MEASUREMENTS');
+  g=grid();
+  g.cells[3].measuredCutWidthIn=undefined;
+  g.cells[0].seamBottomIn=5; // vertical height must also be checked in partial grids
+  r=evaluateTopGrid(project(),g);
+  expect(r.invalid.join(' ')).toContain('entire physical height');
+  g=grid();
+  g.cells[0].measuredCutWidthIn=undefined; // no ruler width: cannot assume native CSV size
+  g.cells[0].seamRightIn=5;
+  r=evaluateTopGrid(project(),g);
+  expect(r.invalid).toHaveLength(0);
+  expect(r.coverage).toBe('PARTIAL_USER_REPORTED');
+  expect(r.predictedAssembledWidthIn).toBeUndefined();
+ });
  it('enforces invalid seam sum, negative/oversized dimensions and grid bounds without an automatic approval',()=>{
   let g=grid();g.cells[0].seamRightIn=5;
   expect(evaluateTopGrid(project(),g).invalid.join(' ')).toContain('consumes the entire');
