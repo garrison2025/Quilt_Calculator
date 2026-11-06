@@ -169,6 +169,18 @@ import Base from '../../../layouts/Base.astro';
     <div data-top-grid-cells></div>
     <p class="qa-fabric-small">Cell cut width/height and seam-edge losses are <strong>user ruler measurements</strong>, not source-model defaults. A blank field is NOT measured, including the two sides of any interior join. Only internal joins require values. Correctly observed zero is explicitly entered as 0.</p>
     <div data-top-grid-result role="status" aria-live="polite">No user-arranged quilt TOP rectangular grid: NOT VERIFIED.</div>
+    <details class="qa-fabric-roll" data-top-grid-signoff-guide>
+     <summary>Human review and applicable construction limits — no physical approval</summary>
+     <p>This grid check applies only to <strong>aligned rectangular patches joined with straight butt seams</strong> in a 2–4 by 2–4 manually mapped matrix. <strong>Offset rows, non-aligned junctions, triangles, angled/on-point or curved piecing, Y-seams, overlap joins and deformation are unsupported.</strong> Do not substitute a bounding rectangle, area-equivalent yardage, source cut-roll coordinates or a diagram for a real sewn-top topology.</p>
+     <ol>
+      <li>Preserve the three matching project source files and label each actual physical patch with its material SKU and source piece number.</li>
+      <li>Measure all patch widths/heights and both sides of every internal sewn join with a physical ruler; a blank reading never means zero.</li>
+      <li>Independently measure the assembled grid width and height before borders. Inspect squareness, fabric grain and pressing deformation separately; these properties are <strong>not</strong> certified by the arithmetic.</li>
+      <li>Mark whether this grid is a sample or the entire center. Do not compare a sampled grid with planned full-center dimensions.</li>
+      <li>Have a human independently review discrepancies and sign actual cutting/sewing evidence offline. Complete the separate physical print-scale checks where printed patterns are involved.</li>
+     </ol>
+     <p><strong>Human acceptance: MANUAL_NOT_RUN.</strong> A complete or matching self-report is not an independent sign-off, purchase authorization or verified construction method. See the <a href="https://github.com/garrison2025/Quilt_Calculator/blob/main/docs/qa/TOP_GRID_PHYSICAL_SIGNOFF_PROTOCOL_20261106.md">blank physical evidence and sign-off protocol</a>.</p>
+    </details>
    </details>
    <label class="qa-fabric-confirm"><input type="checkbox" data-fabric-confirm /> I actually measured the fabric and sample cuts with a physical ruler. I understand that browser and CSV calculations cannot independently verify my statements.</label>
    <h2>3. Review the user-reported results</h2>
