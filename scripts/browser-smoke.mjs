@@ -3018,7 +3018,7 @@ try{
   const biasGeomFile=await biasGeomDownload;
   const biasGeomCsv=await fs.readFile(await biasGeomFile.path(),'utf8');
   const biasGeomRows=csvRecords(biasGeomCsv);
-  const biasBands=biasGeomRows.filter(row=>row.length===13&&/^[-]?\\d+$/.test(row[0]));
+  const biasBands=biasGeomRows.filter(row=>row.length===13&&/^-?[0-9]+$/.test(row[0]));
   check(biasGeomFile.suggestedFilename().includes('NOT-TUBE')&&
     biasGeomCsv.includes('45DEG_INDIVIDUAL_BIAS_GEOMETRY_ONLY_NOT_CONTINUOUS_TUBE')&&
     biasGeomCsv.includes('MODELED_SOURCE_RECTANGLES')&&
