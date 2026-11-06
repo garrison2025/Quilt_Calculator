@@ -294,8 +294,8 @@ export function assessFabricAudit(input:ManualFabricAuditInput):FabricAuditAsses
  }
  const seams=evaluateJoinedSeams(input.project.seamPlan,input.readings,input.joinedSeamReadings??[],input.allowedSeamDeviationIn);
  const finishing=evaluateFinishing(input.project.seamPlan,input.finishingReading,input.joinedSeamReadings??[],input.allowedFinishingDeviationIn);
- const topChain=evaluateTopChain(input.project,input.topChain);
- const topGrid=evaluateTopGrid(input.project,input.topGrid);
+ const topChain=evaluateTopChain(input.project,input.topChain,input.allowedPieceDeviationIn);
+ const topGrid=evaluateTopGrid(input.project,input.topGrid,input.allowedPieceDeviationIn);
  missing.push(...seams.missing,...finishing.invalid,...topChain.invalid,...topGrid.invalid);
  const seamDetails={
   seamChecks:seams.observations,seamVerificationCoverage:seams.verificationCoverage,
