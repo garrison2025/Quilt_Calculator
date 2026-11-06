@@ -3158,6 +3158,72 @@ try{
     'Nine 2.5in bands exceed the nominal pre-seam bound of a 30in square, preventing false cut instructions.');
   await tubeCtx.close();
   console.log('PASS continuous-bias tube one-lane seam graph, wrong offsets, WOF upper limit, method-only CSV and WCAG.');
+  // Inverse-square prototype deliberately remains separate from the approved
+  // straight-grain purchasing calculator; no action is safe-to-buy.
+  const planCtx=await browser.newContext({viewport:{width:375,height:780},acceptDownloads:true});
+  instrumentNetwork(planCtx,'bias-planner');
+  const planPage=await planCtx.newPage();
+  planPage.on('pageerror',err=>problems.push('Bias planner: '+err.message));
+  const planResponse=await planPage.goto(ROOT+'/lab/continuous-bias-planner/',{waitUntil:'domcontentloaded'});
+  check(planResponse.status()===200 &&
+    await planPage.locator('meta[name="robots"]').getAttribute('content')==='noindex,follow' &&
+    await planPage.locator('link[rel="canonical"]').count()===0 &&
+    await planPage.locator('script[type="application/ld+json"]').count()===0 &&
+    (await planPage.locator('h1').innerText()).includes('Continuous Bias Binding Planning Lab'),
+    'Numerical inverse-square planner must remain a nonindexed laboratory route.');
+  await planPage.waitForFunction(()=>
+    document.querySelector('[data-bias-plan-status]')?.textContent?.includes('NUMERICAL MODEL FIT'));
+  const planOutput=planPage.locator('[data-bias-plan-output]');
+  check((await planOutput.innerText()).includes('28.625 × 28.625 in') &&
+    (await planOutput.innerText()).includes('312.87') &&
+    (await planOutput.innerText()).includes('0.875 yd') &&
+    (await planOutput.innerText()).includes('NOT TO BUY') &&
+    await planPage.locator('svg[data-bias-plan-square]').count()===1 &&
+    await planPage.locator('svg[data-bias-plan-square] [data-bias-plan-triangle]').count()===1 &&
+    await planPage.locator('[data-bias-plan-download]').isEnabled(),
+    'Default planning scenario must derive the model square, width fit, non-purchase roll conversion and source diagram.');
+  const planDownload=planPage.waitForEvent('download');
+  await planPage.locator('[data-bias-plan-download]').click();
+  const planFile=await planDownload;
+  const planJson=JSON.parse(await fs.readFile(await planFile.path(),'utf8'));
+  check(planFile.suggestedFilename().includes('NOT-FOR-PURCHASE') &&
+    planJson.method==='CONTINUOUS_BIAS_PLANNER_NUMERICAL_SCENARIO_ONLY' &&
+    planJson.verdict==='NOT_VERIFIED_FOR_PHYSICAL_YIELD_OR_PURCHASE' &&
+    planJson.status==='MODEL_FIT' &&
+    planJson.scenario.sourceSquareSideIn===28.625 &&
+    planJson.scenario.modelFullBands===8 &&
+    planJson.scenario.indicativeRoundedRollRunYd===.875 &&
+    planJson.physicalSpecimenVerified===false && planJson.safeToPurchase===false &&
+    !('purchaseYards' in planJson)&&!('verifiedUsableLengthIn' in planJson) &&
+    planJson.development.productionYieldVerified===false &&
+    Math.abs(planJson.development.areaClosureErrorSqIn)<1e-7,
+    'Export must be an auditable non-purchasing inverse model with separate two-seam 2D ledger.');
+  await auditWcag(planPage,'/lab/continuous-bias-planner/ [375px fit]');
+  await planPage.screenshot({path:'artifacts/qa/continuous-bias-planner-mobile.png',fullPage:true,animations:'disabled'});
+  await planPage.locator('[data-bias-plan-input="lengthShrinkPct"]').fill('10');
+  check(await planPage.locator('[data-bias-plan-download]').isDisabled() &&
+    (await planPage.locator('[data-bias-plan-status]').innerText()).includes('STALE'),
+    'Changing model assumptions must immediately revoke previous scenario export.');
+  await planPage.locator('[data-bias-plan-form] button[type="submit"]').click();
+  check((await planOutput.innerText()).includes('1 yd') &&
+    (await planOutput.innerText()).includes('prewash') &&
+    await planPage.locator('[data-bias-plan-download]').isEnabled(),
+    'Only the hypothetical raw bolt-run should change under LENGTH shrinkage.');
+  await planPage.locator('[data-bias-plan-input="usableWofIn"]').fill('27');
+  await planPage.locator('[data-bias-plan-form] button[type="submit"]').click();
+  check((await planPage.locator('[data-bias-plan-status]').innerText()).includes('NO NUMERICAL FIT') &&
+    await planPage.locator('[data-bias-plan-download]').isDisabled() &&
+    await planPage.locator('[data-bias-plan-no-fit]').count()===1,
+    'Insufficient WOF must not produce a purchase-looking number or enable JSON exports.');
+  await planPage.locator('[data-bias-plan-input="usableWofIn"]').fill('5');
+  await planPage.locator('[data-bias-plan-form] button[type="submit"]').click();
+  check((await planPage.locator('[data-bias-plan-status]').innerText()).includes('INVALID') &&
+    await planPage.locator('[data-bias-plan-download]').isDisabled(),
+    'Invalid WOF is rejected instead of displaying an old usable scenario.');
+  await auditWcag(planPage,'/lab/continuous-bias-planner/ [375px invalid]');
+  await planCtx.close();
+  console.log('PASS noindex inverse-square planning, scenario export, WOF rejection, prewash distinction and mobile WCAG.');
+
   const dark=await browser.newContext({viewport:{width:1280,height:800},colorScheme:'dark'});
   instrumentNetwork(dark,'dark');
   const darkPage=await dark.newPage();
