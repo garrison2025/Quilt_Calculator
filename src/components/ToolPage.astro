@@ -37,6 +37,12 @@ const related=guides[route.id].related.map(id=>routes.find(t=>t.id===id)!);
  <p>Not always. Compare the <strong>usable fabric width after trimming selvedges</strong>, the panel/seam count, rounded purchase yardage and the price per yard for each real bolt. Wide backing may need fewer seams and fewer yards, but its price per yard can be higher. The calculator's second-width table is a hypothetical estimate only: the current width still owns the cutting plan and exported shopping list.</p>
  <p>Both scenarios preserve the same quilt outside dimensions, backing overage, seam take-up, one-way print restriction, selected seam direction and purchase rounding step. Taxes, shipping, seam labor and pattern matching are not included.</p>
 </section>}
+{route.id==='binding'&&
+<section class="content-block" data-seo-bias-area-bound>
+ <h2>Bias binding: why a square-root fabric estimate is only a lower bound</h2>
+ <p>True bias strips are cut around 45° to the straight grain, not across full WOF like the straight-grain binding on this page. For a requested usable strip length <strong>L</strong> and full cut strip width <strong>S</strong>, area conservation gives <strong>ideal square side = √(L × S)</strong>. With a 292-inch strip and a 2½-inch full cut width, that is √730 ≈ <strong>27.0185 inches</strong>; the next ⅛-inch ruler increment is 27⅛ inches. These numbers are <strong>loss-free theoretical area equivalents, NOT adequate cutting-square dimensions or fabric buying yardage</strong>.</p>
+ <p>A real 45° continuous-tube construction has seam joins, corner trim, helical cutting offsets and material losses; it must demonstrate the actual usable strip length and that the source square fits your measured fabric width before giving a purchase plan. The optional panel in this calculator only shows the theoretical lower bound. <strong>All shopping quantities and downloadable cuts on this page remain straight-grain only.</strong> <a href="https://quiltschenectady.org/Patterns/BordersNBindings.pdf" target="_blank" rel="noopener noreferrer">Independent published square-root area reference</a>.</p>
+</section>}
 {route.id==='sashing'&&
 <section class="content-block" data-seo-block-grid-handoff>
  <h2>From finished blocks and sashing to your quilt size</h2>
