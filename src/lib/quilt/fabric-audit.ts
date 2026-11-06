@@ -2,6 +2,7 @@ import {
  CUT_LIST_HEADERS, EXPORT_FINGERPRINT_HEADER, assertExportProjectFingerprint
 } from './cutlist';
 import {verifyLayout, MAX_PIECES, type Layout, type Rect} from './math';
+import {evaluateJoinedSeams, type JoinedSeamPlan, type UserJoinedSeamReading, type JoinedSeamObservation, type JoinedSeamEvaluation} from './seam-audit';
 
 /** The CSV reader is intentionally strict. Uploaded files remain in the browser:
  * nothing here can attest to physical fabric quality, ownership or provenance.
@@ -75,6 +76,8 @@ export type ImportedFabricAudit={
  sourceProjectHash:string;
  cutCount:number;
  rolls:FabricAuditRoll[];
+ /** Optional validated same-revision assembly plan. */
+ seamPlan?:JoinedSeamPlan;
 };
 /** Also validates row completeness, exact same project fingerprint, roll
  * identities, feasible non-overlapping geometry and purchase coverage.
@@ -172,6 +175,8 @@ export type ManualFabricAuditInput={
  date:string;
  fabricCondition:'postwash'|'not-postwashed'|'';
  allowedPieceDeviationIn?:number;
+ joinedSeamReadings?:UserJoinedSeamReading[];
+ allowedSeamDeviationIn?:number;
  reviewer:string;
  physicallyMeasured:boolean;
 };
@@ -180,6 +185,7 @@ export type FabricAuditStatus=
  'INCONCLUSIVE_NOT_POSTWASHED'|
  'USER_REPORTED_SHORTAGE_OR_DEVIATION'|
  'USER_REPORTED_SHRINKAGE_EXCEEDS_PLAN'|
+ 'USER_REPORTED_SEAM_LOSS_EXCEEDS_PLAN'|
  'USER_REPORTED_WITHIN_DECLARED_LIMITS';
 export type RollAuditCheck={
  id:string;material:string;requiredWofIn:number;requiredRunIn:number;
@@ -195,6 +201,8 @@ export type RollAuditCheck={
 };
 export type FabricAuditAssessment={
  status:FabricAuditStatus;missing:string[];canExport:boolean;checks:RollAuditCheck[];message:string;
+ seamChecks:JoinedSeamObservation[];
+ seamVerificationCoverage:JoinedSeamEvaluation['verificationCoverage'];
 };
 function validDate(date:string):boolean{
  if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return false;
@@ -260,26 +268,39 @@ export function assessFabricAudit(input:ManualFabricAuditInput):FabricAuditAsses
   }
   checks.push(check);
  }
- if(missing.length)return {status:'INCOMPLETE_USER_MEASUREMENTS',canExport:false,checks,missing,
+ const seams=evaluateJoinedSeams(input.project.seamPlan,input.readings,input.joinedSeamReadings??[],input.allowedSeamDeviationIn);
+ missing.push(...seams.missing);
+ const seamDetails={seamChecks:seams.observations,seamVerificationCoverage:seams.verificationCoverage};
+ if(missing.length)return {...seamDetails,status:'INCOMPLETE_USER_MEASUREMENTS',canExport:false,checks,missing,
   message:'Missing real paper/fabric measurements or required metadata. No cutting pass or physical approval is available.'};
- if(input.fabricCondition!=='postwash')return {status:'INCONCLUSIVE_NOT_POSTWASHED',canExport:true,checks,missing,
+ if(input.fabricCondition!=='postwash')return {...seamDetails,status:'INCONCLUSIVE_NOT_POSTWASHED',canExport:true,checks,missing,
   message:'Inconclusive: fabric has not been measured in the intended postwash condition. Actual cutting can shrink below reported widths or lengths. Keep this as user-reported evidence only.'};
  if(checks.some(c=>c.hasShortage||c.sampleOutsideAllowance))return {
-  status:'USER_REPORTED_SHORTAGE_OR_DEVIATION',canExport:true,checks,missing,
+  ...seamDetails,status:'USER_REPORTED_SHORTAGE_OR_DEVIATION',canExport:true,checks,missing,
   message:'User-reported material shortage or sampled piece dimension exceeds the stated allowance. Do not treat this plan as approved for real cutting.'};
+ if(seams.anyExcessOrShortfall)return {
+  ...seamDetails,status:'USER_REPORTED_SEAM_LOSS_EXCEEDS_PLAN',canExport:true,checks,missing,
+  message:'User-reported backing or straight-grain binding join loss exceeded the planned total allowance or left less than the required usable joined span. Recheck all seams before production. This does NOT certify physical material.'};
  if(checks.some(c=>c.observedShrinkageExceedsPlan))return {
-  status:'USER_REPORTED_SHRINKAGE_EXCEEDS_PLAN',canExport:true,checks,missing,
+  ...seamDetails,status:'USER_REPORTED_SHRINKAGE_EXCEEDS_PLAN',canExport:true,checks,missing,
   message:'The user-measured prewash/postwash length decrease exceeds the shrinkage percentage assumed by the shopping estimate. Recheck the source roll and purchasing buffer; enough actual postwash material may still remain. This is NOT a physical approval.'};
  const unmeasured=checks.filter(c=>c.measuredPrewashRunIn===undefined).length;
- return {status:'USER_REPORTED_WITHIN_DECLARED_LIMITS',canExport:true,checks,missing,
+ const seamNote=seams.verificationCoverage==='NOT_IMPORTED'
+  ?'No matching cutting-plan JSON was supplied; seam take-up was NOT verified. '
+  :seams.verificationCoverage==='NOT_MEASURED'
+  ?'No physical joined-seam lengths were entered; seam take-up was NOT verified. '
+  :seams.verificationCoverage==='PARTIAL_USER_REPORTED'
+  ?'Only some sewn joins were user-measured; remaining seam take-up is NOT verified. '
+  :'Backing/binding joined lengths are USER REPORTED only; independent seam verification is NOT complete. ';
+ return {...seamDetails,status:'USER_REPORTED_WITHIN_DECLARED_LIMITS',canExport:true,checks,missing,
   message:'User-entered postwash roll dimensions and sampled cuts fit the declared limits. '+(unmeasured?unmeasured+' roll(s) have no measured before-wash length; actual shrinkage was NOT verified. ':'')+
-   'Seam take-up and all individual cuts are NOT verified. This is NOT independent certification, and does NOT approve fabric purchase or production.'};
+   seamNote+'All individual cuts remain unverified. This is NOT independent certification, and does NOT approve fabric purchase or production.'};
 }
 export function fabricAuditEvidence(input:ManualFabricAuditInput,recordedAtUtc:string){
  const result=assessFabricAudit(input);
  if(!result.canExport)throw Error('Complete every physical measurement and confirm it was performed before exporting.');
  return {
-  schemaVersion:1,kind:'user-reported-fabric-cutting-check',
+  schemaVersion:2,kind:'user-reported-fabric-cutting-check',
   recordedAtUtc,measuredOn:input.date,
   projectFingerprint:input.project.sourceProjectHash,
   sourceSnapshotIsCryptographicallyAuthenticated:false,
@@ -289,7 +310,11 @@ export function fabricAuditEvidence(input:ManualFabricAuditInput,recordedAtUtc:s
   userSelectedPieceDeviationAllowanceIn:input.allowedPieceDeviationIn,
   reviewer:input.reviewer.trim(),
   userConfirmedPhysicalMeasurement:input.physicallyMeasured,
-  checks:result.checks,selfReportedStatus:result.status,explanation:result.message,
+  checks:result.checks,
+  cuttingPlanJsonMatchedByFingerprint:Boolean(input.project.seamPlan),
+  seamChecks:result.seamChecks,seamVerificationCoverage:result.seamVerificationCoverage,
+  userSelectedSeamDeviationAllowanceIn:input.allowedSeamDeviationIn,
+  selfReportedStatus:result.status,explanation:result.message,
   independentPhysicalVerification:false,quiltCuttingApproval:false,
   note:'Uploaded files and measurements are user supplied. Checking a sample cut is not verification of every physical cut.'
  };
