@@ -695,15 +695,63 @@ try{
   check(await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_WITHIN_DECLARED_LIMITS' &&
     (await auditStatus.innerText()).includes('USER REPORTED only'),
     'Exactly modeled joined backing/binding spans should be labeled only user-reported.');
+  const backingJoinBlock=auditPage.locator('[data-fabric-seam-kind="backing"]');
+  const bindingJoinBlock=auditPage.locator('[data-fabric-seam-kind="binding"]');
+  const observedDirection=backingJoinBlock.locator('[data-fabric-observed-direction]');
+  check(await observedDirection.inputValue()==='' &&
+    (await backingJoinBlock.locator('[data-fabric-seam-result]').innerText()).includes('NOT CONFIRMED'),
+    'Real backing seam direction must be initially blank and explicitly unverified.');
+  await observedDirection.selectOption(readyPlanJson.result.selectedBacking.direction);
+  await backingJoinBlock.locator('details summary').click();
+  await bindingJoinBlock.locator('details summary').click();
+  const backJoinInputs=backingJoinBlock.locator('[data-fabric-join-index]');
+  const bindJoinInputs=bindingJoinBlock.locator('[data-fabric-join-index]');
+  check(await backJoinInputs.count()===readyPlanJson.result.selectedBacking.panelCount-1 &&
+    await bindJoinInputs.count()===readyPlanJson.result.binding.stripCount-1 &&
+    (await backJoinInputs.first().inputValue())==='' && (await bindJoinInputs.first().inputValue())==='',
+    'Every individual seam must start empty and its count must match the real project.');
+  const modelBackLoss=(readyPlanJson.result.selectedBacking.panelCount*
+    readyPlanJson.result.selectedBacking.layout.usableWofIn-
+    readyPlanJson.result.selectedBacking.finishedJoinedSpanIn)/
+    (readyPlanJson.result.selectedBacking.panelCount-1);
+  const modelBindLoss=(readyPlanJson.result.binding.stripCount*
+    readyPlanJson.result.binding.layout.usableWofIn-
+    readyPlanJson.result.binding.effectiveJoinedLengthIn)/
+    (readyPlanJson.result.binding.stripCount-1);
+  // Synthetic ruler values equal the model ONLY inside automated testing.
+  for(const input of await backJoinInputs.all())await input.fill(String(modelBackLoss));
+  for(const input of await bindJoinInputs.all())await input.fill(String(modelBindLoss));
+  check(await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_WITHIN_DECLARED_LIMITS' &&
+    (await bindingJoinBlock.locator('[data-fabric-seam-result]').innerText()).includes('SUM of actual per-join losses'),
+    'Synthetic per-join total must reconcile to independently entered pretrim joined length.');
   const seamEvidencePromise=auditPage.waitForEvent('download');
   await auditDownload.click();
   const seamEvidence=JSON.parse(await fs.readFile(await (await seamEvidencePromise).path(),'utf8'));
-  check(seamEvidence.schemaVersion===2 && seamEvidence.cuttingPlanJsonMatchedByFingerprint===true &&
+  check(seamEvidence.schemaVersion===3 && seamEvidence.cuttingPlanJsonMatchedByFingerprint===true &&
     seamEvidence.seamVerificationCoverage==='ALL_USER_REPORTED' &&
     seamEvidence.seamChecks.length===2 &&
+    seamEvidence.seamChecks.every(c=>c.perJoinCoverage==='ALL_USER_REPORTED' && !c.perJoinVsAssembledSpanMismatch) &&
+    seamEvidence.seamChecks.find(c=>c.kind==='backing').observedBackingJoinDirection===
+      readyPlanJson.result.selectedBacking.direction &&
     seamEvidence.independentPhysicalVerification===false &&
     seamEvidence.quiltCuttingApproval===false,
     'JSON must save both real-value seam self-reports and never claim independent physical signoff.');
+  await bindJoinInputs.first().fill(String(modelBindLoss+0.125));
+  check(await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_SEAM_MEASUREMENTS_DISAGREE' &&
+    (await bindingJoinBlock.locator('[data-fabric-seam-result]').innerText()).includes('PER-JOIN AND WHOLE-SPAN MEASUREMENTS DISAGREE'),
+    'Mismatch between individual take-up total and independently measured full joined span must be a distinct exportable warning.');
+  await bindJoinInputs.first().fill(String(modelBindLoss));
+  await observedDirection.selectOption(
+    readyPlanJson.result.selectedBacking.direction==='vertical'?'horizontal':'vertical');
+  check(await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_SEAM_DIRECTION_MISMATCH' &&
+    (await backingJoinBlock.locator('[data-fabric-seam-result]').innerText()).includes('SEAM DIRECTION DOES NOT MATCH'),
+    'Wrong observed backing stitch direction must not be silently treated as matching the cutting plan.');
+  await observedDirection.selectOption(readyPlanJson.result.selectedBacking.direction);
+  await bindJoinInputs.first().fill('');
+  check(await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_WITHIN_DECLARED_LIMITS' &&
+    (await bindingJoinBlock.locator('[data-fabric-seam-result]').innerText()).includes('Full per-join take-up NOT VERIFIED'),
+    'Missing one join must disable complete cumulative take-up claims without blocking older assembly-only checks.');
+  await bindJoinInputs.first().fill(String(modelBindLoss));
   await seamBinding.fill(String(readyPlanJson.result.binding.effectiveJoinedLengthIn-0.125));
   check(await auditStatus.getAttribute('data-fabric-assessment')==='USER_REPORTED_SEAM_LOSS_EXCEEDS_PLAN' &&
     await auditDownload.isEnabled() &&
