@@ -55,6 +55,31 @@ if(!squareLabHtml.includes('noindex,follow')||squareLabHtml.includes('rel="canon
 // Deliberately unindexed individual 45-degree strip geometry lab. The
 // orthogonal crosswise join method must not silently launch HOLD-BIAS or
 // acquire canonical/JSON-LD structured data on the preview.
+// Topology-only continuous bias tube research must remain explicitly noindex.
+const tubeTopologyHtml=fs.readFileSync('dist/lab/continuous-bias-tube/index.html','utf8');
+for(const expected of [
+ 'data-tube-topology-lab','noindex,follow','Continuous Bias Tube: Verify Your Spiral Seam',
+ 'TOPOLOGY','not the final cloth length','one-strip offset',
+ 'maximum possible number','S²/W'
+]){
+ if(!tubeTopologyHtml.toLowerCase().includes(expected.toLowerCase()))
+  throw Error('Continuous tube topology route missing accurate explanation: '+expected);
+}
+if(tubeTopologyHtml.includes('rel="canonical"')||
+   tubeTopologyHtml.includes('application/ld+json'))
+ throw Error('Noindex tube topology lab must not have canonical or WebApplication structured data.');
+for(const source of ['quilt-binding-calculator','lab/individual-bias-strips']){
+ const html=fs.readFileSync('dist/'+source+'/index.html','utf8');
+ if(!html.includes('href="/lab/continuous-bias-tube/"'))
+  throw Error('Both bias pages must link to separate noindex tube topology research: '+source);
+}
+const tubeTopologySource=fs.readFileSync('src/lib/quilt/continuous-bias-tube-topology.ts','utf8');
+for(const expected of ['CONTINUOUS_BIAS_TUBE_TOPOLOGY_ONLY',
+ 'verifyBiasTubeTopology','ON_SEAM_LINE_NOT_RAW_EDGE',
+ 'verifiedTubeYieldIn?:never','purchaseYards?:never','sourceCuttingPolygons?:never']){
+ if(!tubeTopologySource.includes(expected))
+  throw Error('Tube model cannot claim verified usable yield, source cuts or shopping: '+expected);
+}
 const individualBiasLabHtml=fs.readFileSync('dist/lab/individual-bias-strips/index.html','utf8');
 for(const token of [
  'noindex,follow','data-individual-bias-lab','Individual 45° Bias Strip Geometry Lab',
@@ -295,8 +320,8 @@ console.log('PASS: 218 source keyword records, 202 mapped to 9 unique tool inten
  * Asset hrefs are intentionally excluded; internal navigation URLs must be valid.
  */
 const seenTitles=new Set();
-const internalRoutes=new Set([...slugs.map(slug=>'/'+(slug?slug+'/':'')),'/about/','/privacy/','/qa/print-calibration/','/qa/fabric-cutting/','/qa/2x2-measurement-sheet/','/lab/individual-bias-strips/']);
-for(const slug of [...slugs,'about','privacy','qa/print-calibration','qa/fabric-cutting','qa/2x2-measurement-sheet','lab/individual-bias-strips']){
+const internalRoutes=new Set([...slugs.map(slug=>'/'+(slug?slug+'/':'')),'/about/','/privacy/','/qa/print-calibration/','/qa/fabric-cutting/','/qa/2x2-measurement-sheet/','/lab/individual-bias-strips/','/lab/continuous-bias-tube/']);
+for(const slug of [...slugs,'about','privacy','qa/print-calibration','qa/fabric-cutting','qa/2x2-measurement-sheet','lab/individual-bias-strips','lab/continuous-bias-tube']){
  const html=fs.readFileSync('dist/'+(slug?slug+'/':'')+'index.html','utf8');
  const title=html.match(/<title>([^<]+)<\/title>/)?.[1];
  if(!title||seenTitles.has(title))throw Error('Missing/duplicate page title: '+slug);
@@ -309,7 +334,7 @@ for(const slug of [...slugs,'about','privacy','qa/print-calibration','qa/fabric-
   if(!internalRoutes.has(href))throw Error('Broken internal page link '+href+' from '+slug);
  }
 }
-console.log('PASS: 16 uniquely titled static pages including noindex About, print-scale, fabric QA, blank 2×2 record and individual-bias research lab, one H1 each, internal link destinations verified.');
+console.log('PASS: 17 uniquely titled static pages including noindex About, print-scale, fabric QA, blank 2×2 record and two bias research labs, one H1 each, internal link destinations verified.');
 
 // Feature enhancements must deepen approved existing SEO routes; never
 // create three isolated thin keyword pages or make the preview indexable.

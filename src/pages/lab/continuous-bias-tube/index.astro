@@ -1,0 +1,63 @@
+---
+import Base from '../../../layouts/Base.astro';
+---
+<Base noIndex
+ title="Continuous Bias Tube Seam Topology Lab — Nonindexed Engineering Preview | Quilt Studio"
+ description="Noindex continuous bias tube seamline topology checker: one-strip offset produces one continuous spiral graph, zero offset forms rings, and two-strip offset splits the path. No physical yield or buying estimate.">
+<div class="page-shell tube-topology-page" data-tube-topology-lab>
+ <div class="page-intro page-intro--tool">
+  <div class="page-heading">
+   <span class="eyebrow-with-line">— BIAS BINDING / SOFTWARE RESEARCH</span>
+   <h1>Continuous Bias Tube: Verify Your Spiral Seam</h1>
+   <p>Check the <strong>one-strip offset</strong> that connects marked cut lines into one spiral. This verifies seamline <strong>connectivity</strong>, not the final cloth length. If the lines are aligned without an offset, you get separate rings; an offset of two strips also creates separate paths.</p>
+   <div class="feature-pills"><span>✓ Seamline marking map</span><span>✓ Connected-path proof</span><span>✓ No fabricated yield</span></div>
+   <p><a href="/quilt-binding-calculator/">Back to the verified straight-grain Binding calculator</a> · <a href="/lab/individual-bias-strips/">Compare the distinct individual-strip geometry lab</a></p>
+  </div>
+ </div>
+ <div class="warning-banner" role="note">
+  <strong>Engineering-only, NOINDEX:</strong> Do not use this tool to cut or buy continuous bias binding. It does not prove usable strip length, seam take-up, tube circumference, source cutting path or production yield. Enter the actual lane count observed after marking the fabric; the pre-seam theoretical upper limit is NOT a guarantee that this many lanes survive sewing.
+ </div>
+ <div class="workspace">
+  <form class="input-card tube-topology-form" data-tube-topology-form novalidate>
+   <div class="card-heading"><span class="eyebrow-with-dot">● OFFSET LINE CHECK</span>
+    <h2>Marking and seamline inputs</h2>
+    <p>Dimensions in inches. Band count is observed on marked cloth, not inferred from a square-root estimate.</p>
+   </div>
+   <div class="tube-topology-fields">
+    <div class="field-wrap"><label for="tube-square">Original straight-grain square side (in)</label><input id="tube-square" class="field-control" data-tube-input="sourceSquareSideIn" inputmode="decimal" value="30"/><small class="hint">6–96 in. Must fit usable fabric WOF.</small></div>
+    <div class="field-wrap"><label for="tube-wof">Post-trim usable WOF (in)</label><input id="tube-wof" class="field-control" data-tube-input="usableWofIn" inputmode="decimal" value="43"/><small class="hint">6–120 in, measured on fabric.</small></div>
+    <div class="field-wrap"><label for="tube-width">Full UNFOLDED strip width / marked line pitch (in)</label><input id="tube-width" class="field-control" data-tube-input="fullStripCutWidthIn" inputmode="decimal" value="2.5"/><small class="hint">¾–6 in; not folded binding width.</small></div>
+    <div class="field-wrap"><label for="tube-seam">Tube closing seam allowance (in)</label><input id="tube-seam" class="field-control" data-tube-input="seamAllowanceIn" inputmode="decimal" value="0.25"/><small class="hint">⅛–½ in from each raw edge; check line intersections ON this sewing line.</small></div>
+    <div class="field-wrap"><label for="tube-bands">Actual fully marked strip lanes</label><input id="tube-bands" class="field-control" data-tube-input="markedBands" inputmode="numeric" value="8"/><small class="hint">2–32 whole lanes. Count full-width bands actually present after sewing.</small></div>
+    <div class="field-wrap"><label for="tube-offset">Offset in whole marked lanes</label><select id="tube-offset" class="field-control" data-tube-input="offsetBands">
+      <option value="1" selected>1 lane — intended continuous spiral</option>
+      <option value="0">0 lanes — incorrect closed rings</option>
+      <option value="2">2 lanes — two separate paths</option>
+      <option value="3">3 lanes — three separate paths</option>
+    </select><small class="hint">Compare 0, 1, 2 or 3. Actual continuous tube requires one-lane shift.</small></div>
+   </div>
+   <div class="input-actions"><button type="submit" class="action-primary">Verify seam-line connections ↗</button></div>
+   <p class="hint">The short edges are stitched into a tube with the cut-line intersections matched at the <strong>SEWING LINE</strong> (not just the raw edges). Draw the cutting line on the wrong side, check one-layer cutting, and follow the sewing instructions from your pattern.</p>
+  </form>
+  <section class="result-card tube-topology-result" aria-label="Continuous bias tube connection results">
+   <div class="results-topline"><span class="eyebrow-with-dot">● MARKING GRAPH</span><span class="result-version">NO YIELD · NOINDEX</span></div>
+   <p role="status" aria-live="polite" data-tube-topology-status>Reading seamline correspondence…</p>
+   <div data-tube-topology-output></div>
+   <div class="results-footer"><button type="button" class="action-secondary" data-tube-topology-download disabled>Download seamline connection checklist CSV · NOT a cutting plan</button></div>
+  </section>
+ </div>
+ <section class="content-block tube-topology-guide">
+  <div class="editorial-head"><span class="eyebrow-with-line">— THREE STAGES, TWO DISTINCT VALIDATIONS</span>
+   <h2>How the continuous tube becomes a single spiral</h2></div>
+  <ol>
+   <li>Cut a straight-grain source square into two right triangles on its diagonal; sew a pair of short edges using your pattern's assembly seam. This creates the parallelogram. Press the seam open.</li>
+   <li>Mark parallel cut lines one full strip CUT width apart, and confirm the actual full-width lanes after allowance and trimming. Align the two short edges with a <strong>one-strip offset</strong> at the sewing-line intersection, not at the raw edge.</li>
+   <li>Sew into a tube; confirm the marked path crosses the seam and continues exactly one lane later. Cut ONE layer along the continuous spiral. No length or material purchase should be inferred solely from the number of line connections.</li>
+  </ol>
+  <p><strong>Topological proof:</strong> If there are N marked lanes and the offset is k, a link connects lane i to lane i+k wherever the target exists. A one-lane offset creates the single path 1→2→…→N. Zero offset closes each lane back on itself, making N independent rings. An offset of 2 forms two separate paths of odd and even lanes; therefore it does not produce one continuous strip.</p>
+  <p><strong>Geometric upper limit, not usable yield:</strong> Before seams, a square of side S has area S²; ideal diagonal reassembly yields a parallelogram whose perpendicular strip span is S/√2. The maximum possible number of width-W complete bands BEFORE any sewing loss is floor(S/(√2W)). Actual seam consumption and trimming can lower that count. The area-equivalent maximum theoretical length S²/W is a ceiling only. This tool intentionally does not calculate helical fabric lengths or retail yardage.</p>
+  <p>Procedure sources: <a href="https://www.allpeoplequilt.com/how-to-quilt/finishing/how-to-make-continuous-bias-binding" target="_blank" rel="noopener noreferrer">American Patchwork &amp; Quilting, updated July 28, 2025</a>; <a href="https://www.asg.org/on-a-roll-diy-continuous-bias/" target="_blank" rel="noopener noreferrer">American Sewing Guild, one-strip seamline offset tutorial</a>; <a href="https://www.satomiquilts.com/blogs/tutorials/how-to-make-a-continuous-bias-binding" target="_blank" rel="noopener noreferrer">Satomi Quilts, ¼-in sewing-line intersections</a>. The graph representation and independent validation tests are this site's engineering implementation, not a claim that these sources published an exact usable-yardage formula.</p>
+ </section>
+</div>
+</Base>
+<script>import {initContinuousBiasTubeTopologyLab} from '../../../client/continuous-bias-tube-lab';initContinuousBiasTubeTopologyLab();</script>
