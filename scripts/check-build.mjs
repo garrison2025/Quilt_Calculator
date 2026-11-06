@@ -83,7 +83,8 @@ if(!fs.existsSync(fabricQaPath))throw Error('Missing non-indexed physical fabric
 const fabricQaHtml=fs.readFileSync(fabricQaPath,'utf8');
 for(const marker of [
  'noindex,follow','data-qa-fabric-audit','data-fabric-cuts',
- 'data-fabric-shopping','data-fabric-workspace','data-fabric-download',
+ 'data-fabric-shopping','data-fabric-plan-json','data-fabric-seam-area',
+ 'data-fabric-seam-tolerance','data-fabric-workspace','data-fabric-download',
  'MANUAL_NOT_RUN','not</strong> a cryptographic signature'
 ]){
  if(!fabricQaHtml.includes(marker))throw Error('Fabric physical QA metadata or safety copy missing: '+marker);
