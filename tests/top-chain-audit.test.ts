@@ -134,8 +134,8 @@ describe('optional user-ordered quilt-top straight seam chain',()=>{
   expect(r.recordedJoinEdgeCount).toBe(1);
   expect(r.summedNetSeamTakeupIn).toBeUndefined();
   expect(r.predictedJoinedSpanFromMeasuredPartsIn).toBeUndefined();
-  expect(assessFabricAudit(input(setup(),m)).status).toBe('USER_REPORTED_WITHIN_DECLARED_LIMITS');
-  expect(assessFabricAudit(input(setup(),m)).message).toContain('NOT fully verified');
+  expect(assessFabricAudit(input(setup(),m)).status).toBe('USER_REPORTED_OPTIONAL_TOP_QA_PARTIAL');
+  expect(assessFabricAudit(input(setup(),m)).message).toContain('not fully measured');
  });
  it('rejects duplicated, unknown, non-top and malformed physical source references',()=>{
   const project=setup();let m=complete();m.pieces[1].pieceNumber=1;
@@ -159,6 +159,55 @@ describe('optional user-ordered quilt-top straight seam chain',()=>{
   m.joins[0]={previousEdgeTakeupIn:0,nextEdgeTakeupIn:.5};
   expect(evaluateTopChain(setup(),m).invalid).toHaveLength(0);
   expect(evaluateTopChain(setup(),m).summedNetSeamTakeupIn).toBe(.5);
+ });
+ it('refuses a single exhausted physical cut even when total chain length stays positive',()=>{
+  let m=complete();
+  // The first 10-inch cut alone cannot lose 10.125 inches. The full
+  // two-piece chain still has a mathematically positive total span.
+  m.joins[0]={previousEdgeTakeupIn:10.125,nextEdgeTakeupIn:0};
+  m.observedJoinedSpanIn=9.875;
+  let r=evaluateTopChain(setup(),m);
+  expect(r.invalid.join(' ')).toContain('entire physical span of quilt-TOP chain piece #1');
+  expect(r.coverage).toBe('PARTIAL_USER_REPORTED');
+  expect(assessFabricAudit(input(setup(),m)).canExport).toBe(false);
+
+  // Even if the other half of this seam is not yet measured, this known
+  // edge loss is physically impossible and must not be treated as partial OK.
+  m=complete();m.joins[0].previousEdgeTakeupIn=10;
+  m.joins[0].nextEdgeTakeupIn=undefined;
+  r=evaluateTopChain(setup(),m);
+  expect(r.invalid.join(' ')).toContain('entire physical span of quilt-TOP chain piece #1');
+  expect(assessFabricAudit(input(setup(),m)).status).toBe('INCOMPLETE_USER_MEASUREMENTS');
+
+  // A middle patch can be consumed by the trailing edge of the previous
+  // join and the leading edge of the next join (not just either alone).
+  m=complete();
+  m.pieces.push({rollId:'fabric:blue',pieceNumber:3,observedCutSpanIn:10});
+  m.joins=[
+   {previousEdgeTakeupIn:.25,nextEdgeTakeupIn:5.1},
+   {previousEdgeTakeupIn:5,nextEdgeTakeupIn:.25}
+  ];
+  m.observedJoinedSpanIn=19.4;
+  r=evaluateTopChain(setup(),m);
+  expect(r.invalid.join(' ')).toContain('entire physical span of quilt-TOP chain piece #2');
+  expect(r.predictedJoinedSpanFromMeasuredPartsIn).toBeUndefined();
+  expect(assessFabricAudit(input(setup(),m)).canExport).toBe(false);
+ });
+ it('started but incomplete top-chain measurements are labeled PARTIAL, not within limits',()=>{
+  const m=complete();m.joins[0].nextEdgeTakeupIn=undefined;
+  const inProgress=input(setup(),m);
+  const assessment=assessFabricAudit(inProgress);
+  expect(assessment.status).toBe('USER_REPORTED_OPTIONAL_TOP_QA_PARTIAL');
+  expect(assessment.canExport).toBe(true);
+  expect(assessment.message).toContain('PARTIAL USER-REPORTED TOP CONSTRUCTION CHECK');
+  expect(assessment.message).toContain('NO verdict');
+  const evidence=fabricAuditEvidence(inProgress,'2026-11-06T16:20:00Z');
+  expect(evidence.selfReportedStatus).toBe('USER_REPORTED_OPTIONAL_TOP_QA_PARTIAL');
+  expect(evidence.topChainCheck.coverage).toBe('PARTIAL_USER_REPORTED');
+  expect(evidence.independentPhysicalVerification).toBe(false);
+  expect(evidence.quiltCuttingApproval).toBe(false);
+  inProgress.topChain=undefined;
+  expect(assessFabricAudit(inProgress).status).toBe('USER_REPORTED_WITHIN_DECLARED_LIMITS');
  });
  it('independent height axis uses physical cut height and planned center HEIGHT, not quilt outside or WOF',()=>{
   const m=complete();m.axis='height';m.pieces[0].observedCutSpanIn=8;m.pieces[1].observedCutSpanIn=8;
