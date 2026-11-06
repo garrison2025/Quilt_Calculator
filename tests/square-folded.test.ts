@@ -48,7 +48,8 @@ describe('square-in-a-square folded-corner method is distinct from the on-point 
   const csv=cutListCsv(plans);
   expect(csv).toContain('Stitch flip base - NOT diagonal');
   expect(csv).toContain('Four uncut corners - sew first');
-  expect(csv).not.toContain('on-point');
+  expect(csv).toContain('not an on-point diamond');
+  expect(csv).not.toContain('slice each once diagonally');
  });
  it('refuses on-point extra trim allowances instead of misusing them on stitch and flip',()=>{
   expect(()=>calculateFoldedCornerSquareLab({...base,cornerExtraIn:.125})).toThrow(/do not support/);
