@@ -854,7 +854,7 @@ if(root){
   box.dataset.backingWidthComparison='';
   box.appendChild(node('h3','group-title','Compare a second usable backing width and purchase cost'));
   box.appendChild(node('p','hint',
-   'Hypothetical comparison ONLY. Both scenarios use this project's current outside quilt size, backing overage, seam/grain rules, direction preference, prewash length shrinkage and shop increment. Width is usable AFTER selvedges and prewash. Only the CURRENT backing WOF appears in cut CSV, shopping and print.'));
+   'Hypothetical comparison ONLY. Both scenarios use this project’s current outside quilt size, backing overage, seam/grain rules, direction preference, prewash length shrinkage and shop increment. Width is usable AFTER selvedges and prewash. Only the CURRENT backing WOF appears in cut CSV, shopping and print.'));
   const inputRow=node('div','comparison-inputs');
   const widthLabel=node('label','','Alternate usable WOF (in)');
   const widthInput=node('input','field-control');widthInput.type='text';widthInput.inputMode='decimal';
