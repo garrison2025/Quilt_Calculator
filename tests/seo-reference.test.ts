@@ -1,5 +1,8 @@
 import {describe,it,expect} from 'vitest';
-import {backingReference,bindingReference,yardageReference,formatEighthYards} from '../src/data/seo-reference';
+import {backingReference,bindingReference,yardageReference,formatEighthYards,currentPlannerSample,plannerSampleReference} from '../src/data/seo-reference';
+import {sampleProject} from '../src/lib/quilt/project';
+import {resolveQuiltDimensions} from '../src/lib/quilt/dimensions';
+import {byId} from '../src/data/routes';
 import {calculateBacking,calculateStraightBinding,calculateYardage} from '../src/lib/quilt/math';
 
 describe('engine-derived SEO reference tables (not physical certification)',()=>{
@@ -43,6 +46,32 @@ describe('engine-derived SEO reference tables (not physical certification)',()=>
    expect(row.runIn).toBe(result.layout.exactFabricRunLengthIn);
    expect(row.yards).toBe(result.purchase?.roundedPurchaseYards);
   }
+ });
+ it('keeps live HUB worked-example yardage aligned with border-inclusive source project',()=>{
+  const d=resolveQuiltDimensions(sampleProject),o=sampleProject.options;
+  const actual=currentPlannerSample();
+  expect(actual).toEqual(plannerSampleReference);
+  expect([d.centerWidthIn,d.centerHeightIn,d.borderPerSideIn,d.finalWidthIn,d.finalHeightIn])
+   .toEqual([60,80,3,66,86]);
+  expect([actual.centerWidthIn,actual.centerHeightIn,actual.borderPerSideIn,actual.finalWidthIn,actual.finalHeightIn,
+    actual.backingWidthIn,actual.backingHeightIn,actual.usableWofIn,actual.direction,actual.panels,
+    actual.backingYards,actual.bindingLengthIn,actual.bindingStrips,actual.bindingYards])
+   .toEqual([60,80,3,66,86,74,94,43,'vertical',2,5.25,316,8,0.625]);
+  const backing=calculateBacking({widthIn:d.finalWidthIn,heightIn:d.finalHeightIn,overageIn:o.overage,
+   wofIn:o.usableWof,joinTakeupIn:o.joinTakeup,oneWayPrint:o.oneWayPrint,
+   step:o.step,shrinkageLengthPct:o.lengthShrinkage});
+  expect(backing.recommended.direction).toBe(actual.direction);
+  expect(backing.recommended.purchase.roundedPurchaseYards).toBe(actual.backingYards);
+  const htmlSample=byId('hub').sample;
+  expect(htmlSample).toContain('60 × 80 in CENTER');
+  expect(htmlSample).toContain('66 × 86 in OUTSIDE');
+  expect(htmlSample).toContain('74 × 94 in backing');
+  expect(htmlSample).toContain('vertical-seam backing uses 2 panels and 5 ¼ yd');
+  expect(htmlSample).toContain('316 in of joined strip, 8 strips and ⅝ yd');
+  expect(htmlSample).not.toContain('Vertical backing needs 5 yd');
+  expect(byId('hub').faqs.some(([q,a])=>q.includes('iOS or Android app')&&a.includes('not a native App Store'))).toBe(true);
+  for(const id of ['backing','binding','batting'] as const)
+   expect(byId(id).sample).toContain('Separate unbordered worked example');
  });
  it('formats only genuine eighth-yard increments as truthful US fabric fractions',()=>{
   expect(formatEighthYards(0)).toBe('0 yd');
