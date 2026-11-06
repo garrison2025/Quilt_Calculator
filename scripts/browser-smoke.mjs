@@ -2878,6 +2878,73 @@ try{
   await quickCtx.close();
   console.log('PASS finished-size presets, wideback what-if isolation, forward/reverse sashing and user-confirmed center handoff.');
 
+  // Bias is an area-only mathematical lower bound; no bias cutting, yield
+  // or purchased length may enter the existing STRAIGHT-GRAIN export contract.
+  const biasCtx=await browser.newContext({viewport:{width:1130,height:800},acceptDownloads:true});
+  instrumentNetwork(biasCtx,'bias-area-floor');
+  const biasPage=await biasCtx.newPage();
+  biasPage.on('pageerror',err=>problems.push('Bias area floor: '+err.message));
+  await hydrated(biasPage,'/quilt-binding-calculator/');
+  const biasReference=biasPage.locator('[data-bias-area-reference]');
+  check(await biasReference.count()===1 &&
+    !(await biasReference.getAttribute('open')),
+    'Bias area reference must start collapsed and cannot replace the primary straight-grain answer.');
+  await biasReference.locator('summary').click();
+  check(await biasReference.isVisible() &&
+    (await biasReference.innerText()).includes('METHOD_NOT_VERIFIED') &&
+    (await biasReference.innerText()).includes('730 in²') &&
+    (await biasReference.innerText()).includes('27.125 in'),
+    '60×80 finished-outside binding example must expose only 292×2.5=730in² theoretical area and 27.125in ruler lower bound.');
+  const biasDownload=biasPage.waitForEvent('download');
+  await biasPage.locator('[data-action="export-cut-csv"]').click();
+  const straightSource=(await fs.readFile(await (await biasDownload).path(),'utf8'));
+  check(straightSource.includes('"binding"') &&
+    !straightSource.includes('BIAS_AREA_LOWER_BOUND_ONLY') &&
+    !straightSource.includes('true bias') &&
+    !straightSource.includes('bias area'),
+    'Bias disclosure must never change physical straight-grain cut CSV geometry or labels.');
+  await auditWcag(biasPage,'/quilt-binding-calculator/ [bias area disclosure expanded]');
+  await biasCtx.close();
+  // The noindex Square lab retains one specific construction method: one
+  // center parent square and 2 diagonally-split corner-parent squares.
+  const squareCtx=await browser.newContext({viewport:{width:375,height:760},acceptDownloads:true});
+  instrumentNetwork(squareCtx,'square-chart');
+  const squarePage=await squareCtx.newPage();
+  squarePage.on('pageerror',err=>problems.push('Square reference chart: '+err.message));
+  const squareResponse=await squarePage.goto(ROOT+'/lab/square-in-square/',{waitUntil:'domcontentloaded'});
+  check(squareResponse.status()===200 &&
+    await squarePage.locator('meta[name="robots"]').getAttribute('content')==='noindex,follow' &&
+    await squarePage.locator('link[rel="canonical"]').count()===0 &&
+    await squarePage.locator('[data-square-reference-size]').count()===6 &&
+    await squarePage.locator('[data-square-reference-chart]').isVisible(),
+    'Six one-round reference sizes must be discoverable in a NOINDEX lab without creating a public keyword doorway.');
+  await squarePage.waitForFunction(()=>
+    document.querySelector('[data-square-status]')?.textContent?.includes('Calculated preview'),{timeout:20000});
+  const tableArea=squarePage.locator('.square-lab-chart-scroll');
+  check(await tableArea.getAttribute('tabindex')==='0' &&
+    await tableArea.getAttribute('role')==='region'&&
+    Boolean(await tableArea.getAttribute('aria-label')),
+    'Size chart must scroll via keyboard on a 375px phone viewport.');
+  await squarePage.locator('[data-square-reference-size="12"]').click();
+  check(await squarePage.locator('[data-square-input="finishedOuterIn"]').inputValue()==='12' &&
+    await squarePage.locator('[data-square-input="cornerExtraIn"]').inputValue()==='0' &&
+    (await squarePage.locator('[data-square-output]').innerText()).includes('6.875 in') &&
+    (await squarePage.locator('[data-square-output]').innerText()).includes('9 in'),
+    'The published 12-in one-round block reference must produce 9-in center and 6.875-in background cuts with 0 extra.');
+  const squareDownload=squarePage.waitForEvent('download');
+  await squarePage.locator('[data-square-download]').click();
+  const squareCsv=(await fs.readFile(await (await squareDownload).path(),'utf8'));
+  check(squareCsv.includes('"center-trial"') && squareCsv.includes('"corner-trial"') &&
+    !squareCsv.includes('BIAS_AREA_LOWER_BOUND_ONLY'),
+    'Square chart must only export its 1-center/2-background parent squares per block, with separate rolls.');
+  await squarePage.locator('[data-square-reference-size="8"]').click();
+  check(await squarePage.locator('[data-square-input="finishedOuterIn"]').inputValue()==='8' &&
+    (await squarePage.locator('[data-square-output]').innerText()).includes('6.25 in') &&
+    (await squarePage.locator('[data-square-output]').innerText()).includes('4.875 in'),
+    'Changing published size to 8-in must recalculate rather than download stale 12-in cuts.');
+  await auditWcag(squarePage,'/lab/square-in-square/ [reference size chart mobile 375px]');
+  await squareCtx.close();
+  console.log('PASS bias theoretical area isolation, published one-round Square parent cuts, keyboard chart and noindex lab.');
   const dark=await browser.newContext({viewport:{width:1280,height:800},colorScheme:'dark'});
   instrumentNetwork(dark,'dark');
   const darkPage=await dark.newPage();
