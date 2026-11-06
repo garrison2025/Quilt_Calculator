@@ -61,6 +61,11 @@ Bias binding, diagonal backing, mitered border corners, rag quilt, square-in-a-s
 
 The fabric roll SVG is a schematic with actual rectangle coordinates, not an actual-size print pattern. Nonoverlapping feasible cuts are demonstrated; global minimum waste is not guaranteed.
 
+### Backing seam direction is a shared Project V2 choice
+
+Backing Calculator offers **Auto (lowest purchased yardage)**, **Vertical**, and **Horizontal**. This choice is saved in `options.backingDirection` and reused on the whole-quilt planner, shopping CSV, physical cut-list CSV and calculation JSON; manual choices are never silently overwritten by an auto recommendation. Older V2 project files without this optional setting use Auto. If a later one-way/directional print constraint makes a saved horizontal choice unavailable, backing purchase and physical cut exports are blocked with an explicit conflict until the user selects a permitted direction. All layout diagrams remain schematic, not physical testing evidence.
+
+
 ## Outstanding physical and bias-method validation (not part of approved preview)
 
 - [Real fabric cutting sign-off worksheet](docs/qa/REAL_FABRIC_CUTTING_SIGNOFF.md) — records actual postwash WOF, seam take-up, material/SKU identity, cut coordinates and yardage; all real cutting measurements are **MANUAL_NOT_RUN**.

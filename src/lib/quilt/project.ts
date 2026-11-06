@@ -1,6 +1,6 @@
 import { MAX_PIECES, hashProject, type FabricSku, type BorderLayer } from './math';
 export type Project = { schemaVersion: 2; units: 'in' | 'cm'; quilt: { finishedWidth: number; finishedHeight: number; sizeBasis?: 'before-borders' | 'includes-borders'; topCutsReviewed?: boolean; topCutsReviewFingerprint?: string };
-  options: { overage: number; usableWof: number; battingWof: number; joinTakeup: number; stripWidth: number; tailAllowance: number; stripJoinLoss: number; step: number; lengthShrinkage: number; oneWayPrint: boolean; seam: number; battingOverage: number; allowRotate: boolean; backingPricePerYard?: number; battingPricePerYard?: number; bindingPricePerYard?: number };
+  options: { overage: number; usableWof: number; battingWof: number; joinTakeup: number; stripWidth: number; tailAllowance: number; stripJoinLoss: number; step: number; lengthShrinkage: number; oneWayPrint: boolean; seam: number; battingOverage: number; allowRotate: boolean; backingPricePerYard?: number; battingPricePerYard?: number; bindingPricePerYard?: number; backingDirection?: 'auto' | 'vertical' | 'horizontal' };
   yardage: { pieceWidth: number; pieceHeight: number; count: number; alternateWof?: number; allowRotate?: boolean; oneWayPrint?: boolean };
   sashing: { rows: number; columns: number; blockWidth: number; blockHeight: number; width: number };
   borders: BorderLayer[]; fabrics: FabricSku[] };
@@ -8,7 +8,7 @@ export const sampleProject: Project = {
   schemaVersion: 2, units: 'in', quilt: { finishedWidth: 60, finishedHeight: 80, sizeBasis: 'before-borders', topCutsReviewed: false },
   options: { overage: 4, usableWof: 43, battingWof: 96, joinTakeup: 1, stripWidth: 2.5,
     tailAllowance: 12, stripJoinLoss: 2.5, step: .125, lengthShrinkage: 0, oneWayPrint: false,
-    seam: .25, battingOverage: 4, allowRotate: false },
+    seam: .25, battingOverage: 4, allowRotate: false, backingDirection:'auto' },
   yardage: { pieceWidth: 5, pieceHeight: 10, count: 20, alternateWof: 50, allowRotate: false, oneWayPrint: false },
   sashing: { rows: 4, columns: 5, blockWidth: 10, blockHeight: 10, width: 2 },
   borders: [{ sku: 'border-indigo', label: 'Indigo border', widthIn: 3, wofIn: 43, shrinkageLengthPct: 0 }],
@@ -83,7 +83,7 @@ export function validateProject(data: unknown): Project {
     (typeof quilt.topCutsReviewFingerprint!=='string' || !/^[0-9a-f]{8}$/.test(quilt.topCutsReviewFingerprint)))
   throw Error('quilt.topCutsReviewFingerprint must be an eight-character lowercase hex fingerprint.');
  const opts = object(root.options, 'options');
- onlyKeys(opts,'options',['overage','usableWof','battingWof','joinTakeup','stripWidth','tailAllowance','stripJoinLoss','step','lengthShrinkage','oneWayPrint','seam','battingOverage','allowRotate','backingPricePerYard','battingPricePerYard','bindingPricePerYard']);
+ onlyKeys(opts,'options',['overage','usableWof','battingWof','joinTakeup','stripWidth','tailAllowance','stripJoinLoss','step','lengthShrinkage','oneWayPrint','seam','battingOverage','allowRotate','backingPricePerYard','battingPricePerYard','bindingPricePerYard','backingDirection']);
  for (const name of ['overage','joinTakeup','tailAllowance','stripJoinLoss','seam','battingOverage'])
   numeric(opts,name,'options');
  for (const name of ['usableWof','battingWof','stripWidth','step'])
@@ -93,6 +93,8 @@ export function validateProject(data: unknown): Project {
  shrink(opts,'lengthShrinkage','options');
  if((opts.joinTakeup as number)>=(opts.usableWof as number))throw Error('Backing join take-up must be smaller than usable WOF.');
  if((opts.stripJoinLoss as number)>=(opts.usableWof as number))throw Error('Binding strip join loss must be smaller than usable WOF.');
+ if(opts.backingDirection!==undefined && !['auto','vertical','horizontal'].includes(opts.backingDirection as string))
+  throw Error('options.backingDirection must be auto, vertical or horizontal.');
  bool(opts,'oneWayPrint','options');bool(opts,'allowRotate','options');
  const yardage = object(root.yardage, 'yardage');
  onlyKeys(yardage,'yardage',['pieceWidth','pieceHeight','count','alternateWof','allowRotate','oneWayPrint']);

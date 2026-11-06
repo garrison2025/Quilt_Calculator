@@ -1,4 +1,4 @@
-import { VERSION, calculateBacking, calculateStraightBinding, calculateYardage, compareYardageWidths, calculateQuiltFabric, calculateBatting, calculateBorders, calculateSashing, layoutRectangles, verifyLayout, parseMeasure, fromInches, toInches, yardsToInches, purchase, hashProject, type Layout, type PieceRequest } from '../lib/quilt/math';
+import { VERSION, calculateBacking, calculateStraightBinding, calculateYardage, compareYardageWidths, calculateQuiltFabric, calculateBatting, calculateBorders, calculateSashing, layoutRectangles, verifyLayout, selectBackingOption, parseMeasure, fromInches, toInches, yardsToInches, purchase, hashProject, type Layout, type PieceRequest } from '../lib/quilt/math';
 import { sampleProject, validateProject, quiltTopReviewFingerprint, hasCurrentQuiltTopReview, type Project } from '../lib/quilt/project';
 import { resolveQuiltDimensions, type QuiltDimensions } from '../lib/quilt/dimensions';
 import { cutListCsv, physicalRollId, type MaterialCutPlan } from '../lib/quilt/cutlist';
@@ -313,14 +313,14 @@ if(root){
  const printButton=root.querySelector<HTMLButtonElement>('[data-action="print"]')!;
  const saveButton=root.querySelector<HTMLButtonElement>('[data-action="save"]')!;
  const undoResetButton=root.querySelector<HTMLButtonElement>('[data-action="undo-reset"]')!;
- type ResetSnapshot={project:Project; sample:boolean; conv:string; selectedDirection:'vertical'|'horizontal'|null; savedJson:string|null};
+ type ResetSnapshot={project:Project; sample:boolean; conv:string; savedJson:string|null};
  let resetSnapshot:ResetSnapshot|null=null;
  function clearResetSnapshot():void{
   resetSnapshot=null;
   undoResetButton.disabled=true;
  }
  let project:Project=structuredClone(sampleProject);
- let sample=true,conv='1/4',selectedDirection:'vertical'|'horizontal'|null=null;
+ let sample=true,conv='1/4';
  let cutExport:unknown=null;
  let materialCuts:MaterialCutPlan[]=[];
  // Keep the last accepted headline across an in-progress input draft, so a
@@ -433,7 +433,7 @@ if(root){
    const latest=localStorage.getItem(STORAGE_KEY);
    const loaded=latest?validateProject(JSON.parse(latest)):structuredClone(sampleProject);
    clearResetSnapshot();
-   project=loaded;sample=!latest;lastStoredJson=latest;selectedDirection=null;conv='1/4';
+   project=loaded;sample=!latest;lastStoredJson=latest;conv='1/4';
    syncWarning.hidden=true;
    storageState.textContent=latest?'Loaded the newest saved project from this browser.':'The saved project was reset in another tab; sample restored.';
    stateLabel.textContent=latest?'● My local project':'● Sample project';
@@ -701,6 +701,17 @@ if(root){
    rebuildDynamicEditor(`[data-border-index="${project.borders.length-1}"] .field-control`,true);
   });add.dataset.addBorder='';shell.appendChild(add);fieldsRoot.appendChild(shell);
  }
+ function changeBackingDirection(mode:'auto'|'vertical'|'horizontal'):void{
+  if(!requireCommittedDraft('change backing seam orientation'))return;
+  if(mode==='horizontal' && project.options.oneWayPrint){
+   note('Horizontal backing seams are unavailable for one-way fabric print. Turn off the directional print constraint first or choose Auto / Vertical.',true);
+   return;
+  }
+  project.options.backingDirection=mode;
+  persist();
+  renderEditor();
+  update();
+ }
  function renderEditor():void{
   fieldsRoot.replaceChildren();
   unitsSelect.value=project.units;
@@ -742,6 +753,29 @@ if(root){
     project.quilt.topCutsReviewFingerprint=undefined;
     persist();renderEditor();update();
    });
+  }
+  if(tool==='hub'||tool==='backing'){
+   const wrap=node('div','field-wrap');
+   wrap.dataset.backingDirectionSetting='';
+   const label=node('label','','Backing seam direction (saved with project)');
+   const select=node('select','field-control');
+   label.htmlFor='backing-direction-setting';
+   select.id='backing-direction-setting';
+   for(const [value,title] of [
+    ['auto','Auto · use least purchased yardage'],
+    ['vertical','Vertical seams · save this exact orientation'],
+    ['horizontal','Horizontal seams · save this exact orientation']
+   ]){
+    const option=node('option','',title);
+    option.value=value;
+    if(value==='horizontal'&&project.options.oneWayPrint)option.disabled=true;
+    select.appendChild(option);
+   }
+   select.value=project.options.backingDirection??'auto';
+   const help=node('p','hint','This choice is shared with the whole-quilt shopping list, physical cut CSV and saved JSON. Auto recalculates the least-yardage orientation when dimensions change; a manual direction is never silently replaced. Horizontal seams are not allowed for one-way print.');
+   select.addEventListener('change',()=>changeBackingDirection(select.value as 'auto'|'vertical'|'horizontal'));
+   wrap.append(label,select,help);
+   fieldsRoot.appendChild(wrap);
   }
   for(const group of groups[tool])fieldsRoot.appendChild(makeGroup(group.title,group.fields));
   if(tool==='fabric')renderFabricEditor();
@@ -871,7 +905,7 @@ if(root){
    let topFabricMissing=false;
    if(tool==='backing'){
     const b=calculateBacking({widthIn:outerW,heightIn:outerH,overageIn:o.overage,wofIn:o.usableWof,joinTakeupIn:o.joinTakeup,oneWayPrint:o.oneWayPrint,...buyArgs});
-    const selected=b.options.find(v=>v.direction===selectedDirection)||b.recommended;
+    const selected=selectBackingOption(b,o.backingDirection);
     purchasesTitle(resultRoot,selected.purchase,'BACKING',o.backingPricePerYard);
     stats(resultRoot,[['Backing size',num(b.targetWidthIn)+' × '+num(b.targetHeightIn)+' in'],['Panels',String(selected.panelCount)],['Joined span before trim',num(selected.finishedJoinedSpanIn)+' in']]);
     section(resultRoot,'Joined seam positions',selected.direction==='vertical'?'Along joined width · before trimming':'Along joined height · before trimming');
@@ -880,12 +914,23 @@ if(root){
       selected.joinedSeamPositionsIn.map((pos,i)=>[String(i+1),num(pos)+' in','Equal half of '+num(o.joinTakeup)+' in total loss per join']));
     }else resultRoot.appendChild(node('p','footer-note','One panel covers the requested span. No joined seam is required.'));
     resultRoot.appendChild(node('p','footer-note','Seam coordinates assume half of the total join take-up on each adjoining panel edge. They refer to the joined assembly before its final trim; trimming shifts the seam locations relative to the final edges.'));
-    section(resultRoot,'Compare seam orientations');
+    section(resultRoot,'Compare seam orientations','Choose Auto or lock a direction for every calculator using this saved project.');
     const options=node('div','option-buttons');
-    for(const direction of b.options){const button=node('button','',direction.direction+' · '+yd(direction.purchase.roundedPurchaseYards)+' yd'+(direction.direction===b.recommended.direction?' · Best use':' '));button.type='button';button.setAttribute('aria-pressed',String(selected.direction===direction.direction));button.addEventListener('click',()=>{selectedDirection=direction.direction;update();});options.appendChild(button);}
+    const autoButton=node('button','','Auto · '+yd(b.recommended.purchase.roundedPurchaseYards)+' yd · least purchased');
+    autoButton.type='button';autoButton.dataset.backingOption='auto';
+    autoButton.setAttribute('aria-pressed',String((o.backingDirection??'auto')==='auto'));
+    autoButton.addEventListener('click',()=>changeBackingDirection('auto'));
+    options.appendChild(autoButton);
+    for(const direction of b.options){
+     const button=node('button','',direction.direction+' · '+yd(direction.purchase.roundedPurchaseYards)+' yd'+(direction.direction===b.recommended.direction?' · Best use':''));
+     button.type='button';button.dataset.backingOption=direction.direction;
+     button.setAttribute('aria-pressed',String((o.backingDirection??'auto')===direction.direction));
+     button.addEventListener('click',()=>changeBackingDirection(direction.direction));
+     options.appendChild(button);
+    }
     resultRoot.appendChild(options);layout=selected.layout;materialCuts=[{material:'Backing · '+selected.direction+' seams',sku:'backing',layout:selected.layout}];
     warning(resultRoot,'The fabric-roll offcut shown does not include trimming the panel assembly after sewing. Assembly trim: '+num(selected.postAssemblyTrimAreaSqIn)+' in². Do not add it to roll offcuts.');
-    plan={options:b.options,selected:selected.direction};
+    plan={options:b.options,selected:selected.direction,backingDirectionMode:o.backingDirection??'auto'};
    }else if(tool==='binding'){
     const b=calculateStraightBinding({widthIn:outerW,heightIn:outerH,wofIn:o.usableWof,stripWidthIn:o.stripWidth,tailAllowanceIn:o.tailAllowance,joinLossIn:o.stripJoinLoss,...buyArgs});
     purchasesTitle(resultRoot,b.purchase,'STRAIGHT BINDING',o.bindingPricePerYard);
@@ -965,20 +1010,21 @@ if(root){
     if(Math.abs(border.finishedWidthIn-outerW)>1e-7||Math.abs(border.finishedHeightIn-outerH)>1e-7)
      throw Error('Internal project dimensions disagree with finished border geometry; no purchase can be reported.');
     const backing=calculateBacking({widthIn:outerW,heightIn:outerH,overageIn:o.overage,wofIn:o.usableWof,joinTakeupIn:o.joinTakeup,oneWayPrint:o.oneWayPrint,...buyArgs});
+    const selectedBacking=selectBackingOption(backing,o.backingDirection);
     const binding=calculateStraightBinding({widthIn:outerW,heightIn:outerH,wofIn:o.usableWof,stripWidthIn:o.stripWidth,tailAllowanceIn:o.tailAllowance,joinLossIn:o.stripJoinLoss,...buyArgs});
     const batting=calculateBatting({widthIn:outerW,heightIn:outerH,overageIn:o.battingOverage,rollWidthIn:o.battingWof,rotate:o.allowRotate,step:o.step});
     const fabric=calculateQuiltFabric(p.fabrics,o.step);
     topFabricMissing=needsTopFabricPlan(p.fabrics);
-    hero(resultRoot,yd(backing.recommended.purchase.roundedPurchaseYards),'BACKING FABRIC (RECOMMENDED)','Outside quilt: '+num(outerW)+' × '+num(outerH)+' in (center '+num(dimensions!.centerWidthIn)+' × '+num(dimensions!.centerHeightIn)+' in). Backing is one material, not the full shopping total.');
+    hero(resultRoot,yd(selectedBacking.purchase.roundedPurchaseYards),'BACKING FABRIC ('+((o.backingDirection??'auto')==='auto'?'AUTO RECOMMENDED':'MANUALLY SELECTED')+')','Outside quilt: '+num(outerW)+' × '+num(outerH)+' in (center '+num(dimensions!.centerWidthIn)+' × '+num(dimensions!.centerHeightIn)+' in). '+selectedBacking.direction+' backing seams; this is one material, not the full shopping total.');
     const reviewedTop=hasCurrentQuiltTopReview(p);
     // A single readiness checklist is placed directly after the result hero
     // after all material roll feasibility checks have run, rather than
     // stacking warnings here, in shopping, and again after the SVG.
     shopping(resultRoot,[
-     {label:'Backing · '+backing.recommended.direction+' seams',rollId:'backing',hint:backing.recommended.panelCount+' full WOF panels',
-      amount:backing.recommended.purchase.roundedPurchaseYards,rawYards:backing.recommended.purchase.rawPurchaseYards,
-      offcutSqIn:backing.recommended.layout.physicalOffcutAreaSqIn,roundingExtraIn:backing.recommended.purchase.purchaseRoundingExtraLengthIn,
-      assemblyTrimSqIn:backing.recommended.postAssemblyTrimAreaSqIn,unitPrice:o.backingPricePerYard},
+     {label:'Backing · '+selectedBacking.direction+' seams',rollId:'backing',hint:selectedBacking.panelCount+' full WOF panels',
+      amount:selectedBacking.purchase.roundedPurchaseYards,rawYards:selectedBacking.purchase.rawPurchaseYards,
+      offcutSqIn:selectedBacking.layout.physicalOffcutAreaSqIn,roundingExtraIn:selectedBacking.purchase.purchaseRoundingExtraLengthIn,
+      assemblyTrimSqIn:selectedBacking.postAssemblyTrimAreaSqIn,unitPrice:o.backingPricePerYard},
      {label:'Batting · single piece only',rollId:'batting',hint:batting.message,amount:batting.purchase?.roundedPurchaseYards,
       rawYards:batting.purchase?.rawPurchaseYards,offcutSqIn:batting.isCutFeasible?batting.layout.physicalOffcutAreaSqIn:undefined,
       roundingExtraIn:batting.purchase?.purchaseRoundingExtraLengthIn,unitPrice:o.battingPricePerYard},
@@ -991,19 +1037,19 @@ if(root){
      ...(fabric.length?fabric.map(x=>topFabricShoppingLine(x,p.fabrics.find(sku=>sku.id===x.fabricSku)?.pricePerYard,reviewedTop)):[missingTopFabricShoppingLine()])
     ],{centralReadiness:true});
     section(resultRoot,'Cutting diagrams for every material','Individual fabric rolls · open each plan to inspect coordinates').id='project-material-diagrams';
-    materialPlan(resultRoot,'backing','Backing · '+backing.recommended.direction+' seams',backing.recommended.layout,0,backing.recommended.purchase.roundedPurchaseYards);
+    materialPlan(resultRoot,'backing','Backing · '+selectedBacking.direction+' seams',selectedBacking.layout,0,selectedBacking.purchase.roundedPurchaseYards);
     materialPlan(resultRoot,'binding','Straight-grain binding',binding.layout,1,binding.purchase.roundedPurchaseYards);
     materialPlan(resultRoot,'batting','One-piece batting',batting.layout,2,batting.purchase?.roundedPurchaseYards);
     border.layers.forEach((item,i)=>materialPlan(resultRoot,'border-'+item.sku,item.label+' · border',item.layout,3+i,item.purchase?.roundedPurchaseYards,physicalRollId('border',item.sku)));
     fabric.forEach((item,i)=>materialPlan(resultRoot,'fabric-'+item.fabricSku,item.label+' · '+item.fabricSku,item.layout,3+border.layers.length+i,item.purchase?.roundedPurchaseYards,physicalRollId('fabric',item.fabricSku)));
     materialCuts=[
-     {material:'Backing · '+backing.recommended.direction+' seams',sku:'backing',layout:backing.recommended.layout},
+     {material:'Backing · '+selectedBacking.direction+' seams',sku:'backing',layout:selectedBacking.layout},
      {material:'Straight-grain binding',sku:'binding',layout:binding.layout},
      {material:'One-piece batting',sku:'batting',layout:batting.layout},
      ...border.layers.map(x=>({material:x.label+' · border',sku:physicalRollId('border',x.sku),layout:x.layout})),
      ...fabric.map(x=>({material:x.label,sku:physicalRollId('fabric',x.fabricSku),layout:x.layout}))
     ];
-    plan={dimensions,backing,binding,batting,border,fabric};
+    plan={dimensions,backing,selectedBacking,backingDirectionMode:o.backingDirection??'auto',binding,batting,border,fabric};
     if(sample)resultRoot.appendChild(node('p','footer-note','Sample project: fabric and border colors are examples. Replace all sample values before purchasing. Material quantities remain separate by roll and SKU.'));
    }else if(tool==='inches'){
     const value=parseMeasure(conv),inches=yardsToInches(value),cm=inches*2.54;
@@ -1130,11 +1176,11 @@ if(root){
   }catch{storageReadable=false;}
   if(!resetSnapshot){
    resetSnapshot={
-    project:structuredClone(project),sample,conv,selectedDirection,
+    project:structuredClone(project),sample,conv,
     savedJson:lastStoredJson
    };
   }
-  project=structuredClone(sampleProject);sample=true;selectedDirection=null;conv='1/4';
+  project=structuredClone(sampleProject);sample=true;conv='1/4';
   undoResetButton.disabled=false;
   if(storageReadable){
    try{
@@ -1151,7 +1197,7 @@ if(root){
   if(!previous)return;
   clearResetSnapshot();
   project=structuredClone(previous.project);sample=previous.sample;
-  conv=previous.conv;selectedDirection=previous.selectedDirection;
+  conv=previous.conv;
   let conflicted=false;
   try{
    const current=localStorage.getItem(STORAGE_KEY);
