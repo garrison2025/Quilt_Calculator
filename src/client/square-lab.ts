@@ -1,4 +1,4 @@
-import {calculateSquareLab, type SquareLabInput, type SquareLabResult} from '../lib/quilt/square-lab';
+import {calculateSquareLab,calculateFoldedCornerSquareLab,type SquareLabInput,type SquareLabResult} from '../lib/quilt/square-lab';
 import {cutListCsv, type MaterialCutPlan} from '../lib/quilt/cutlist';
 import type {Layout} from '../lib/quilt/math';
 
@@ -36,7 +36,23 @@ export function initSquareLab():void{
  const status=root.querySelector<HTMLElement>('[data-square-status]')!;
  const download=root.querySelector<HTMLButtonElement>('[data-square-download]')!;
  const fields=[...form.querySelectorAll<HTMLInputElement|HTMLSelectElement>('[data-square-input]')];
+ const methodSelect=form.querySelector<HTMLSelectElement>('[data-square-method]')!;
+ const methodHelp=form.querySelector<HTMLElement>('[data-square-method-help]')!;
+ const extraField=form.querySelector<HTMLInputElement>('[data-square-input="cornerExtraIn"]')!;
+ const manualAudit=root.querySelector<HTMLElement>('[data-square-test-audit]')!;
+ const foldedAuditNote=root.querySelector<HTMLElement>('[data-folded-audit-note]')!;
  let current:SquareLabResult|null=null;
+ const isFolded=()=>methodSelect.value==='stitch-and-flip';
+ function syncMethod():void{
+  const folded=isFolded();
+  extraField.disabled=folded;
+  manualAudit.hidden=folded;
+  foldedAuditNote.hidden=!folded;
+  methodHelp.textContent=folded
+   ?'Stitch-and-flip: one unrotated base plus four individual corner squares, sewn and flipped before trimming. The on-point oversized-triangle margin is NOT applicable.'
+   :'On-point diamond: two corner parent squares are split diagonally once to make four triangles. This is NOT stitch-and-flip.';
+ }
+
  function render():void{
   download.disabled=true;current=null;
   for(const field of fields)field.setAttribute('aria-invalid','false');
@@ -47,11 +63,14 @@ export function initSquareLab():void{
     if(!/^\d+(?:\.\d+)?$/.test(raw))throw Error('Enter a nonnegative US-format decimal in '+(field.labels?.[0]?.textContent||field.dataset.squareInput)+'.');
     values[field.dataset.squareInput!]=Number(raw);
    }
-   const result=calculateSquareLab(values as unknown as SquareLabInput);
+   const input=values as unknown as SquareLabInput;
+   const result=isFolded()?calculateFoldedCornerSquareLab(input):calculateSquareLab(input);
    current=result;
    output.replaceChildren();
    const hero=make('div','result-hero');
-   hero.append(make('div','result-kicker','ONE CENTER + TWO BACKGROUND SQUARES PER BLOCK'),
+   hero.append(make('div','result-kicker',isFolded()
+    ?'STITCH-AND-FLIP: ONE BASE + FOUR UNSPLIT CORNER SQUARES PER BLOCK'
+    :'ON-POINT: ONE CENTER + TWO DIAGONALLY SPLIT CORNER SQUARES PER BLOCK'),
     make('div','result-big',n(result.centerCutIn)+' in'),
     make('p','result-sub','Center square CUT side. Finished outside block: '+n(result.finishedOuterIn)+' in; unfinished outside before joining: '+n(result.unfinishedOutsideIn)+' in.'));
    output.appendChild(hero);
@@ -61,8 +80,10 @@ export function initSquareLab():void{
      ['Background square cut side',n(result.cornerSquareCutIn)+' in'],
      ['Centers to cut',String(result.centerSquares)],
      ['Background squares to cut',String(result.cornerParentSquares)],
-     ['Triangles after diagonal split',String(result.resultingCornerTriangles)],
-     ['Center finished side (from rounded cut)',n(result.intendedFinishedCenterIn)+' in']
+     ...(isFolded()
+       ?[['Construction method','Sew/flip 4 intact corner squares; do NOT pre-cut diagonals']]
+       :[['Triangles after diagonal split',String(result.resultingCornerTriangles)],
+         ['Center finished side (from rounded cut)',n(result.intendedFinishedCenterIn)+' in']])
    ]){
     const item=make('div','stat');item.append(make('span','',label),make('strong','',value));metric.appendChild(item);
    }
@@ -79,7 +100,9 @@ export function initSquareLab():void{
       'Parent-square roll run: '+n(layout.exactFabricRunLengthIn)+' in · upward-rounded purchase: '+n(yards)+' yd · offcut on cutting roll: '+n(layout.physicalOffcutAreaSqIn)+' sq in.'));
     section.appendChild(diagram(layout,label));output.appendChild(section);
    }
-   const note=make('p','warning-banner','Trial cutting method only: sew and square up a practice block before purchasing or cutting the full batch. The parent-square CSV does not list the four resulting triangles as separate roll cuts.');
+   const note=make('p','warning-banner',isFolded()
+    ?'STITCH-AND-FLIP method: sew the four intact corner squares on the base diagonal markings, then fold and trim. No corner square is pre-split into triangles. This parent-square list cannot verify sewing accuracy or final trim: test a block before bulk purchasing.'
+    :'ON-POINT method: sew and square up a practice block before bulk cutting. The parent-square CSV does not list the four triangles after diagonal splitting as separate roll cuts.');
    output.appendChild(note);
    const feasible=Boolean(result.center.purchase&&result.corners.purchase);
    download.disabled=!feasible;
@@ -94,6 +117,13 @@ export function initSquareLab():void{
   current=null;download.disabled=true;status.textContent='Values changed. Calculate again before exporting.';
   output.replaceChildren(make('p','warning-banner','Trial input changed. Recalculate; the previous results are no longer current.'));
  }));
+ methodSelect.addEventListener('change',()=>{
+  if(isFolded())extraField.value='0';
+  const finished=form.querySelector<HTMLInputElement>('[data-square-input="finishedOuterIn"]')!;
+  finished.dispatchEvent(new Event('input',{bubbles:true}));
+  syncMethod();
+  render();
+ });
  // The cut-size chart uses ZERO extra corner trim, unlike the default
  // oversize trial form. Update both inputs together so the table never
  // silently disagrees with the current calculation or stale CSV download.
@@ -101,6 +131,10 @@ export function initSquareLab():void{
   button.addEventListener('click',()=>{
    const finished=form.querySelector<HTMLInputElement>('[data-square-input="finishedOuterIn"]')!;
    const extra=form.querySelector<HTMLInputElement>('[data-square-input="cornerExtraIn"]')!;
+   if(isFolded()){
+    methodSelect.value='on-point-triangles';
+    methodSelect.dispatchEvent(new Event('change',{bubbles:true}));
+   }
    finished.value=button.dataset.squareReferenceSize||'';
    extra.value='0';
    finished.dispatchEvent(new Event('input',{bubbles:true}));
@@ -108,17 +142,32 @@ export function initSquareLab():void{
    form.requestSubmit();
   });
  });
+ root.querySelectorAll<HTMLButtonElement>('[data-square-folded-size]').forEach(button=>{
+  button.addEventListener('click',()=>{
+   const finished=form.querySelector<HTMLInputElement>('[data-square-input="finishedOuterIn"]')!;
+   if(!isFolded()){
+    methodSelect.value='stitch-and-flip';
+    methodSelect.dispatchEvent(new Event('change',{bubbles:true}));
+   }
+   finished.value=button.dataset.squareFoldedSize||'';
+   extraField.value='0';
+   finished.dispatchEvent(new Event('input',{bubbles:true}));
+   form.requestSubmit();
+  });
+ });
  download.addEventListener('click',()=>{
   if(!current||download.disabled)return;
+  const folded=current.method==='stitch-and-flip';
   const plans:MaterialCutPlan[]=[
-   {material:'Center fabric (parent squares)',sku:'center-trial',layout:current.center.layout},
-   {material:'Background fabric (parent squares; slice once diagonally)',sku:'corner-trial',layout:current.corners.layout}
+   {material:folded?'Base fabric (one intact stitch-and-flip square)':'Center fabric (on-point parent diamond)',sku:'center-trial',layout:current.center.layout},
+   {material:folded?'Corner fabric (four intact stitch-and-flip squares; DO NOT diagonal split)':'Background fabric (two parent squares; slice each once diagonally)',sku:'corner-trial',layout:current.corners.layout}
   ];
   const csv=cutListCsv(plans);
   const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
-  const anchor=document.createElement('a');anchor.href=url;anchor.download='square-in-square-TRIAL-parent-squares.csv';
+  const anchor=document.createElement('a');anchor.href=url;anchor.download=folded?'square-in-square-STITCH-FLIP-TRIAL.csv':'square-in-square-ON-POINT-TRIAL.csv';
   document.body.appendChild(anchor);anchor.click();anchor.remove();
   setTimeout(()=>URL.revokeObjectURL(url),2000);
  });
+ syncMethod();
  render();
 }
