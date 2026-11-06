@@ -637,3 +637,42 @@
  .bias-geometry-preview,.bias-strip-scroll{display:none!important}
  .bias-geometry-page .warning-banner{display:block!important}
 }
+
+/* Continuous bias TUBE: seamline topology only, never sewing/cut-length yield. */
+.tube-topology-page .tube-topology-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.9rem 1.15rem}
+.tube-topology-fields .field-wrap{min-width:0}
+.tube-topology-fields .field-control{width:100%;max-width:100%;min-width:0}
+.tube-topology-page .input-actions{margin:1.15rem 0}
+.tube-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.55rem;margin:1rem 0}
+.tube-stat{display:flex;flex-direction:column;gap:.3rem;background:#f4f8f1;border:1px solid #c5d9c9;border-radius:10px;padding:.85rem .75rem;min-width:0}
+.tube-stat span{font-size:.72rem;color:#516957;line-height:1.4}
+.tube-stat strong{font-size:1rem;color:#1e4a33;overflow-wrap:anywhere}
+.tube-paths{margin:.65rem 0 1rem;padding-left:1.5rem;overflow-wrap:anywhere;line-height:1.6}
+.tube-paths li{padding:.28rem .15rem}
+.tube-marking-diagram{margin:1.15rem 0}
+.tube-seam-svg{display:block;width:100%;height:auto;max-width:760px;max-height:670px;margin:.85rem auto;border:1px solid #c6d9ca;border-radius:12px;background:#f6f9f4}
+.tube-seam-edge{stroke:#35644e;stroke-width:2.3;fill:none}
+.tube-seam-mark{stroke:#295944;stroke-width:2;fill:none}
+.tube-connection-path{stroke:#347d61;stroke-width:1.7;fill:none;opacity:.86}
+.tube-connection-alt{stroke:#bd8046;stroke-width:1.55}
+.tube-diagram-heading{font-size:13px;font-weight:700;fill:#254333}
+.tube-band-label{font-size:12px;fill:#375640}
+.tube-diagram-footnote{font-size:11px;fill:#375640}
+.tube-seam-table-scroll{width:100%;max-width:100%;overflow:auto;margin:.8rem 0}
+.tube-seam-table{min-width:670px}
+.tube-seam-table th,.tube-seam-table td{font-size:.77rem;text-align:left}
+.tube-topology-guide ol{padding-left:1.5rem;line-height:1.75}
+.tube-topology-guide p{max-width:84ch;line-height:1.7}
+@media(max-width:720px){
+ .tube-topology-page .tube-topology-fields,.tube-stats{grid-template-columns:1fr}
+ .tube-topology-page .tube-seam-svg{max-width:100%}
+}
+@media screen and (prefers-color-scheme:dark){
+ .tube-stat{background:#213829;border-color:#58765f}
+ .tube-stat span,.tube-stat strong{color:#e6f1e8}
+ .tube-seam-svg{background:#eff4ee}
+}
+@media print{
+ .tube-topology-page .tube-seam-svg,.tube-seam-table-scroll{display:none!important}
+ .tube-topology-page .warning-banner{display:block!important}
+}
