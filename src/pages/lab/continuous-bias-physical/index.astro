@@ -1,0 +1,133 @@
+---
+import Base from '../../../layouts/Base.astro';
+---
+<Base noIndex
+ title="Continuous Bias Binding: Physical Specimen Records — Unverified Lab | Quilt Studio"
+ description="Noindex unverified physical specimen worksheet for continuous bias binding. Record actual seam allowances, 12 width samples and finished unstretched yield, then compare with numerical model. Not buying certified.">
+<div class="page-shell bias-physical-page" data-bias-physical>
+ <div class="page-intro page-intro--tool">
+  <div class="page-heading">
+   <span class="eyebrow-with-line">— CONTINUOUS BIAS / MEASUREMENT EVIDENCE</span>
+   <h1>Physical Specimen Verification Worksheet</h1>
+   <p>Move beyond a mathematical estimate. Record what happened when you <strong>actually sewed, pressed, spiral-cut and measured</strong> each of the three specified cloth squares. The audit compares recorded values against the two-seam model and highlights any case where the model <em>overestimates</em> actual unstretched binding.</p>
+   <div class="feature-pills"><span>✓ Three independent specimens</span><span>✓ 5 + 5 seam checkpoints</span><span>✓ 12 strip-width readings</span></div>
+   <p><a href="/lab/continuous-bias-planner/">Back to the numerical square-size planner</a> · <a href="/lab/continuous-bias-tube/">Inspect two-seam source coordinates</a></p>
+  </div>
+ </div>
+ <p class="warning-banner" role="note">
+  <strong>NO SAMPLE HAS BEEN PHYSICALLY TESTED BY THIS PROJECT.</strong> Every real observation is blank at initial load. Preloaded A/B/C dimensions are <strong>MODEL PREDICTIONS ONLY</strong>. Entering values or photo references is not independent measurement verification. Even a complete, internally consistent record remains <strong>READY FOR HUMAN REVIEW</strong>, never physically certified or safe for purchase. This page remains <strong>noindex</strong>.
+ </p>
+ <section class="content-block bias-physical-matrix" aria-label="Prepared specimen configurations and observation status">
+  <div class="editorial-head"><span class="eyebrow-with-line">— STEP 01 / SPECIMEN MATRIX</span><h2>Predefined cloth samples — no measured results</h2></div>
+  <div class="table-scroll bias-physical-scroll" tabindex="0" role="region" aria-label="Specimen A B C numerical configurations">
+   <table class="breakdown-table bias-physical-table">
+    <thead><tr><th scope="col">Sample</th><th scope="col">Source square (in)</th><th scope="col">Strip width (in)</th><th scope="col">Seam allowance (in)</th><th scope="col">Predicted full bands</th><th scope="col">Modeled strip length (in)</th><th scope="col">Actual fabric measurement status</th></tr></thead>
+    <tbody>
+     <tr><th scope="row">A</th><td>30 × 30</td><td>2.5</td><td>0.25</td><td>8</td><td>328.426 (model)</td><td data-bias-sample-status="A">NOT_RUN</td></tr>
+     <tr><th scope="row">B</th><td>24 × 24</td><td>2.25</td><td>0.25</td><td>7</td><td>227.913 (model)</td><td data-bias-sample-status="B">NOT_RUN</td></tr>
+     <tr><th scope="row">C</th><td>18 × 18</td><td>2.0</td><td>0.25</td><td>6</td><td>144.371 (model)</td><td data-bias-sample-status="C">NOT_RUN</td></tr>
+    </tbody>
+   </table>
+  </div>
+  <p class="hint">Predictions come from the fixed 2D model and are NOT photographed, measured, or validated by the project. Keep photos and ruler notes separately; reference them below.</p>
+ </section>
+ <div class="workspace bias-physical-workspace">
+  <form class="input-card bias-physical-form" data-bias-physical-form novalidate>
+   <div class="card-heading"><span class="eyebrow-with-dot">● STEP 02 / RECORD ACTUAL MEASUREMENTS</span><h2>Editable observation sheet</h2><p>All measurement inputs start blank. Save drafts as JSON; this browser does not upload or retain your records on a server.</p></div>
+   <div class="field-wrap">
+    <label for="bias-observation-select">Select measured cloth sample</label>
+    <select id="bias-observation-select" class="field-control" data-bias-physical-select>
+     <option value="A">Specimen A — 30 × 30 in, W 2.5 in</option>
+     <option value="B">Specimen B — 24 × 24 in, W 2.25 in</option>
+     <option value="C">Specimen C — 18 × 18 in, W 2 in</option>
+    </select>
+    <small class="hint">Changing sample preserves this session's draft values for A/B/C. Export a JSON file to keep them after closing the browser.</small>
+   </div>
+   <fieldset class="bias-physical-group">
+    <legend>Declare your tolerances BEFORE cutting</legend>
+    <p class="hint">Do not invent acceptable tolerances after seeing the measurement. All limits are user-provided and must be reviewed; none is preset as a claimed industry standard. Model overestimation of the shortest final length is always a blocker, regardless of these tolerances.</p>
+    <div class="bias-physical-fields">
+     <div class="field-wrap"><label for="tol-square">Maximum source-side deviation (in)</label><input id="tol-square" class="field-control" data-bias-tolerance="squareSideToleranceIn" inputmode="decimal" placeholder="No default tolerance"/></div>
+     <div class="field-wrap"><label for="tol-seam">Maximum seam-allowance deviation (in)</label><input id="tol-seam" class="field-control" data-bias-tolerance="seamAllowanceToleranceIn" inputmode="decimal" placeholder="No default tolerance"/></div>
+     <div class="field-wrap"><label for="tol-tip">Maximum tip-overhang deviation (in)</label><input id="tol-tip" class="field-control" data-bias-tolerance="tipOverhangToleranceIn" inputmode="decimal" placeholder="No default tolerance"/></div>
+     <div class="field-wrap"><label for="tol-face">Maximum stitched-face/run deviation (in)</label><input id="tol-face" class="field-control" data-bias-tolerance="faceDimensionToleranceIn" inputmode="decimal" placeholder="No default tolerance"/></div>
+     <div class="field-wrap"><label for="tol-mark">Maximum tube-line mark mismatch (in)</label><input id="tol-mark" class="field-control" data-bias-tolerance="markMismatchToleranceIn" inputmode="decimal" placeholder="No default tolerance"/></div>
+     <div class="field-wrap"><label for="tol-width">Maximum final strip-width deviation (in)</label><input id="tol-width" class="field-control" data-bias-tolerance="stripWidthToleranceIn" inputmode="decimal" placeholder="No default tolerance"/></div>
+     <div class="field-wrap"><label for="tol-closure">Maximum length ledger closure error (in)</label><input id="tol-closure" class="field-control" data-bias-tolerance="lengthClosureToleranceIn" inputmode="decimal" placeholder="No default tolerance"/></div>
+     <div class="field-wrap"><label for="tol-predeclare">Were these limits declared before any cutting?</label><select id="tol-predeclare" class="field-control" data-bias-tolerance="declaredBeforeCutting"><option value="">Not recorded</option><option value="true">Yes — operator declaration only</option><option value="false">No — repeat trial with predeclared limits</option></select></div>
+    </div>
+   </fieldset>
+   <fieldset class="bias-physical-group">
+    <legend>Fabric, operator and evidence</legend>
+    <div class="bias-physical-fields">
+     <div class="field-wrap"><label for="obs-operator">Operator code (nonpersonal label)</label><input id="obs-operator" class="field-control" data-bias-obs="operatorCode" placeholder="e.g., operator-01"/></div>
+     <div class="field-wrap"><label for="obs-fabric">Fabric weave, treatment and description</label><input id="obs-fabric" class="field-control" data-bias-obs="fabricDescription" placeholder="Actual measured material, not a guess"/></div>
+     <div class="field-wrap"><label for="obs-prewash">Fabric prewash status</label><select id="obs-prewash" class="field-control" data-bias-obs="prewashStatus"><option value="">Not recorded</option><option value="prewashed">Prewashed before square cutting</option><option value="not-prewashed">Not prewashed</option></select></div>
+     <div class="field-wrap"><label for="obs-evidence">Ruler photos / evidence filenames or URLs</label><textarea id="obs-evidence" class="field-control" data-bias-obs="evidenceReferences" rows="2" placeholder="No image files are uploaded or automatically checked"></textarea></div>
+    </div>
+   </fieldset>
+   <fieldset class="bias-physical-group">
+    <legend>Measured square and first triangle seam</legend>
+    <div class="bias-physical-fields">
+     <div class="field-wrap"><label for="obs-square-x">Actual source side X (in)</label><input id="obs-square-x" class="field-control" data-bias-obs="measuredSquareWidthIn" inputmode="decimal" placeholder="Actual measurement"/></div>
+     <div class="field-wrap"><label for="obs-square-y">Actual source side Y (in)</label><input id="obs-square-y" class="field-control" data-bias-obs="measuredSquareHeightIn" inputmode="decimal" placeholder="Actual measurement"/></div>
+     <div class="field-wrap"><label for="obs-wof">Actual usable WOF (in)</label><input id="obs-wof" class="field-control" data-bias-obs="measuredUsableWofIn" inputmode="decimal" placeholder="Measured, after trimming"/></div>
+     <div class="field-wrap"><label for="obs-first-seams">First seam actual allowance — 5 positions (in)</label><textarea id="obs-first-seams" class="field-control" data-bias-obs="firstSeamSamplesIn" data-bias-obs-series="5" rows="2" placeholder="Five measured values, comma-separated"></textarea></div>
+     <div class="field-wrap"><label for="obs-tip-start">Tip overhang, first end (in)</label><input id="obs-tip-start" class="field-control" data-bias-obs="tipOverhangStartIn" inputmode="decimal" placeholder="Actual measurement"/></div>
+     <div class="field-wrap"><label for="obs-tip-end">Tip overhang, other end (in)</label><input id="obs-tip-end" class="field-control" data-bias-obs="tipOverhangEndIn" inputmode="decimal" placeholder="Actual measurement"/></div>
+     <div class="field-wrap"><label for="obs-face-long">Sewn-face long edge after first seam (in)</label><input id="obs-face-long" class="field-control" data-bias-obs="firstFaceLongEdgeIn" inputmode="decimal" placeholder="After pressing open"/></div>
+     <div class="field-wrap"><label for="obs-face-height">Sewn-face perpendicular height (in)</label><input id="obs-face-height" class="field-control" data-bias-obs="firstFaceHeightIn" inputmode="decimal" placeholder="After pressing open"/></div>
+    </div>
+   </fieldset>
+   <fieldset class="bias-physical-group">
+    <legend>Tube seam and full-width path</legend>
+    <div class="bias-physical-fields">
+     <div class="field-wrap"><label for="obs-band-count">Observed COMPLETE full-width bands (whole number)</label><input id="obs-band-count" class="field-control" data-bias-obs="observedFullBands" inputmode="numeric" placeholder="Count on actual cloth"/></div>
+     <div class="field-wrap"><label for="obs-second-seams">Second tube seam allowance — 5 positions (in)</label><textarea id="obs-second-seams" class="field-control" data-bias-obs="secondSeamSamplesIn" data-bias-obs-series="5" rows="2" placeholder="Five measured values, comma-separated"></textarea></div>
+     <div class="field-wrap"><label for="obs-crossings">Observed tube seam cut-line crossings (whole number)</label><input id="obs-crossings" class="field-control" data-bias-obs="observedTubeCrossings" inputmode="numeric" placeholder="Verify all N−1 full seam links"/></div>
+     <div class="field-wrap"><label for="obs-mismatch">Maximum sewing-line mark mismatch (in)</label><input id="obs-mismatch" class="field-control" data-bias-obs="maxMarkMismatchIn" inputmode="decimal" placeholder="Measure every visible crossing"/></div>
+     <div class="field-wrap"><label for="obs-run">Measured post-tube full-band run Q (in)</label><input id="obs-run" class="field-control" data-bias-obs="measuredBandRunIn" inputmode="decimal" placeholder="Actual measurement"/></div>
+     <div class="field-wrap"><label for="obs-press">Were BOTH seams pressed open?</label><select id="obs-press" class="field-control" data-bias-obs="pressedSeamsOpen"><option value="">Not recorded</option><option value="true">Yes</option><option value="false">No</option></select></div>
+    </div>
+   </fieldset>
+   <fieldset class="bias-physical-group">
+    <legend>Unstretched finished strip and end trims</legend>
+    <div class="bias-physical-fields">
+     <div class="field-wrap bias-physical-full"><label for="obs-strip-widths">Actual FULL cut strip widths — 12 positions (in)</label><textarea id="obs-strip-widths" class="field-control" data-bias-obs="stripWidthSamplesIn" data-bias-obs-series="12" rows="3" placeholder="Start, end, seam positions and ten spaced points; exactly 12 readings, comma-separated"></textarea><small class="hint">If N−1 seam crossings exceed the 12 recorded sample positions, add separate evidence for the remaining crossings. Do not call twelve measurements a guarantee of width everywhere.</small></div>
+     <div class="field-wrap"><label for="obs-raw-len">Untrimmed continuous strip length, no pull (in)</label><input id="obs-raw-len" class="field-control" data-bias-obs="untrimmedLengthIn" inputmode="decimal" placeholder="Actual measurement"/></div>
+     <div class="field-wrap"><label for="obs-trim-first">Start terminal length-equivalent removed (in)</label><input id="obs-trim-first" class="field-control" data-bias-obs="startTrimLengthEquivalentIn" inputmode="decimal" placeholder="Actual end trim"/></div>
+     <div class="field-wrap"><label for="obs-trim-last">End terminal length-equivalent removed (in)</label><input id="obs-trim-last" class="field-control" data-bias-obs="endTrimLengthEquivalentIn" inputmode="decimal" placeholder="Actual end trim"/></div>
+     <div class="field-wrap"><label for="obs-finished-center">Finished unstretched CENTER length (in)</label><input id="obs-finished-center" class="field-control" data-bias-obs="finishedCenterLengthIn" inputmode="decimal" placeholder="Measure without tension"/></div>
+     <div class="field-wrap"><label for="obs-finished-left">Finished unstretched LEFT edge length (in)</label><input id="obs-finished-left" class="field-control" data-bias-obs="finishedLeftLengthIn" inputmode="decimal" placeholder="Measure without tension"/></div>
+     <div class="field-wrap"><label for="obs-finished-right">Finished unstretched RIGHT edge length (in)</label><input id="obs-finished-right" class="field-control" data-bias-obs="finishedRightLengthIn" inputmode="decimal" placeholder="Measure without tension"/></div>
+     <div class="field-wrap"><label for="obs-one-layer">One continuous cut through ONLY one fabric layer?</label><select id="obs-one-layer" class="field-control" data-bias-obs="continuousSingleLayerCut"><option value="">Not recorded</option><option value="true">Yes — operator declaration only</option><option value="false">No — failed path</option></select></div>
+    </div>
+   </fieldset>
+   <div class="input-actions">
+    <button type="submit" class="action-primary">Audit recorded measurements ↗</button>
+   </div>
+   <p class="hint">Measurements are entered manually and remain user assertions. No photo or ruler evidence is authenticated by this website. Tolerances and observed lengths are never inferred from the modeled values.</p>
+  </form>
+  <section class="result-card bias-physical-result" aria-label="Comparison of user-entered specimen measurements and numerical model">
+   <div class="results-topline"><span class="eyebrow-with-dot">● STEP 03 / AUDIT</span><span class="result-version">ALWAYS HUMAN REVIEW · NOINDEX</span></div>
+   <p data-bias-physical-status role="status" aria-live="polite">No project specimens recorded.</p>
+   <div data-bias-physical-output></div>
+   <div class="results-footer bias-physical-actions">
+    <button type="button" class="action-secondary" data-bias-physical-export>Download ALL draft observations JSON · UNVERIFIED</button>
+    <label for="bias-physical-import" class="bias-physical-import-label">Restore previous draft JSON <input id="bias-physical-import" type="file" accept=".json,application/json" data-bias-physical-import/></label>
+   </div>
+  </section>
+ </div>
+ <section class="content-block">
+  <div class="editorial-head"><span class="eyebrow-with-line">— RELEASE GATE / NOT AUTOMATED</span><h2>What a completed measurement record can and cannot prove</h2></div>
+  <p>Each completed observation is checked against the exact model conventions: measured source square, BOTH seams at five positions, both tip overhangs, post-first-seam face, one-strip-offset tube seam, full-width band count, measured tube run, 12 observed width positions, two squared-end trims and finished length measured at three positions without stretching. The shortest of those three finished lengths is compared against the model; <strong>any model overstatement triggers a HOLD</strong>.</p>
+  <p>Records with missing fields remain INCOMPLETE. Contradictory observations trigger OBSERVATION_HOLD. Internally consistent inputs can reach <strong>READY_FOR_HUMAN_REVIEW</strong> only. Neither user statements nor user-entered evidence filenames establish that fabric was actually measured. An independent person must review the ruler images, method, repeatability, width integrity, bias stretching and other operators or fabric types before even discussing a conservative safety factor or production purchase release.</p>
+  <p><strong>Privacy:</strong> This is browser-only input. No account, upload or database is connected to this worksheet. Use the JSON export for local backup; imported JSON is treated as untrusted user data and all audit results are recomputed. All research pages remain noindex, while the existing <a href="/quilt-binding-calculator/">straight-grain binding purchasing workflow</a> is unchanged.</p>
+  <p>Detailed protocol and measurements to collect: <a href="https://github.com/garrison2025/Quilt_Calculator/blob/main/docs/qa/CONTINUOUS_BIAS_TUBE_PHYSICAL_SPECIMEN_PROTOCOL_20261107.md" target="_blank" rel="noopener noreferrer">Continuous Bias Tube physical specimen protocol</a>.</p>
+ </section>
+</div>
+</Base>
+<script>
+ import {initBiasPhysicalObservationLab} from '../../../client/continuous-bias-physical-lab';
+ initBiasPhysicalObservationLab();
+</script>
