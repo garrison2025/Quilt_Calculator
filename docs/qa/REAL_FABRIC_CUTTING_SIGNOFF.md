@@ -74,6 +74,24 @@ Report states include `USER_REPORTED_FINISH_MEASUREMENTS_DISAGREE`, `USER_REPORT
 
 **No independent signoff:** Even fully populated, internally consistent numbers are self-reported only. Trimmed backing dimensions and sewn quilt-top dimensions do not guarantee the final sewn, quilted, washed or bound quilt will have precisely the planned dimensions. Actual pressed stitch allowances, battings, material grain, longarm loading, binding and real 1:1 paper calibration remain independently unverified. The physical release gate remains `MANUAL_NOT_RUN`.
 
+## Physical quilt-TOP cut-piece seam chains — 2026-11-06
+
+The reviewed V2 project cut-list CSV is a **fabric-roll cutting layout**, not the top's actual sewing/adjacency map. No tool can infer the correct sewing order, number of sewn rows, orientation, pattern repeats, placement or coverage from these source rows. This new physical QA worksheet is therefore **strictly optional and manually ordered**: the reviewer explicitly chooses the actual quilt-TOP fabric roll (`fabric:<encoded-id>`) and unique printed physical piece number for each consecutive patch.
+
+The user must supply the *actual cut span* of each chosen piece along a user-declared straight chain **width** (one horizontal row) or **height** (one vertical column), plus the actual net length consumed on **both adjoining edges of every straight butt seam**. This intentionally differs from backing/binding joins and does not presume diagonal joins, miters, overlap stitching or universal ¼-inch seam allowances. Exact physical zero is allowed and never auto-filled.
+
+Given a complete log for two to twelve consecutively sewn pieces, calculate:
+
+`implied joined span = sum(user measured piece spans) − sum(all user measured consumed seam-edge spans)`.
+
+The user separately measures the actual sewn chain length before adding any border. The difference versus the implied span is checked against the **user-declared total tolerance (0–1 in)**. Every selected SKU/piece number must exist as a **unique** physical cut in the same reviewed source-tagged CSV. The native cut width/height is a *reference* and is compared to the actual ruler measurement, but never used as an actual measurement default. Missing an edge or piece remains **PARTIAL_USER_REPORTED**, and no implied joined span is calculated from incomplete rows.
+
+The planned **quilt CENTER before borders** (`dimensions.centerWidthIn/centerHeightIn`) can be compared against this single observed chain **only when** the reviewer affirmatively claims that chain spans the *entire* center along its selected axis. Without that explicit claim, the planned center size is not used to judge a sampled row or column. Even a matching full-center chain does not verify the rest of the 2D quilt-top geometry or the whole finished quilt.
+
+Distinct user-report failures: `USER_REPORTED_TOP_CHAIN_MEASUREMENTS_DISAGREE` (parts-minus-seam edges versus independently measured chain), `USER_REPORTED_TOP_CHAIN_CENTER_SIZE_DEVIATION` (reviewer-claimed full-center chain versus planned quilt center), and `USER_REPORTED_TOP_CHAIN_CUT_SIZE_DEVIATION` (actual physical cut versus matching CSV reference). Evidence JSON is now `schemaVersion: 5`, includes the fully labeled user-selected piece/edge readings and partial flags, and always keeps `independentPhysicalVerification:false` and `quiltCuttingApproval:false`.
+
+The tool does **not** validate the complete top's spatial piece placement, piecing grain, out-of-square distortion, actual stitching quality, borders, final bound quilt size, or material provenance. Actual physical signoff remains `MANUAL_NOT_RUN`. All browser tests use **synthetic** data on real downloaded site files; browser-generated values are not measurements of fabric.
+
 ## Measurement sheet — initially empty
 
 | Material / SKU | Expected from cutting CSV (in) | Actual postwash cut / seam measurement (in) | Actual source roll (in) | Difference and observations | Review sign-off |
