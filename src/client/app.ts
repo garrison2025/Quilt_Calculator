@@ -5,7 +5,7 @@ import { cutListCsv, physicalRollId, type MaterialCutPlan } from '../lib/quilt/c
 import { shoppingCsv, shoppingPriceSummary, hasIncompleteShopping, shoppingLineStatus, needsTopFabricPlan, type ShoppingLine } from '../lib/quilt/shopping';
 import type { ToolId } from './types';
 import {attachCutWalkthrough} from './diagram-playback';
-import {FINISHED_SIZE_EXAMPLES,applyFinishedSizeExample,applyBlockGridAsCenter,compareBackingPurchases} from '../lib/quilt/quick-planning';
+import {FINISHED_SIZE_EXAMPLES,applyFinishedSizeExample,applyBlockGridAsCenter,compareBackingPurchases,solveBlockSizeForCenter,applyTargetBlockSize} from '../lib/quilt/quick-planning';
 type Kind = 'length' | 'whole' | 'number' | 'pct' | 'check' | 'text';
 type Field = { label: string; path: string; kind?: Kind; note?: string };
 const num = (n: number, digits = 3): string => Number(n.toFixed(digits)).toLocaleString('en-US', {maximumFractionDigits: digits});
@@ -326,6 +326,9 @@ if(root){
  // Read-only alternate width/price scenario; never included in shopping, cut CSV,
  // the saved V2 project or physical cutting-plan JSON until explicitly edited.
  let alternateBackingWofText='108',alternateBackingPriceText='';
+ // The target is an independent read-only what-if until the user explicitly
+ // commits a finished block size. Preserve partially typed inputs on update.
+ let reverseBlockTargetW='',reverseBlockTargetH='',reverseBlockTargetEdited=false;
  let cutExport:unknown=null;
  let materialCuts:MaterialCutPlan[]=[];
  // Keep the last accepted headline across an in-progress input draft, so a
@@ -849,6 +852,118 @@ if(root){
    fieldsRoot.appendChild(node('p','footer-note','Need fabric colors or additional borders? Edit them on the dedicated Quilt Fabric and Borders pages; your local project is shared across all tools.'));
   }
  }
+ function renderReverseBlockSize(parent:HTMLElement):void{
+  const panel=node('section','reverse-block-size');
+  panel.dataset.reverseBlockSize='';
+  panel.appendChild(node('h3','group-title','Reverse plan: what FINISHED block size reaches my target quilt center?'));
+  panel.appendChild(node('p','hint',
+   'Straight-set rectangular blocks with internal sashing only (no outside sashing, diagonal setting or framing). Enter the finished CENTER before any borders, not an unfinished cut size. The result may be rectangular, not necessarily square. Applying changes only finished block width/height; no colored fabric cuts are created.'));
+  const s=project.sashing;
+  if(!reverseBlockTargetEdited){
+   try{
+    const d=resolveQuiltDimensions(project);
+    reverseBlockTargetW=String(fromInches(d.centerWidthIn,project.units));
+    reverseBlockTargetH=String(fromInches(d.centerHeightIn,project.units));
+   }catch{
+    reverseBlockTargetW='';reverseBlockTargetH='';
+   }
+  }
+  const inputs=node('div','reverse-block-inputs');
+  const widthLabel=node('label','','Target center width ('+project.units+')');
+  const width=node('input','field-control');
+  width.type='text';width.inputMode='decimal';width.id='reverse-center-width';
+  width.dataset.reverseCenterWidth='';width.value=reverseBlockTargetW;
+  widthLabel.htmlFor=width.id;
+  const heightLabel=node('label','','Target center height ('+project.units+')');
+  const height=node('input','field-control');
+  height.type='text';height.inputMode='decimal';height.id='reverse-center-height';
+  height.dataset.reverseCenterHeight='';height.value=reverseBlockTargetH;
+  heightLabel.htmlFor=height.id;
+  inputs.append(widthLabel,width,heightLabel,height);
+  panel.appendChild(inputs);
+  const buttons=node('div','reverse-block-actions');
+  const source=node('button','action-secondary','Use saved project CENTER as target');
+  source.type='button';source.dataset.reverseFromProject='';
+  const apply=node('button','action-secondary','Apply calculated finished block sizes');
+  apply.type='button';apply.dataset.reverseApply='';
+  const result=node('div','reverse-block-result');
+  result.dataset.reverseBlockResult='';
+  result.setAttribute('role','status');
+  result.setAttribute('aria-live','polite');
+  const recalculate=()=>{
+   reverseBlockTargetEdited=true;
+   reverseBlockTargetW=width.value;reverseBlockTargetH=height.value;
+   result.replaceChildren();apply.disabled=true;
+   try{
+    if(!width.value.trim()||!height.value.trim())
+     throw Error('Enter both target quilt-center dimensions.');
+    const targetWidth=toInches(parseMeasure(width.value),project.units);
+    const targetHeight=toInches(parseMeasure(height.value),project.units);
+    const r=solveBlockSizeForCenter({
+     centerWidthIn:targetWidth,centerHeightIn:targetHeight,
+     rows:s.rows,columns:s.columns,finishedSashIn:s.width
+    });
+    // A correct reverse result must be feasible through the forward model;
+    // surface any invalid/unfit current WOF instead of quietly saving cuts.
+    const plan=calculateSashing({
+     rows:s.rows,columns:s.columns,blockWidthIn:r.finishedBlockWidthIn,
+     blockHeightIn:r.finishedBlockHeightIn,finishedSashIn:s.width,
+     seamIn:project.options.seam,wofIn:project.options.usableWof,step:project.options.step
+    });
+    if(!plan.layout.isCutFeasible)
+     throw Error(plan.layout.error||'The proposed sashing cuts do not fit current usable WOF.');
+    if(Math.abs(plan.finishedWidthIn-targetWidth)>1e-7||
+       Math.abs(plan.finishedHeightIn-targetHeight)>1e-7)
+     throw Error('Internal block-size reverse calculation did not round-trip to the requested quilt center.');
+    const statement=node('p','',
+     'Required finished block size: '+num(r.finishedBlockWidthIn,5)+' × '+
+      num(r.finishedBlockHeightIn,5)+' in ('+r.totalBlocks+' blocks). '+
+      'Each unfinished BLOCK requires a separately established cutting/seam method; do not mistake these finished dimensions for a cut size.');
+    statement.dataset.reverseSolved='';
+    result.appendChild(statement);
+    result.appendChild(node('p','hint',
+     'Checking forward: '+num(plan.finishedWidthIn,5)+' × '+num(plan.finishedHeightIn,5)+
+      ' in center, excluding outer borders. Results keep exact internal precision; displayed decimals are rounded for readability. No purchase/export changes until Apply.'));
+    apply.disabled=false;
+   }catch(e){
+    const msg=node('p','hint',
+     e instanceof Error?e.message:'Enter a feasible center target.');
+    msg.dataset.reverseError='';result.appendChild(msg);
+   }
+  };
+  width.addEventListener('input',recalculate);height.addEventListener('input',recalculate);
+  source.addEventListener('click',()=>{
+   if(!requireCommittedDraft('read the current project center')||
+      !requireCurrentOutput('read the current project center'))return;
+   try{
+    const d=resolveQuiltDimensions(project);
+    width.value=String(fromInches(d.centerWidthIn,project.units));
+    height.value=String(fromInches(d.centerHeightIn,project.units));
+    recalculate();
+   }catch(e){
+    note('Cannot infer current center: explicitly confirm the saved dimension basis in the Planner before using this shortcut. '+(e instanceof Error?e.message:''),true);
+   }
+  });
+  apply.addEventListener('click',()=>{
+   if(!requireCommittedDraft('apply reverse-planned block sizes')||
+      !requireCurrentOutput('apply reverse-planned block sizes'))return;
+   // Re-evaluate actual current text rather than retaining a stale computed
+   // DOM result if another source field changed while focused.
+   recalculate();if(apply.disabled)return;
+   try{
+    const next=applyTargetBlockSize(project,
+      toInches(parseMeasure(width.value),project.units),
+      toInches(parseMeasure(height.value),project.units));
+    const solvedW=next.sashing.blockWidth,solvedH=next.sashing.blockHeight;
+    project=next;persist();renderEditor();update();
+    note('Applied finished block sizes '+num(solvedW,5)+' × '+num(solvedH,5)+
+     ' in. Quilt outside dimensions, border layers and fabric cut groups are unchanged. Old top-cut review revoked. Recheck physical fabric cuts before exporting a full plan.');
+   }catch(e){note('Could not apply reverse block sizes: '+(e instanceof Error?e.message:'Invalid block plan'),true);}
+  });
+  buttons.append(source,apply);
+  panel.append(buttons,result);parent.appendChild(panel);
+  recalculate();
+ }
  function renderBackingWidthComparison(parent:HTMLElement,outsideW:number,outsideH:number):void{
   const box=node('section','backing-width-comparison');
   box.dataset.backingWidthComparison='';
@@ -1069,6 +1184,7 @@ if(root){
     const s=p.sashing,r=calculateSashing({rows:s.rows,columns:s.columns,blockWidthIn:s.blockWidth,blockHeightIn:s.blockHeight,finishedSashIn:s.width,seamIn:o.seam,wofIn:o.usableWof,step:o.step});
     if(r.purchase)purchasesTitle(resultRoot,r.purchase,'SASHING FABRIC');else warning(resultRoot,r.layout.error||'FIT_IMPOSSIBLE',true);
     stats(resultRoot,[['Vertical strips',String(r.vertical)],['Horizontal strips',String(r.horizontal)],['Cornerstones',String(r.cornerstones)],['Finished grid',num(r.finishedWidthIn)+' × '+num(r.finishedHeightIn)+' in']]);
+    renderReverseBlockSize(resultRoot);
     const useGrid=node('button','action-secondary','Use this sashing grid as quilt CENTER');
     useGrid.type='button';useGrid.dataset.useSashingCenter='';
     useGrid.addEventListener('click',()=>{
