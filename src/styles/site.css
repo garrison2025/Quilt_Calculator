@@ -601,3 +601,39 @@
 .square-lab [hidden]{display:none!important}
 .square-lab-folded-reference{margin-top:1.4rem}
 .square-lab-folded-reference .square-lab-chart{min-width:620px}
+
+/* Noindex engineering lab: geometrically exact 45° individual strips.
+ * The graphic must NEVER resemble a guaranteed full-size cutting pattern. */
+.bias-geometry-page .page-intro{margin-bottom:1rem}
+.bias-geometry-page .bias-geometry-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.9rem 1rem}
+.bias-geometry-page .bias-geometry-fields>.field-wrap{min-width:0}
+.bias-geometry-page .bias-geometry-fields .field-control{width:100%;min-width:0}
+.bias-geometry-page .input-actions{margin:1rem 0}
+.bias-geometry-page .bias-geometry-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem;margin:1rem 0}
+.bias-geometry-stat{display:flex;flex-direction:column;gap:.3rem;padding:.7rem .8rem;border:1px solid #cbd9cb;border-radius:10px;background:#f6f9f2;min-width:0}
+.bias-geometry-stat span{font-size:.74rem;color:#4c6654;line-height:1.35}
+.bias-geometry-stat strong{font-size:1.04rem;color:#223f2e;overflow-wrap:anywhere}
+.bias-geometry-preview{margin:1.1rem 0}
+.bias-geometry-preview h3{margin:.25rem 0}
+.bias-geometry-svg{display:block;max-width:620px;max-height:620px;aspect-ratio:1;width:100%;height:auto;margin:.9rem auto;border:1px solid #cad9c9;border-radius:12px;background:#f8f6f1;box-sizing:border-box}
+.bias-geometry-square{fill:#fbfcf8;stroke:#1c4234;stroke-width:.15}
+.bias-geometry-band{fill:#75b39b;fill-opacity:.86;stroke:#285645;stroke-width:.09}
+.bias-geometry-band-alt{fill:#c5dcb5;fill-opacity:.9}
+.bias-grain-axis{fill:none;stroke:#2e4d43;stroke-dasharray:.6 .5;stroke-width:.11;opacity:.7}
+.bias-strip-scroll{max-width:100%;overflow:auto;margin:.7rem 0}
+.bias-strip-table{min-width:580px}
+.bias-strip-table td,.bias-strip-table th{text-align:left;font-size:.79rem}
+.bias-geometry-explanation{line-height:1.7}
+.bias-geometry-explanation p{max-width:82ch}
+@media (max-width:720px){
+ .bias-geometry-page .bias-geometry-fields,.bias-geometry-page .bias-geometry-stats{grid-template-columns:1fr}
+ .bias-geometry-page .bias-geometry-svg{max-width:100%}
+}
+@media screen and (prefers-color-scheme:dark){
+ .bias-geometry-stat{background:#22392a;border-color:#526d58}
+ .bias-geometry-stat strong,.bias-geometry-stat span{color:#e1efe2}
+}
+@media print{
+ .bias-geometry-preview,.bias-strip-scroll{display:none!important}
+ .bias-geometry-page .warning-banner{display:block!important}
+}

@@ -2984,6 +2984,68 @@ try{
   await auditWcag(squarePage,'/lab/square-in-square/ [two selectable methods mobile]');
   await squareCtx.close();
   console.log('PASS bias theoretical area isolation, published one-round Square parent cuts, keyboard chart and noindex lab.');
+  // 45° geometry is a separate, nonindexed individual-strip method. The
+  // exact source-square polygon and effective crosswise-join length MUST
+  // NOT be conflated with ideal continuous-bias TUBE yield or Binding CSV.
+  const biasGeometryCtx=await browser.newContext({viewport:{width:375,height:800},acceptDownloads:true});
+  instrumentNetwork(biasGeometryCtx,'individual-bias-square-geometry');
+  const biasGeometryPage=await biasGeometryCtx.newPage();
+  biasGeometryPage.on('pageerror',error=>problems.push('Individual bias geometry: '+error.message));
+  const biasGeometryResponse=await biasGeometryPage.goto(ROOT+'/lab/individual-bias-strips/',{waitUntil:'domcontentloaded'});
+  check(biasGeometryResponse.status()===200 &&
+    await biasGeometryPage.locator('meta[name="robots"]').getAttribute('content')==='noindex,follow' &&
+    await biasGeometryPage.locator('link[rel="canonical"]').count()===0 &&
+    await biasGeometryPage.locator('script[type="application/ld+json"]').count()===0,
+    'Bias individual-strip source model must remain noindex without canonical or JSON-LD.');
+  await biasGeometryPage.waitForFunction(()=>
+    document.querySelector('[data-bias-geometry-status]')?.textContent?.includes('Geometric rectangles verified'),
+    {timeout:20000});
+  const biasGeometryOutput=biasGeometryPage.locator('[data-bias-geometry-output]');
+  const initialGeo=await biasGeometryOutput.innerText();
+  check(initialGeo.includes('15')&&initialGeo.includes('318.896')&&
+    initialGeo.includes('311.896')&&initialGeo.includes('30.25') &&
+    (await biasGeometryPage.locator('[data-bias-geometry-target]').innerText()).includes('NOT MET') &&
+    await biasGeometryPage.locator('.bias-geometry-svg polygon').count()===15 &&
+    (await biasGeometryPage.locator('[data-bias-geometry-download]').isEnabled()),
+    '30in-square 2.5in individual 45-degree cut must produce 15 exact strips, 311.896in modeled crosswise-joined length, and 30.25in first square for 316in target.');
+  const geometryRegion=biasGeometryPage.locator('.bias-strip-scroll');
+  check(await geometryRegion.getAttribute('tabindex')==='0'&&
+    await geometryRegion.getAttribute('role')==='region'&&
+    Boolean(await geometryRegion.getAttribute('aria-label')),
+    'Individual-bias 375px strip chart must remain keyboard focusable and named.');
+  const biasGeomDownload=biasGeometryPage.waitForEvent('download');
+  await biasGeometryPage.locator('[data-bias-geometry-download]').click();
+  const biasGeomFile=await biasGeomDownload;
+  const biasGeomCsv=await fs.readFile(await biasGeomFile.path(),'utf8');
+  const biasGeomRows=csvRecords(biasGeomCsv);
+  const biasBands=biasGeomRows.filter(row=>row.length===13&&/^-?[0-9]+$/.test(row[0]));
+  check(biasGeomFile.suggestedFilename().includes('NOT-TUBE')&&
+    biasGeomCsv.includes('45DEG_INDIVIDUAL_BIAS_GEOMETRY_ONLY_NOT_CONTINUOUS_TUBE')&&
+    biasGeomCsv.includes('MODELED_SOURCE_RECTANGLES')&&
+    biasGeomCsv.includes('plain CROSSWISE seams')&&
+    biasBands.length===15&&
+    biasBands.every(row=>row.slice(5).every(x=>Number.isFinite(Number(x))&&
+      Number(x)>=-1e-6&&Number(x)<=30.000001)),
+    'Bias source CSV must give the EXACT 15 separate strip polygons within the 30in square and explicit NOT-TUBE / NOT-PHYSICAL method.');
+  await auditWcag(biasGeometryPage,'/lab/individual-bias-strips/ [375px source polygons]');
+  await biasGeometryPage.screenshot({path:'artifacts/qa/individual-bias-source-30in.png',fullPage:true,animations:'disabled'});
+  await biasGeometryPage.locator('[data-bias-geometry-input="squareSideIn"]').fill('30.25');
+  check(await biasGeometryPage.locator('[data-bias-geometry-download]').isDisabled() &&
+    (await biasGeometryPage.locator('[data-bias-geometry-status]').innerText()).includes('stale'),
+    'Editing source square must revoke the old 30in geometry CSV immediately.');
+  await biasGeometryPage.locator('[data-bias-geometry-form] button[type="submit"]').click();
+  check((await biasGeometryPage.locator('[data-bias-geometry-target]').innerText()).includes('TARGET MET')&&
+    (await biasGeometryPage.locator('[data-bias-geometry-output]').innerText()).includes('317.199')&&
+    await biasGeometryPage.locator('[data-bias-geometry-download]').isEnabled(),
+    'Moving to the first feasible 30.25in square must actually reach 316in under explicitly declared crosswise joining.');
+  await biasGeometryPage.locator('[data-bias-geometry-input="usableWofIn"]').fill('29');
+  await biasGeometryPage.locator('[data-bias-geometry-form] button[type="submit"]').click();
+  check((await biasGeometryPage.locator('[data-bias-geometry-status]').innerText()).includes('No valid 45-degree') &&
+    (await biasGeometryPage.locator('[data-bias-geometry-output]').innerText()).includes('does not fit') &&
+    await biasGeometryPage.locator('[data-bias-geometry-download]').isDisabled(),
+    'A source square that cannot physically fit usable WOF must not generate a purchase or cutting export.');
+  await biasGeometryCtx.close();
+  console.log('PASS 45-degree individual-bias inscribed source polygons, crosswise seam arithmetic, noindex method guard and polygon CSV.');
   const dark=await browser.newContext({viewport:{width:1280,height:800},colorScheme:'dark'});
   instrumentNetwork(dark,'dark');
   const darkPage=await dark.newPage();
