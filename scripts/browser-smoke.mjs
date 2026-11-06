@@ -577,6 +577,9 @@ try{
   await auditShopping.setInputFiles({name:'mismatched-shopping.csv',mimeType:'text/csv',
    buffer:Buffer.from(originalShoppingCsv.replaceAll(shopFingerprint,'deadbeef'))});
   await auditImport.click();
+  // File.text() resolves asynchronously; wait for a completed validation,
+  // not the intentionally visible "Reading both CSV files locally…" status.
+  await auditPage.waitForFunction(()=>document.querySelector('[data-fabric-import-status]')?.textContent?.startsWith('CSV validation rejected:'),null,{timeout:15000});
   const mismatchedMessage=await auditPage.locator('[data-fabric-import-status]').innerText();
   const mismatchedHidden=await auditPage.locator('[data-fabric-workspace]').isHidden();
   check(mismatchedMessage.includes('different project snapshots') && mismatchedHidden,
