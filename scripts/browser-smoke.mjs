@@ -3251,6 +3251,46 @@ try{
     'All three model-configured cloth specimens must start as unmeasured, not invented physical data.');
   await auditWcag(physical,'/lab/continuous-bias-physical/ [375px blank]');
   await physical.screenshot({path:'artifacts/qa/continuous-bias-physical-empty-mobile.png',fullPage:true,animations:'disabled'});
+  // Real handwritten field sheets are PRINT-ONLY and use no invented
+  // measurements. Each of 5+5 seams, 12 distributed widths and ALL N-1
+  // seam-crossing widths must be individually writable on the paper.
+  const paper=physical.locator('[data-bias-physical-paper]');
+  check(await physical.locator('[data-bias-physical-print]').count()===1 &&
+    await paper.locator('[data-bias-print-field^="firstSeamSamplesIn-"]').count()===5 &&
+    await paper.locator('[data-bias-print-field^="secondSeamSamplesIn-"]').count()===5 &&
+    await paper.locator('[data-bias-print-field^="stripWidthSamplesIn-"]').count()===12 &&
+    await paper.locator('[data-bias-print-field^="seamCrossingWidthSamplesIn-"]').count()===7 &&
+    await paper.locator('[data-bias-print-record-status="NOT_RUN"]').count()===1 &&
+    await paper.locator('[data-bias-print-source="finishedCenterLengthIn"] [data-bias-print-has-value="false"]').count()===1 &&
+    (await paper.innerText()).includes('NOT an observed yield'),
+    'Specimen A paper should list all 5+5+12+7 checkpoints, blank measured values and model-only warning.');
+  await physical.emulateMedia({media:'print'});
+  const printStyles=await physical.evaluate(()=>{
+   const sheet=document.querySelector('[data-bias-physical-paper]');
+   const form=document.querySelector('[data-bias-physical-form]');
+   const intro=document.querySelector('.bias-physical-page .page-intro');
+   const body=sheet?.getBoundingClientRect();
+   return {
+    sheet:getComputedStyle(sheet).display,
+    form:getComputedStyle(form).display,
+    intro:getComputedStyle(intro).display,
+    width:body?.width??0,
+    bodyWidth:document.documentElement.clientWidth
+   };
+  });
+  check(printStyles.sheet!=='none' && printStyles.form==='none' &&
+    printStyles.intro==='none' &&
+    printStyles.width>100&&printStyles.width<=printStyles.bodyWidth+2,
+    'Print media must show ONLY printable paper field records, not hide the whole evidence form.');
+  await physical.screenshot({path:'artifacts/qa/continuous-bias-physical-handwriting-print.png',fullPage:true,animations:'disabled'});
+  await physical.emulateMedia({media:'screen'});
+  await physical.evaluate(()=>{
+   window.__biasPrintTestCalls=0;
+   window.print=()=>{window.__biasPrintTestCalls+=1;};
+  });
+  await physical.locator('[data-bias-physical-print]').click();
+  check(await physical.evaluate(()=>window.__biasPrintTestCalls)===1,
+    'Print button must actually request browser printing.');
   await physical.locator('[data-bias-obs="measuredSquareWidthIn"]').fill('30');
   check((await physical.locator('[data-bias-physical-status]').innerText()).includes('UNREVIEWED CHANGES'),
     'Editing real observations must invalidate the visible previous status until explicitly audited.');
@@ -3266,11 +3306,22 @@ try{
     (await physical.locator('[data-bias-physical-output]').innerText()).includes('CRITICAL: model predicts more') &&
     (await physical.locator('[data-bias-sample-status="A"]').innerText())==='OBSERVATION_HOLD',
     'The modeled 328in overstates measured shortest length 320in and MUST block.');
+  check((await paper.locator('[data-bias-print-source="finishedCenterLengthIn"] .bias-print-answer').textContent())==='320' &&
+    await paper.locator('[data-bias-print-record-status="UNVERIFIED_DRAFT"]').count()===1,
+    'Paper print must reproduce the CURRENT self-reported 320in, not invent a physical PASS.');
   await physical.locator('[data-bias-physical-select]').selectOption('B');
   check((await physical.locator('[data-bias-physical-status]').innerText()).includes('Sample B / NOT_RUN') &&
     (await physical.locator('[data-bias-physical-output]').innerText()).includes('227.913') &&
     (await physical.locator('[data-bias-sample-status="A"]').innerText())==='OBSERVATION_HOLD',
     'A/B/C drafts must retain independence and display distinct model fixtures.');
+  check(await paper.locator('[data-bias-print-field^="seamCrossingWidthSamplesIn-"]').count()===6 &&
+    (await paper.innerText()).includes('SPECIMEN B'),
+    'Switching to specimen B must print SIX tube-seam width checkpoints, not stale A values.');
+  await physical.locator('[data-bias-physical-select]').selectOption('C');
+  check(await paper.locator('[data-bias-print-field^="seamCrossingWidthSamplesIn-"]').count()===5 &&
+    (await paper.innerText()).includes('SPECIMEN C'),
+    'Specimen C must print FIVE tube-seam width checkpoints.');
+  await physical.locator('[data-bias-physical-select]').selectOption('B');
   const downloadPromise=physical.waitForEvent('download');
   await physical.locator('[data-bias-physical-export]').click();
   const draftFile=await downloadPromise;
