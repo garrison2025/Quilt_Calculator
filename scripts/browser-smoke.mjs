@@ -273,7 +273,7 @@ try{
     const controls=await page.locator('[data-tool] .results-footer button').evaluateAll(
      elements=>elements.map(el=>({w:el.getBoundingClientRect().width,h:el.getBoundingClientRect().height})));
     check(controls.length>=4&&controls.every(x=>x.w>=43.9&&x.h>=43.9),
-      'Share/CSV/JSON/Print controls must be touch-sized on '+path);
+      'Share/CSV/JSON/Print controls must be touch-sized on '+path+': '+JSON.stringify(controls));
 
     await page.evaluate(()=>{
       window.__quiltCopiedText='';
