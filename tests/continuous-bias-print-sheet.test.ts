@@ -84,7 +84,12 @@ describe('noncertifying print-ready field measurement records',()=>{
   expect(entries).toHaveLength(8); // 7 slots + explicit mismatch full source row
   expect(entries[2].rawValue).toBe('');
   expect(entries[7].rawValue).toBe('2.5,2.5');
-  raw.seamCrossingWidthSamplesIn=Array(8).fill('2.5').join(',');
+  raw.seamCrossingWidthSamplesIn='2.5,,2.5,2.5,2.5,2.5,2.5,2.5';
+ sheet=createBiasSpecimenPrintSheet('A',raw);
+ expect(sheet.hasInvalidSeriesCount).toBe(true);
+ expect(sheet.sections.find(s=>s.title.startsWith('06'))!.fields
+  .some(f=>f.label.includes('RECHECK'))).toBe(true);
+ raw.seamCrossingWidthSamplesIn=Array(8).fill('2.5').join(',');
   sheet=createBiasSpecimenPrintSheet('A',raw);
   expect(sheet.hasInvalidSeriesCount).toBe(true);
   entries=sheet.sections.find(s=>s.title.startsWith('06'))!.fields;
