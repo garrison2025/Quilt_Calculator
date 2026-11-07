@@ -14,6 +14,15 @@
     background-image:radial-gradient(ellipse 90% 450px at 50% -145px,rgba(161,193,165,.22),transparent 80%);
   }
   .quilt-ui-v3 .site-header{position:sticky;top:0;z-index:45;background:rgba(248,246,239,.95);border-bottom:1px solid #d9e2d7;box-shadow:0 3px 18px rgba(30,58,40,.045);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+  /* The 76px sticky header previously occluded keyboard/axe scroll targets
+   * in long cut-coordinate tables. Honor a 106px visual clearance during
+   * focus scrollIntoView, anchor jumps and automatic target accessibility.
+   * At mobile width the header is shorter (67px), so the margin is safe.
+   * Physical print templates are NOT affected by these screen-only rules. */
+  html{scroll-padding-top:108px}
+  .quilt-ui-v3 .cut-coordinate-link{scroll-margin-top:108px}
+  .quilt-ui-v3 .table-scroll{scroll-padding-top:108px}
+
   .quilt-ui-v3 .brand{letter-spacing:-1.1px}
   .quilt-ui-v3 .brand-icon{background:#265b49;border:1px solid rgba(255,255,255,.36);box-shadow:inset 0 1px rgba(255,255,255,.18),0 5px 12px rgba(38,91,73,.14)}
   .quilt-ui-v3 .desktop-nav a{color:#466357;font-size:12px;padding:25px 0}
