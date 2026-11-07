@@ -928,3 +928,9 @@
  .results-print-hint strong{color:#d8efde}
 }
 @media print{.results-print-hint{display:none!important}}
+
+/* The Atelier-wide .quilt-ui-v3 .action-secondary min-height:38px is too
+   short when the fifth export control occupies its own single-line row.
+   Keep every calculator export >= 48px even at desktop widths. Specificity
+   must exceed the global theme override without affecting small lab buttons. */
+.quilt-ui-v3 .results-footer button.action-secondary{min-height:48px}
