@@ -1,3 +1,4 @@
+import {createBiasSpecimenPrintSheet} from '../lib/quilt/continuous-bias-print-sheet';
 import {
  SPECIMEN_CONFIGS,emptyBiasSpecimenObservation,auditBiasSpecimenObservation,
  type BiasSpecimenAudit,type BiasSpecimenId,type BiasSpecimenObservation
@@ -133,6 +134,8 @@ export function initBiasPhysicalObservationLab():void{
  const status=root.querySelector<HTMLElement>('[data-bias-physical-status]')!;
  const download=root.querySelector<HTMLButtonElement>('[data-bias-physical-export]')!;
  const upload=root.querySelector<HTMLInputElement>('[data-bias-physical-import]')!;
+ const printButton=root.querySelector<HTMLButtonElement>('[data-bias-physical-print]')!;
+ const paper=root.querySelector<HTMLElement>('[data-bias-physical-paper]')!;
  const fields=[...form.querySelectorAll<HTMLInputElement|HTMLSelectElement|HTMLTextAreaElement>(
   '[data-bias-obs], [data-bias-tolerance]')];
  const getKey=(field:HTMLElement)=>
@@ -153,6 +156,84 @@ export function initBiasPhysicalObservationLab():void{
   for(const field of fields)field.value=raw[getKey(field)]??'';
  };
  const saveCurrent=()=>{raws[active]=readUI();};
+ // Print-sheet content is derived from the CURRENT raw form draft, not
+ // from an implicitly trusted audit or synthetic model observation.
+ const renderPrintSheet=()=>{
+  saveCurrent();
+  const sheet=createBiasSpecimenPrintSheet(active,raws[active]);
+  paper.replaceChildren();
+  const headline=make('div','','bias-print-headline');
+  headline.append(make('span','QUILT STUDIO · REAL FABRIC MEASUREMENT WORKSHEET'),
+   make('strong','SPECIMEN '+active+' · UNVERIFIED FIELD RECORD'));
+  paper.appendChild(headline);
+  paper.appendChild(make('h2','Continuous bias tube · cloth specimen '+active));
+  paper.appendChild(make('p',
+   'For real fabric ONLY. Write measurements by hand or review typed values. '+
+   'The sample configuration below is a numerical model, NOT an observed yield. '+
+   'Printed, submitted or consistent numbers do NOT certify buying.',
+   'bias-print-disclaimer'));
+  const params=make('div','','bias-print-config');
+  for(const [label,value] of [
+   ['Nominal source square',fmt(sheet.nominalSideIn)+' × '+fmt(sheet.nominalSideIn)+' in'],
+   ['Full cut strip width',fmt(sheet.nominalCutWidthIn)+' in'],
+   ['Each edge seam allowance',fmt(sheet.nominalSeamIn)+' in'],
+   ['Expected bands',String(sheet.expectedBands)+' (MODEL)'],
+   ['Tube seam crossings',String(sheet.expectedTubeCrossings)+' (MODEL)'],
+   ['Predicted squared-end length',fmt(sheet.modeledLengthIn)+' in (MODEL ONLY)']
+  ] as const){
+   const cell=make('div','','bias-print-config-cell');
+   cell.append(make('span',label),make('strong',value));params.append(cell);
+  }
+  paper.appendChild(params);
+  const stamp=make('p','','bias-print-record-status');
+  stamp.dataset.biasPrintRecordStatus=sheet.enteredValueCount===0?'NOT_RUN':'UNVERIFIED_DRAFT';
+  stamp.textContent=sheet.enteredValueCount===0
+   ?'ACTUAL FABRIC MEASUREMENTS: NOT RUN — ALL OBSERVATION LINES ARE BLANK.'
+   :'USER-ENTERED OBSERVATIONS: '+sheet.enteredValueCount+'/'+sheet.knownFieldCount+
+    ' field groups started — NOT VERIFIED. Confirm all entries against physical ruler evidence.';
+  paper.appendChild(stamp);
+  if(sheet.hasInvalidSeriesCount)
+   paper.appendChild(make('p',
+    'INVALID SERIES COUNT — some pasted seam/width readings do not match the required checkpoint count. '+
+    'Original typed series retained below. STOP and reconcile before auditing.',
+    'bias-print-error'));
+  const instruction=make('p',
+   'FIELD PROCEDURE: declare all tolerances BEFORE cutting; measure all 5 points on EACH seam; '+
+   'record width at the start/end + 10 equally spaced positions AND each N−1 tube crossing; '+
+   'square both ends and measure all three final unstretched edge lengths. '+
+   'Add photo/ruler references and repeat all failed trials.',
+   'bias-print-guide');
+  paper.appendChild(instruction);
+  for(const section of sheet.sections){
+   const group=make('section','','bias-print-section');
+   group.dataset.biasPrintSection=section.title.slice(0,2);
+   group.append(make('h3',section.title));
+   const grid=make('div','','bias-print-field-grid');
+   for(const field of section.fields){
+    const item=make('div','','bias-print-field');
+    item.dataset.biasPrintField=field.id;
+    item.dataset.biasPrintSource=field.sourceKey;
+    const label=make('span',field.label,'bias-print-label');
+    const answer=make('span',field.rawValue||'\\u00a0','bias-print-answer');
+    answer.dataset.biasPrintHasValue=field.rawValue?'true':'false';
+    if(field.seriesCountMismatch)item.classList.add('bias-print-field--invalid');
+    item.append(label,answer);grid.appendChild(item);
+   }
+   group.append(grid);paper.appendChild(group);
+  }
+  const signature=make('div','','bias-print-signature');
+  for(const label of [
+   'Physical test date/time (handwritten):',
+   'Ruler-photo evidence verified by reviewer (handwritten):',
+   'Operator / independent reviewer sign-off (handwritten):',
+   'Investigation / rework notes (handwritten):'
+  ])signature.append(make('p',label,'bias-print-sign-line'));
+  paper.appendChild(signature);
+  paper.appendChild(make('p',
+   'RELEASE: NOT VERIFIED · HUMAN REVIEW REQUIRED · MODEL NOT SAFE TO PURCHASE · '+
+   'NO APPROVED BIAS SEO. Printed records are user-authored notes, not independently authenticated evidence.',
+   'bias-print-footer'));
+ };
  const matrix=()=>{
   for(const cfg of SPECIMEN_CONFIGS){
    const label=root.querySelector<HTMLElement>(
@@ -174,12 +255,12 @@ export function initBiasPhysicalObservationLab():void{
     ' No verification or purchasing result exists. You can export the raw draft to repair it later.',
     'warning-banner'));
   }
-  matrix();
+  matrix();renderPrintSheet();
  };
  const markStale=()=>{
   status.textContent='UNREVIEWED CHANGES · press Audit recorded measurements.';
   result.replaceChildren(make('p','Changed inputs are no longer audited. Run the audit before relying on the discrepancy display.','hint'));
-  saveCurrent();matrix();
+  saveCurrent();matrix();renderPrintSheet();
  };
  fields.forEach(field=>field.addEventListener(
   field instanceof HTMLSelectElement?'change':'input',markStale));
@@ -190,6 +271,12 @@ export function initBiasPhysicalObservationLab():void{
   evaluate();
  });
  form.addEventListener('submit',event=>{event.preventDefault();evaluate();});
+ printButton.addEventListener('click',()=>{
+  renderPrintSheet();
+  window.print();
+ });
+ window.addEventListener('beforeprint',renderPrintSheet);
+
  download.addEventListener('click',()=>{
   saveCurrent();
   const records=SPECIMEN_CONFIGS.map(cfg=>{
