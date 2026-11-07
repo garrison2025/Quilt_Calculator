@@ -457,7 +457,7 @@ if(root){
   root!.dataset.printReady='false';
   cutExport=null;materialCuts=[];shareSummaryText=null;
   exportButton.disabled=true;cutCsvButton.disabled=true;fullPrintButton.disabled=true;printButton.disabled=true;copyButton.disabled=true;
-  resultRoot.querySelectorAll<HTMLButtonElement>('[data-action="export-shopping"]')
+  resultRoot.querySelectorAll<HTMLButtonElement>('[data-action="export-shopping"],[data-action="download-one-roll"]')
    .forEach(button=>button.disabled=true);
  }
  function showStorageConflict():void{
@@ -650,7 +650,7 @@ if(root){
   saveButton.disabled=true;
   shareSummaryText=null;
   exportButton.disabled=true;cutCsvButton.disabled=true;fullPrintButton.disabled=true;printButton.disabled=true;copyButton.disabled=true;
-  resultRoot.querySelectorAll<HTMLButtonElement>('[data-action="export-shopping"]').forEach(button=>button.disabled=true);
+  resultRoot.querySelectorAll<HTMLButtonElement>('[data-action="export-shopping"],[data-action="download-one-roll"]').forEach(button=>button.disabled=true);
   resultRoot.querySelector('[data-stale-warning]')?.remove();
   const stale=node('div','warning-banner error-banner',message);
   stale.setAttribute('data-stale-warning','');
@@ -1347,6 +1347,21 @@ if(root){
   append(summary,node('span','sku-plan-label',label+' · '+sku),
    node('strong','',noPieces?'NOT PLANNED':purchaseYards===undefined?'FIT IMPOSSIBLE':yd(purchaseYards)+' yd'));
   item.appendChild(summary);
+  // A job with 30 physical rolls may need only one roll on the cutting
+  // table today. This button downloads an independently verified FULL sheet
+  // for that physical roll. It NEVER changes or filters the full project
+  // CSV/HTML and cannot bypass the whole-project readiness gate.
+  if(layout.isCutFeasible && !noPieces){
+   const oneRoll=node('button','action-secondary single-roll-export',
+    'Download only this roll ('+layout.cutPieces.length+' cuts · .html)');
+   oneRoll.type='button';
+   oneRoll.dataset.action='download-one-roll';
+   oneRoll.dataset.rollExportSku=exportSku;
+   oneRoll.dataset.rollExportIndex=String(index);
+   oneRoll.disabled=true;oneRoll.hidden=true;
+   oneRoll.setAttribute('aria-label',oneRoll.textContent+' — '+label+' ('+exportSku+')');
+   item.appendChild(oneRoll);
+  }
   // Only the first (open) roll is rendered at startup. Up to 30 rolls and
   // 2,000 pieces may be imported: allocating every closed SVG/table on each
   // calculator edit wastes DOM work and can cause long input latency.
@@ -1626,6 +1641,13 @@ if(root){
    printButton.disabled=!printable;
    cutCsvButton.disabled=!readyPhysicalPlan;
    fullPrintButton.disabled=!readyPhysicalPlan;
+   // All per-roll buttons obey the SAME complete-plan readiness. A single
+   // fit-able roll never overrides an infeasible/unreviewed other material.
+   resultRoot.querySelectorAll<HTMLButtonElement>('[data-action="download-one-roll"]').forEach(button=>{
+    button.hidden=materialCuts.length<=1;
+    button.disabled=!readyPhysicalPlan;
+    button.dataset.projectFingerprint=record.sourceProjectHash;
+   });
    root!.dataset.printReady=printButton.disabled?'false':'true';
    if(tool==='hub'){
     const unfitRolls=materialCuts.filter(x=>!x.layout.isCutFeasible).length;
@@ -1859,6 +1881,46 @@ if(root){
  // A separate, complete cutting workbook avoids printing only the current
  // 45-row coordinate page. It is self-contained (no remote scripts/fonts)
  // and has exactly the same validated per-roll coordinates as cut CSV.
+ // Click delegation lets lazily opened/cached SKU previews share one listener.
+ // Selection is by the validated physical roll ID, never a display label.
+ resultRoot.addEventListener('click',event=>{
+  const target=(event.target as Element|null)?.closest<HTMLButtonElement>('[data-action="download-one-roll"]');
+  if(!target || target.disabled || target.hidden)return;
+  if(!cutExport || fullPrintButton.disabled ||
+     !requireCommittedDraft('download one printable fabric roll') ||
+     !requireCurrentOutput('download one printable fabric roll'))return;
+  const projectHash=hashProject(project);
+  if(target.dataset.projectFingerprint!==projectHash){
+   note('The selected roll belongs to an older project snapshot. Recalculate before downloading.',true);
+   return;
+  }
+  const rollId=target.dataset.rollExportSku||'';
+  const rollIndex=Number(target.dataset.rollExportIndex);
+  const exactRoll=materialCuts.filter(roll=>roll.sku===rollId);
+  if(exactRoll.length!==1 || !Number.isSafeInteger(rollIndex) || rollIndex<0 ||
+     materialCuts[rollIndex]!==exactRoll[0] || !exactRoll[0].layout.isCutFeasible ||
+     !exactRoll[0].layout.cutPieces.length){
+   note('Cannot download this roll: its physical roll identifier or geometry is not current.',true);
+   return;
+  }
+  try{
+   // The full-project exporter performs the SAME independent geometry and
+   // fingerprint verification on this subset; it does not clone SVG data.
+   const html=fullPrintableCutSheets(exactRoll,projectHash,{projectRollNumber:rollIndex+1,projectRollTotal:materialCuts.length});
+   const blob=new Blob([html],{type:'text/html;charset=utf-8'});
+   const url=URL.createObjectURL(blob);
+   const slug=rollId.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40)||'material';
+   const link=document.createElement('a');
+   link.href=url;
+   link.download='quilt-studio-ROLL-'+(rollIndex+1)+'-'+slug+'-'+projectHash+'.html';
+   document.body.appendChild(link);link.click();link.remove();
+   setTimeout(()=>URL.revokeObjectURL(url),2000);
+   note('Roll '+(rollIndex+1)+' downloaded: '+exactRoll[0].layout.cutPieces.length+
+    ' physical cuts for '+rollId+'. Print this HTML by itself; other project rolls stay in the complete workbook and CSV.');
+  }catch(e){
+   note('Could not download this roll: '+(e instanceof Error?e.message:'Invalid cutting plan'),true);
+  }
+ });
  fullPrintButton.addEventListener('click',()=>{
   if(!cutExport || fullPrintButton.disabled ||
      !requireCommittedDraft('download full printable cutting sheets') ||

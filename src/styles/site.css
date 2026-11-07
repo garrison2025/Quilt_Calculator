@@ -934,3 +934,19 @@
    Keep every calculator export >= 48px even at desktop widths. Specificity
    must exceed the global theme override without affecting small lab buttons. */
 .quilt-ui-v3 .results-footer button.action-secondary{min-height:48px}
+
+
+/* Print only the physical roll currently being cut without reprinting the
+ * whole 30-SKU workbook. The individual download still requires a fully
+ * ready whole-project snapshot. Visible only inside an opened roll detail. */
+.quilt-ui-v3 .sku-plan .single-roll-export{
+ display:inline-flex;align-items:center;justify-content:center;
+ box-sizing:border-box;min-height:48px;max-width:calc(100% - 28px);
+ margin:12px 14px 3px;padding:10px 15px;white-space:normal;
+ overflow-wrap:anywhere;text-align:center;line-height:1.45;
+}
+.quilt-ui-v3 .sku-plan .single-roll-export[hidden]{display:none!important}
+@media(max-width:560px){
+ .quilt-ui-v3 .sku-plan .single-roll-export{width:calc(100% - 24px);max-width:calc(100% - 24px);margin:10px 12px 2px}
+}
+@media print{.quilt-ui-v3 .sku-plan .single-roll-export{display:none!important}}
