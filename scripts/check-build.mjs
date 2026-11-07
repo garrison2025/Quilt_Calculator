@@ -117,6 +117,8 @@ for(const token of [
  'data-bias-physical','noindex,follow','Physical Specimen Verification Worksheet',
  'NO SAMPLE HAS BEEN PHYSICALLY TESTED','READY FOR HUMAN REVIEW',
  'data-bias-physical-export','data-bias-physical-import',
+ 'data-bias-physical-print','data-bias-physical-paper',
+ 'Print selected specimen field sheet','href="/qa/print-calibration/"',
  'href="/lab/continuous-bias-planner/"'
 ]){
  if(!biasPhysicalHtml.toLowerCase().includes(token.toLowerCase()))
@@ -140,6 +142,28 @@ for(const token of [
 ]){
  if(!biasPhysicalSource.includes(token))
   throw Error('Physical sample worksheet cannot self-certify production or purchase: '+token);
+}
+// Paper specimens are NOT physical proof. Their schema must cover every
+// physical observation, all 12 distributed widths and EVERY tube-seam crossing.
+const biasPrintSource=fs.readFileSync('src/lib/quilt/continuous-bias-print-sheet.ts','utf8');
+for(const token of [
+ 'createBiasSpecimenPrintSheet','emptyBiasSpecimenObservation',
+ 'seamCrossingWidthSamplesIn','stripWidthSamplesIn',
+ 'model.crossings','seriesCountMismatch',
+ 'safeToPurchase:false','physicallyCertified:false'
+]){
+ if(!biasPrintSource.includes(token))
+  throw Error('Printable real specimen worksheet contract missing: '+token);
+}
+const biasPrintStyles=fs.readFileSync('src/styles/site.css','utf8');
+for(const token of [
+ '.bias-physical-paper{display:none}',
+ '[data-bias-physical-paper]',
+ '.bias-print-field-grid',
+ '@media print'
+]){
+ if(!biasPrintStyles.includes(token))
+  throw Error('Printable physical worksheet CSS missing: '+token);
 }
 const individualBiasLabHtml=fs.readFileSync('dist/lab/individual-bias-strips/index.html','utf8');
 for(const token of [
