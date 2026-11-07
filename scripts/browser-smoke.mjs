@@ -2593,11 +2593,14 @@ try{
       count:parsed.querySelectorAll('main tbody tr[data-cut-number]').length,
       rolls:parsed.querySelectorAll('main section.roll').length,
       last:parsed.querySelector('main tbody tr:last-child .name')?.textContent,
+      rollTitle:parsed.querySelector('main h2')?.textContent,
       text:parsed.body.textContent
     };
   },lastRollHtml);
   check(lastRollMeta.count===83 && lastRollMeta.rolls===1 &&
     lastRollMeta.last==='Square 29 83' &&
+    lastRollMeta.rollTitle?.includes('Roll 30: Roll 29') &&
+    lastRollMeta.text?.includes('Only project roll 30 of 30') &&
     lastRollMeta.text?.includes('fabric:stress-29') &&
     !lastRollMeta.text?.includes('fabric:stress-0') &&
     lastRollMeta.text?.includes(expectedFingerprint),
