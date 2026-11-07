@@ -115,6 +115,7 @@ import Base from '../../../layouts/Base.astro';
    <div data-bias-physical-output></div>
    <div class="results-footer bias-physical-actions">
     <button type="button" class="action-primary" data-bias-physical-print>Print selected specimen field sheet</button>
+    <p class="bias-print-screen-error" data-bias-physical-print-error role="alert" aria-live="assertive"></p>
     <button type="button" class="action-secondary" data-bias-physical-export>Download ALL draft observations JSON · UNVERIFIED</button>
     <label for="bias-physical-import" class="bias-physical-import-label">Restore previous draft JSON <input id="bias-physical-import" type="file" accept=".json,application/json" data-bias-physical-import/></label>
    </div>
