@@ -17,7 +17,7 @@ For each of three independent samples, the human operator must enter real observ
 3. Both measured source-square dimensions, actual post-trim usable fabric width and **five sampled actual seam allowances** on each independent seam.
 4. Both physical first-seam tip overhangs, sewn parallelogram long edge and perpendicular height after pressing.
 5. Actually observed complete lanes, **N−1** tube seam crossings, maximum mark mismatch and the measured per-band tube run. The operator must confirm both pressed-open seams and one-layer cut continuity.
-6. **Twelve distinct width readings** (start, end and distributed points including tube seam crossing positions where possible), raw continuous strip length, length-equivalent trims at both ends, and finished un-stretched strip length at its center and along both edges.
+6. **Twelve distributed width readings** (start, end and ten evenly spaced positions) **PLUS** all N−1 independent tube-seam crossing width readings, raw continuous strip length, length-equivalent trims at both ends, and finished un-stretched strip length at its center and along both edges.
 
 The current exact numerical 2D engine is reused for predicted bands, both sewn-face dimensions, per-band run and square-ended strip length. The comparison uses the **shortest** of left, center and right unstretched finished measurements. A positive `modelOverstatementIn` is always flagged as a critical safety mismatch, with no arbitrary permitted overstatement. The operator-supplied tolerances can reject inconsistent seam/width/ledger results, but cannot erase a measured model overstatement or produce independent certification.
 
@@ -34,13 +34,13 @@ No `PASS`, `physicalCertified=true`, `safeToPurchase=true`, `purchaseYards`, `ve
 
 ## Persistence, trust and privacy
 
-The browser keeps A/B/C drafts **in memory during the session**. The user can export all current raw form fields and a report snapshot as an explicitly **UNVERIFIED** JSON draft; re-import accepts only the versioned draft format and recognized string field names, with a 250KB input cap. Imported report statuses and purported approvals are ignored and **recomputed from raw user inputs**. Malformed or incomplete five-position/12-position sequences fail closed. No backend is called, no photos are uploaded and nothing is automatically stored in the user's account.
+The browser keeps A/B/C drafts **in memory during the session**. The user can export all current raw form fields and a report snapshot as an explicitly **UNVERIFIED** JSON draft; re-import accepts only the versioned draft format and recognized string field names, with a 250KB input cap. Imported report statuses and purported approvals are ignored and **recomputed from raw user inputs**. Malformed or incomplete five-position, twelve-position, or N−1 tube-seam position sequences fail closed. No backend is called, no photos are uploaded and nothing is automatically stored in the user's account.
 
 Do not publish the exported JSON as evidence of actual measurement unless a person has independently verified the source ruler records and data chain.
 
 ## Software QA
 
-- Unit fixtures explicitly identify **synthetic test data**, not fabric. They test empty first load for A/B/C, reference prediction values, missing-field states, contradictory N or seam crossings, first/second seam deviations, source width rejection, loss of path continuity, under-yield risk, series lengths and numeric validation, and no automatic signoff despite internally consistent synthetic inputs.
+- Unit fixtures explicitly identify **synthetic test data**, not fabric. They test empty first load for A/B/C, reference prediction values, missing-field states, contradictory N or seam crossings, first/second seam deviations, missing or out-of-range width readings at every tube seam crossing, source width rejection, loss of path continuity, under-yield risk, series lengths and numeric validation, and no automatic signoff despite internally consistent synthetic inputs.
 - Mobile 375px Chromium tests the live route's noindex/canonical gates, all three blank initial states, 328.426in model vs 320in synthetic measurement HOLD, independent A/B/C drafts, JSON export, tampered-import re-audit, bad checkpoint sequences, and axe WCAG accessibility.
 - Build gate enforces the `noindex` route, absence of canonical/JSON-LD, accessible cross-links from the two mathematical labs, explicit prohibition on purchasing certification, and correct internal link routing.
 - The existing main CI / Cloudflare deployment statuses must be checked against exact commit SHA before announcing verified release.
