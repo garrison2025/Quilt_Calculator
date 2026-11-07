@@ -91,7 +91,7 @@ export function fullPrintableCutSheets(plans:readonly MaterialCutPlan[],sourcePr
   '</style></head><body>',
   '<header class="intro"><h1>Complete physical cutting checklist</h1>',
   '<p class="tag">Source Project V2: '+sourceProjectHash+' (8-character comparison fingerprint, NOT a digital signature)</p>',
-  '<p>'+rows.length+' actual cuts across '+plans.length+' independent physical roll'+(plans.length===1?'':'s')+'. Each roll has its own numbering; never merge scrap or yardage across SKU IDs.</p>',
+  '<p>'+rows.length.toLocaleString('en-US')+' actual cuts across '+plans.length+' independent physical roll'+(plans.length===1?'':'s')+'. Each roll has its own numbering; never merge scrap or yardage across SKU IDs.</p>',
   '<p class="warning">'+safeText(warning)+'</p>',
   '<p>Open this downloaded HTML in a browser and choose <strong>Print → Save as PDF</strong>, or print on paper. This document is the full coordinate table. The main calculator’s Print plan shows summary diagrams and paged coordinate previews only.</p></header>',
   '<main>'+sections.join('\n')+'</main>',
