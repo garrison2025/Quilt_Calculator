@@ -7,12 +7,12 @@ const sha=(process.env.GITHUB_SHA||'').toLowerCase();
 if(!/^[0-9a-f]{40}$/.test(sha))throw Error('Expected a full GITHUB_SHA for independently verifiable public Pages testing.');
 const assertThat=(v,message)=>assert.ok(v,message);
 const hasNoindexToken=(header)=>typeof header==='string'&&
- header.toLowerCase().split(/[\\s,;]+/).includes('noindex');
+ header.toLowerCase().split(/[\s,;]+/).includes('noindex');
 // Regression for an old escaped-regex bug: /\\\\bnoindex\\\\b/ silently looked for
 // literal backslashes rather than recognizing the real X-Robots-Tag token.
 for(const [header,expected] of [
  ['noindex, follow',true],['NoInDeX',true],
- ['nofollow, NOINDEX',true],['follow',false],['noindexing',false],
+ ['nofollow, NOINDEX',true],['noindex\tfollow',true],['follow',false],['noindexing',false],
  ['prefixnoindex',false],[null,false],['',false]
 ]){
  assert.equal(hasNoindexToken(header),expected,'X-Robots-Tag token parser regression');
