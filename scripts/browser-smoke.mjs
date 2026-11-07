@@ -240,6 +240,22 @@ try{
   for(const path of routes){
     await page.evaluate(()=>localStorage.removeItem('quilt-studio-v2')).catch(()=>{});
     await hydrated(page,path,{incomplete:path==='/'||path==='/calculators/'});
+    // A real keyboard/scroll-to-target user must be able to hit the visible
+    // coordinate row; the formerly sticky header intercepted clicks at y<76.
+    const focusRow=page.locator('button[data-cut-row]').first();
+    if(await focusRow.count()){
+     const hit=await focusRow.evaluate(el=>{
+      el.scrollIntoView({block:'start',behavior:'instant'});
+      const r=el.getBoundingClientRect();
+      const x=Math.min(innerWidth-2,Math.max(2,r.left+Math.min(r.width/2,40)));
+      const y=Math.min(innerHeight-2,Math.max(2,r.top+r.height/2));
+      const above=document.elementFromPoint(x,y);
+      return {top:r.top,height:r.height,inTarget:above===el||el.contains(above)};
+     });
+     check(hit.height>=44 && hit.top>=-1 && hit.inTarget,
+       'Focus-scrolled physical cut-row must not be obscured by a header: '+path);
+    }
+
     // Every approved route must share its current readable result without
     // sending private project measurements to a server. This mocks only
     // clipboard permission, NOT the button/formatter or actual UI click.
