@@ -22,7 +22,18 @@ const exact=(value:unknown):string=>{
 /** All rows are validated by cutListRows exactly as for cut-list CSV. Never
  * accept arbitrary HTML as a material label, and never silently omit a roll.
  */
-export function fullPrintableCutSheets(plans:readonly MaterialCutPlan[],sourceProjectHash:string):string{
+export function fullPrintableCutSheets(
+ plans:readonly MaterialCutPlan[],sourceProjectHash:string,
+ selected?:{projectRollNumber:number;projectRollTotal:number}
+):string{
+ // When printing just one roll of a larger project, keep its ORIGINAL roll
+ // position (e.g. Roll 30 of 30). Never rename the 30th roll as "Roll 1".
+ if(selected && (plans.length!==1 ||
+   !Number.isSafeInteger(selected.projectRollNumber) ||
+   !Number.isSafeInteger(selected.projectRollTotal) ||
+   selected.projectRollNumber<1 || selected.projectRollTotal<1 ||
+   selected.projectRollNumber>selected.projectRollTotal))
+  throw Error('Invalid original project roll identity for a single-roll print sheet.');
  assertExportProjectFingerprint(sourceProjectHash);
  if(!sourceProjectHash)throw Error('Full printable cutting sheets require the current Project V2 fingerprint.');
  const rows=cutListRows(plans);
@@ -49,7 +60,7 @@ export function fullPrintableCutSheets(plans:readonly MaterialCutPlan[],sourcePr
   ].join('');}).join('\n');
   sections.push([
    '<section class="roll" data-roll="'+(rollIndex+1)+'">',
-   '<h2>Roll '+(rollIndex+1)+': '+safeText(plan.material)+'</h2>',
+   '<h2>Roll '+(selected?selected.projectRollNumber:rollIndex+1)+': '+safeText(plan.material)+'</h2>',
    '<p class="roll-meta">Physical roll ID: <strong>'+safeText(plan.sku)+'</strong>',
    ' · '+count+' actual cut'+(count===1?'':'s')+
    ' · Usable WOF: '+exact(plan.layout.usableWofIn)+' in',
@@ -92,6 +103,7 @@ export function fullPrintableCutSheets(plans:readonly MaterialCutPlan[],sourcePr
   '<header class="intro"><h1>Complete physical cutting checklist</h1>',
   '<p class="tag">Source Project V2: '+sourceProjectHash+' (8-character comparison fingerprint, NOT a digital signature)</p>',
   '<p>'+rows.length.toLocaleString('en-US')+' actual cuts across '+plans.length+' independent physical roll'+(plans.length===1?'':'s')+'. Each roll has its own numbering; never merge scrap or yardage across SKU IDs.</p>',
+  ...(selected?['<p class="tag">Only project roll '+selected.projectRollNumber+' of '+selected.projectRollTotal+' appears in this sheet. Other rolls are NOT included; download the complete project workbook for all materials.</p>']:[]),
   '<p class="warning">'+safeText(warning)+'</p>',
   '<p>Open this downloaded HTML in a browser and choose <strong>Print → Save as PDF</strong>, or print on paper. This document is the full coordinate table. The main calculator’s Print plan shows summary diagrams and paged coordinate previews only.</p></header>',
   '<main>'+sections.join('\n')+'</main>',
