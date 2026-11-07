@@ -25,7 +25,7 @@ const TEXT_KEYS=[
  'operatorCode','fabricDescription','prewashStatus','evidenceReferences'
 ] as const;
 const BOOL_KEYS=['pressedSeamsOpen','continuousSingleLayerCut'] as const;
-const SERIES_KEYS=['firstSeamSamplesIn','secondSeamSamplesIn','stripWidthSamplesIn'] as const;
+const SERIES_KEYS=['firstSeamSamplesIn','secondSeamSamplesIn','stripWidthSamplesIn','seamCrossingWidthSamplesIn'] as const;
 const TOL_NUMERIC_KEYS=[
  'squareSideToleranceIn','seamAllowanceToleranceIn','tipOverhangToleranceIn',
  'faceDimensionToleranceIn','markMismatchToleranceIn','stripWidthToleranceIn',
