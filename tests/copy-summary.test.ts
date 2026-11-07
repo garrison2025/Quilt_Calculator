@@ -24,7 +24,7 @@ describe('safe shareable calculation snapshots',()=>{
   expect(text).not.toContain('safeToPurchase:true');
  });
  it('incomplete project can be shared for troubleshooting but NEVER as a buying order',()=>{
-  for(const status of ['FIT_IMPOSSIBLE','TOP_CUT_LIST_NOT_REVIEWED','NO_PHYSICAL_CUTS'] as const){
+  for(const status of ['FIT_IMPOSSIBLE','TOP_CUT_LIST_NOT_REVIEWED','NO_PHYSICAL_CUTS','TOP_FABRIC_NOT_PLANNED'] as const){
    const text=buildCalculatorCopySummary({...sample,status});
    expect(text).toContain('NOT A PURCHASE ORDER');
    expect(text).not.toContain('COMPUTED CUT LAYOUT FEASIBLE');
