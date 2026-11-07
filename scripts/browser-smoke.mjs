@@ -215,6 +215,11 @@ try{
     const copyButton=page.locator('[data-action="copy-summary"]');
     check(await copyButton.count()===1 && await copyButton.isEnabled(),
       'Every calculator must offer a CURRENT accepted summary: '+path);
+    const controls=await page.locator('[data-tool] .results-footer button').evaluateAll(
+     elements=>elements.map(el=>({w:el.getBoundingClientRect().width,h:el.getBoundingClientRect().height})));
+    check(controls.length>=4&&controls.every(x=>x.w>=43.9&&x.h>=43.9),
+      'Share/CSV/JSON/Print controls must be touch-sized on '+path);
+
     await page.evaluate(()=>{
       window.__quiltCopiedText='';
       Object.defineProperty(navigator,'clipboard',{configurable:true,value:{
