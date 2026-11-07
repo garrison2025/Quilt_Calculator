@@ -2512,12 +2512,23 @@ try{
     pdfText.includes('Source Project V2: '+expectedFingerprint),
     'PDF text extraction must recover all 2,000 UNIQUE printed piece names, no duplicates, and the actual source project fingerprint: '+
       JSON.stringify({extracted:printedPieces.size,duplicatePieces:duplicatePieces.slice(0,5)}));
+  // Compare PDF roll headings and labels against the REAL downloaded CSV
+  // (stress project material display labels are user-provided, not derived
+  // from a fabric: SKU prefix). Normalize whitespace from PDF text layout.
+  const normalizedPdfText=pdfText.replace(/\s+/g,' ');
+  const allSourceRows=stressCsv.slice(1);
   for(let i=0;i<30;i++){
+    const sku='fabric:stress-'+i;
+    const sourceRows=allSourceRows.filter(row=>row[1]===sku);
     const expectedCount=i===0?181:i===29?83:62;
-    check(pdfText.includes('Roll '+(i+1)+': Fabric fabric:stress-'+i),
-      'The actual paginated PDF lost the physical roll heading '+(i+1));
+    check(sourceRows.length===expectedCount,'CSV count changed for '+sku);
+    const originalMaterialLabel=sourceRows[0][0];
+    check(normalizedPdfText.includes('Roll '+(i+1)+': '+originalMaterialLabel) &&
+      normalizedPdfText.includes('Physical roll ID: '+sku),
+      'Printed PDF lacks original CSV material display name / physical roll ID: '+
+      JSON.stringify({sku,originalMaterialLabel,near:normalizedPdfText.slice(0,800)}));
     for(let j=1;j<=expectedCount;j++)
-      check(printedPieces.has(i+':'+j),
+      check(printedPieces.has(i+':'+j) && sourceRows[j-1][3]==='Square '+i+' '+j,
         'The actual PDF lost physical roll '+i+' cut '+j+' although it exists in the downloaded CSV.');
   }
   const pagesWithCuts=pdfPages.filter(text=>/\bSquare\s+\d+\s+\d+\b/.test(text));
