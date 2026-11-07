@@ -2153,6 +2153,41 @@ try{
   const activeIs=async selector=>keyboard.locator(selector).first().evaluate(el=>document.activeElement===el);
   const selectedAll=async selector=>keyboard.locator(selector).first().evaluate(el=>el instanceof HTMLInputElement &&
     el.selectionStart===0&&el.selectionEnd===el.value.length);
+  // User-facing duplication must preserve independently named physical rolls,
+  // stay keyboard-operable, and invalidate prior cutting acknowledgments.
+  const duplicateCut=keyboard.locator('[data-fabric-index="0"] [data-cut-index="0"] [data-duplicate-cut]');
+  await duplicateCut.focus();await duplicateCut.press('Enter');
+  check(await keyboard.locator('[data-fabric-index="0"] [data-cut-index]').count()===2,
+    'Duplicate cut group must create a second editable physical cut group.');
+  check(await activeIs('[data-fabric-index="0"] [data-cut-index="1"] .field-control')&&
+    await selectedAll('[data-fabric-index="0"] [data-cut-index="1"] .field-control'),
+    'Newly copied rectangle group must focus/select the editable copied name.');
+  const afterCutDuplicate=await keyboard.evaluate(()=>JSON.parse(localStorage.getItem('quilt-studio-v2')));
+  check(afterCutDuplicate.fabrics[0].pieces[1].label==='Blue squares copy' &&
+    afterCutDuplicate.fabrics[0].pieces[1].count===afterCutDuplicate.fabrics[0].pieces[0].count &&
+    afterCutDuplicate.quilt.topCutsReviewed===false,
+    'Cut duplicate must persist genuine duplicate dimensions/count and clear manual quilt-top review.');
+  await keyboard.locator('[data-fabric-index="0"] [data-cut-index="1"] [data-remove-cut]').click();
+  check(await keyboard.locator('[data-fabric-index="0"] [data-cut-index]').count()===1,
+    'Removing a copied cut group must restore the original cut count.');
+  const duplicateSku=keyboard.locator('[data-fabric-index="0"] [data-duplicate-sku]');
+  await duplicateSku.focus();await duplicateSku.press('Enter');
+  check(await keyboard.locator('[data-fabric-index]').count()===3 &&
+    await activeIs('[data-fabric-index="1"] .field-control') &&
+    await selectedAll('[data-fabric-index="1"] .field-control'),
+    'Duplicated fabric must appear adjacent to source with editable SKU field focused.');
+  const afterSkuDuplicate=await keyboard.evaluate(()=>JSON.parse(localStorage.getItem('quilt-studio-v2')));
+  check(afterSkuDuplicate.fabrics[1].id==='sky-blue-copy' &&
+    afterSkuDuplicate.fabrics[1].label==='Updated sky blue copy' &&
+    JSON.stringify(afterSkuDuplicate.fabrics[1].pieces)===JSON.stringify(afterSkuDuplicate.fabrics[0].pieces) &&
+    afterSkuDuplicate.fabrics[1].id!==afterSkuDuplicate.fabrics[0].id,
+    'Copied SKU must keep independent roll identity and source cut groups without mixing purchases.');
+  await keyboard.locator('[data-fabric-index="1"] [data-remove-sku]').click();
+  check(await keyboard.locator('[data-fabric-index]').count()===2,
+    'Removing copied SKU must not erase the original fabric roll.');
+  await keyboard.screenshot({path:'artifacts/qa/duplicate-fabric-workflow.png',fullPage:true,animations:'disabled'});
+  console.log('PASS visible duplicate SKU/cut group, unique roll identity, autosave, review revocation and keyboard focus.');
+
   const addCut0=keyboard.locator('[data-fabric-index="0"] [data-add-cut]');
   await addCut0.focus();await addCut0.press('Enter');
   const newCutName='[data-fabric-index="0"] [data-cut-index="1"] .field-control';
