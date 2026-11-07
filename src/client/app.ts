@@ -1359,7 +1359,7 @@ if(root){
    oneRoll.dataset.rollExportSku=exportSku;
    oneRoll.dataset.rollExportIndex=String(index);
    oneRoll.disabled=true;oneRoll.hidden=true;
-   oneRoll.setAttribute('aria-label','Download all '+layout.cutPieces.length+' physical cut coordinates for '+label+' as a printable HTML file');
+   oneRoll.setAttribute('aria-label',oneRoll.textContent+' — '+label+' ('+exportSku+')');
    item.appendChild(oneRoll);
   }
   // Only the first (open) roll is rendered at startup. Up to 30 rolls and
