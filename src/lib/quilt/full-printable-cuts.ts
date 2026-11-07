@@ -65,7 +65,7 @@ export function fullPrintableCutSheets(
    ' · '+count+' actual cut'+(count===1?'':'s')+
    ' · Usable WOF: '+exact(plan.layout.usableWofIn)+' in',
    ' · Full cut run: '+exact(plan.layout.exactFabricRunLengthIn)+' in</p>',
-   count?'<table><thead><tr><th scope="col">Done</th><th scope="col">#</th><th scope="col">Piece label</th><th scope="col">Roll X (in)</th><th scope="col">Roll Y (in)</th><th scope="col">Cut width (in)</th><th scope="col">Cut height (in)</th><th scope="col">Rotation</th></tr></thead><tbody>'+lines+'</tbody></table>'
+   count?'<table><thead><tr class="print-roll-id"><th scope="colgroup" colspan="8">Roll '+(selected?selected.projectRollNumber:rollIndex+1)+' · Physical roll ID: '+safeText(plan.sku)+' · Project '+sourceProjectHash+'</th></tr><tr><th scope="col">Done</th><th scope="col">#</th><th scope="col">Piece label</th><th scope="col">Roll X (in)</th><th scope="col">Roll Y (in)</th><th scope="col">Cut width (in)</th><th scope="col">Cut height (in)</th><th scope="col">Rotation</th></tr></thead><tbody>'+lines+'</tbody></table>'
     :'<p class="warning">NO PHYSICAL CUTS FOR THIS ROLL. Verify that the material is intentionally unused; do not treat zero cuts as a purchase recommendation.</p>',
    '</section>'
   ].join('\n'));
@@ -93,12 +93,17 @@ export function fullPrintableCutSheets(
   'th:nth-child(1){width:34px}th:nth-child(2){width:40px}',
   'th:nth-child(3){width:26%}th:nth-child(8){width:60px}',
   '.name{font-weight:600} .footer{font-size:11px;color:#425947;padding:8px 0}',
-  '@media print{html{background:#fff;color:#000}body{padding:0;max-width:none}',
-  '.intro,.roll{border-color:#777;background:#fff;border-radius:0}',
-  '.roll{padding:8px 0;break-inside:auto}.roll h2,.roll-meta{break-after:avoid}',
+  '@media print{html{background:#fff;color:#000;font:11px/1.28 Arial,Helvetica,sans-serif}body{padding:0;max-width:none}',
+  'h1{font-size:18px;margin:0 0 4px}h2{font-size:13px;margin:0 0 3px;line-height:1.2}',
+  'p{margin:3px 0}.intro,.roll{border-color:#777;background:#fff;border-radius:0}',
+  '.intro{padding:5px 0;margin:0 0 6px}.intro .warning{padding:5px 7px}',
+  '.roll{margin:7px 0;padding:2px 0;break-inside:auto}.roll h2,.roll-meta{break-after:avoid}',
+  '.roll-meta{font-size:10px;margin:3px 0 4px}table{font-size:11px;line-height:1.2;margin-top:4px}',
   'thead{display:table-header-group;background:#eee!important}tr{break-inside:avoid}',
-  'th,td{border-color:#777;padding:4px 5px}.warning{background:#fff!important;color:#000;border-color:#333}',
-  '.footer{color:#000}}',
+  'th,td{border-color:#777;padding:2px 3px;vertical-align:top}',
+  'thead th{font-size:10px}.print-roll-id th{font-size:10px;font-weight:700;background:#e5eee5!important;padding:3px 4px}',
+  '.tick{font-size:14px;line-height:1.1}.warning{background:#fff!important;color:#000;border-color:#333}',
+  '.footer{color:#000;font-size:10px;padding:4px 0}}',
   '</style></head><body>',
   '<header class="intro"><h1>Complete physical cutting checklist</h1>',
   '<p class="tag">Source Project V2: '+sourceProjectHash+' (8-character comparison fingerprint, NOT a digital signature)</p>',
