@@ -7,7 +7,7 @@
  */
 export type CalculatorCopyStatus=
  'LISTED_CUTS_FEASIBLE'|'FIT_IMPOSSIBLE'|'TOP_CUT_LIST_NOT_REVIEWED'|
- 'NO_PHYSICAL_CUTS'|'LENGTH_CONVERSION';
+ 'NO_PHYSICAL_CUTS'|'TOP_FABRIC_NOT_PLANNED'|'LENGTH_CONVERSION';
 export type CopyFact={label:string;value:string};
 export type CalculatorCopySnapshot={
  toolName:string;
@@ -32,7 +32,7 @@ export function buildCalculatorCopySummary(s:CalculatorCopySnapshot):string{
  if(!Number.isFinite(Date.parse(s.calculatedAt))||!s.calculatedAt.endsWith('Z'))
   throw Error('Invalid calculation timestamp.');
  if(!(['LISTED_CUTS_FEASIBLE','FIT_IMPOSSIBLE','TOP_CUT_LIST_NOT_REVIEWED',
-  'NO_PHYSICAL_CUTS','LENGTH_CONVERSION'] as string[]).includes(s.status))
+  'NO_PHYSICAL_CUTS','TOP_FABRIC_NOT_PLANNED','LENGTH_CONVERSION'] as string[]).includes(s.status))
   throw Error('Unknown copy-readiness state.');
  for(const v of [s.figures,s.materialRolls,s.warnings])
   if(!Array.isArray(v))throw Error('Missing calculated summary facts.');
