@@ -209,6 +209,34 @@ try{
   for(const path of routes){
     await page.evaluate(()=>localStorage.removeItem('quilt-studio-v2')).catch(()=>{});
     await hydrated(page,path,{incomplete:path==='/'||path==='/calculators/'});
+    // Every approved route must share its current readable result without
+    // sending private project measurements to a server. This mocks only
+    // clipboard permission, NOT the button/formatter or actual UI click.
+    const copyButton=page.locator('[data-action="copy-summary"]');
+    check(await copyButton.count()===1 && await copyButton.isEnabled(),
+      'Every calculator must offer a CURRENT accepted summary: '+path);
+    await page.evaluate(()=>{
+      window.__quiltCopiedText='';
+      Object.defineProperty(navigator,'clipboard',{configurable:true,value:{
+       writeText:async(text)=>{window.__quiltCopiedText=text;}
+      }});
+    });
+    await copyButton.click();
+    const copyText=await page.evaluate(()=>window.__quiltCopiedText);
+    check(copyText.includes('QUILT STUDIO') &&
+      copyText.includes('Source project:') &&
+      copyText.includes('Readiness:') &&
+      copyText.includes('not a 1:1 pattern') &&
+      copyText.includes('cutting-list CSV') &&
+      !copyText.includes('SAFE TO BUY'),
+      'Copied calculation must include actual snapshot provenance and safety limits: '+path);
+    if(path==='/'||path==='/calculators/')
+      check(copyText.includes('NOT A PURCHASE ORDER')&&copyText.includes('TOP_CUT_LIST_NOT_REVIEWED'),
+        'Incomplete example project must never be copied as a complete material purchase order.');
+    if(path==='/fabric-yards-to-inches/')
+      check(copyText.includes('LENGTH CONVERSION ONLY')&&copyText.includes('no fabric width'),
+        'Length conversion clipboard text cannot invent fabric area or purchase yards.');
+
     // The user must supply post-prewash *usable WOF* for valid cross-grain
     // fit. Length shrinkage percentage never reduces input roll width.
     if(['/', '/calculators/', '/quilt-backing-calculator/', '/quilt-binding-calculator/',
@@ -274,6 +302,7 @@ try{
       check(await converter.getAttribute('aria-invalid')==='true','Ambiguous comma number must be rejected on screen.');
       check(await page.locator('#yard-input-error').isVisible(),'Converter invalid input needs inline accessible error.');
       check(!(await page.locator('[data-action="export-cut"]').isEnabled()),'Cannot export invalid ambiguous yardage.');
+      check(!(await page.locator('[data-action="copy-summary"]').isEnabled()),'Invalid converter cannot copy a stale earlier result.');
       await converter.fill('1,000');
       check(await converter.getAttribute('aria-invalid')==='false','Valid US thousand grouping must restore the converter.');
       check((await page.locator('[data-results] .result-big').innerText()).includes('36,000'),'1,000 yards must convert to 36,000 inches.');
@@ -288,6 +317,7 @@ try{
       await converter.fill('⅔');
       check((await page.locator('[data-results] .result-big').innerText()).includes('24'),'Pasted two-thirds must convert to 24 inches.');
       check(await page.locator('[data-action="export-cut"]').isEnabled(),'Corrected converter must re-enable valid export.');
+      check(await page.locator('[data-action="copy-summary"]').isEnabled(),'Corrected converter must restore fresh summary.');
       console.log('PASS strict US numeric syntax, inline errors, recovery and exact yard conversions.');
       const sourceUnit=page.getByLabel('Convert from');
       const amountInput=page.locator('#yard-input');
@@ -1820,7 +1850,8 @@ try{
   await tabB.locator('[data-sync-warning]').waitFor({state:'visible'});
   check(!(await tabB.locator('[data-action="export-cut-csv"]').isEnabled()) &&
         !(await tabB.locator('[data-action="export-cut"]').isEnabled()) &&
-        !(await tabB.locator('[data-action="print"]').isEnabled()),
+        !(await tabB.locator('[data-action="print"]').isEnabled()) &&
+        !(await tabB.locator('[data-action="copy-summary"]').isEnabled()),
    'A superseded tab must disable complete cutting CSV, JSON and print.');
   // Backing-only calculator deliberately has no composite shopping control;
   // the actual material shopping gate is tested on Project Planner below.
