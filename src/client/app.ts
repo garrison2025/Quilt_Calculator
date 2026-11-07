@@ -1,5 +1,5 @@
-import { VERSION, calculateBacking, calculateStraightBinding, calculateYardage, compareYardageWidths, calculateQuiltFabric, calculateBatting, calculateBorders, calculateSashing, layoutRectangles, verifyLayout, selectBackingOption, parseMeasure, fromInches, toInches, purchase, hashProject, type Layout, type PieceRequest } from '../lib/quilt/math';
-import { sampleProject, validateProject, quiltTopReviewFingerprint, hasCurrentQuiltTopReview, type Project } from '../lib/quilt/project';
+import { VERSION, calculateBacking, calculateYardage, compareYardageWidths, calculateQuiltFabric, calculateBatting, calculateBorders, calculateSashing, layoutRectangles, verifyLayout, selectBackingOption, parseMeasure, fromInches, toInches, purchase, hashProject, type Layout, type PieceRequest } from '../lib/quilt/math';
+import { sampleProject, validateProject, loadProject, calculateProjectBinding, quiltTopReviewFingerprint, hasCurrentQuiltTopReview, type Project } from '../lib/quilt/project';
 import { resolveQuiltDimensions, type QuiltDimensions } from '../lib/quilt/dimensions';
 import { cutListCsv, physicalRollId, type MaterialCutPlan } from '../lib/quilt/cutlist';
 import {fullPrintableCutSheets} from '../lib/quilt/full-printable-cuts';
@@ -38,8 +38,8 @@ const groups: Record<ToolId, {title:string;fields:Field[]}[]> = {
  hub:[
   {title:'Your quilt',fields:fieldsBase},
   {title:'Backing & fabric roll',fields:[{label:'Backing extra per side',path:'options.overage',kind:'length'},{label:'Usable width of fabric (WOF)',path:'options.usableWof',kind:'length'},{label:'Seam join total take-up',path:'options.joinTakeup',kind:'length'},{label:'One-way fabric print',path:'options.oneWayPrint',kind:'check'}]},
-  {title:'Binding & batting',fields:[{label:'Binding strip cut width',path:'options.stripWidth',kind:'length'},{label:'Batting roll width',path:'options.battingWof',kind:'length'},{label:'May rotate batting 90°',path:'options.allowRotate',kind:'check',note:'For one-piece batting only. Fabric-yardage and backing have separate grain settings.'}]},
-  {title:'Buying settings',fields:[{label:'Purchase step (yd)',path:'options.step',kind:'number'},{label:'Length shrinkage (%)',path:'options.lengthShrinkage',kind:'pct'},{label:'Backing price (USD/yd, optional)',path:'options.backingPricePerYard',kind:'number'},{label:'Batting price (USD/yd, optional)',path:'options.battingPricePerYard',kind:'number'},{label:'Binding price (USD/yd, optional)',path:'options.bindingPricePerYard',kind:'number'}]}
+  {title:'Binding & batting',fields:[{label:'Binding strip cut width',path:'options.stripWidth',kind:'length'},{label:'Binding usable fabric WOF',path:'options.bindingUsableWof',kind:'length'},{label:'Binding length shrinkage (%)',path:'options.bindingLengthShrinkage',kind:'pct'},{label:'Batting roll width',path:'options.battingWof',kind:'length'},{label:'May rotate batting 90°',path:'options.allowRotate',kind:'check',note:'For one-piece batting only. Fabric-yardage and backing have separate grain settings.'}]},
+  {title:'Buying settings',fields:[{label:'Purchase step (yd)',path:'options.step',kind:'number'},{label:'Length shrinkage (%)',path:'options.lengthShrinkage',kind:'pct',note:'Applies to backing here. Enter binding shrinkage separately.'},{label:'Backing price (USD/yd, optional)',path:'options.backingPricePerYard',kind:'number'},{label:'Batting price (USD/yd, optional)',path:'options.battingPricePerYard',kind:'number'},{label:'Binding price (USD/yd, optional)',path:'options.bindingPricePerYard',kind:'number'}]}
  ],
  backing:[
   {title:'Quilt top',fields:fieldsBase},
@@ -48,8 +48,8 @@ const groups: Record<ToolId, {title:string;fields:Field[]}[]> = {
  ],
  binding:[
   {title:'Quilt top',fields:fieldsBase},
-  {title:'Straight-grain strips',fields:[{label:'Cut strip width',path:'options.stripWidth',kind:'length'},{label:'Usable fabric WOF',path:'options.usableWof',kind:'length'},{label:'Extra tail / corners (total)',path:'options.tailAllowance',kind:'length'},{label:'Effective length lost per strip join',path:'options.stripJoinLoss',kind:'length'}]},
-  {title:'Shopping',fields:[{label:'Purchase step (yd)',path:'options.step',kind:'number'},{label:'Length shrinkage (%)',path:'options.lengthShrinkage',kind:'pct'},{label:'Binding price (USD/yd, optional)',path:'options.bindingPricePerYard',kind:'number'}]}
+  {title:'Straight-grain strips',fields:[{label:'Cut strip width',path:'options.stripWidth',kind:'length'},{label:'Usable fabric WOF',path:'options.bindingUsableWof',kind:'length'},{label:'Extra tail / corners (total)',path:'options.tailAllowance',kind:'length'},{label:'Effective length lost per strip join',path:'options.stripJoinLoss',kind:'length'}]},
+  {title:'Shopping',fields:[{label:'Purchase step (yd)',path:'options.step',kind:'number'},{label:'Length shrinkage (%)',path:'options.bindingLengthShrinkage',kind:'pct'},{label:'Binding price (USD/yd, optional)',path:'options.bindingPricePerYard',kind:'number'}]}
  ],
  borders:[
   {title:'Quilt top',fields:[...fieldsBase,{label:'Seam allowance per edge',path:'options.seam',kind:'length'}]},
@@ -443,7 +443,7 @@ if(root){
  let unreadableSavedJson:string|null=null;
  try{
   lastStoredJson=localStorage.getItem(STORAGE_KEY);
-  if(lastStoredJson){try{project=validateProject(JSON.parse(lastStoredJson));sample=false;}
+  if(lastStoredJson){try{project=loadProject(JSON.parse(lastStoredJson));sample=false;}
    catch{startupStorageError=true;unreadableSavedJson=lastStoredJson;}}
  }catch{startupStorageError=true;}
  function note(msg:string,err=false){status.textContent=msg;status.classList.toggle('status-error',err);}
@@ -581,7 +581,7 @@ if(root){
   if(!requireCommittedDraft('load another saved project'))return;
   try{
    const latest=localStorage.getItem(STORAGE_KEY);
-   const loaded=latest?validateProject(JSON.parse(latest)):structuredClone(sampleProject);
+   const loaded=latest?loadProject(JSON.parse(latest)):structuredClone(sampleProject);
    clearResetSnapshot();
    project=loaded;sample=!latest;lastStoredJson=latest;conv='1/4';convUnit='yd';clearBulkDrafts();
    syncWarning.hidden=true;
@@ -683,7 +683,7 @@ if(root){
   }
   // WOF must already reflect any planned prewash. Compensating purchasing
   // length alone cannot guarantee the cut still fits the fabric width.
-  const widthField=['options.usableWof','yardage.alternateWof','usableWidth','wofIn'].includes(field.path);
+  const widthField=['options.usableWof','options.bindingUsableWof','yardage.alternateWof','usableWidth','wofIn'].includes(field.path);
   const wofHint='Use the actual usable WOF AFTER planned prewash and removing selvedges. Length shrinkage % adjusts bolt length only; this calculator cannot infer fabric width shrinkage.';
   const fieldNote=widthField?(field.note?field.note+' '+wofHint:wofHint):field.note;
   if(fieldNote){
@@ -1460,10 +1460,10 @@ if(root){
     warning(resultRoot,'The fabric-roll offcut shown does not include trimming the panel assembly after sewing. Assembly trim: '+num(selected.postAssemblyTrimAreaSqIn)+' in². Do not add it to roll offcuts.');
     plan={options:b.options,selected:selected.direction,backingDirectionMode:o.backingDirection??'auto'};
    }else if(tool==='binding'){
-    const b=calculateStraightBinding({widthIn:outerW,heightIn:outerH,wofIn:o.usableWof,stripWidthIn:o.stripWidth,tailAllowanceIn:o.tailAllowance,joinLossIn:o.stripJoinLoss,...buyArgs});
+    const b=calculateProjectBinding(o,outerW,outerH);
     purchasesTitle(resultRoot,b.purchase,'STRAIGHT BINDING',o.bindingPricePerYard);
     stats(resultRoot,[['Required binding',num(b.requiredLengthIn)+' in'],['Strips',String(b.stripCount)],['Length after joins',num(b.effectiveJoinedLengthIn)+' in']]);
-    renderBiasAreaReference(resultRoot,b.requiredLengthIn,o.stripWidth,o.usableWof,o.oneWayPrint);
+    renderBiasAreaReference(resultRoot,b.requiredLengthIn,o.stripWidth,b.layout.usableWofIn,o.oneWayPrint);
     warning(resultRoot,'Shopping, strips and exports on this page are STRAIGHT-GRAIN ONLY. The optional TRUE-BIAS panel is an area-only lower bound, not safe bias purchase yardage.');layout=b.layout;materialCuts=[{material:'Straight-grain binding',sku:'binding',layout:b.layout}];plan=b;
    }else if(tool==='yardage'){
     const y=p.yardage;
@@ -1555,7 +1555,7 @@ if(root){
      throw Error('Internal project dimensions disagree with finished border geometry; no purchase can be reported.');
     const backing=calculateBacking({widthIn:outerW,heightIn:outerH,overageIn:o.overage,wofIn:o.usableWof,joinTakeupIn:o.joinTakeup,oneWayPrint:o.oneWayPrint,...buyArgs});
     const selectedBacking=selectBackingOption(backing,o.backingDirection);
-    const binding=calculateStraightBinding({widthIn:outerW,heightIn:outerH,wofIn:o.usableWof,stripWidthIn:o.stripWidth,tailAllowanceIn:o.tailAllowance,joinLossIn:o.stripJoinLoss,...buyArgs});
+    const binding=calculateProjectBinding(o,outerW,outerH);
     const batting=calculateBatting({widthIn:outerW,heightIn:outerH,overageIn:o.battingOverage,rollWidthIn:o.battingWof,rotate:o.allowRotate,step:o.step});
     const fabric=calculateQuiltFabric(p.fabrics,o.step);
     topFabricMissing=needsTopFabricPlan(p.fabrics);
@@ -1980,7 +1980,7 @@ if(root){
    // must NEVER silently erase those newer measurements or acknowledgments.
    const startProjectJson=JSON.stringify(project);
    const startStoredJson=lastStoredJson;
-   const imported=validateProject(JSON.parse(await file.text()));
+   const imported=loadProject(JSON.parse(await file.text()));
    if(!requireCommittedDraft('import a project'))return;
    let changedInOtherTab=false;
    try{changedInOtherTab=localStorage.getItem(STORAGE_KEY)!==startStoredJson;}
