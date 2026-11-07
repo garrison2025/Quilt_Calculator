@@ -214,7 +214,7 @@ export function initBiasPhysicalObservationLab():void{
     item.dataset.biasPrintField=field.id;
     item.dataset.biasPrintSource=field.sourceKey;
     const label=make('span',field.label,'bias-print-label');
-    const answer=make('span',field.rawValue||'\\u00a0','bias-print-answer');
+    const answer=make('span',field.rawValue||String.fromCharCode(160),'bias-print-answer');
     answer.dataset.biasPrintHasValue=field.rawValue?'true':'false';
     if(field.seriesCountMismatch)item.classList.add('bias-print-field--invalid');
     item.append(label,answer);grid.appendChild(item);
