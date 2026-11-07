@@ -136,6 +136,7 @@ export function initBiasPhysicalObservationLab():void{
  const upload=root.querySelector<HTMLInputElement>('[data-bias-physical-import]')!;
  const printButton=root.querySelector<HTMLButtonElement>('[data-bias-physical-print]')!;
  const paper=root.querySelector<HTMLElement>('[data-bias-physical-paper]')!;
+ const printError=root.querySelector<HTMLElement>('[data-bias-physical-print-error]')!;
  const fields=[...form.querySelectorAll<HTMLInputElement|HTMLSelectElement|HTMLTextAreaElement>(
   '[data-bias-obs], [data-bias-tolerance]')];
  const getKey=(field:HTMLElement)=>
@@ -158,10 +159,27 @@ export function initBiasPhysicalObservationLab():void{
  const saveCurrent=()=>{raws[active]=readUI();};
  // Print-sheet content is derived from the CURRENT raw form draft, not
  // from an implicitly trusted audit or synthetic model observation.
- const renderPrintSheet=()=>{
+ const renderPrintSheet=():boolean=>{
   saveCurrent();
-  const sheet=createBiasSpecimenPrintSheet(active,raws[active]);
+  // Fail closed BEFORE parsing. A stale printed record must NEVER survive an
+  // invalid input or malformed imported draft.
   paper.replaceChildren();
+  printButton.disabled=true;
+  printError.textContent='';
+  let sheet;
+  try{
+   sheet=createBiasSpecimenPrintSheet(active,raws[active]);
+  }catch(error){
+   const message=error instanceof Error?error.message:'Invalid observation';
+   const warning=make('p',
+    'PRINT BLOCKED — CURRENT FIELD RECORD INVALID. '+message+
+    ' Correct the original form before printing. No earlier specimen sheet is retained.',
+    'bias-print-error');
+   warning.dataset.biasPrintBlocked='true';
+   paper.replaceChildren(warning);
+   printError.textContent='Print blocked: '+message+'. Correct the field before printing.';
+   return false;
+  }
   const headline=make('div','','bias-print-headline');
   headline.append(make('span','QUILT STUDIO · REAL FABRIC MEASUREMENT WORKSHEET'),
    make('strong','SPECIMEN '+active+' · UNVERIFIED FIELD RECORD'));
@@ -233,6 +251,8 @@ export function initBiasPhysicalObservationLab():void{
    'RELEASE: NOT VERIFIED · HUMAN REVIEW REQUIRED · MODEL NOT SAFE TO PURCHASE · '+
    'NO APPROVED BIAS SEO. Printed records are user-authored notes, not independently authenticated evidence.',
    'bias-print-footer'));
+  printButton.disabled=false;
+  return true;
  };
  const matrix=()=>{
   for(const cfg of SPECIMEN_CONFIGS){
@@ -272,8 +292,7 @@ export function initBiasPhysicalObservationLab():void{
  });
  form.addEventListener('submit',event=>{event.preventDefault();evaluate();});
  printButton.addEventListener('click',()=>{
-  renderPrintSheet();
-  window.print();
+  if(renderPrintSheet())window.print();
  });
  window.addEventListener('beforeprint',renderPrintSheet);
 
