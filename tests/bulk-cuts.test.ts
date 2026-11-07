@@ -31,9 +31,10 @@ describe('Paste multiple real cut groups into ONE physical fabric SKU',()=>{
  it('converts current centimetre inputs to internal inches, never guesses unit',()=>{
   const p=fresh();p.units='cm';
   const result=previewBulkCutAppend(p,1,'Centimeter squares\t25.4\t12.7\t4\tNo');
-  expect(result.project.fabrics[1].pieces.at(-1)).toMatchObject({
-   label:'Centimeter squares',widthIn:10,heightIn:5,count:4,allowRotate:false
-  });
+  const cut=result.project.fabrics[1].pieces.at(-1);
+  expect(cut).toMatchObject({label:'Centimeter squares',count:4,allowRotate:false});
+  expect(cut?.widthIn).toBeCloseTo(10,12);
+  expect(cut?.heightIn).toBeCloseTo(5,12);
   expect(p.fabrics[1].pieces).toHaveLength(1);
   expect(()=>parseBulkCutGroups('Test,5,5,2','mm' as 'in')).toThrow(/inches or centimeters/);
  });
