@@ -44,9 +44,9 @@ describe('Copyable material shopping checklist — NOT an unverified order',()=>
  });
  it('allows a valid zero user-entered price but labels it partial',()=>{
   const t=buildShoppingChecklistText([{label:'Test',hint:'User-set free roll',amount:1,unitPrice:0}],hash);
-  expect(t).toContain('Your price: $0/yd');
-  expect(t).toContain('Estimated line cost: $0');
-  expect(t).toContain('PARTIAL entered-price subtotal: $0');
+  expect(t).toContain('Your price: $0.00/yd');
+  expect(t).toContain('Estimated line cost: $0.00');
+  expect(t).toContain('PARTIAL entered-price subtotal: $0.00');
  });
  it('prevents spreadsheet/multiline text from spoofing new checklist rows',()=>{
   const t=buildShoppingChecklistText([{
