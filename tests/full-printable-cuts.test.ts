@@ -43,6 +43,19 @@ describe('Complete printable coordinate workbook (offline HTML, no 45-row cutoff
   expect(html).toContain('Roll 30: Fabric fabric:stress-29');
   expect(html.length).toBeLessThan(800_000);
  });
+ it('prints a selected project roll with its ORIGINAL numbering and explicit incomplete roll scope',()=>{
+  const plan=make('fabric:green',83,'Green');
+  const html=fullPrintableCutSheets([plan],hash,{projectRollNumber:30,projectRollTotal:30});
+  expect(html).toContain('Roll 30: Fabric fabric:green');
+  expect(html).toContain('Only project roll 30 of 30 appears in this sheet');
+  expect(html).toContain('Other rolls are NOT included');
+  expect((html.match(/<tr data-cut-number="/g)||[])).toHaveLength(83);
+  expect(html).not.toContain('Roll 1: Fabric fabric:green');
+  expect(()=>fullPrintableCutSheets([plan],hash,{projectRollNumber:31,projectRollTotal:30})).toThrow(/roll identity/);
+  expect(()=>fullPrintableCutSheets([plan],hash,{projectRollNumber:0,projectRollTotal:30})).toThrow(/roll identity/);
+  expect(()=>fullPrintableCutSheets([plan],hash,{projectRollNumber:1.5,projectRollTotal:30})).toThrow(/roll identity/);
+  expect(()=>fullPrintableCutSheets([plan,make('other',2)],hash,{projectRollNumber:1,projectRollTotal:2})).toThrow(/roll identity/);
+ });
  it('escapes user-provided labels, roll IDs and material names without scripts or remote dependencies',()=>{
   const material='<script>alert("x")</script> & <img src=x onerror=alert(1)>';
   const sku='roll"><iframe src="https://evil.test">';
