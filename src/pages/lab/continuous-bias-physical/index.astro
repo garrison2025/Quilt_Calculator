@@ -114,11 +114,21 @@ import Base from '../../../layouts/Base.astro';
    <p data-bias-physical-status role="status" aria-live="polite">No project specimens recorded.</p>
    <div data-bias-physical-output></div>
    <div class="results-footer bias-physical-actions">
+    <button type="button" class="action-primary" data-bias-physical-print>Print selected specimen field sheet</button>
     <button type="button" class="action-secondary" data-bias-physical-export>Download ALL draft observations JSON · UNVERIFIED</button>
     <label for="bias-physical-import" class="bias-physical-import-label">Restore previous draft JSON <input id="bias-physical-import" type="file" accept=".json,application/json" data-bias-physical-import/></label>
    </div>
   </section>
  </div>
+ <article class="bias-physical-paper" data-bias-physical-paper aria-label="Print-only blank or user-entered unverified physical specimen measurements">
+  <h2>Continuous bias tube — specimen measurement record</h2>
+  <p>Print this page with JavaScript enabled to generate the currently selected A/B/C sample's blank or user-entered field sheet. No sample is premeasured or certified.</p>
+ </article>
+ <section class="content-block bias-physical-print-howto" aria-label="Print and measure the bias specimen">
+  <div class="editorial-head"><span class="eyebrow-with-line">— FIELD WORKFLOW / PAPER OUTPUT</span><h2>Take the measurement sheet to the sewing table</h2></div>
+  <p>Select A, B or C, then click <strong>Print selected specimen field sheet</strong>. The browser prints only that sample's field record with handwritten blanks for both five-point seam checks, 12 distributed strip-width readings and all N−1 tube seam crossings. If you already typed notes, they appear on the sheet clearly marked <strong>unverified</strong>. Printing does not create or upload evidence.</p>
+  <p>Use Print at 100% / Actual Size for reliable layout; this document is <strong>not a full-scale cutting pattern</strong>. You can separately <a href="/qa/print-calibration/">check the physical printer scale with a ruler</a>. After measuring real cloth, transcribe the values to the form, run the audit, export the raw JSON draft, and retain ruler photos separately for human review.</p>
+ </section>
  <section class="content-block">
   <div class="editorial-head"><span class="eyebrow-with-line">— RELEASE GATE / NOT AUTOMATED</span><h2>What a completed measurement record can and cannot prove</h2></div>
   <p>Each completed observation is checked against the exact model conventions: measured source square, BOTH seams at five positions, both tip overhangs, post-first-seam face, one-strip-offset tube seam, full-width band count, measured tube run, 12 distributed width positions PLUS every tube-seam crossing width, two squared-end trims and finished length measured at three positions without stretching. The shortest of those three finished lengths is compared against the model; <strong>any model overstatement triggers a HOLD</strong>.</p>
