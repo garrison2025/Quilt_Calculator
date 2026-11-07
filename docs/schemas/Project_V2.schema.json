@@ -94,6 +94,16 @@
           "minimum": 0,
           "exclusiveMaximum": 100
         },
+        "bindingUsableWof": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 100000
+        },
+        "bindingLengthShrinkage": {
+          "type": "number",
+          "minimum": 0,
+          "exclusiveMaximum": 100
+        },
         "oneWayPrint": {
           "type": "boolean"
         },
