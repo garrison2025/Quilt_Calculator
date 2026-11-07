@@ -8,6 +8,7 @@ import {attachCutWalkthrough} from './diagram-playback';
 import {calculateBiasAreaLowerBound} from '../lib/quilt/bias-area-bound';
 import {convertFabricLength,switchFabricLengthUnit,type FabricLengthUnit} from '../lib/quilt/fabric-length-conversion';
 import {FINISHED_SIZE_EXAMPLES,applyFinishedSizeExample,applyBlockGridAsCenter,compareBackingPurchases,solveBlockSizeForCenter,applyTargetBlockSize} from '../lib/quilt/quick-planning';
+import {buildCalculatorCopySummary,type CalculatorCopyStatus} from '../lib/quilt/copy-summary';
 type Kind = 'length' | 'whole' | 'number' | 'pct' | 'check' | 'text';
 type Field = { label: string; path: string; kind?: Kind; note?: string };
 const num = (n: number, digits = 3): string => Number(n.toFixed(digits)).toLocaleString('en-US', {maximumFractionDigits: digits});
@@ -313,6 +314,7 @@ if(root){
  const syncWarning=root.querySelector<HTMLElement>('[data-sync-warning]')!;
  const unitsSelect=root.querySelector<HTMLSelectElement>('[data-units]')!;
  const exportButton=root.querySelector<HTMLButtonElement>('[data-action="export-cut"]')!;
+ const copyButton=root.querySelector<HTMLButtonElement>('[data-action="copy-summary"]')!;
  const cutCsvButton=root.querySelector<HTMLButtonElement>('[data-action="export-cut-csv"]')!;
  const printButton=root.querySelector<HTMLButtonElement>('[data-action="print"]')!;
  const saveButton=root.querySelector<HTMLButtonElement>('[data-action="save"]')!;
@@ -332,6 +334,7 @@ if(root){
  // commits a finished block size. Preserve partially typed inputs on update.
  let reverseBlockTargetW='',reverseBlockTargetH='',reverseBlockTargetEdited=false;
  let cutExport:unknown=null;
+ let shareSummaryText:string|null=null;
  let materialCuts:MaterialCutPlan[]=[];
  // Keep the last accepted headline across an in-progress input draft, so a
  // committed edit can show an accurate before/after without treating stale
@@ -357,8 +360,8 @@ if(root){
   // An older tab may keep a project as a downloadable JSON backup, but must
   // never present its superseded cut sheets as current purchasing instructions.
   root!.dataset.printReady='false';
-  cutExport=null;materialCuts=[];
-  exportButton.disabled=true;cutCsvButton.disabled=true;printButton.disabled=true;
+  cutExport=null;materialCuts=[];shareSummaryText=null;
+  exportButton.disabled=true;cutCsvButton.disabled=true;printButton.disabled=true;copyButton.disabled=true;
   resultRoot.querySelectorAll<HTMLButtonElement>('[data-action="export-shopping"]')
    .forEach(button=>button.disabled=true);
  }
@@ -508,7 +511,8 @@ if(root){
   root!.dataset.printReady='false';
   cutExport=null;materialCuts=[];
   saveButton.disabled=true;
-  exportButton.disabled=true;cutCsvButton.disabled=true;printButton.disabled=true;
+  shareSummaryText=null;
+  exportButton.disabled=true;cutCsvButton.disabled=true;printButton.disabled=true;copyButton.disabled=true;
   resultRoot.querySelectorAll<HTMLButtonElement>('[data-action="export-shopping"]').forEach(button=>button.disabled=true);
   resultRoot.querySelector('[data-stale-warning]')?.remove();
   const stale=node('div','warning-banner error-banner',message);
@@ -1152,9 +1156,9 @@ if(root){
    return;
   }
   const priorAcceptedFigure=lastAcceptedFigure;
-  resultRoot.replaceChildren();cutExport=null;materialCuts=[];
+  resultRoot.replaceChildren();cutExport=null;materialCuts=[];shareSummaryText=null;
   saveButton.disabled=false;
-  exportButton.disabled=true;cutCsvButton.disabled=true;printButton.disabled=true;
+  exportButton.disabled=true;cutCsvButton.disabled=true;printButton.disabled=true;copyButton.disabled=true;
   try{
    const p=project,o=p.options,w=p.quilt.finishedWidth,h=p.quilt.finishedHeight;
    const needsDimensions=['hub','backing','binding','batting','borders'].includes(tool);
@@ -1418,6 +1422,51 @@ if(root){
    audit.appendChild(node('summary','','Calculation source and version'));
    audit.appendChild(node('p','', 'Source project hash: '+record.sourceProjectHash+' · Calculator '+VERSION+' · Calculated at '+record.calculatedAt+'. Export JSON for full machine-readable values.'));
    resultRoot.appendChild(audit);
+   // Copy only a CURRENT accepted snapshot and its computed source hash.
+   // Short text never substitutes for CSV cutting coordinates or validates
+   // physical fabric; incomplete results are marked NOT A PURCHASE ORDER.
+   try{
+    const toolNames:Record<ToolId,string>={
+     hub:'Project Planner',backing:'Quilt Backing Calculator',
+     binding:'Straight-Grain Binding Calculator',borders:'Quilt Border Calculator',
+     yardage:'Fabric Yardage Calculator',fabric:'Quilt Fabric by SKU',
+     inches:'Fabric Yards / Inches / Centimeters',
+     batting:'One-Piece Batting Calculator',sashing:'Quilt Sashing Calculator'
+    };
+    const cleanNode=(element:Element|null)=>element?.textContent?.trim()??'';
+    const figureList=[...resultRoot.querySelectorAll<HTMLElement>('.result-hero')].map((el,i)=>({
+     label:cleanNode(el.querySelector('.result-kicker'))||'Result '+(i+1),
+     value:[cleanNode(el.querySelector('.result-big')),
+      cleanNode(el.querySelector('.result-sub'))].filter(Boolean).join(' · ')
+    }));
+    const statList=[...resultRoot.querySelectorAll<HTMLElement>('.stat')].map(el=>({
+     label:cleanNode(el.querySelector('span'))||'Metric',
+     value:cleanNode(el.querySelector('strong'))
+    }));
+    const rollList=[...resultRoot.querySelectorAll<HTMLElement>('.sku-plan-summary')].map(el=>({
+     label:cleanNode(el.querySelector('.sku-plan-label')),
+     value:cleanNode(el.querySelector('strong'))
+    }));
+    const warnings=[...resultRoot.querySelectorAll<HTMLElement>('.warning-banner,.shopping-price-summary')]
+     .map(el=>cleanNode(el)).filter(Boolean);
+    shareSummaryText=buildCalculatorCopySummary({
+     toolName:toolNames[tool],
+     sourceProjectHash:record.sourceProjectHash,
+     calculationVersion:record.calculationVersion,
+     calculatedAt:record.calculatedAt,
+     status:readiness.status as CalculatorCopyStatus,
+     isExample:sample,
+     context:cleanNode(resultRoot.querySelector('.calculation-context')),
+     figures:figureList.length||statList.length?[...figureList,...statList]:
+      [{label:'Current calculation state',value:readiness.status}],
+     materialRolls:rollList,warnings
+    });
+    copyButton.disabled=false;
+   }catch{
+    // A summary formatting problem must not invalidate otherwise verified
+    // math results; leave clipboard disabled rather than copying old text.
+    shareSummaryText=null;copyButton.disabled=true;
+   }
    const incompleteProject=anyInfeasible || topFabricMissing || topCutListNotReviewed;
    const time=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
    note(tool==='hub'
@@ -1432,7 +1481,7 @@ if(root){
      ?'Unreadable original autosave remains protected. Download its raw backup before explicitly replacing it. The displayed project is not saved.'
      :'This tab has unsaved edits and another tab saved a different project. Save a JSON backup, then load the newest project before exporting.',true);
    }
-  }catch(err){root!.dataset.printReady='false';cutExport=null;materialCuts=[];exportButton.disabled=true;cutCsvButton.disabled=true;printButton.disabled=true;warning(resultRoot,(err instanceof Error ? err.message : 'Unknown calculation error'),true);
+  }catch(err){root!.dataset.printReady='false';cutExport=null;materialCuts=[];shareSummaryText=null;exportButton.disabled=true;cutCsvButton.disabled=true;printButton.disabled=true;copyButton.disabled=true;warning(resultRoot,(err instanceof Error ? err.message : 'Unknown calculation error'),true);
     const detail=err instanceof Error?err.message:'';
     note(detail.includes('SIZE BASIS NOT CONFIRMED')?'Choose how the saved quilt measurements relate to the border layers before estimating materials.':detail.includes('BORDER FIT IMPOSSIBLE')?'The border widths cannot fit inside the entered finished size; correct the dimensions before exporting.':'Cannot prove this cut is feasible. Review your measurements.',true);}
  }
@@ -1522,6 +1571,41 @@ if(root){
  exportButton.addEventListener('click',()=>{
   if(cutExport && requireCurrentOutput('download cutting-plan JSON'))
    download('quilt-studio-cut-plan-v2.json',cutExport);
+ });
+ copyButton.addEventListener('click',async()=>{
+  if(copyButton.disabled || !shareSummaryText || !cutExport ||
+     !requireCommittedDraft('copy a calculation summary') ||
+     !requireCurrentOutput('copy a calculation summary'))return;
+  const snapshot=shareSummaryText;
+  let copied=false;
+  try{
+   if(navigator.clipboard?.writeText){
+    await navigator.clipboard.writeText(snapshot);
+    copied=true;
+   }
+  }catch{/* Clipboard permission may be blocked: try a local selection. */}
+  if(!copied){
+   const selected=document.activeElement as HTMLElement|null;
+   const area=node('textarea');
+   area.value=snapshot;
+   area.setAttribute('aria-hidden','true');
+   area.setAttribute('tabindex','-1');
+   area.style.position='fixed';area.style.left='-10000px';area.style.top='0';
+   document.body.appendChild(area);
+   area.focus();area.select();
+   try{copied=document.execCommand('copy');}catch{/* Browser disallowed local clipboard. */}
+   area.remove();selected?.focus?.();
+  }
+  if(!copied){
+   note('Clipboard access was blocked. Use the downloadable JSON or CSV instead; no summary was copied.',true);
+   return;
+  }
+  if(shareSummaryText!==snapshot || copyButton.disabled ||
+     !requireCurrentOutput('confirm the copied calculation')){
+   note('An earlier calculation was copied just before the project changed. Refresh and copy the current result again.',true);
+   return;
+  }
+  note('Summary copied locally. It includes the source snapshot, readiness state and safety limitations; cutting coordinates remain in CSV/JSON.');
  });
  cutCsvButton.addEventListener('click',()=>{
   if(!cutExport || cutCsvButton.disabled || !requireCurrentOutput('download a cut list'))return;

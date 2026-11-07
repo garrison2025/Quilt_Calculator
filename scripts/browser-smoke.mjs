@@ -33,6 +33,37 @@ async function auditWcag(page,path){
   wcagReport.push({path,...findings});
   const problems=findings.violations.map(v=>v.id+' ('+v.impact+'): '+
     v.nodes.map(n=>n.selector+' '+n.summary).join(' | ')).join('\n');
+  if(findings.violations.some(v=>v.id==='target-size')){
+    const selectors=findings.violations
+     .filter(v=>v.id==='target-size').flatMap(v=>v.nodes.map(n=>n.selector))
+     .slice(0,7);
+    const geometry=await page.evaluate(selectors=>selectors.map(selector=>{
+      const el=document.querySelector(selector);
+      if(!el)return {selector,missing:true};
+      const rect=el.getBoundingClientRect();
+      const points=[.1,.5,.9].map(fraction=>{
+       const y=rect.top+fraction*rect.height,x=rect.left+Math.min(rect.width/2,40);
+       const hit=document.elementFromPoint(x,y);
+       return {x,y,hit:hit?.tagName,hitClass:hit?.getAttribute('class'),
+        inTarget:hit===el||el.contains(hit)};
+      });
+      const parents=[];let p=el.parentElement;
+      while(p&&parents.length<7){
+       const css=getComputedStyle(p),r=p.getBoundingClientRect();
+       parents.push({tag:p.tagName,className:p.className,
+        overflowX:css.overflowX,overflowY:css.overflowY,
+        top:r.top,bottom:r.bottom,height:r.height,
+        clientHeight:p.clientHeight,scrollHeight:p.scrollHeight});
+       p=p.parentElement;
+      }
+      return {selector,rect:{top:rect.top,bottom:rect.bottom,
+       height:rect.height,width:rect.width},
+       viewport:{w:innerWidth,h:innerHeight,scrollY},points,parents};
+    }),selectors);
+    console.error('WCAG TARGET-SIZE REAL DOM GEOMETRY '+path+'\n'+JSON.stringify(geometry).slice(0,15000));
+    await page.screenshot({path:'artifacts/qa/axe-target-size-'+path.replaceAll('/','-')+'.png',
+      fullPage:true,animations:'disabled'});
+  }
   if(findings.violations.length)
     console.error('WCAG AXE FAIL '+path+'\n'+problems.slice(0,11000));
   else console.log('PASS WCAG axe-core '+path+' ('+findings.passes+' rules passed; '+
@@ -209,6 +240,55 @@ try{
   for(const path of routes){
     await page.evaluate(()=>localStorage.removeItem('quilt-studio-v2')).catch(()=>{});
     await hydrated(page,path,{incomplete:path==='/'||path==='/calculators/'});
+    // A real keyboard/scroll-to-target user must be able to hit the visible
+    // coordinate row; the formerly sticky header intercepted clicks at y<76.
+    const focusRow=page.locator('button[data-cut-row]').first();
+    if(await focusRow.count()){
+     const hit=await focusRow.evaluate(el=>{
+      el.scrollIntoView({block:'start',behavior:'instant'});
+      const r=el.getBoundingClientRect();
+      const x=Math.min(innerWidth-2,Math.max(2,r.left+Math.min(r.width/2,40)));
+      const y=Math.min(innerHeight-2,Math.max(2,r.top+r.height/2));
+      const above=document.elementFromPoint(x,y);
+      return {top:r.top,height:r.height,inTarget:above===el||el.contains(above)};
+     });
+     check(hit.height>=44 && hit.top>=-1 && hit.inTarget,
+       'Focus-scrolled physical cut-row must not be obscured by a header: '+path);
+    }
+
+    // Every approved route must share its current readable result without
+    // sending private project measurements to a server. This mocks only
+    // clipboard permission, NOT the button/formatter or actual UI click.
+    const copyButton=page.locator('[data-action="copy-summary"]');
+    check(await copyButton.count()===1 && await copyButton.isEnabled(),
+      'Every calculator must offer a CURRENT accepted summary: '+path);
+    const controls=await page.locator('[data-tool] .results-footer button').evaluateAll(
+     elements=>elements.map(el=>({w:el.getBoundingClientRect().width,h:el.getBoundingClientRect().height})));
+    check(controls.length>=4&&controls.every(x=>x.w>=43.9&&x.h>=43.9),
+      'Share/CSV/JSON/Print controls must be touch-sized on '+path);
+
+    await page.evaluate(()=>{
+      window.__quiltCopiedText='';
+      Object.defineProperty(navigator,'clipboard',{configurable:true,value:{
+       writeText:async(text)=>{window.__quiltCopiedText=text;}
+      }});
+    });
+    await copyButton.click();
+    const copyText=await page.evaluate(()=>window.__quiltCopiedText);
+    check(copyText.includes('QUILT STUDIO') &&
+      copyText.includes('Source project:') &&
+      copyText.includes('Readiness:') &&
+      copyText.includes('not a 1:1 pattern') &&
+      copyText.includes('cutting-list CSV') &&
+      !copyText.includes('SAFE TO BUY'),
+      'Copied calculation must include actual snapshot provenance and safety limits: '+path);
+    if(path==='/'||path==='/calculators/')
+      check(copyText.includes('NOT A PURCHASE ORDER')&&copyText.includes('TOP_CUT_LIST_NOT_REVIEWED'),
+        'Incomplete example project must never be copied as a complete material purchase order.');
+    if(path==='/fabric-yards-to-inches/')
+      check(copyText.includes('LENGTH CONVERSION ONLY')&&copyText.includes('no fabric width'),
+        'Length conversion clipboard text cannot invent fabric area or purchase yards.');
+
     // The user must supply post-prewash *usable WOF* for valid cross-grain
     // fit. Length shrinkage percentage never reduces input roll width.
     if(['/', '/calculators/', '/quilt-backing-calculator/', '/quilt-binding-calculator/',
@@ -274,6 +354,7 @@ try{
       check(await converter.getAttribute('aria-invalid')==='true','Ambiguous comma number must be rejected on screen.');
       check(await page.locator('#yard-input-error').isVisible(),'Converter invalid input needs inline accessible error.');
       check(!(await page.locator('[data-action="export-cut"]').isEnabled()),'Cannot export invalid ambiguous yardage.');
+      check(!(await page.locator('[data-action="copy-summary"]').isEnabled()),'Invalid converter cannot copy a stale earlier result.');
       await converter.fill('1,000');
       check(await converter.getAttribute('aria-invalid')==='false','Valid US thousand grouping must restore the converter.');
       check((await page.locator('[data-results] .result-big').innerText()).includes('36,000'),'1,000 yards must convert to 36,000 inches.');
@@ -288,6 +369,7 @@ try{
       await converter.fill('⅔');
       check((await page.locator('[data-results] .result-big').innerText()).includes('24'),'Pasted two-thirds must convert to 24 inches.');
       check(await page.locator('[data-action="export-cut"]').isEnabled(),'Corrected converter must re-enable valid export.');
+      check(await page.locator('[data-action="copy-summary"]').isEnabled(),'Corrected converter must restore fresh summary.');
       console.log('PASS strict US numeric syntax, inline errors, recovery and exact yard conversions.');
       const sourceUnit=page.getByLabel('Convert from');
       const amountInput=page.locator('#yard-input');
@@ -1820,7 +1902,8 @@ try{
   await tabB.locator('[data-sync-warning]').waitFor({state:'visible'});
   check(!(await tabB.locator('[data-action="export-cut-csv"]').isEnabled()) &&
         !(await tabB.locator('[data-action="export-cut"]').isEnabled()) &&
-        !(await tabB.locator('[data-action="print"]').isEnabled()),
+        !(await tabB.locator('[data-action="print"]').isEnabled()) &&
+        !(await tabB.locator('[data-action="copy-summary"]').isEnabled()),
    'A superseded tab must disable complete cutting CSV, JSON and print.');
   // Backing-only calculator deliberately has no composite shopping control;
   // the actual material shopping gate is tested on Project Planner below.
