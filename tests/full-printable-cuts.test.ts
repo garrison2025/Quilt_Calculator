@@ -43,7 +43,7 @@ describe('Complete printable coordinate workbook (offline HTML, no 45-row cutoff
   expect(html).toContain('Roll 30: Fabric fabric:stress-29');
   expect(html).toContain('<tr class="print-roll-id"><th scope="colgroup" colspan="8">Roll 30 · Physical roll ID: fabric:stress-29 · Project '+hash+'</th></tr>');
   expect((html.match(/class="print-roll-id"/g)||[])).toHaveLength(30);
-  expect(html).toContain("'.print-roll-id th{font-size:10px");
+  expect(html).toContain('.print-roll-id th{font-size:10px');
 
   expect(html.length).toBeLessThan(800_000);
  });
