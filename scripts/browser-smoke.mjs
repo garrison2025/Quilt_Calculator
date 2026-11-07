@@ -2153,6 +2153,47 @@ try{
   const activeIs=async selector=>keyboard.locator(selector).first().evaluate(el=>document.activeElement===el);
   const selectedAll=async selector=>keyboard.locator(selector).first().evaluate(el=>el instanceof HTMLInputElement &&
     el.selectionStart===0&&el.selectionEnd===el.value.length);
+  // Bulk spreadsheet cuts must be TWO-STEP and scoped to one physical roll.
+  const bulk=keyboard.locator('[data-fabric-index="0"] details[data-bulk-cut-import]');
+  await bulk.locator('summary').click();
+  const bulkInput=bulk.locator('[data-bulk-paste]');
+  const bulkPreview=bulk.locator('[data-preview-bulk]');
+  const bulkCommit=bulk.locator('[data-commit-bulk]');
+  const savedBeforePaste=await keyboard.evaluate(()=>localStorage.getItem('quilt-studio-v2'));
+  await bulkInput.fill('Bad cut\t0\t5\t2\tNo');
+  await bulkPreview.click();
+  check(await bulkCommit.isDisabled() &&
+        (await bulk.locator('.bulk-cut-feedback').innerText()).includes('Row 1') &&
+        (await keyboard.evaluate(()=>localStorage.getItem('quilt-studio-v2')))===savedBeforePaste,
+    'Invalid bulk dimensions must block Add and never mutate the saved cutting plan.');
+  await bulkInput.fill('Label\tCut width\tCut height\tCount\tRotate\nSmall blue\t5\t5\t3\tNo\nCorner half\t3 1/2\t4\t2\tYes');
+  check(await bulkCommit.isDisabled(),'Changing a paste must revoke old review.');
+  await bulkPreview.click();
+  check(await bulkCommit.isEnabled() &&
+        (await bulk.locator('.bulk-cut-feedback').innerText()).includes('2 groups and 5 pieces') &&
+        (await keyboard.evaluate(()=>localStorage.getItem('quilt-studio-v2')))===savedBeforePaste,
+    'Review must show exact group/piece counts without committing preview data.');
+  await bulkCommit.focus();await bulkCommit.press('Enter');
+  check(await keyboard.locator('[data-fabric-index="0"] [data-cut-index]').count()===3 &&
+        await activeIs('[data-fabric-index="0"] [data-cut-index="1"] .field-control'),
+    'Confirmed paste must append two editable groups and focus the first added label.');
+  const afterPaste=await keyboard.evaluate(()=>JSON.parse(localStorage.getItem('quilt-studio-v2')));
+  check(afterPaste.fabrics[0].pieces.length===3 &&
+        afterPaste.fabrics[0].pieces[1].label==='Small blue' &&
+        afterPaste.fabrics[0].pieces[2].widthIn===3.5 &&
+        afterPaste.fabrics[0].pieces[2].allowRotate===true &&
+        afterPaste.fabrics[1].pieces.length===1 &&
+        afterPaste.quilt.topCutsReviewed===false,
+    'Bulk append must respect true fractions, rotation, unchanged second roll, and revoked review.');
+  check(await keyboard.locator('[data-fabric-index="0"] details[data-bulk-cut-import] [data-bulk-paste]').inputValue()==='',
+    'Committed paste must clear only the consumed local draft.');
+  await keyboard.locator('[data-fabric-index="0"] [data-cut-index="2"] [data-remove-cut]').click();
+  await keyboard.locator('[data-fabric-index="0"] [data-cut-index="1"] [data-remove-cut]').click();
+  check(await keyboard.locator('[data-fabric-index="0"] [data-cut-index]').count()===1,
+    'Removing newly pasted groups must leave the original cut group intact.');
+  await keyboard.screenshot({path:'artifacts/qa/spreadsheet-cut-paste.png',fullPage:true,animations:'disabled'});
+  console.log('PASS Excel paste reviewed without mutation, bad rows rejected, committed groups isolated, unit fractions and focus verified.');
+
   // User-facing duplication must preserve independently named physical rolls,
   // stay keyboard-operable, and invalidate prior cutting acknowledgments.
   const duplicateCut=keyboard.locator('[data-fabric-index="0"] [data-cut-index="0"] [data-duplicate-cut]');
