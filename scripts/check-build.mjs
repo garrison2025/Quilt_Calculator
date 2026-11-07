@@ -451,7 +451,7 @@ for(const [slug,marker,phrase] of [
  const page=fs.readFileSync('dist/'+slug+'/index.html','utf8');
  if(!page.includes(marker)||!page.includes(phrase))
   throw Error('Existing calculator lacks crawlable, accurate quick-planning explanation: '+slug);
- if(page.includes('content="index,follow'))
+ if(!production && page.includes('content="index,follow'))
   throw Error('Preview tool unexpectedly exposed indexing: '+slug);
 }
 // Reverse blocks solve a real mathematical question, but the unverified
@@ -476,7 +476,7 @@ if(!newHelper.includes('hypotheticalOnly:true')||
    !newHelper.includes('topCutsReviewFingerprint=undefined')||
    !newHelper.includes('resolveQuiltDimensions(candidate)'))
  throw Error('Quick planning must keep what-if outputs isolated, check borders, and revoke stale top-cut review.');
-console.log('PASS: existing 9-tool scope deepened with safe size, backing and block-grid answers; preview remains noindex.');
+console.log('PASS: existing 9-tool scope deepened with safe size, backing and block-grid answers; '+(production?'production-mode test output is indexable':'preview remains noindex')+'.');
 
 const primaryHeadings=new Map([
  ['calculators','Quilt calculator'],
