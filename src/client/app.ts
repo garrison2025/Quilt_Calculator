@@ -6,6 +6,7 @@ import { shoppingCsv, shoppingPriceSummary, hasIncompleteShopping, shoppingLineS
 import {buildShoppingChecklistText} from '../lib/quilt/shopping-checklist';
 import type { ToolId } from './types';
 import {attachCutWalkthrough} from './diagram-playback';
+import {getCutCoordinatePage,COORDINATE_PAGE_SIZE} from '../lib/quilt/coordinate-pages';
 import {calculateBiasAreaLowerBound} from '../lib/quilt/bias-area-bound';
 import {convertFabricLength,switchFabricLengthUnit,type FabricLengthUnit} from '../lib/quilt/fabric-length-conversion';
 import {FINISHED_SIZE_EXAMPLES,applyFinishedSizeExample,applyBlockGridAsCenter,compareBackingPurchases,solveBlockSizeForCenter,applyTargetBlockSize} from '../lib/quilt/quick-planning';
@@ -162,27 +163,41 @@ function diagram(parent:Element,layout:Layout,title:string,sku?:string,scope:'cu
  attachCutWalkthrough(wrapper,svg);
  wrapper.appendChild(node('p','diagram-note','Schematic, not to scale or a 1:1 pattern. Coordinates and dimensions are actual INCHES on the fabric roll. '+(totalCutCount>180?'First '+previewCutCount+' of '+totalCutCount+' cuts shown; the complete physical cut-list CSV includes every cut.':'')));
  parent.appendChild(wrapper);
- section(parent,'Cut coordinates','First '+Math.min(layout.cutPieces.length,45)+' of '+layout.cutPieces.length);
- const cutTable=table(parent,['# / piece','x in','y in','width × height in','grain'],layout.cutPieces.slice(0,45).map((p,i)=>[String(i+1)+' · '+p.label,num(p.xIn),num(p.yIn),num(p.widthIn)+' × '+num(p.heightIn),String(p.grainRotationDeg)+'°']));
- // The first 45 rows form a keyboard-accessible counterpart to the SVG.
- // Row clicks only select a preview index; they never alter physical cuts.
- const cutRows=[...cutTable.querySelectorAll<HTMLTableRowElement>('tbody tr')];
- cutRows.forEach((row,i)=>{
-  const first=row.querySelector('td');
-  if(!first)return;
-  const button=node('button','cut-coordinate-link',first.textContent||String(i+1));
-  button.type='button';button.dataset.cutRow=String(i+1);
-  // Visible piece text must remain the accessible name (WCAG 2.5.3).
-  button.title='Highlight this piece on the fabric roll diagram';
-  first.replaceChildren(button);
-  button.addEventListener('click',()=>{
-   svg.dispatchEvent(new CustomEvent<number>('quilt-select-cut',{detail:i+1}));
-  });
- });
- svg.addEventListener('quilt-cut-selected',event=>{
-  const detail=(event as CustomEvent<{position:number;all:boolean}>).detail;
-  cutRows.forEach((row,i)=>{
-   const selected=!detail.all&&detail.position===i+1;
+ section(parent,'Cut coordinates','All '+totalCutCount+' physical cuts · browse 45 rows at a time');
+ // Render only the current 45-row coordinate page. Every source cut is
+ // searchable by global cut # / label; nothing is recomputed, renumbered or
+ // silently excluded from the downloaded full-precision physical cut CSV.
+ const controls=node('div','coordinate-browser');
+ controls.dataset.coordinateBrowser='';
+ const searchWrap=node('div','coordinate-search');
+ const searchLabel=node('label','','Find cut by label or # number');
+ const searchInput=node('input','coordinate-search-input');
+ searchInput.type='search';searchInput.maxLength=120;
+ searchInput.placeholder='Search label or #181';
+ searchInput.setAttribute('data-coordinate-search','');
+ const searchId='coordinate-search-'+Math.random().toString(36).slice(2);
+ searchInput.id=searchId;searchLabel.htmlFor=searchId;
+ append(searchWrap,searchLabel,searchInput);
+ const pageTools=node('div','coordinate-page-tools');
+ const previous=node('button','action-secondary','Previous page');
+ previous.type='button';previous.dataset.coordinatePrev='';
+ const next=node('button','action-secondary','Next page');
+ next.type='button';next.dataset.coordinateNext='';
+ const progress=node('p','coordinate-page-status');
+ progress.dataset.coordinateStatus='';
+ progress.setAttribute('role','status');progress.setAttribute('aria-live','polite');
+ append(pageTools,previous,next);
+ append(controls,searchWrap,pageTools,progress);
+ if(totalCutCount>COORDINATE_PAGE_SIZE)parent.appendChild(controls);
+ const cutTable=table(parent,['# / piece','x in','y in','width × height in','grain'],[]);
+ cutTable.dataset.coordinateTable='';
+ const body=cutTable.querySelector('tbody');
+ if(!body)throw Error('Physical coordinate table body missing.');
+ let query='',pageIndex=0;
+ let selectedCut=0,showAll=true;
+ const paintSelection=()=>{
+  body.querySelectorAll<HTMLTableRowElement>('tr[data-cut-global-index]').forEach(row=>{
+   const selected=!showAll&&Number(row.dataset.cutGlobalIndex)===selectedCut;
    row.classList.toggle('cut-coordinate-selected',selected);
    const button=row.querySelector<HTMLButtonElement>('button[data-cut-row]');
    if(button){
@@ -190,7 +205,68 @@ function diagram(parent:Element,layout:Layout,title:string,sku?:string,scope:'cu
     else button.removeAttribute('aria-current');
    }
   });
+ };
+ const renderCoordinatePage=()=>{
+  const page=getCutCoordinatePage(layout.cutPieces,query,pageIndex);
+  pageIndex=page.page;
+  cutTable.dataset.coordinatePage=String(pageIndex+1);
+  cutTable.dataset.coordinateMatching=String(page.matching);
+  const fragment=document.createDocumentFragment();
+  for(const index of page.indices){
+   const p=layout.cutPieces[index],row=node('tr');
+   row.dataset.cutGlobalIndex=String(index+1);
+   const first=node('td','',String(index+1)+' · '+p.label);
+   if(index<previewCutCount){
+    const button=node('button','cut-coordinate-link',first.textContent||String(index+1));
+    button.type='button';button.dataset.cutRow=String(index+1);
+    button.title='Highlight cut '+(index+1)+' in the first '+previewCutCount+' diagram pieces';
+    first.replaceChildren(button);
+    button.addEventListener('click',()=>{
+     svg.dispatchEvent(new CustomEvent<number>('quilt-select-cut',{detail:index+1}));
+    });
+   }else{
+    // The diagram draws at most 180 rectangles for performance and visual
+    // accuracy; never offer a button that pretends to locate cut #181–2,000.
+    const explanation=node('span','coordinate-not-in-diagram',' · not in diagram preview');
+    first.appendChild(explanation);
+   }
+   append(row,first,node('td','',num(p.xIn)),node('td','',num(p.yIn)),
+    node('td','',num(p.widthIn)+' × '+num(p.heightIn)),node('td','',String(p.grainRotationDeg)+'°'));
+   fragment.appendChild(row);
+  }
+  body.replaceChildren(fragment);
+  if(page.matching===0){
+   const row=node('tr');const empty=node('td','','No cut labels match. Try a different label or exact # number.');
+   empty.colSpan=5;row.appendChild(empty);body.appendChild(row);
+  }
+  progress.textContent=page.matching
+   ?'Showing '+page.first+'–'+page.last+' of '+page.matching+
+     (query?' matching':'')+' physical cut(s) · Page '+(page.page+1)+' of '+page.pages+'.'
+   :'No matching cuts among '+page.total+' physical cuts.';
+  previous.disabled=page.page===0;
+  next.disabled=page.page>=page.pages-1;
+  paintSelection();
+ };
+ searchInput.addEventListener('input',()=>{query=searchInput.value;pageIndex=0;renderCoordinatePage();});
+ previous.addEventListener('click',()=>{pageIndex=Math.max(0,pageIndex-1);renderCoordinatePage();});
+ next.addEventListener('click',()=>{pageIndex++;renderCoordinatePage();});
+ // A cut selected in the SVG walkthrough must stay highlighted in the
+ // coordinate table. With no filter, navigate to its real global-cut page.
+ svg.addEventListener('quilt-cut-selected',event=>{
+  const detail=(event as CustomEvent<{position:number;all:boolean}>).detail;
+  showAll=detail.all;selectedCut=detail.position;
+  if(!query&&!detail.all&&detail.position>0&&detail.position<=previewCutCount){
+   const selectedPage=Math.floor((detail.position-1)/COORDINATE_PAGE_SIZE);
+   if(selectedPage!==pageIndex){pageIndex=selectedPage;renderCoordinatePage();return;}
+  }
+  paintSelection();
  });
+ renderCoordinatePage();
+ if(totalCutCount>COORDINATE_PAGE_SIZE){
+  const note=node('p','coordinate-csv-note',
+   'Search and browse all '+totalCutCount+' real cut coordinates without loading a 2,000-row table. The visual diagram shows only the first '+previewCutCount+' cuts; later rows have no SVG highlight. The current page (up to 45 rows) is shown when printing. Download the full cut-list CSV for ALL cuts and exact numeric coordinates.');
+  parent.appendChild(note);
+ }
 }
 function details(parent:Element,items:[string,string][]):void{stats(parent,items);}
 function downloadShoppingCsv(lines:ShoppingLine[],sourceProjectHash:string):void{
