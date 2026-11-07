@@ -11,3 +11,12 @@ https://quilt-calculator-566.pages.dev/*
 
 https://:version.quilt-calculator-566.pages.dev/*
   X-Robots-Tag: noindex, follow
+
+# Research and human QA routes must NEVER become indexable, regardless of
+# which host serves them. Explicit path patterns are a separate defensive
+# rule in addition to the preview-host and HTML meta-robots requirements.
+/lab/*
+  X-Robots-Tag: noindex, follow
+
+/qa/*
+  X-Robots-Tag: noindex, follow
