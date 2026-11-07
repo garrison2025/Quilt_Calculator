@@ -29,6 +29,8 @@ The paper header labels predicted side, width, seam, N, N−1 and squared-end le
 
 The underlying `createBiasSpecimenPrintSheet` computes expected checkpoint count directly from the same model used by the physical audit. It compares its coverage against every field in `emptyBiasSpecimenObservation`, including all nested tolerance entries, and **throws** if a new audit field would be silently missing. Excess, short, or empty CSV slots are explicitly marked as requiring recheck; original entered text is retained on paper and is never trusted as proof.
 
+Malformed or oversized raw fields **clear the prior printable sheet immediately**, replace it with an explicit PRINT BLOCKED warning, disable the Print button, and revalidate Ctrl+P through `beforeprint`. The screen shows an accessible error until the raw field is corrected; no stale paper is retained. This was added after PR code review found a stale-sheet risk.
+
 The previous free-form separator parser accepted some consecutive commas because it collapsed repeated separators. That is corrected: missing comma-separated checkpoints now fail closed in the digital audit, and the printed draft highlights invalid series.
 
 ## Actual workflow
