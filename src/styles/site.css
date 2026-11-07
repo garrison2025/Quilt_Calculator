@@ -916,3 +916,15 @@
 }
 @media print{.coordinate-browser{display:none!important}
  .coordinate-csv-note{color:#333;font-size:10px}}
+
+/* Export choice: quick diagram print is intentionally abbreviated; the
+   downloadable offline HTML is complete even for 2,000 physical cuts. */
+.results-print-hint{flex:1 1 100%;margin:3px 0 0;color:#5d7464;font-size:11px;
+ line-height:1.65;overflow-wrap:anywhere}
+.results-print-hint strong{color:#305e46}
+@media(max-width:490px){.results-footer button{flex-basis:100%}}
+@media screen and (prefers-color-scheme:dark){
+ .results-print-hint{color:#c0d3c3}
+ .results-print-hint strong{color:#d8efde}
+}
+@media print{.results-print-hint{display:none!important}}
