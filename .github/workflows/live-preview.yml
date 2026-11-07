@@ -5,6 +5,7 @@ on:
     paths:
       - 'src/**'
       - 'scripts/**'
+      - 'public/**'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/live-preview.yml'

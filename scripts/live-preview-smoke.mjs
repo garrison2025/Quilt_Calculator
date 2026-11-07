@@ -87,6 +87,7 @@ try{
  assertThat(labHtml.includes('noindex,follow')&&!labHtml.includes('rel="canonical"'),'Lab must remain noindex with no canonical.');
  // This is the PUBLIC commit, not a local fixture. Prevent stale lab
  // routes, premature indexing and any implication of real-fabric validation.
+ const researchHeaderProblems=[];
  for(const [path,marker] of [
   ['/lab/continuous-bias-tube/','data-tube-topology-lab'],
   ['/lab/continuous-bias-planner/','data-bias-plan'],
@@ -100,9 +101,21 @@ try{
     !html.includes('application/ld+json') &&
     html.includes(marker),
     'Unverified continuous-bias research must remain noindexed with correct real DOM: '+path);
-  assertThat(/\\bnoindex\\b/i.test(response.headers.get('x-robots-tag')||''),
-    'Public preview must apply noindex header to laboratory route: '+path);
+  const xRobots=response.headers.get('x-robots-tag');
+  const hasHeaderNoindex=/(?:^|\W)noindex(?:\W|$)/i.test(xRobots||'');
+  if(!hasHeaderNoindex){
+   researchHeaderProblems.push({
+    path,requestedUrl:BASE+path,finalUrl:response.url,
+    redirected:response.redirected,httpStatus:response.status,
+    xRobotsTag:xRobots,contentType:response.headers.get('content-type'),
+    server:response.headers.get('server'),cfRay:response.headers.get('cf-ray'),
+    headerNames:[...response.headers.keys()].sort()
+   });
+  }
+
  }
+ assertThat(researchHeaderProblems.length===0,
+  'Public experimental lab HTTP noindex mismatch: '+JSON.stringify(researchHeaderProblems));
  const {html:physicalStatic}=await currentRoute('/lab/continuous-bias-physical/');
  assertThat(physicalStatic.includes('NO SAMPLE HAS BEEN PHYSICALLY TESTED') &&
   physicalStatic.includes('NOT_RUN') &&
