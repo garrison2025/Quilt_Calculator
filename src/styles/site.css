@@ -887,3 +887,32 @@
 @media(max-width:490px){.shopping-toolbar button{flex-basis:100%}}
 @media screen and (prefers-color-scheme:dark){.cut-axis-guide{color:#b8dcc3}}
 @media print{.cut-axis-guide{color:#333;font-size:10px}}
+
+
+/* Full physical coordinate list: search + 45-row page windows. A lightweight
+   browser UI replaces the former permanently truncated first-45-only table. */
+.coordinate-browser{display:flex;align-items:flex-end;flex-wrap:wrap;gap:10px 14px;
+ margin:14px 0;padding:12px 14px;border:1px solid #d7e4d8;border-radius:12px;background:#f5f9f4;min-width:0}
+.coordinate-search{display:flex;flex-direction:column;gap:6px;flex:1 1 205px;min-width:0}
+.coordinate-search label{font-size:11px;font-weight:800;color:#355b45}
+.coordinate-search-input{box-sizing:border-box;width:100%;min-width:0;min-height:44px;
+ border:1px solid #a8beaf;border-radius:8px;padding:10px 12px;
+ color:#233c2e;background:#fff;font:inherit;font-size:12px}
+.coordinate-search-input:focus-visible{outline:3px solid #76a48a;outline-offset:2px}
+.coordinate-page-tools{display:flex;gap:8px;flex:1 1 195px;min-width:0}
+.coordinate-page-tools button{flex:1 1 0;min-width:0;min-height:44px;white-space:normal;
+ padding:9px 10px;line-height:1.4}
+.coordinate-page-tools button:disabled{cursor:not-allowed;opacity:.52}
+.coordinate-page-status{flex:1 1 100%;margin:0;font-size:11px;font-weight:700;color:#476b52;
+ line-height:1.6;overflow-wrap:anywhere}
+.coordinate-not-in-diagram{font-size:10px;font-weight:600;color:#6d755b}
+.coordinate-csv-note{margin:9px 0 17px;font-size:11px;line-height:1.65;color:#506d59}
+@media(max-width:390px){.coordinate-page-tools{flex-basis:100%}}
+@media screen and (prefers-color-scheme:dark){
+ .coordinate-browser{background:#203629;border-color:#435e4b}
+ .coordinate-search label,.coordinate-page-status,.coordinate-csv-note{color:#bdd7c3}
+ .coordinate-search-input{background:#16291d;border-color:#5a7760;color:#eaf4e9}
+ .coordinate-not-in-diagram{color:#c3cbb8}
+}
+@media print{.coordinate-browser{display:none!important}
+ .coordinate-csv-note{color:#333;font-size:10px}}

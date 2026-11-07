@@ -2334,7 +2334,7 @@ try{
   delete stressProject.quilt.topCutsReviewFingerprint;
   stressProject.fabrics=Array.from({length:30},(_,i)=>({
     id:'stress-'+i,label:'Roll '+i,usableWidth:43,shrinkageLengthPct:5,oneWayPrint:i%2===0,
-    pieces:[{widthIn:5,heightIn:5,count:i===29?86:66,label:'Square '+i,allowRotate:true}]
+    pieces:[{widthIn:5,heightIn:5,count:i===0?181:i===29?83:62,label:'Square '+i,allowRotate:true}]
   }));
   await keyboard.locator('[data-file]').setInputFiles({
     name:'quilt-2000-cuts-30-rolls.json',mimeType:'application/json',
@@ -2348,6 +2348,55 @@ try{
     '30-roll initial render must generate only the first visible SVG, not 29 hidden roll previews.');
   check((await keyboard.locator('details.sku-plan .breakdown-table tbody tr').count())===45,
     'Initial 30-roll screen must render only 45 visible preview-coordinate rows.');
+  // Search/paging must expose the global cut numbers that the old first-45
+  // coordinate table hid; cut #181 is real but intentionally not drawn in
+  // the first-180 SVG preview. No invented SVG rectangle may be offered.
+  const firstPlan=keyboard.locator('details.sku-plan').first();
+  const coordBrowser=firstPlan.locator('[data-coordinate-browser]');
+  check(await coordBrowser.count()===1,
+    'A fabric roll with 181 cut pieces must offer the complete coordinate browser.');
+  const coordTable=firstPlan.locator('[data-coordinate-table]');
+  const coordNext=coordBrowser.locator('[data-coordinate-next]');
+  const coordPrev=coordBrowser.locator('[data-coordinate-prev]');
+  const coordSearch=coordBrowser.locator('[data-coordinate-search]');
+  check(await coordNext.isEnabled()&&await coordPrev.isDisabled() &&
+    (await coordBrowser.locator('[data-coordinate-status]').innerText()).includes('1–45 of 181'),
+    'First 45 coordinates must have clear next/previous pagination and a truthful count.');
+  await coordNext.focus();await coordNext.press('Enter');
+  check(await coordTable.getAttribute('data-coordinate-page')==='2' &&
+    await coordTable.locator('tbody tr').count()===45 &&
+    await coordTable.locator('tbody tr').first().getAttribute('data-cut-global-index')==='46' &&
+    await coordTable.locator('tbody tr').last().getAttribute('data-cut-global-index')==='90',
+    'Page two must contain true global cut indices 46–90, not renumbered 1–45.');
+  await coordPrev.click();
+  check(await coordTable.locator('tbody tr').first().getAttribute('data-cut-global-index')==='1',
+    'Previous page must restore first original cut coordinate.');
+  await coordSearch.fill('#181');
+  check(await coordTable.locator('tbody tr').count()===1 &&
+    await coordTable.locator('tbody tr').first().getAttribute('data-cut-global-index')==='181' &&
+    await coordTable.locator('button[data-cut-row]').count()===0 &&
+    (await coordTable.innerText()).includes('not in diagram preview'),
+    'Cut 181 must show real coordinates without falsely claiming an SVG location.');
+  await coordSearch.fill('#180');
+  check(await coordTable.locator('button[data-cut-row="180"]').count()===1 &&
+    await firstPlan.locator('svg rect[data-cut-index]').count()===180,
+    'Last drawable piece must remain keyboard-selectable and no 181st rectangle may be invented.');
+  await coordTable.locator('button[data-cut-row="180"]').press('Enter');
+  check(await coordTable.locator('button[data-cut-row="180"]').getAttribute('aria-current')==='step' &&
+    await firstPlan.locator('svg rect[data-preview-phase="current"][data-cut-index="180"]').count()===1,
+    'Filtered coordinate selection must highlight the corresponding true SVG cut index.');
+  await coordSearch.fill('no such cut exists');
+  check(await coordTable.locator('tbody tr').count()===1 &&
+    (await coordTable.innerText()).includes('No cut labels match') &&
+    await coordNext.isDisabled(),
+    'Empty coordinate search must show a clear no-match state, not stale cuts.');
+  await coordSearch.fill('');
+  check(await coordTable.locator('tbody tr').count()===45 &&
+    await coordTable.getAttribute('data-coordinate-page')==='1' &&
+    await coordTable.getAttribute('data-coordinate-matching')==='181',
+    'Clearing the search must restore the original first 45 cuts and full count.');
+  console.log('PASS coordinate browse 46–90, exact #180/#181, false SVG highlight guard, filtered selection and no-match state.');
+
   // Print must synchronously build every hidden preview before capturing the
   // page, even when all 29 remaining rolls have never been opened.
   await keyboard.evaluate(()=>window.dispatchEvent(new Event('beforeprint')));
