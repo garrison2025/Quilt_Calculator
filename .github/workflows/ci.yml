@@ -24,6 +24,8 @@ jobs:
         run: npm run build
       - name: Inspect static output and index gates
         run: node scripts/check-build.mjs
+      - name: Verify future dual-host indexing guard semantics offline
+        run: node scripts/check-live-hosts.mjs --self-test
       - name: Install isolated browser smoke-test dependency
         run: npm install --no-save --package-lock=false playwright axe-core
       # GitHub ubuntu-latest normally ships standard browser system libraries.
@@ -51,3 +53,44 @@ jobs:
           path: artifacts/qa/
           if-no-files-found: ignore
           retention-days: 7
+
+  # A reserved .example host tests how the site WILL build with indexing
+  # enabled; it does not publish a real domain or turn the Pages preview on.
+  # Keep this in a separate job so browser QA still tests the noindex build.
+  production-seo-dry-run:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install pinned dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Build and statically validate a RESERVED hypothetical production host
+        env:
+          PUBLIC_INDEXABLE: '1'
+          PUBLIC_SITE_URL: 'https://quilt.example'
+        run: |
+          npm run build
+          node scripts/check-build.mjs
+      - name: Verify generated canonical and index policy for every approved route
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import assert from 'node:assert/strict';
+          const site='https://quilt.example';
+          const paths=['/','/calculators/','/quilt-backing-calculator/','/quilt-binding-calculator/','/quilt-border-calculator/','/fabric-yardage-calculator/','/quilt-fabric-calculator/','/fabric-yards-to-inches/','/quilt-batting-calculator/','/quilt-sashing-calculator/'];
+          for(const path of paths){
+            const html=fs.readFileSync('dist'+path+'index.html','utf8');
+            assert.ok(html.includes('name="robots" content="index,follow,max-image-preview:large"'), 'Production robots missing: '+path);
+            assert.ok(html.includes('rel="canonical" href="'+site+path+'"'), 'Exact absolute canonical missing: '+path);
+          }
+          for(const path of ['/lab/square-in-square/','/lab/continuous-bias-physical/','/qa/print-calibration/','/qa/fabric-cutting/']){
+            const html=fs.readFileSync('dist'+path+'index.html','utf8');
+            assert.ok(html.includes('noindex,follow')&&!html.includes('rel="canonical"'), 'QA lab leaked index eligibility: '+path);
+          }
+          console.log('PASS hypothetical production index/canonical and research noindex; no real domain was deployed.');
+          NODE

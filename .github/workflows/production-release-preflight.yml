@@ -1,0 +1,24 @@
+name: Quilt approved-domain dual-host release preflight
+on:
+  workflow_dispatch:
+    inputs:
+      production_origin:
+        description: 'Owner-approved real HTTPS origin (NO pages.dev)'
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  live-production-preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Compare actual domain and pages.dev SEO indexing policies
+        env:
+          PRODUCTION_ORIGIN: ${{ inputs.production_origin }}
+        run: node scripts/check-live-hosts.mjs "--production=$PRODUCTION_ORIGIN"
