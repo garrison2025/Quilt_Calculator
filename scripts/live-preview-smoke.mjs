@@ -85,6 +85,30 @@ try{
  const {response:lab,html:labHtml}=await get('/lab/square-in-square/');
  assert.equal(lab.status,200);
  assertThat(labHtml.includes('noindex,follow')&&!labHtml.includes('rel="canonical"'),'Lab must remain noindex with no canonical.');
+ // This is the PUBLIC commit, not a local fixture. Prevent stale lab
+ // routes, premature indexing and any implication of real-fabric validation.
+ for(const [path,marker] of [
+  ['/lab/continuous-bias-tube/','data-tube-topology-lab'],
+  ['/lab/continuous-bias-planner/','data-bias-plan'],
+  ['/lab/continuous-bias-physical/','data-bias-physical']
+ ]){
+  const {response,html}=await currentRoute(path);
+  assertThat(response.status===200&&stamp(html)===sha,
+   'Unverified research lab does not match exactly deployed main commit: '+path);
+  assertThat(html.includes('name="robots" content="noindex,follow"') &&
+    !/<link\\b[^>]*rel="canonical"/i.test(html) &&
+    !html.includes('application/ld+json') &&
+    html.includes(marker),
+    'Unverified continuous-bias research must remain noindexed with correct real DOM: '+path);
+  assertThat(/\\bnoindex\\b/i.test(response.headers.get('x-robots-tag')||''),
+    'Public preview must apply noindex header to laboratory route: '+path);
+ }
+ const {html:physicalStatic}=await currentRoute('/lab/continuous-bias-physical/');
+ assertThat(physicalStatic.includes('NO SAMPLE HAS BEEN PHYSICALLY TESTED') &&
+  physicalStatic.includes('NOT_RUN') &&
+  physicalStatic.includes('data-bias-physical-export'),
+  'Public physical lab must show unmeasured real fabric, not fabricated evidence.');
+ console.log('PASS three real Cloudflare bias research routes, exact main SHA, noindex and blank physical record.');
  const {response:aboutResponse,html:aboutHtml}=await currentRoute('/about/');
  assert.equal(aboutResponse.status,200,'Live About and source-method page must be accessible.');
  assert.equal(stamp(aboutHtml),sha,'Live About page must match exactly deployed code.');
@@ -111,6 +135,41 @@ try{
  const page=await context.newPage();
  const errors=[];
  page.on('pageerror',e=>errors.push(e.message));
+ // Exercise the real deployed JavaScript on the nonindexed physical
+ // specimen worksheet. The same synthetic 320in below MUST be rejected
+ // against the 328.426in numerical reference; no actual cloth was sewn.
+ const physical=await context.newPage();
+ physical.on('pageerror',e=>errors.push('Physical lab: '+e.message));
+ const physicalResponse=await physical.goto(BASE+'/lab/continuous-bias-physical/',
+  {waitUntil:'domcontentloaded',timeout:25000});
+ assert.equal(physicalResponse.status(),200);
+ await physical.waitForFunction(()=>
+  document.querySelector('[data-bias-physical-status]')?.textContent?.includes('NOT_RUN'),
+  null,{timeout:30000});
+ const initial=await physical.locator('[data-bias-sample-status]').allTextContents();
+ assertThat(initial.length===3&&initial.every(x=>x==='NOT_RUN'),
+  'PUBLIC physical worksheet cannot invent any real A/B/C sample data.');
+ for(const [key,value] of [
+  ['measuredSquareWidthIn','30'],['finishedCenterLengthIn','320'],
+  ['finishedLeftLengthIn','321'],['finishedRightLengthIn','322']
+ ]){
+  await physical.locator('[data-bias-obs="'+key+'"]').fill(value);
+ }
+ await physical.locator('[data-bias-physical-form] button[type="submit"]').click();
+ assertThat((await physical.locator('[data-bias-physical-status]').innerText())
+   .includes('OBSERVATION_HOLD') &&
+  (await physical.locator('[data-bias-physical-output]').innerText())
+   .includes('CRITICAL: model predicts more'),
+  'Deployed JS must flag an overstated fabric yield as HOLD, not output yards.');
+ const exported=await downloadText(physical,'[data-bias-physical-export]');
+ const report=JSON.parse(exported.content);
+ assertThat(report.safeToPurchase===false&&report.physicallyCertified===false&&
+  report.rawDrafts.A.finishedCenterLengthIn==='320'&&
+  report.auditsForReferenceOnly[0].auditStatus==='OBSERVATION_HOLD'&&
+  !('purchaseYards' in report),
+  'Public exported physical sample must never impersonate certified yield.');
+ await physical.close();
+ console.log('PASS LIVE Cloudflare real-sample blank state, modeled-overestimate HOLD and unverified JSON export.');
  const response=await page.goto(BASE+'/calculators/',{waitUntil:'domcontentloaded',timeout:25000});
  assert.equal(response.status(),200);
  await page.waitForFunction(()=>document.querySelector('[data-status]')?.textContent?.includes('Incomplete material plan'),null,{timeout:30000});
