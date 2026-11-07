@@ -6,6 +6,7 @@ import { shoppingCsv, shoppingPriceSummary, hasIncompleteShopping, shoppingLineS
 import type { ToolId } from './types';
 import {attachCutWalkthrough} from './diagram-playback';
 import {calculateBiasAreaLowerBound} from '../lib/quilt/bias-area-bound';
+import {convertFabricLength,switchFabricLengthUnit,type FabricLengthUnit} from '../lib/quilt/fabric-length-conversion';
 import {FINISHED_SIZE_EXAMPLES,applyFinishedSizeExample,applyBlockGridAsCenter,compareBackingPurchases,solveBlockSizeForCenter,applyTargetBlockSize} from '../lib/quilt/quick-planning';
 type Kind = 'length' | 'whole' | 'number' | 'pct' | 'check' | 'text';
 type Field = { label: string; path: string; kind?: Kind; note?: string };
@@ -316,14 +317,14 @@ if(root){
  const printButton=root.querySelector<HTMLButtonElement>('[data-action="print"]')!;
  const saveButton=root.querySelector<HTMLButtonElement>('[data-action="save"]')!;
  const undoResetButton=root.querySelector<HTMLButtonElement>('[data-action="undo-reset"]')!;
- type ResetSnapshot={project:Project; sample:boolean; conv:string; savedJson:string|null};
+ type ResetSnapshot={project:Project; sample:boolean; conv:string; convUnit:FabricLengthUnit; savedJson:string|null};
  let resetSnapshot:ResetSnapshot|null=null;
  function clearResetSnapshot():void{
   resetSnapshot=null;
   undoResetButton.disabled=true;
  }
  let project:Project=structuredClone(sampleProject);
- let sample=true,conv='1/4';
+ let sample=true,conv='1/4',convUnit:FabricLengthUnit='yd';
  // Read-only alternate width/price scenario; never included in shopping, cut CSV,
  // the saved V2 project or physical cutting-plan JSON until explicitly edited.
  let alternateBackingWofText='108',alternateBackingPriceText='';
@@ -442,7 +443,7 @@ if(root){
    const latest=localStorage.getItem(STORAGE_KEY);
    const loaded=latest?validateProject(JSON.parse(latest)):structuredClone(sampleProject);
    clearResetSnapshot();
-   project=loaded;sample=!latest;lastStoredJson=latest;conv='1/4';
+   project=loaded;sample=!latest;lastStoredJson=latest;conv='1/4';convUnit='yd';
    syncWarning.hidden=true;
    storageState.textContent=latest?'Loaded the newest saved project from this browser.':'The saved project was reset in another tab; sample restored.';
    stateLabel.textContent=latest?'● My local project':'● Sample project';
@@ -814,23 +815,53 @@ if(root){
   if(tool==='fabric')renderFabricEditor();
   if(tool==='borders')renderBorderEditor();
   if(tool==='inches'){
-   const group=node('div');group.appendChild(node('h3','group-title','Exact conversion'));
-   const wrap=node('div','field-wrap'),lbl=node('label','','Fabric yards (decimals or fractions)'),inp=node('input','field-control');
+   const group=node('div');group.appendChild(node('h3','group-title','Exact length conversion'));
+   const sourceWrap=node('div','field-wrap'),sourceLabel=node('label','','Convert from'),source=node('select','field-control');
+   source.id='fabric-length-source';sourceLabel.htmlFor=source.id;
+   for(const [value,label] of [
+    ['yd','Yards (yd)'],['in','Inches (in)'],['cm','Centimeters (cm)']
+   ] as const){
+    const option=node('option','',label);option.value=value;
+    source.appendChild(option);
+   }
+   source.value=convUnit;
+   const sourceHint=node('small','hint','Switching the input unit converts your current valid number, keeping the SAME physical length.');
+   append(sourceWrap,sourceLabel,source,sourceHint);
+   const wrap=node('div','field-wrap'),lbl=node('label'),inp=node('input','field-control');
+   const describeUnit=()=>convUnit==='yd'?'Fabric yards (decimals or fractions)':
+    convUnit==='in'?'Fabric inches (decimals or fractions)':'Fabric centimeters (decimals or fractions)';
+   lbl.textContent=describeUnit();
    lbl.htmlFor='yard-input';inp.id='yard-input';inp.value=conv;inp.inputMode='decimal';
-   const hint=node('small','hint','Use decimals (1.5), fractions (3/8 or ¾), mixed fractions (1 1/2 or 1½), or correctly grouped thousands (1,000).');
+   const hint=node('small','hint','Use decimals (1.5), fractions (3/8 or ¾), mixed fractions (1 1/2 or 1½), or correctly grouped thousands (1,000). This is LENGTH, not fabric area or WOF.');
    hint.id='yard-input-hint';
    const fieldError=node('span','field-error');fieldError.id='yard-input-error';fieldError.hidden=true;
    inp.setAttribute('aria-describedby',hint.id+' '+fieldError.id);
    inp.setAttribute('aria-invalid','false');
+   const setFieldError=(message:string)=>{
+    inp.setAttribute('aria-invalid',String(Boolean(message)));
+    fieldError.textContent=message;fieldError.hidden=!message;
+   };
    inp.addEventListener('input',()=>{
     conv=inp.value;
     let message='';
-    try{parseMeasure(conv);}catch(e){message=e instanceof Error?e.message:'Enter a valid number of yards.';}
-    inp.setAttribute('aria-invalid',String(Boolean(message)));
-    fieldError.textContent=message;fieldError.hidden=!message;
+    try{convertFabricLength(conv,convUnit);}catch(e){message=e instanceof Error?e.message:'Enter a valid fabric length.';}
+    setFieldError(message);
     update();
    });
-   append(wrap,lbl,inp,hint,fieldError);group.appendChild(wrap);fieldsRoot.appendChild(group);
+   source.addEventListener('change',()=>{
+    const requested=source.value as FabricLengthUnit;
+    try{
+     const next=switchFabricLengthUnit(conv,convUnit,requested);
+     conv=next.raw;convUnit=requested;inp.value=conv;
+     lbl.textContent=describeUnit();setFieldError('');update();
+    }catch(e){
+     source.value=convUnit;
+     const message='Unit unchanged: '+(e instanceof Error?e.message:'Invalid input.');
+     setFieldError(message);update();
+    }
+   });
+   append(wrap,lbl,inp,hint,fieldError);
+   group.append(sourceWrap,wrap);fieldsRoot.appendChild(group);
   }
   if(tool==='hub'){
    const review=node('section','top-cut-review'),heading=node('h3','','Confirm quilt-top cutting coverage');
@@ -1308,12 +1339,22 @@ if(root){
     plan={dimensions,backing,selectedBacking,backingDirectionMode:o.backingDirection??'auto',binding,batting,border,fabric};
     if(sample)resultRoot.appendChild(node('p','footer-note','Sample project: fabric and border colors are examples. Replace all sample values before purchasing. Material quantities remain separate by roll and SKU.'));
    }else if(tool==='inches'){
-    const value=parseMeasure(conv),inches=yardsToInches(value),cm=inches*2.54;
-    const h1=node('div','result-hero');append(h1,node('span','result-kicker','EXACT LENGTH CONVERSION'),node('div','result-big',num(inches)+' in'),node('p','result-sub',num(value)+' yards = '+num(inches)+' inches = '+num(cm,4)+' centimeters'));resultRoot.appendChild(h1);
+    const length=convertFabricLength(conv,convUnit);
+    const {yards,inches,centimeters:cm}=length;
+    const primary=convUnit==='in'?num(yards,8)+' yd':num(inches,8)+' in';
+    const h1=node('div','result-hero');
+    append(h1,node('span','result-kicker','EXACT LENGTH FORMULA · ROUNDED DISPLAY'),
+     node('div','result-big',primary),
+     node('p','result-sub',num(yards,8)+' yards = '+num(inches,8)+' inches = '+
+      num(cm,8)+' centimeters'));
+    resultRoot.appendChild(h1);
     section(resultRoot,'Fabric fraction quick chart','Exact conversion');
     const grid=node('div','fraction-grid');
     for(let e=1;e<=8;e++){const c=node('div');append(c,node('b','',e===8?'1':frac[e]),node('small','',num(e*36/8)+' in'),node('small','',num(e*36/8*2.54)+' cm'));grid.appendChild(c);}
-    resultRoot.appendChild(grid);warning(resultRoot,'Fabric yards describe length along a bolt. They do not specify usable fabric width.');plan={yards:value,inches,centimeters:cm};
+    resultRoot.appendChild(grid);
+    warning(resultRoot,'All values are linear measurements along a bolt, NOT fabric area or available width. Decimal display can be rounded; no cutting or purchase quantities are inferred.');
+    plan={inputUnit:convUnit,inputAmount:length.inputAmount,yards,inches,centimeters:cm,
+     scope:length.scope};
    }
    if(layout){layoutSummary(resultRoot,layout);diagram(resultRoot,layout,'Cut plan / CURRENT fabric roll',materialCuts[0]?.sku);}
    if(alternateLayout){
@@ -1432,11 +1473,11 @@ if(root){
   }catch{storageReadable=false;}
   if(!resetSnapshot){
    resetSnapshot={
-    project:structuredClone(project),sample,conv,
+    project:structuredClone(project),sample,conv,convUnit,
     savedJson:lastStoredJson
    };
   }
-  project=structuredClone(sampleProject);sample=true;conv='1/4';
+  project=structuredClone(sampleProject);sample=true;conv='1/4';convUnit='yd';
   undoResetButton.disabled=false;
   if(storageReadable){
    try{
@@ -1453,7 +1494,7 @@ if(root){
   if(!previous)return;
   clearResetSnapshot();
   project=structuredClone(previous.project);sample=previous.sample;
-  conv=previous.conv;
+  conv=previous.conv;convUnit=previous.convUnit;
   let conflicted=false;
   try{
    const current=localStorage.getItem(STORAGE_KEY);
