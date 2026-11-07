@@ -43,7 +43,7 @@ function measure(value:string):number|null{
 }
 function list(value:string):number[]|null{
  if(value.trim()==='')return null;
- const parts=value.split(/[;,\n]+/).map(x=>x.trim());
+ const parts=value.split(/[;,\n]/).map(x=>x.trim());
  if(parts.some(p=>p===''))throw Error('Measurements separated by commas contain a missing value.');
  return parts.map(part=>parseMeasure(part));
 }
