@@ -849,3 +849,30 @@
  .dynamic-actions [data-remove-sku],.dynamic-actions [data-remove-cut]{background:#3c2825;border-color:#85534d;color:#ffb1a6}
 }
 @media print{.dynamic-actions{display:none!important}}
+
+/* Local-only spreadsheet paste: compact when closed, usable at 320px and
+   keyboard/400% zoom. It is an input draft, never part of a print plan. */
+.bulk-cut-import{min-width:0;margin:13px 0;padding:0 13px 13px;border:1px solid #d5e3d6;border-radius:10px;background:#f4f8f3}
+.bulk-cut-summary{cursor:pointer;min-height:44px;padding:13px 0;font-size:12px;font-weight:800;color:#315f48}
+.bulk-cut-summary:focus-visible{outline:3px solid #508469;outline-offset:3px}
+.bulk-cut-import[open]>.bulk-cut-summary{border-bottom:1px solid #dae6d8;margin-bottom:12px}
+.bulk-cut-import .hint{font-size:11px;line-height:1.65;color:#556e5e}
+.bulk-cut-example{font-size:11px;line-height:1.5;padding:9px;border:1px solid #d9e7d8;border-radius:7px;color:#39624b;background:#fff;overflow-wrap:anywhere}
+.bulk-cut-label{display:block;font-size:11px;font-weight:800;color:#365947;margin:12px 0 6px}
+.bulk-cut-textarea{display:block;width:100%;min-width:0;min-height:112px;box-sizing:border-box;border:1px solid #aebfaf;border-radius:8px;padding:12px;background:#fff;color:#263d2c;font:12px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace;resize:vertical;white-space:pre;overflow:auto}
+.bulk-cut-textarea:focus-visible{outline:3px solid #81b599;outline-offset:2px}
+.bulk-cut-feedback{margin:9px 0;color:#426b4d;font-size:11px;font-weight:650;line-height:1.6;overflow-wrap:anywhere}
+.bulk-cut-feedback--error{color:#a53b30}
+.bulk-cut-actions{display:flex;gap:9px;flex-wrap:wrap}
+.bulk-cut-actions button{min-height:44px;min-width:0;max-width:100%;flex:1 1 155px;white-space:normal;line-height:1.4}
+.bulk-cut-actions button:disabled{opacity:.55;cursor:not-allowed}
+@media(max-width:400px){.bulk-cut-actions button{flex-basis:100%}}
+@media screen and (prefers-color-scheme:dark){
+ .bulk-cut-import{background:#1c3024;border-color:#45664f}
+ .bulk-cut-summary,.bulk-cut-label{color:#c1e3ce}
+ .bulk-cut-import[open]>.bulk-cut-summary{border-bottom-color:#45664f}
+ .bulk-cut-import .hint,.bulk-cut-feedback{color:#aecdb4}
+ .bulk-cut-example,.bulk-cut-textarea{background:#16261c;border-color:#507057;color:#d2ead6}
+ .bulk-cut-feedback--error{color:#ffb5a7}
+}
+@media print{.bulk-cut-import{display:none!important}}
