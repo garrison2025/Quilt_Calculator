@@ -33,6 +33,7 @@ function mockComplete(cfg:BiasSpecimenConfig):BiasSpecimenObservation{
  o.maxMarkMismatchIn=0;
  o.measuredBandRunIn=prediction.bandRunIn;
  o.stripWidthSamplesIn=Array(12).fill(cfg.fullStripCutWidthIn);
+ o.seamCrossingWidthSamplesIn=Array(prediction.crossings).fill(cfg.fullStripCutWidthIn);
  o.finishedCenterLengthIn=prediction.squaredEndLengthIn+1;
  o.finishedLeftLengthIn=prediction.squaredEndLengthIn+1;
  o.finishedRightLengthIn=prediction.squaredEndLengthIn+1;
@@ -85,6 +86,20 @@ describe('physical specimen observation ledger MUST NOT self-certify fabric yiel
   const r=auditBiasSpecimenObservation(cfg,o);
   expect(r.status).toBe('INCOMPLETE');
   expect(r.missingFields).toContain('stripWidthSamplesIn');
+ });
+ it('requires separately measured widths at ALL N-1 tube seam crossings',()=>{
+  const cfg=SPECIMEN_CONFIGS[0];
+  const o=mockComplete(cfg);o.seamCrossingWidthSamplesIn=null;
+  const missing=auditBiasSpecimenObservation(cfg,o);
+  expect(missing.status).toBe('INCOMPLETE');
+  expect(missing.missingFields).toContain('seamCrossingWidthSamplesIn');
+  o.seamCrossingWidthSamplesIn=Array(6).fill(cfg.fullStripCutWidthIn);
+  expect(()=>auditBiasSpecimenObservation(cfg,o)).toThrow(/exactly 7/);
+  o.seamCrossingWidthSamplesIn=Array(7).fill(cfg.fullStripCutWidthIn);
+  o.seamCrossingWidthSamplesIn[3]=2.7;
+  const fail=auditBiasSpecimenObservation(cfg,o);
+  expect(fail.status).toBe('OBSERVATION_HOLD');
+  expect(fail.observedDiscrepancies.join(' ')).toContain('Tube seam crossing widths');
  });
  it('blocks modeled length OVERstatement against the shortest of three measured edges',()=>{
   const cfg=SPECIMEN_CONFIGS[0];const o=mockComplete(cfg);
