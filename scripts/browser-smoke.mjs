@@ -1398,6 +1398,9 @@ try{
     'Project hub must refuse a complete printout when top fabric is absent.');
   check(!(await topPage.locator('[data-action="export-cut-csv"]').isEnabled()),
     'Project hub must not export a misleading full-material cutting CSV without top fabric.');
+  check((await topPage.locator('[data-action="download-one-roll"]').count())>=3 &&
+    (await topPage.locator('[data-action="download-one-roll"]').evaluateAll(buttons=>buttons.every(button=>button.disabled))),
+    'A feasible backing/binding roll must never bypass an incomplete whole-quilt project cut-plan export gate.');
   check(await topPage.locator('[data-action="export-cut"]').isEnabled(),
     'Incomplete hub should retain JSON diagnostics.');
   const missingJsonPending=topPage.waitForEvent('download');
@@ -1456,6 +1459,8 @@ try{
   check(!(await topReview.isChecked()),'Entering cuts must not automatically confirm a complete quilt-top design.');
   check(!(await topPage.locator('[data-action="print"]').isEnabled()),
     'Entered cuts without user review must remain a partial project.');
+  check((await topPage.locator('[data-action="download-one-roll"]').evaluateAll(buttons=>buttons.every(button=>button.disabled))),
+    'Do not offer an individually printable SKU roll while the whole-quilt top review is pending.');
   const reviewPendingDownload=topPage.waitForEvent('download');
   await topPage.getByRole('button',{name:'Download INCOMPLETE shopping CSV'}).click();
   const pendingCsv=await fs.readFile(await (await reviewPendingDownload).path(),'utf8');
@@ -1466,6 +1471,8 @@ try{
     'Restored quilt-top cut data should re-enable project hub print.');
   check(await topPage.locator('[data-action="export-cut-csv"]').isEnabled(),
     'Restored top-fabric cuts should re-enable full-project cutting CSV.');
+  check((await topPage.locator('[data-action="download-one-roll"]').evaluateAll(buttons=>buttons.every(button=>!button.disabled))),
+    'Only a fully reviewed complete project may activate the individual verified-roll print exports.');
   check(!(await topPage.locator('[data-results]').innerText()).includes('INCOMPLETE SHOPPING LIST') &&
     await topPage.locator('[data-plan-readiness="ready"]').count()===1,
     'Reviewed, feasible material plan must switch to ready state and clear partial-shop messaging.');
