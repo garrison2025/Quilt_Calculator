@@ -1906,7 +1906,7 @@ if(root){
   try{
    // The full-project exporter performs the SAME independent geometry and
    // fingerprint verification on this subset; it does not clone SVG data.
-   const html=fullPrintableCutSheets(exactRoll,projectHash);
+   const html=fullPrintableCutSheets(exactRoll,projectHash,{projectRollNumber:rollIndex+1,projectRollTotal:materialCuts.length});
    const blob=new Blob([html],{type:'text/html;charset=utf-8'});
    const url=URL.createObjectURL(blob);
    const slug=rollId.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40)||'material';
