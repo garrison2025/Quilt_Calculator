@@ -154,7 +154,6 @@ function diagram(parent:Element,layout:Layout,title:string,sku?:string,scope:'cu
  stage.dataset.cutStage='';
  stage.appendChild(svg);
  const axis=node('div','cut-axis-guide');
- axis.setAttribute('aria-label','How to read the fabric roll X and Y cutting coordinates');
  append(axis,
   node('span','','→ Roll Y: along the fabric bolt length (left to right in this sketch)'),
   node('span','','↓ Roll X: across the usable WOF (top to bottom in this sketch)'));
