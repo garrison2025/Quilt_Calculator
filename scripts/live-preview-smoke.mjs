@@ -6,6 +6,18 @@ const BASE=(process.env.QUILT_PREVIEW_URL||'https://quilt-calculator-566.pages.d
 const sha=(process.env.GITHUB_SHA||'').toLowerCase();
 if(!/^[0-9a-f]{40}$/.test(sha))throw Error('Expected a full GITHUB_SHA for independently verifiable public Pages testing.');
 const assertThat=(v,message)=>assert.ok(v,message);
+const hasNoindexToken=(header)=>typeof header==='string'&&
+ header.toLowerCase().split(/[\s,;]+/).includes('noindex');
+// Regression for an old escaped-regex bug: /\\bnoindex\\b/ silently looked for
+// literal backslashes rather than recognizing the real X-Robots-Tag token.
+for(const [header,expected] of [
+ ['noindex, follow',true],['NoInDeX',true],
+ ['nofollow, NOINDEX',true],['noindex\tfollow',true],['follow',false],['noindexing',false],
+ ['prefixnoindex',false],[null,false],['',false]
+]){
+ assert.equal(hasNoindexToken(header),expected,'X-Robots-Tag token parser regression');
+}
+
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const routes=[
  '/', '/calculators/', '/quilt-backing-calculator/', '/quilt-binding-calculator/',
@@ -62,7 +74,7 @@ try{
  await waitForThisCommit();
  for(const path of routes){
   const {response,html}=await currentRoute(path);
-  assertThat(/\bnoindex\b/i.test(response.headers.get('x-robots-tag')||''),
+  assertThat(hasNoindexToken(response.headers.get('x-robots-tag')),
     'Cloudflare preview must apply an X-Robots-Tag noindex header even if future public HTML is indexable: '+path);
   assertThat(html.includes('name="robots" content="noindex,follow"'),'Live preview must be noindex: '+path);
   assertThat(!/<link\b[^>]*rel="canonical"/i.test(html),'Preview cannot publish a canonical '+path);
@@ -102,7 +114,7 @@ try{
     html.includes(marker),
     'Unverified continuous-bias research must remain noindexed with correct real DOM: '+path);
   const xRobots=response.headers.get('x-robots-tag');
-  const hasHeaderNoindex=/(?:^|\W)noindex(?:\W|$)/i.test(xRobots||'');
+  const hasHeaderNoindex=hasNoindexToken(xRobots);
   if(!hasHeaderNoindex){
    researchHeaderProblems.push({
     path,requestedUrl:BASE+path,finalUrl:response.url,
