@@ -2541,6 +2541,62 @@ try{
   console.log('PASS REAL Chromium PDF pagination: '+pageCount+
     ' US Letter landscape pages; all 2,000 distinct cuts/30 rolls; repeatable headers; exact fingerprint; offline HTML; middle-page PNG evidence.');
 
+  // Operators cut one color/physical SKU at a time. A 108-page whole-project
+  // checklist must not be the only printable option: actual DOM clicks should
+  // produce a standalone single-roll HTML, with ALL of that roll's cuts and
+  // no other rolls; the complete 2,000-piece source remains unchanged.
+  const singleRollActions=keyboard.locator('details.sku-plan [data-action="download-one-roll"]');
+  check(await singleRollActions.count()===30,
+    'Every physical roll needs an on-demand single-roll print option for 30-SKU projects.');
+  check(await singleRollActions.first().isEnabled()&&await singleRollActions.last().isEnabled(),
+    'Single-roll print must only enable after the existing complete-project readiness gate.');
+  const firstRollDownloadEvent=keyboard.waitForEvent('download');
+  await singleRollActions.first().click();
+  const firstRollDownload=await firstRollDownloadEvent;
+  check(/^quilt-studio-ROLL-1-fabric-stress-0-[0-9a-f]{8}\.html$/.test(firstRollDownload.suggestedFilename()),
+    'Single-roll filename must include stable physical roll number, SKU and source fingerprint.');
+  const firstRollHtml=await fs.readFile(await firstRollDownload.path(),'utf8');
+  const firstRollMeta=await keyboard.evaluate(html=>{
+    const parsed=new DOMParser().parseFromString(html,'text/html');
+    return {
+      count:parsed.querySelectorAll('main tbody tr[data-cut-number]').length,
+      rolls:parsed.querySelectorAll('main section.roll').length,
+      title:parsed.querySelector('main h2')?.textContent,
+      last:parsed.querySelector('main tbody tr:last-child .name')?.textContent,
+      text:parsed.body.textContent,
+      scripts:parsed.querySelectorAll('script').length
+    };
+  },firstRollHtml);
+  check(firstRollMeta.count===181 && firstRollMeta.rolls===1 &&
+    firstRollMeta.title?.includes('Roll 1: Roll 0') &&
+    firstRollMeta.last==='Square 0 181' && firstRollMeta.scripts===0 &&
+    firstRollMeta.text?.includes('fabric:stress-0') &&
+    !firstRollMeta.text?.includes('Square 1 1') &&
+    firstRollMeta.text?.includes(expectedFingerprint),
+    'First roll must download ALL 181 cuts with exact SKU and project hash, without any of the other 29 rolls: '+JSON.stringify(firstRollMeta).slice(0,900));
+  const lastPlan=keyboard.locator('details.sku-plan').last();
+  await lastPlan.locator('summary').click();
+  const lastRollDownloadEvent=keyboard.waitForEvent('download');
+  await singleRollActions.last().click();
+  const lastRollDownload=await lastRollDownloadEvent;
+  const lastRollHtml=await fs.readFile(await lastRollDownload.path(),'utf8');
+  const lastRollMeta=await keyboard.evaluate(html=>{
+    const parsed=new DOMParser().parseFromString(html,'text/html');
+    return {
+      count:parsed.querySelectorAll('main tbody tr[data-cut-number]').length,
+      rolls:parsed.querySelectorAll('main section.roll').length,
+      last:parsed.querySelector('main tbody tr:last-child .name')?.textContent,
+      text:parsed.body.textContent
+    };
+  },lastRollHtml);
+  check(lastRollMeta.count===83 && lastRollMeta.rolls===1 &&
+    lastRollMeta.last==='Square 29 83' &&
+    lastRollMeta.text?.includes('fabric:stress-29') &&
+    !lastRollMeta.text?.includes('fabric:stress-0') &&
+    lastRollMeta.text?.includes(expectedFingerprint),
+    'Last roll must download all 83 of its cuts with no other roll and the SAME whole-project fingerprint.');
+  await lastPlan.locator('summary').click();
+  console.log('PASS physical SKU-only cutting sheet download: actual first 181 cuts and last 83 cuts, no cross-roll mixing, same project hash.');
   const untouchedProject=await keyboard.evaluate(()=>JSON.parse(localStorage.getItem('quilt-studio-v2')));
   check(untouchedProject.fabrics.length===30&&untouchedProject.fabrics[0].pieces[0].count===181,
     'Downloading a complete print workbook must not alter the saved project or piece quantities.');
