@@ -2503,8 +2503,10 @@ try{
     encoding:'utf8',maxBuffer:10*1024*1024
   });
   const pageCount=Number(pdfInfo.match(/^Pages:\s+(\d+)/m)?.[1]);
-  check(pageCount>25&&pageCount<180&&/^Page size:\s+792 x 612 pts \(letter\)/m.test(pdfInfo),
-    'The REAL Chromium PDF must paginate 2,000 cuts over multiple LETTER LANDSCAPE pages: '+pdfInfo.slice(0,1200));
+  // Baseline commit 9d6558a5 required 108 pages for 2,000 cuts; require
+  // substantive savings without tiny (<11px) printed table typography.
+  check(pageCount>25&&pageCount<=85&&/^Page size:\s+792 x 612 pts \(letter\)/m.test(pdfInfo),
+    'The compact PDF must fit the same 2,000 cuts within 85 LETTER LANDSCAPE pages (prior baseline: 108): '+pdfInfo.slice(0,1200));
   const pdfPages=pdfText.split('\f').filter(text=>text.trim().length>0);
   check(pdfPages.length===pageCount,
     'The extracted PDF pages must equal pdfinfo reported page count; no blank/empty PDF pages.');
@@ -2540,13 +2542,30 @@ try{
   }
   const pagesWithCuts=pdfPages.filter(text=>/\bSquare\s+\d+\s+\d+\b/.test(text));
   const missingHeaders=pagesWithCuts.flatMap((text,index)=>
-    /Piece\s+label/.test(text)&&/Roll\s+X/.test(text)?[]:[index+1]);
+    /Piece\s+label/.test(text)&&/Roll\s+X/.test(text)&&
+    /Physical\s+roll\s+ID:/.test(text)&&text.includes(expectedFingerprint)?[]:[index+1]);
   check(missingHeaders.length===0&&pagesWithCuts.length>25,
-    'Each printed page containing cuts must repeat the table header (avoid unlabeled coordinate columns): '+JSON.stringify({pageCount,missingHeaders}));
+    'EVERY PDF page with cuts must include a repeated coordinate header, physical roll identity and current project hash: '+JSON.stringify({pageCount,missingHeaders}));
+  // Independently inspect the actual PDF word bounding boxes: rendering all
+  // CSV rows is insufficient if cut coordinates are clipped off the paper.
+  const boxXml=execFileSync('pdftotext',['-bbox',actualPdfPath,'-'],{
+    encoding:'utf8',maxBuffer:20*1024*1024
+  });
+  const boxMatches=[...boxXml.matchAll(/<word xMin="([\d.]+)" yMin="([\d.]+)" xMax="([\d.]+)" yMax="([\d.]+)">/g)];
+  check(boxMatches.length>15000,'A real 2,000-cut PDF should expose searchable placed text coordinates.');
+  const clipped=boxMatches.flatMap(match=>{
+    const [x1,y1,x2,y2]=match.slice(1).map(Number);
+    return [x1,y1,x2,y2].every(Number.isFinite)&&x1>=20&&y1>=18&&x2<=772&&y2<=594?[]:[[x1,y1,x2,y2]];
+  });
+  check(clipped.length===0,
+    'PDF word bounding boxes must remain within Letter landscape paper safe area, not clip source coordinates: '+
+    JSON.stringify(clipped.slice(0,12)));
   execFileSync('pdftoppm',['-f','2','-l','2','-scale-to','1400','-png','-singlefile',
     actualPdfPath,'artifacts/qa/complete-cut-sheets-middle-page'],{timeout:30000,stdio:'pipe'});
   console.log('PASS REAL Chromium PDF pagination: '+pageCount+
-    ' US Letter landscape pages; all 2,000 distinct cuts/30 rolls; repeatable headers; exact fingerprint; offline HTML; middle-page PNG evidence.');
+    ' US Letter landscape pages (baseline 108, saved '+(108-pageCount)+
+    '); all 2,000 unique cuts/30 rolls; every page repeats SKU/hash/column headers; '+
+    boxMatches.length+' bounded PDF words; offline HTML; middle-page PNG evidence.');
 
   // Operators cut one color/physical SKU at a time. A 108-page whole-project
   // checklist must not be the only printable option: actual DOM clicks should
