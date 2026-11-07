@@ -102,7 +102,7 @@ try{
     html.includes(marker),
     'Unverified continuous-bias research must remain noindexed with correct real DOM: '+path);
   const xRobots=response.headers.get('x-robots-tag');
-  const hasHeaderNoindex=/(?:^|\\W)noindex(?:\\W|$)/i.test(xRobots||'');
+  const hasHeaderNoindex=/(?:^|\W)noindex(?:\W|$)/i.test(xRobots||'');
   if(!hasHeaderNoindex){
    researchHeaderProblems.push({
     path,requestedUrl:BASE+path,finalUrl:response.url,
