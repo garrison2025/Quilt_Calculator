@@ -33,6 +33,37 @@ async function auditWcag(page,path){
   wcagReport.push({path,...findings});
   const problems=findings.violations.map(v=>v.id+' ('+v.impact+'): '+
     v.nodes.map(n=>n.selector+' '+n.summary).join(' | ')).join('\n');
+  if(findings.violations.some(v=>v.id==='target-size')){
+    const selectors=findings.violations
+     .filter(v=>v.id==='target-size').flatMap(v=>v.nodes.map(n=>n.selector))
+     .slice(0,7);
+    const geometry=await page.evaluate(selectors=>selectors.map(selector=>{
+      const el=document.querySelector(selector);
+      if(!el)return {selector,missing:true};
+      const rect=el.getBoundingClientRect();
+      const points=[.1,.5,.9].map(fraction=>{
+       const y=rect.top+fraction*rect.height,x=rect.left+Math.min(rect.width/2,40);
+       const hit=document.elementFromPoint(x,y);
+       return {x,y,hit:hit?.tagName,hitClass:hit?.getAttribute('class'),
+        inTarget:hit===el||el.contains(hit)};
+      });
+      const parents=[];let p=el.parentElement;
+      while(p&&parents.length<7){
+       const css=getComputedStyle(p),r=p.getBoundingClientRect();
+       parents.push({tag:p.tagName,className:p.className,
+        overflowX:css.overflowX,overflowY:css.overflowY,
+        top:r.top,bottom:r.bottom,height:r.height,
+        clientHeight:p.clientHeight,scrollHeight:p.scrollHeight});
+       p=p.parentElement;
+      }
+      return {selector,rect:{top:rect.top,bottom:rect.bottom,
+       height:rect.height,width:rect.width},
+       viewport:{w:innerWidth,h:innerHeight,scrollY},points,parents};
+    }),selectors);
+    console.error('WCAG TARGET-SIZE REAL DOM GEOMETRY '+path+'\n'+JSON.stringify(geometry).slice(0,15000));
+    await page.screenshot({path:'artifacts/qa/axe-target-size-'+path.replaceAll('/','-')+'.png',
+      fullPage:true,animations:'disabled'});
+  }
   if(findings.violations.length)
     console.error('WCAG AXE FAIL '+path+'\n'+problems.slice(0,11000));
   else console.log('PASS WCAG axe-core '+path+' ('+findings.passes+' rules passed; '+
