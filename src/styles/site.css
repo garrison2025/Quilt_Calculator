@@ -765,6 +765,13 @@
    confuse it with a full-size, physical cutting template or verified yield. */
 .bias-physical-paper{display:none}
 .bias-physical-print-howto{margin-top:1.35rem}
+.bias-print-screen-error:empty{display:none}
+.bias-print-screen-error:not(:empty){width:100%;border:1px solid #ad6c38;background:#fff3e7;
+ color:#783b1d;border-radius:9px;padding:.75rem .8rem;line-height:1.55;
+ font-size:.84rem;font-weight:700;margin:.55rem 0}
+@media screen and (prefers-color-scheme:dark){
+ .bias-print-screen-error:not(:empty){background:#493222;color:#ffe0ca;border-color:#a46b4b}
+}
 @media print{
  body:has([data-bias-physical-paper]){background:#fff!important;color:#111!important}
  body:has([data-bias-physical-paper]) .site-header,
