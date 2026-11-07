@@ -3,6 +3,7 @@ import { sampleProject, validateProject, quiltTopReviewFingerprint, hasCurrentQu
 import { resolveQuiltDimensions, type QuiltDimensions } from '../lib/quilt/dimensions';
 import { cutListCsv, physicalRollId, type MaterialCutPlan } from '../lib/quilt/cutlist';
 import { shoppingCsv, shoppingPriceSummary, hasIncompleteShopping, shoppingLineStatus, needsTopFabricPlan, type ShoppingLine } from '../lib/quilt/shopping';
+import {buildShoppingChecklistText} from '../lib/quilt/shopping-checklist';
 import type { ToolId } from './types';
 import {attachCutWalkthrough} from './diagram-playback';
 import {calculateBiasAreaLowerBound} from '../lib/quilt/bias-area-bound';
@@ -152,6 +153,11 @@ function diagram(parent:Element,layout:Layout,title:string,sku?:string,scope:'cu
  const stage=node('div','cut-diagram-stage');
  stage.dataset.cutStage='';
  stage.appendChild(svg);
+ const axis=node('div','cut-axis-guide');
+ append(axis,
+  node('span','','→ Roll Y: along the fabric bolt length (left to right in this sketch)'),
+  node('span','','↓ Roll X: across the usable WOF (top to bottom in this sketch)'));
+ wrapper.appendChild(axis);
  wrapper.appendChild(stage);
  attachCutWalkthrough(wrapper,svg);
  wrapper.appendChild(node('p','diagram-note','Schematic, not to scale or a 1:1 pattern. Coordinates and dimensions are actual INCHES on the fabric roll. '+(totalCutCount>180?'First '+previewCutCount+' of '+totalCutCount+' cuts shown; the complete physical cut-list CSV includes every cut.':'')));
@@ -217,7 +223,12 @@ function shopping(parent:Element,lines:ShoppingLine[],{centralReadiness=false,so
  button.type='button';button.dataset.action='export-shopping';
  button.addEventListener('click',()=>downloadShoppingCsv(lines,sourceProjectHash));
  tools.dataset.projectFingerprint=sourceProjectHash;
- append(tools,node('p','footer-note','Exact raw amount, rounded purchase, fabric-roll offcut and shop rounding differ. Project snapshot: '+sourceProjectHash+'. Match it to the cut-list CSV and project calculation JSON before using either file; this short tag is not a digital signature.'),button);
+ const copyButton=node('button','action-secondary','Copy shopping checklist');
+ copyButton.type='button';copyButton.dataset.action='copy-shopping';
+ copyButton.dataset.projectFingerprint=sourceProjectHash;
+ copyButton.dataset.shoppingText=buildShoppingChecklistText(lines,sourceProjectHash);
+ append(tools,node('p','footer-note','Exact raw amount, rounded purchase, fabric-roll offcut and shop rounding differ. Project snapshot: '+sourceProjectHash+'. Match it to the cut-list CSV and project calculation JSON before using either file; this short tag is not a digital signature.'),
+  copyButton,button);
  parent.appendChild(tools);
  const priceNote=prices.enteredPriceSubtotalUsd===undefined
   ?'No entered-price subtotal: add prices to feasible material lines to calculate a partial cost estimate.'
@@ -437,11 +448,53 @@ if(root){
  // Shopping buttons are regenerated on each calculation: one capture-phase
  // gate runs before any individual shopping download click handler.
  resultRoot.addEventListener('click',event=>{
-  if((event.target as Element|null)?.closest('[data-action="export-shopping"]') &&
-     !requireCurrentOutput('download a shopping list')){
+  const target=(event.target as Element|null)?.closest<HTMLButtonElement>('[data-action="export-shopping"],[data-action="copy-shopping"]');
+  if(!target)return;
+  const isCopy=target.dataset.action==='copy-shopping';
+  const valid=isCopy
+   ?requireCommittedDraft('copy a shopping checklist')&&requireCurrentOutput('copy a shopping checklist')&&target.dataset.projectFingerprint===hashProject(project)
+   :requireCurrentOutput('download a shopping list');
+  if(!valid){
+   if(isCopy && target.dataset.projectFingerprint!==hashProject(project))
+    note('Cannot copy a previous shopping snapshot. Refresh the cutting plan and review it again.',true);
    event.preventDefault();event.stopImmediatePropagation();
   }
  },true);
+ // Copy is a user-initiated local action. The same export freshness guards
+ // apply to CSV and clipboard, including cross-tab and unfinished drafts.
+ resultRoot.addEventListener('click',async event=>{
+  const button=(event.target as Element|null)?.closest<HTMLButtonElement>('[data-action="copy-shopping"]');
+  if(!button||button.disabled)return;
+  const snapshot=button.dataset.shoppingText||'';
+  const fingerprint=button.dataset.projectFingerprint;
+  if(!snapshot||!fingerprint||fingerprint!==hashProject(project))return;
+  button.disabled=true;
+  let copied=false;
+  try{
+   if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(snapshot);copied=true;}
+  }catch{/* Browser clipboard permission may be denied: use the local fallback. */}
+  if(!copied){
+   const previous=document.activeElement as HTMLElement|null;
+   const area=node('textarea');
+   area.value=snapshot;area.setAttribute('aria-hidden','true');area.tabIndex=-1;
+   area.style.position='fixed';area.style.left='-10000px';area.style.top='0';
+   document.body.appendChild(area);area.focus();area.select();
+   try{copied=document.execCommand('copy');}catch{/* Permission denied. */}
+   area.remove();previous?.focus?.();
+  }
+  if(button.isConnected)button.disabled=false;
+  if(!copied){
+   note('Clipboard access was blocked. Download the shopping CSV instead; nothing was copied.',true);
+   return;
+  }
+  // Permission prompts can be asynchronous. Never declare a stale copy current.
+  if(!button.isConnected||fingerprint!==hashProject(project)||
+     !requireCurrentOutput('confirm the copied shopping checklist')){
+   note('An earlier shopping list was copied just before your project changed. Recalculate and copy the current checklist instead.',true);
+   return;
+  }
+  note('Shopping checklist copied locally for project '+fingerprint+'. Unready materials are flagged; verify actual fabric before buying.');
+ });
  root.querySelector('[data-action="load-latest"]')?.addEventListener('click',()=>{
   if(unreadableSavedJson!==null){
    note('The original saved project is unreadable. Download the raw backup, then explicitly start fresh before loading.',true);
