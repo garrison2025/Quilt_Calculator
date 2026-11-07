@@ -271,7 +271,7 @@ try{
     check(await copyButton.count()===1 && await copyButton.isEnabled(),
       'Every calculator must offer a CURRENT accepted summary: '+path);
     const controls=await page.locator('[data-tool] .results-footer button').evaluateAll(
-     elements=>elements.map(el=>({w:el.getBoundingClientRect().width,h:el.getBoundingClientRect().height})));
+     elements=>elements.map(el=>({w:el.getBoundingClientRect().width,h:el.getBoundingClientRect().height,button:el.getAttribute('data-action'),minHeight:getComputedStyle(el).minHeight,display:getComputedStyle(el).display,tag:el.tagName})));
     check(controls.length>=4&&controls.every(x=>x.w>=43.9&&x.h>=43.9),
       'Share/CSV/JSON/Print controls must be touch-sized on '+path+': '+JSON.stringify(controls));
 
