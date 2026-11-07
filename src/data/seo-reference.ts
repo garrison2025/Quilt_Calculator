@@ -1,5 +1,5 @@
 import {calculateBacking, calculateStraightBinding, calculateYardage, selectBackingOption} from '../lib/quilt/math';
-import {sampleProject} from '../lib/quilt/project';
+import {sampleProject, calculateProjectBinding} from '../lib/quilt/project';
 import {resolveQuiltDimensions} from '../lib/quilt/dimensions';
 
 /** Verified-engine illustrative examples. These are NOT industry-standard quilt
@@ -18,11 +18,7 @@ export function currentPlannerSample(){
   step:o.step,shrinkageLengthPct:o.lengthShrinkage
  });
  const chosen=selectBackingOption(backing,o.backingDirection);
- const binding=calculateStraightBinding({
-  widthIn:d.finalWidthIn,heightIn:d.finalHeightIn,
-  wofIn:o.usableWof,stripWidthIn:o.stripWidth,tailAllowanceIn:o.tailAllowance,
-  joinLossIn:o.stripJoinLoss,step:o.step,shrinkageLengthPct:o.lengthShrinkage
- });
+ const binding=calculateProjectBinding(o,d.finalWidthIn,d.finalHeightIn);
  return {centerWidthIn:d.centerWidthIn,centerHeightIn:d.centerHeightIn,
   borderPerSideIn:d.borderPerSideIn,finalWidthIn:d.finalWidthIn,finalHeightIn:d.finalHeightIn,
   backingOverageIn:o.overage,backingWidthIn:backing.targetWidthIn,
