@@ -90,8 +90,8 @@ function series(
  const original=raw[key]??'';
  if(typeof original!=='string'||original.length>1200)
   throw Error('Invalid printable series '+key+'.');
- const parts=original.trim()?original.split(/[;,\n]+/).map(v=>v.trim()):[];
- const mismatch=parts.length>0&&parts.length!==count;
+ const parts=original.trim()?original.split(/[;,\n]/).map(v=>v.trim()):[];
+ const mismatch=parts.length>0&&(parts.length!==count||parts.some(v=>v===''));
  const entries=Array.from({length:count},(_,i)=>({
   id:key+'-'+(i+1),sourceKey:key,
   label:label+' '+(i+1)+' / '+count,
