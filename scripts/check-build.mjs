@@ -384,10 +384,20 @@ const direct=fs.readFileSync('dist/fabric-yards-to-inches/index.html','utf8');
 if(!direct.includes('data-seo-direct-answer')||
    !direct.includes('One linear yard of fabric is exactly 36 inches (91.44 centimeters) long.')||
    !direct.includes('four yards is')||
+   !direct.includes('Reverse conversion works here too:')||
+   !direct.includes('22.86 centimeters')||
    !direct.includes('href="#fraction-reference"')||
    !direct.includes('id="fraction-reference"'))
  throw Error('Converter must give high-intent yard conversion answer in raw HTML.');
 
+const reverseConversionSource=fs.readFileSync('src/lib/quilt/fabric-length-conversion.ts','utf8');
+for(const token of [
+ 'convertFabricLength','switchFabricLengthUnit','yd:36','cm:1/2.54',
+ 'LINEAR_LENGTH_ONLY_NOT_FABRIC_AREA_OR_PURCHASE'
+]){
+ if(!reverseConversionSource.includes(token))
+  throw Error('Reversible converter must be true linear length, not area or fabric purchase: '+token);
+}
 for(const slug of slugs.filter(Boolean)){
  const html=fs.readFileSync('dist/'+slug+'/index.html','utf8');
  if(!html.includes('data-content-guide=')||!html.includes('PRACTICAL MEASUREMENT GUIDE')||!html.includes('What to calculate next')){

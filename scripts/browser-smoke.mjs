@@ -289,6 +289,57 @@ try{
       check((await page.locator('[data-results] .result-big').innerText()).includes('24'),'Pasted two-thirds must convert to 24 inches.');
       check(await page.locator('[data-action="export-cut"]').isEnabled(),'Corrected converter must re-enable valid export.');
       console.log('PASS strict US numeric syntax, inline errors, recovery and exact yard conversions.');
+      const sourceUnit=page.getByLabel('Convert from');
+      const amountInput=page.locator('#yard-input');
+      check(await sourceUnit.count()===1 && await sourceUnit.inputValue()==='yd',
+        'Converter must default to the approved YARDS source, with explicit alternate units.');
+      await amountInput.fill('1/4');
+      await sourceUnit.selectOption('in');
+      check(await amountInput.inputValue()==='9' &&
+        (await page.locator('[data-results] .result-big').innerText()).includes('0.25 yd') &&
+        (await page.locator('#yard-input').getAttribute('aria-invalid'))==='false' &&
+        await page.getByLabel('Fabric inches (decimals or fractions)').count()===1,
+        'Switching 1/4 yard to inches must RETAIN the 9-inch length and update accessible labels.');
+      const switchExportPromise=page.waitForEvent('download');
+      await page.locator('[data-action="export-cut"]').click();
+      const switchExport=await switchExportPromise;
+      const conversionRecord=JSON.parse(await fs.readFile(await switchExport.path(),'utf8'));
+      check(conversionRecord.result.inputUnit==='in' &&
+        conversionRecord.result.inches===9 &&
+        conversionRecord.result.yards===.25 &&
+        conversionRecord.result.centimeters===22.86 &&
+        conversionRecord.result.scope==='LINEAR_LENGTH_ONLY_NOT_FABRIC_AREA_OR_PURCHASE' &&
+        !('purchaseYards' in conversionRecord.result),
+        'Reverse converter JSON must report original unit and unrounded length; NEVER claim fabric purchase.');
+      await sourceUnit.selectOption('cm');
+      check(await amountInput.inputValue()==='22.86' &&
+        (await page.locator('[data-results] .result-big').innerText()).includes('9 in') &&
+        await page.getByLabel('Fabric centimeters (decimals or fractions)').count()===1,
+        'Changing inches to centimeters must preserve the 9-inch measurement.');
+      await amountInput.fill('1,2');
+      await sourceUnit.selectOption('yd');
+      check(await sourceUnit.inputValue()==='cm' &&
+        await amountInput.inputValue()==='1,2' &&
+        await amountInput.getAttribute('aria-invalid')==='true' &&
+        !(await page.locator('[data-action="export-cut"]').isEnabled()),
+        'Malformed input must reject unit change and revoke old downloadable calculation.');
+      await amountInput.fill('22.86');
+      await sourceUnit.selectOption('yd');
+      check(await amountInput.inputValue()==='0.25' &&
+        (await page.locator('[data-results] .result-big').innerText()).includes('9 in'),
+        'Round trip centimeters to yards must preserve the same length, not reinterpret 22.86 as yards.');
+      await amountInput.fill('5000');
+      await sourceUnit.selectOption('in');
+      check(await sourceUnit.inputValue()==='yd' &&
+        await amountInput.inputValue()==='5000' &&
+        await amountInput.getAttribute('aria-invalid')==='true' &&
+        !(await page.locator('[data-action="export-cut"]').isEnabled()),
+        'Oversized input-unit switch must fail closed rather than show a fabricated conversion.');
+      await amountInput.fill('1/4');
+      check(await page.locator('[data-action="export-cut"]').isEnabled(),
+        'Correction after rejected unit switch must recover export and retain original yard unit.');
+      console.log('PASS reversible length-converter unit switching, invariant length, JSON provenance and rejection recovery.');
+
       await page.emulateMedia({media:'print'});
       check(await page.locator('[data-tool]').getAttribute('data-print-ready')==='true',
         'Pure yards conversion may still print its valid length chart without physical cuts.');
