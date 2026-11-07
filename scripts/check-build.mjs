@@ -471,7 +471,7 @@ for(const line of cfHeaders.split(/\r?\n/)){
   throw Error('Cloudflare header URL cannot contain two wildcards: '+line);
 }
 for(const routePattern of ['/lab/*','/qa/*']){
- if(!cfHeaders.includes(routePattern+'\\n  X-Robots-Tag: noindex'))
+ if(!cfHeaders.includes(routePattern+'\n  X-Robots-Tag: noindex'))
   throw Error('Research/physical QA paths must keep host-independent noindex: '+routePattern);
 }
 console.log('PASS Cloudflare main and branch preview noindex response-header rules.');
