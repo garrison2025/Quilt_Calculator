@@ -9,6 +9,7 @@ import {calculateBiasAreaLowerBound} from '../lib/quilt/bias-area-bound';
 import {convertFabricLength,switchFabricLengthUnit,type FabricLengthUnit} from '../lib/quilt/fabric-length-conversion';
 import {FINISHED_SIZE_EXAMPLES,applyFinishedSizeExample,applyBlockGridAsCenter,compareBackingPurchases,solveBlockSizeForCenter,applyTargetBlockSize} from '../lib/quilt/quick-planning';
 import {buildCalculatorCopySummary,type CalculatorCopyStatus} from '../lib/quilt/copy-summary';
+import {duplicateFabricSku,duplicateFabricCutGroup} from '../lib/quilt/duplicate';
 type Kind = 'length' | 'whole' | 'number' | 'pct' | 'check' | 'text';
 type Field = { label: string; path: string; kind?: Kind; note?: string };
 const num = (n: number, digits = 3): string => Number(n.toFixed(digits)).toLocaleString('en-US', {maximumFractionDigits: digits});
@@ -625,7 +626,21 @@ if(root){
     const neighbor=Math.min(i,project.fabrics.length-1);
     rebuildDynamicEditor(neighbor<0?'[data-add-sku]':`[data-fabric-index="${neighbor}"] [data-remove-sku]`);
    });
-   append(head,fabricTitle,del);card.appendChild(head);
+   const duplicateSku=node('button','action-secondary','Duplicate SKU');
+   duplicateSku.type='button';duplicateSku.dataset.duplicateSku='';
+   duplicateSku.setAttribute('aria-describedby',fabricTitle.id);
+   duplicateSku.addEventListener('click',()=>{
+    if(!requireCommittedDraft('duplicate a fabric roll')||!requireCurrentOutput('duplicate a fabric roll'))return;
+    try{
+     const result=duplicateFabricSku(project,i);
+     project=result.project;persist();
+     rebuildDynamicEditor('[data-fabric-index="'+result.index+'"] .field-control',true);
+     note('Independent fabric SKU duplicated. Review the new color, piece counts and actual usable width before accepting the quilt-top cut list.');
+    }catch(e){note('Could not duplicate fabric SKU: '+(e instanceof Error?e.message:'Invalid cutting project'),true);}
+   });
+   const skuActions=node('div','dynamic-actions');
+   append(skuActions,duplicateSku,del);
+   append(head,fabricTitle,skuActions);card.appendChild(head);
    card.appendChild(makeGroup('Fabric roll',[
     {label:'SKU (unique)',path:'id',kind:'text'},{label:'Fabric / color label',path:'label',kind:'text'},
     {label:'Usable WOF',path:'usableWidth',kind:'length'},{label:'Length shrinkage (%)',path:'shrinkageLengthPct',kind:'pct'},
@@ -653,7 +668,21 @@ if(root){
       ?`[data-fabric-index="${i}"] [data-add-cut]`
       :`[data-fabric-index="${i}"] [data-cut-index="${neighbor}"] [data-remove-cut]`);
     });
-    append(h,cutTitle,remove);group.appendChild(h);
+    const duplicateCut=node('button','action-secondary','Duplicate cut group');
+    duplicateCut.type='button';duplicateCut.dataset.duplicateCut='';
+    duplicateCut.setAttribute('aria-describedby',fabricTitle.id+' '+cutTitle.id);
+    duplicateCut.addEventListener('click',()=>{
+     if(!requireCommittedDraft('duplicate a cut group')||!requireCurrentOutput('duplicate a cut group'))return;
+     try{
+      const result=duplicateFabricCutGroup(project,i,j);
+      project=result.project;persist();
+      rebuildDynamicEditor('[data-fabric-index="'+i+'"] [data-cut-index="'+result.index+'"] .field-control',true);
+      note('Cut group duplicated inside its own fabric roll. Check the copied dimensions and count before approving the new cutting plan.');
+     }catch(e){note('Could not duplicate cut group: '+(e instanceof Error?e.message:'Invalid cutting project'),true);}
+    });
+    const cutActions=node('div','dynamic-actions');
+    append(cutActions,duplicateCut,remove);
+    append(h,cutTitle,cutActions);group.appendChild(h);
     group.appendChild(makeGroup('Rectangle CUT sizes',[
      {label:'Piece label',path:'label',kind:'text'},{label:'Cut width',path:'widthIn',kind:'length'},
      {label:'Cut height',path:'heightIn',kind:'length'},{label:'Count',path:'count',kind:'whole'},
