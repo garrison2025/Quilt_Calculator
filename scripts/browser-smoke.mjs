@@ -3291,6 +3291,22 @@ try{
   await physical.locator('[data-bias-physical-print]').click();
   check(await physical.evaluate(()=>window.__biasPrintTestCalls)===1,
     'Print button must actually request browser printing.');
+  // A rejected draft must never leave the previous printable record cached.
+  // Imported or pasted extremely long evidence is a common source of errors.
+  await physical.locator('[data-bias-obs="evidenceReferences"]').fill('x'.repeat(1201));
+  check(await physical.locator('[data-bias-physical-print]').isDisabled() &&
+    await paper.locator('[data-bias-print-blocked="true"]').count()===1 &&
+    await paper.locator('[data-bias-print-field]').count()===0 &&
+    (await physical.locator('[data-bias-physical-print-error]').innerText()).includes('Print blocked'),
+    'Oversized evidence must clear the prior print sheet and DISABLE print; no stale measurements survive.');
+  await physical.evaluate(()=>window.dispatchEvent(new Event('beforeprint')));
+  check(await paper.locator('[data-bias-print-blocked="true"]').count()===1,
+    'Ctrl+P beforeprint must revalidate invalid fields instead of reusing an old record.');
+  await physical.locator('[data-bias-obs="evidenceReferences"]').fill('');
+  check(await physical.locator('[data-bias-physical-print]').isEnabled() &&
+    await paper.locator('[data-bias-print-record-status="NOT_RUN"]').count()===1 &&
+    await paper.locator('[data-bias-print-blocked="true"]').count()===0,
+    'Fixing the field must restore a fresh blank print sheet and clear the print error.');
   await physical.locator('[data-bias-obs="measuredSquareWidthIn"]').fill('30');
   check((await physical.locator('[data-bias-physical-status]').innerText()).includes('UNREVIEWED CHANGES'),
     'Editing real observations must invalidate the visible previous status until explicitly audited.');
