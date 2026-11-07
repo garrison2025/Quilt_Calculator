@@ -289,6 +289,43 @@ try{
       check(copyText.includes('LENGTH CONVERSION ONLY')&&copyText.includes('no fabric width'),
         'Length conversion clipboard text cannot invent fabric area or purchase yards.');
 
+    // A purchasable, human-readable list must be easy to copy without
+    // mistaking the example's unreviewed or infeasible lines for an order.
+    const shoppingCopy=page.locator('[data-results] [data-action="copy-shopping"]');
+    if(await shoppingCopy.count()){
+      check(await shoppingCopy.count()===1 && await shoppingCopy.isEnabled(),
+        'Material results must offer one current shopping copy control: '+path);
+      const source=await shoppingCopy.getAttribute('data-project-fingerprint');
+      check(/^[0-9a-f]{8}$/.test(source||''),
+        'Copyable shopping list must identify an actual current project snapshot: '+path);
+      await page.evaluate(()=>{window.__quiltCopiedText='';});
+      await shoppingCopy.click();
+      await page.waitForFunction(()=>window.__quiltCopiedText?.includes('MATERIAL SHOPPING CHECKLIST'));
+      const copied=await page.evaluate(()=>window.__quiltCopiedText);
+      check(copied.includes('Project snapshot: '+source) &&
+        copied.includes('CUT LAYOUT CALCULATED') || copied.includes('Project snapshot: '+source) &&
+        copied.includes('INCOMPLETE / DO NOT TREAT AS A FULL ORDER'),
+        'Shopping clipboard needs matching snapshot and honest status: '+path);
+      check(copied.includes('CHECK:') && copied.includes('Prices omit tax, delivery') &&
+        !copied.includes('SAFE TO BUY') && !copied.includes('CERTIFIED'),
+        'Shopping clipboard must label partial pricing and physical-cut uncertainty: '+path);
+      const rollLines=await page.locator('[data-results] .shopping-item').count();
+      check((copied.match(/^\[(?: |!|X)\] \d+\./gm)||[]).length===rollLines,
+        'Shopping text must preserve all separate physical rolls and status markers: '+path);
+      if(path==='/'||path==='/calculators/')
+        check(copied.includes('[!]')&&copied.includes('NOT REVIEWED')&&
+              copied.includes('INCOMPLETE / DO NOT TREAT AS A FULL ORDER'),
+          'Unreviewed whole-quilt example cannot copy as a valid complete order.');
+    }
+    const firstSvg=page.locator('[data-results] svg[data-export-scope="current"]').first();
+    if(await firstSvg.count()){
+      const guide=page.locator('[data-results] .diagram-wrap .cut-axis-guide').first();
+      check(await guide.count()===1 &&
+        (await guide.innerText()).includes('Roll Y: along the fabric bolt length') &&
+        (await guide.innerText()).includes('Roll X: across the usable WOF'),
+        'Current schematic must explain both measured coordinate axes for '+path);
+    }
+
     // The user must supply post-prewash *usable WOF* for valid cross-grain
     // fit. Length shrinkage percentage never reduces input roll width.
     if(['/', '/calculators/', '/quilt-backing-calculator/', '/quilt-binding-calculator/',
