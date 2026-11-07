@@ -34,6 +34,12 @@ jobs:
       # launch itself is still required, and missing native libs fail the QA.
       - name: Install isolated Chromium browser
         run: npx playwright install chromium
+      - name: Ensure PDF text/render inspection tools are available
+        run: |
+          if ! command -v pdftotext >/dev/null 2>&1 || ! command -v pdfinfo >/dev/null 2>&1 || ! command -v pdftoppm >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq poppler-utils
+          fi
       - name: Test real calculator interactions, downloads, mobile and print
         timeout-minutes: 6
         run: node scripts/browser-smoke.mjs

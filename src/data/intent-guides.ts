@@ -20,7 +20,7 @@ export const guides:Record<ToolId,Guide>={
    ]},
    {heading:'How to read the purchasing totals',paragraphs:[
     'Exact cutting-run length is not the same as rounded purchase yardage. The planner computes a physical cutting run, adjusts length for the specified prewash shrinkage where applicable, and rounds the purchase upward once to the selected shop increment.',
-    'Download the itemized shopping CSV or individual cut-list CSV to check each material. The PDF is a schematic showing measurements and coordinates—not a full-size sewing template. When the selected material cannot physically fit, no purchasing estimate should be treated as proven.'
+    'Download the itemized shopping CSV or full cut-list CSV to check every material. The in-page Print plan is a schematic with only the displayed coordinate previews; for EVERY verified cut, download Full printable cut sheets (.html), open that standalone file offline and use Print / Save as PDF. Neither printout is a full-size sewing template. If any material cannot fit, complete-plan export remains blocked.'
    ]},
    {heading:'One project, several independent methods',paragraphs:[
     'Backing joins consume fabric along seams; straight-grain binding consumes length at strip joints; batting is limited to a single piece; butted borders use side strips before top and bottom strips. The specialized calculators expose their own assumptions and dimensions.',
@@ -38,7 +38,9 @@ export const guides:Record<ToolId,Guide>={
    ]},
    {heading:'What changes with 108-inch wide backing?',paragraphs:[
     'Extra-wide backing can sometimes cover the requested span with one unjoined piece. Set the measured usable width—not just the advertised bolt width—to 108 inches if that is truly available for cutting. For the 68 × 88 inch example, one panel can fit across 108 inches; check the chosen grain direction and required length.',
-    'The calculator reports panel count, assembly seam positions before trimming, cutting coordinates and roll offcut separately. Extra width does not eliminate the need for quilting overage or prewash allowance.'
+    'The calculator reports panel count, assembly seam positions before trimming, cutting coordinates and roll offcut separately. Extra width does not eliminate the need for quilting overage or prewash allowance.',
+    'A shop listing such as 44-inch or 108-inch fabric is an advertised bolt width, not automatically the usable width after removing selvages or prewashing. For illustration, a listed 44-inch bolt might leave 42 inches usable, but the actual measurement can differ. Enter your measured usable WOF, not a fixed trim assumption; even a small difference near the two-panel seam threshold can change the total number of panels.',
+    'For a fair narrow-versus-wide price comparison, calculate each width with its own real usable WOF and multiply its independently rounded purchase yards by that fabric’s own entered price per yard. The optional alternate-width comparison is read-only and is never mixed into the current cut-list CSV or physical print plan. A lower yard count does not prove lower total cost without both prices, delivery, tax and labor.'
    ]},
    {heading:'When these numbers are not a cutting instruction',paragraphs:[
     'The built-in model handles full-width rectangular panels and straight joins. It does not model diagonal backing, pieced motifs, selvage-specific pattern matching, fabric defects, or mechanical longarm requirements. Confirm any special method before cutting.'
@@ -107,7 +109,7 @@ export const guides:Record<ToolId,Guide>={
     'Use the cut sizes after accounting for seam allowance. If a rectangular piece cannot fit your chosen width in any permitted direction, that SKU displays an impossible-fit warning instead of an unsupported yardage suggestion.'
    ]},
    {heading:'Export a usable shop and cutting checklist',paragraphs:[
-    'The shopping CSV separates rounded buying quantities, the cutting-run length and roll offcuts by SKU. The cut-list CSV shows each physical rectangle with its position on its own fabric roll. User-entered prices are estimates only, not a live retailer quote.'
+    'The shopping CSV separates rounded buying quantities, the cutting-run length and roll offcuts by SKU. The full cut-list CSV shows every physical rectangle with its coordinates on its own fabric roll. Download Full printable cut sheets (.html) to get a standalone, offline, per-roll checklist containing every verified cut and a checkbox for each piece; open it in your browser to print or Save as PDF. The on-page Print plan is only a shorter schematic preview, never a 1:1 cutting template. Full exports require a current and geometrically feasible cut plan; the whole-project Planner additionally requires a manually reviewed quilt-top coverage checklist. User-entered prices are estimates only, not a live retailer quote.'
    ]}
   ],related:['yardage','hub','inches']
  },
