@@ -2,6 +2,14 @@ import fs from 'node:fs';
 const slugs=['','calculators','quilt-backing-calculator','quilt-binding-calculator','quilt-border-calculator','fabric-yardage-calculator','quilt-fabric-calculator','fabric-yards-to-inches','quilt-batting-calculator','quilt-sashing-calculator'];
 const site=process.env.PUBLIC_SITE_URL||'';
 const githubSha=process.env.GITHUB_SHA?.toLowerCase();
+const copySummarySource=fs.readFileSync('src/lib/quilt/copy-summary.ts','utf8');
+for(const guard of ['buildCalculatorCopySummary','NOT A PURCHASE ORDER',
+ 'Source project:','LENGTH CONVERSION ONLY','NOT independently sewn',
+ 'cutting-list CSV']){
+ if(!copySummarySource.includes(guard))
+  throw Error('Copy-summary safety contract missing: '+guard);
+}
+
 if(githubSha && !/^[0-9a-f]{40}$/.test(githubSha))throw Error('Invalid GITHUB_SHA used for provenance verification.');
 const production=process.env.PUBLIC_INDEXABLE==='1'&&/^https:\/\/[a-z0-9.-]+$/i.test(site)&&!/\.pages\.dev$|localhost$|127\.0\.0\.1$/.test(site.toLowerCase());
 for(const slug of slugs){
@@ -11,6 +19,8 @@ for(const slug of slugs){
  for(const pattern of ['<h1','name="description"',production?'index,follow':'noindex,follow','.webp','application/ld+json']){
   if(!html.includes(pattern))throw Error('Missing '+pattern+' on '+file);
  }
+ if(!html.includes('data-action="copy-summary"') || !html.includes('Copy result summary'))
+  throw Error('Approved calculator is missing the local shareable result action: '+file);
  if(production && !html.includes('rel="canonical"'))throw Error('Missing canonical: '+file);
  if(githubSha && !html.includes('name="quilt-build-commit" content="'+githubSha+'"'))
   throw Error('Static build does not identify its exact source commit: '+file);
