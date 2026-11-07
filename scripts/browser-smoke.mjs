@@ -259,13 +259,21 @@ try{
     // Every approved route must share its current readable result without
     // sending private project measurements to a server. This mocks only
     // clipboard permission, NOT the button/formatter or actual UI click.
+    const printableFull=page.locator('[data-action="download-full-cut-sheets"]');
+    check(await printableFull.count()===1,
+      'Every calculator needs one clearly gated complete printable cut-list action: '+path);
+    if(path==='/'||path==='/calculators/'||path==='/fabric-yards-to-inches/')
+      check(await printableFull.isDisabled(),
+        'Unreviewed projects and linear-only unit conversion must never print unverified complete physical cuts: '+path);
+    check((await page.locator('.results-print-hint').innerText()).includes('Full printable cut sheets'),
+      'Users need honest explanation of the full printable workbook versus abbreviated quick Print: '+path);
     const copyButton=page.locator('[data-action="copy-summary"]');
     check(await copyButton.count()===1 && await copyButton.isEnabled(),
       'Every calculator must offer a CURRENT accepted summary: '+path);
     const controls=await page.locator('[data-tool] .results-footer button').evaluateAll(
-     elements=>elements.map(el=>({w:el.getBoundingClientRect().width,h:el.getBoundingClientRect().height})));
+     elements=>elements.map(el=>({w:el.getBoundingClientRect().width,h:el.getBoundingClientRect().height,button:el.getAttribute('data-action'),minHeight:getComputedStyle(el).minHeight,display:getComputedStyle(el).display,tag:el.tagName})));
     check(controls.length>=4&&controls.every(x=>x.w>=43.9&&x.h>=43.9),
-      'Share/CSV/JSON/Print controls must be touch-sized on '+path);
+      'Share/CSV/JSON/Print controls must be touch-sized on '+path+': '+JSON.stringify(controls));
 
     await page.evaluate(()=>{
       window.__quiltCopiedText='';
@@ -2420,6 +2428,48 @@ try{
     'All editable fabric SKU roll identifiers must be namespaced for physical export.');
   check(new Set(stressCsv.slice(1).map(row=>row[1])).size===30,
     'Upper-capacity CSV must keep all 30 separate fabric SKU roll identifiers.');
+  // A full offline print workbook must contain all physical cuts even though
+  // the interactive UI deliberately caps per-roll DOM at 45 rows. Download
+  // the ACTUAL HTML via Chromium and inspect the complete exported document.
+  check(await keyboard.locator('[data-action="download-full-cut-sheets"]').isEnabled(),
+    '2,000 fully verified physical pieces must enable the complete print workbook.');
+  const fullPrintEvent=keyboard.waitForEvent('download');
+  await keyboard.locator('[data-action="download-full-cut-sheets"]').click();
+  const fullPrintDownload=await fullPrintEvent;
+  check(/^quilt-studio-COMPLETE-cut-sheets-[0-9a-f]{8}\.html$/.test(fullPrintDownload.suggestedFilename()),
+    'Full offline print workbook needs a snapshot-specific descriptive HTML filename.');
+  const fullPrintHtml=await fs.readFile(await fullPrintDownload.path(),'utf8');
+  const fullSheetMeta=await keyboard.evaluate((source)=>{
+    const parsed=new DOMParser().parseFromString(source,'text/html');
+    const rolls=[...parsed.querySelectorAll('main section.roll')];
+    const rows=[...parsed.querySelectorAll('main table tbody tr[data-cut-number]')];
+    return {
+      title:parsed.title,
+      rollCount:rolls.length,
+      rowCount:rows.length,
+      perRoll:rolls.map(roll=>roll.querySelectorAll('tbody tr[data-cut-number]').length),
+      lastLabel:rolls.at(-1)?.querySelector('tbody tr:last-child .name')?.textContent,
+      scripts:parsed.querySelectorAll('script').length,
+      remote:parsed.querySelectorAll('link[href],script[src],img[src],iframe').length,
+      pageRules:[...parsed.querySelectorAll('style')].some(el=>el.textContent?.includes('@page{size:letter landscape')),
+      warning:parsed.body.textContent?.includes('NOT actual-size templates'),
+      fingerprint:parsed.querySelector('header .tag')?.textContent
+    };
+  },fullPrintHtml);
+  const expectedFingerprint=stressCsv[1].at(-1);
+  check(fullSheetMeta.rollCount===30&&fullSheetMeta.rowCount===2000 &&
+    fullSheetMeta.perRoll[0]===181&&fullSheetMeta.perRoll[29]===83 &&
+    fullSheetMeta.perRoll.reduce((a,b)=>a+b,0)===2000 &&
+    fullSheetMeta.lastLabel==='Square 29 83' &&
+    fullSheetMeta.scripts===0&&fullSheetMeta.remote===0 &&
+    fullSheetMeta.pageRules&&fullSheetMeta.warning&&
+    fullSheetMeta.fingerprint?.includes(expectedFingerprint),
+    'Real exported offline HTML must contain all 2,000 cuts in 30 physically independent rolls, safe source fingerprint and print CSS: '+JSON.stringify(fullSheetMeta));
+  const untouchedProject=await keyboard.evaluate(()=>JSON.parse(localStorage.getItem('quilt-studio-v2')));
+  check(untouchedProject.fabrics.length===30&&untouchedProject.fabrics[0].pieces[0].count===181,
+    'Downloading a complete print workbook must not alter the saved project or piece quantities.');
+  console.log('PASS standalone offline HTML print workbook: all 2,000 physical cuts, 30 SKU rolls, source hash and safe inline-only CSS.');
+
   await keyboard.setViewportSize({width:375,height:820});
   const stressOverflow=await keyboard.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
   check(stressOverflow<=2,'2,000-cut large-project preview must not introduce mobile horizontal overflow.');
@@ -2447,6 +2497,8 @@ try{
    'Dense single roll must render exactly 180 schematic rectangles.');
   check((await keyboard.locator('details.sku-plan .diagram-note').innerText()).includes('complete physical cut-list CSV includes every cut'),
    'Dense cut preview must direct users to the full CSV, not imply missing pieces.');
+  check(await keyboard.locator('[data-action="download-full-cut-sheets"]').isEnabled(),
+   'A dense single-roll 2,000-piece plan must support the complete printable output as well as CSV.');
   const denseDownload=keyboard.waitForEvent('download');
   await keyboard.locator('[data-action="export-cut-csv"]').click();
   const denseCsv=csvRecords(await fs.readFile(await (await denseDownload).path(),'utf8'));

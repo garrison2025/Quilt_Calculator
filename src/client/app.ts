@@ -2,6 +2,7 @@ import { VERSION, calculateBacking, calculateStraightBinding, calculateYardage, 
 import { sampleProject, validateProject, quiltTopReviewFingerprint, hasCurrentQuiltTopReview, type Project } from '../lib/quilt/project';
 import { resolveQuiltDimensions, type QuiltDimensions } from '../lib/quilt/dimensions';
 import { cutListCsv, physicalRollId, type MaterialCutPlan } from '../lib/quilt/cutlist';
+import {fullPrintableCutSheets} from '../lib/quilt/full-printable-cuts';
 import { shoppingCsv, shoppingPriceSummary, hasIncompleteShopping, shoppingLineStatus, needsTopFabricPlan, type ShoppingLine } from '../lib/quilt/shopping';
 import {buildShoppingChecklistText} from '../lib/quilt/shopping-checklist';
 import type { ToolId } from './types';
@@ -405,6 +406,7 @@ if(root){
  const exportButton=root.querySelector<HTMLButtonElement>('[data-action="export-cut"]')!;
  const copyButton=root.querySelector<HTMLButtonElement>('[data-action="copy-summary"]')!;
  const cutCsvButton=root.querySelector<HTMLButtonElement>('[data-action="export-cut-csv"]')!;
+ const fullPrintButton=root.querySelector<HTMLButtonElement>('[data-action="download-full-cut-sheets"]')!;
  const printButton=root.querySelector<HTMLButtonElement>('[data-action="print"]')!;
  const saveButton=root.querySelector<HTMLButtonElement>('[data-action="save"]')!;
  const undoResetButton=root.querySelector<HTMLButtonElement>('[data-action="undo-reset"]')!;
@@ -454,7 +456,7 @@ if(root){
   // never present its superseded cut sheets as current purchasing instructions.
   root!.dataset.printReady='false';
   cutExport=null;materialCuts=[];shareSummaryText=null;
-  exportButton.disabled=true;cutCsvButton.disabled=true;printButton.disabled=true;copyButton.disabled=true;
+  exportButton.disabled=true;cutCsvButton.disabled=true;fullPrintButton.disabled=true;printButton.disabled=true;copyButton.disabled=true;
   resultRoot.querySelectorAll<HTMLButtonElement>('[data-action="export-shopping"]')
    .forEach(button=>button.disabled=true);
  }
@@ -647,7 +649,7 @@ if(root){
   cutExport=null;materialCuts=[];
   saveButton.disabled=true;
   shareSummaryText=null;
-  exportButton.disabled=true;cutCsvButton.disabled=true;printButton.disabled=true;copyButton.disabled=true;
+  exportButton.disabled=true;cutCsvButton.disabled=true;fullPrintButton.disabled=true;printButton.disabled=true;copyButton.disabled=true;
   resultRoot.querySelectorAll<HTMLButtonElement>('[data-action="export-shopping"]').forEach(button=>button.disabled=true);
   resultRoot.querySelector('[data-stale-warning]')?.remove();
   const stale=node('div','warning-banner error-banner',message);
@@ -1394,7 +1396,7 @@ if(root){
   const priorAcceptedFigure=lastAcceptedFigure;
   resultRoot.replaceChildren();cutExport=null;materialCuts=[];shareSummaryText=null;
   saveButton.disabled=false;
-  exportButton.disabled=true;cutCsvButton.disabled=true;printButton.disabled=true;copyButton.disabled=true;
+  exportButton.disabled=true;cutCsvButton.disabled=true;fullPrintButton.disabled=true;printButton.disabled=true;copyButton.disabled=true;
   try{
    const p=project,o=p.options,w=p.quilt.finishedWidth,h=p.quilt.finishedHeight;
    const needsDimensions=['hub','backing','binding','batting','borders'].includes(tool);
@@ -1623,6 +1625,7 @@ if(root){
    exportButton.disabled=false;
    printButton.disabled=!printable;
    cutCsvButton.disabled=!readyPhysicalPlan;
+   fullPrintButton.disabled=!readyPhysicalPlan;
    root!.dataset.printReady=printButton.disabled?'false':'true';
    if(tool==='hub'){
     const unfitRolls=materialCuts.filter(x=>!x.layout.isCutFeasible).length;
@@ -1717,7 +1720,7 @@ if(root){
      ?'Unreadable original autosave remains protected. Download its raw backup before explicitly replacing it. The displayed project is not saved.'
      :'This tab has unsaved edits and another tab saved a different project. Save a JSON backup, then load the newest project before exporting.',true);
    }
-  }catch(err){root!.dataset.printReady='false';cutExport=null;materialCuts=[];shareSummaryText=null;exportButton.disabled=true;cutCsvButton.disabled=true;printButton.disabled=true;copyButton.disabled=true;warning(resultRoot,(err instanceof Error ? err.message : 'Unknown calculation error'),true);
+  }catch(err){root!.dataset.printReady='false';cutExport=null;materialCuts=[];shareSummaryText=null;exportButton.disabled=true;cutCsvButton.disabled=true;fullPrintButton.disabled=true;printButton.disabled=true;copyButton.disabled=true;warning(resultRoot,(err instanceof Error ? err.message : 'Unknown calculation error'),true);
     const detail=err instanceof Error?err.message:'';
     note(detail.includes('SIZE BASIS NOT CONFIRMED')?'Choose how the saved quilt measurements relate to the border layers before estimating materials.':detail.includes('BORDER FIT IMPOSSIBLE')?'The border widths cannot fit inside the entered finished size; correct the dimensions before exporting.':'Cannot prove this cut is feasible. Review your measurements.',true);}
  }
@@ -1852,6 +1855,29 @@ if(root){
    a.href=url;a.download='quilt-studio-cut-list-'+sourceProjectHash+'.csv';document.body.appendChild(a);a.click();a.remove();
    setTimeout(()=>URL.revokeObjectURL(url),2000);
   }catch(error){note(error instanceof Error?error.message:'Could not export cutting list.',true);}
+ });
+ // A separate, complete cutting workbook avoids printing only the current
+ // 45-row coordinate page. It is self-contained (no remote scripts/fonts)
+ // and has exactly the same validated per-roll coordinates as cut CSV.
+ fullPrintButton.addEventListener('click',()=>{
+  if(!cutExport || fullPrintButton.disabled ||
+     !requireCommittedDraft('download full printable cutting sheets') ||
+     !requireCurrentOutput('download full printable cutting sheets'))return;
+  try{
+   const projectHash=hashProject(project);
+   const html=fullPrintableCutSheets(materialCuts,projectHash);
+   const blob=new Blob([html],{type:'text/html;charset=utf-8'});
+   const url=URL.createObjectURL(blob);
+   const link=document.createElement('a');
+   link.href=url;link.download='quilt-studio-COMPLETE-cut-sheets-'+projectHash+'.html';
+   document.body.appendChild(link);link.click();link.remove();
+   setTimeout(()=>URL.revokeObjectURL(url),2000);
+   note('Complete printable cut sheets downloaded: '+materialCuts.reduce((n,roll)=>n+roll.layout.cutPieces.length,0)+
+    ' verified physical cuts across '+materialCuts.length+
+    ' independent rolls. Open the HTML offline and choose Print / Save as PDF. Check real fabric and print settings before cutting.');
+  }catch(e){
+   note('Could not download the complete print sheets: '+(e instanceof Error?e.message:'Invalid cutting plan'),true);
+  }
  });
  let printingExpanded=false;
  let collapsedForPrint:HTMLDetailsElement[]=[];
