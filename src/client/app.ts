@@ -10,6 +10,7 @@ import {convertFabricLength,switchFabricLengthUnit,type FabricLengthUnit} from '
 import {FINISHED_SIZE_EXAMPLES,applyFinishedSizeExample,applyBlockGridAsCenter,compareBackingPurchases,solveBlockSizeForCenter,applyTargetBlockSize} from '../lib/quilt/quick-planning';
 import {buildCalculatorCopySummary,type CalculatorCopyStatus} from '../lib/quilt/copy-summary';
 import {duplicateFabricSku,duplicateFabricCutGroup} from '../lib/quilt/duplicate';
+import {previewBulkCutAppend} from '../lib/quilt/bulk-cuts';
 type Kind = 'length' | 'whole' | 'number' | 'pct' | 'check' | 'text';
 type Field = { label: string; path: string; kind?: Kind; note?: string };
 const num = (n: number, digits = 3): string => Number(n.toFixed(digits)).toLocaleString('en-US', {maximumFractionDigits: digits});
@@ -327,6 +328,10 @@ if(root){
   undoResetButton.disabled=true;
  }
  let project:Project=structuredClone(sampleProject);
+ // A spreadsheet paste remains a draft (never saved as physical cut pieces).
+ const bulkDrafts=new Map<string,string>();
+ const bulkOpen=new Set<string>();
+ const clearBulkDrafts=()=>{bulkDrafts.clear();bulkOpen.clear();};
  let sample=true,conv='1/4',convUnit:FabricLengthUnit='yd';
  // Read-only alternate width/price scenario; never included in shopping, cut CSV,
  // the saved V2 project or physical cutting-plan JSON until explicitly edited.
@@ -447,7 +452,7 @@ if(root){
    const latest=localStorage.getItem(STORAGE_KEY);
    const loaded=latest?validateProject(JSON.parse(latest)):structuredClone(sampleProject);
    clearResetSnapshot();
-   project=loaded;sample=!latest;lastStoredJson=latest;conv='1/4';convUnit='yd';
+   project=loaded;sample=!latest;lastStoredJson=latest;conv='1/4';convUnit='yd';clearBulkDrafts();
    syncWarning.hidden=true;
    storageState.textContent=latest?'Loaded the newest saved project from this browser.':'The saved project was reset in another tab; sample restored.';
    stateLabel.textContent=latest?'● My local project':'● Sample project';
@@ -648,7 +653,13 @@ if(root){
     {label:'One-way print',path:'oneWayPrint',kind:'check'}
    ],fabric,(f,v)=>{
     if(f.path==='id'&&project.fabrics.some((g,j)=>j!==i&&g.id===v))throw Error('SKU IDs must be unique.');
+    const priorSku=fabric.id;
     (fabric as unknown as Record<string,unknown>)[f.path]=v;
+    if(f.path==='id' && priorSku!==v){
+     const draft=bulkDrafts.get(priorSku);
+     if(draft!==undefined){bulkDrafts.set(String(v),draft);bulkDrafts.delete(priorSku);}
+     if(bulkOpen.delete(priorSku))bulkOpen.add(String(v));
+    }
     if(f.path==='label')fabricTitle.textContent=String(v)||'Fabric '+(i+1);
    }));
    fabric.pieces.forEach((piece,j)=>{
@@ -700,7 +711,74 @@ if(root){
     try{validateProject(project);}catch(e){fabric.pieces.pop();note((e as Error).message,true);return;}
     project.quilt.topCutsReviewed=false;project.quilt.topCutsReviewFingerprint=undefined;persist();
     rebuildDynamicEditor(`[data-fabric-index="${i}"] [data-cut-index="${fabric.pieces.length-1}"] .field-control`,true);
-   });card.appendChild(addPiece);shell.appendChild(card);
+   });card.appendChild(addPiece);
+   // Explicit two-step paste: preview and validate every row before changing
+   // one fabric roll. The staged text is not included in shopping/exports.
+   const bulk=node('details','bulk-cut-import');bulk.dataset.bulkCutImport='';
+   bulk.open=bulkOpen.has(fabric.id);
+   bulk.addEventListener('toggle',()=>{if(bulk.open)bulkOpen.add(fabric.id);else bulkOpen.delete(fabric.id);});
+   const heading=node('summary','bulk-cut-summary','Paste cut groups from Excel / CSV');
+   heading.setAttribute('aria-describedby',fabricTitle.id);
+   const help=node('p','hint','Paste 4 or 5 columns: Label | Cut width | Cut height | Count | Rotate (Yes/No). An optional header is accepted. Excel tabs and quoted CSV both work. Dimensions are actual CUT sizes in CURRENT '+project.units+'; include seam allowance. New rows append only to this SKU.');
+   const example=node('p','bulk-cut-example','Example: Blue squares | 5 | 5 | 12 | No');
+   const pasteLabel=node('label','bulk-cut-label','Paste cut rows for '+(fabric.label||fabric.id)+' ('+project.units+')');
+   const area=node('textarea','bulk-cut-textarea');area.rows=5;area.spellcheck=false;
+   area.id='bulk-cut-'+i;area.setAttribute('data-bulk-paste','');
+   area.placeholder='Label\tCut width\tCut height\tCount\tRotate\nBlue squares\t5\t5\t12\tNo\nCorner pieces\t3 1/2\t4\t8\tYes';
+   area.value=bulkDrafts.get(fabric.id)||'';pasteLabel.htmlFor=area.id;
+   const feedback=node('p','bulk-cut-feedback','Not reviewed. Your pasted rows are a draft only.');
+   feedback.setAttribute('role','status');feedback.setAttribute('aria-live','polite');
+   const controls=node('div','bulk-cut-actions');
+   const review=node('button','action-secondary','Review pasted rows');
+   review.type='button';review.dataset.previewBulk='';
+   const commit=node('button','action-primary','Add reviewed cut groups');
+   commit.type='button';commit.dataset.commitBulk='';commit.disabled=true;
+   let reviewedText:string|null=null,reviewedHash:string|null=null;
+   const invalidate=()=>{
+    reviewedText=null;reviewedHash=null;commit.disabled=true;
+    feedback.textContent='Not reviewed. Nothing has been added to your cutting project.';
+    feedback.classList.remove('bulk-cut-feedback--error');
+   };
+   area.addEventListener('input',()=>{
+    if(area.value)bulkDrafts.set(fabric.id,area.value);else bulkDrafts.delete(fabric.id);
+    invalidate();
+   });
+   review.addEventListener('click',()=>{
+    if(!requireCommittedDraft('review pasted cut groups'))return;
+    try{
+     const result=previewBulkCutAppend(project,i,area.value);
+     reviewedText=area.value;reviewedHash=hashProject(project);
+     feedback.textContent='READY TO ADD: '+result.addedGroups+' groups and '+result.addedPieces+
+      ' pieces to '+result.targetSku+'. Existing groups stay intact. This is a data review, not verified fabric fit or an order.';
+     feedback.classList.remove('bulk-cut-feedback--error');
+     commit.disabled=false;
+    }catch(e){
+     invalidate();feedback.textContent='Cannot add rows: '+(e instanceof Error?e.message:'Invalid spreadsheet input');
+     feedback.classList.add('bulk-cut-feedback--error');
+    }
+   });
+   commit.addEventListener('click',()=>{
+    if(!requireCommittedDraft('add pasted cut groups')||!requireCurrentOutput('add pasted cut groups'))return;
+    if(reviewedText!==area.value||reviewedHash!==hashProject(project)){
+     invalidate();feedback.textContent='Project or paste changed. Review these rows again before adding.';
+     return;
+    }
+    try{
+     const result=previewBulkCutAppend(project,i,area.value);
+     const first=result.project.fabrics[i].pieces.length-result.addedGroups;
+     project=result.project;bulkDrafts.delete(fabric.id);bulkOpen.delete(fabric.id);
+     persist();
+     rebuildDynamicEditor('[data-fabric-index="'+i+'"] [data-cut-index="'+first+'"] .field-control',true);
+     note('Added '+result.addedGroups+' cut groups / '+result.addedPieces+' pieces to '+result.targetSku+
+      '. Existing pieces kept. Quilt-top review cleared; verify cutting fit before shopping or print.');
+    }catch(e){
+     invalidate();feedback.textContent='Paste not added: '+(e instanceof Error?e.message:'Invalid cutting project');
+     feedback.classList.add('bulk-cut-feedback--error');
+    }
+   });
+   append(controls,review,commit);
+   append(bulk,heading,help,example,pasteLabel,area,feedback,controls);
+   card.appendChild(bulk);shell.appendChild(card);
   });
   const add=node('button','dynamic-add','+ Add fabric SKU');add.type='button';add.addEventListener('click',()=>{
    if(!requireCommittedDraft('add a fabric SKU'))return;
@@ -1514,7 +1592,7 @@ if(root){
     const detail=err instanceof Error?err.message:'';
     note(detail.includes('SIZE BASIS NOT CONFIRMED')?'Choose how the saved quilt measurements relate to the border layers before estimating materials.':detail.includes('BORDER FIT IMPOSSIBLE')?'The border widths cannot fit inside the entered finished size; correct the dimensions before exporting.':'Cannot prove this cut is feasible. Review your measurements.',true);}
  }
- unitsSelect.addEventListener('change',()=>{if(!requireCommittedDraft('change units')){unitsSelect.value=project.units;return;}project.units=unitsSelect.value==='cm'?'cm':'in';persist();renderEditor();update();});
+ unitsSelect.addEventListener('change',()=>{if(!requireCommittedDraft('change units')){unitsSelect.value=project.units;return;}clearBulkDrafts();project.units=unitsSelect.value==='cm'?'cm':'in';persist();renderEditor();update();note('Units changed. Any uncommitted spreadsheet paste was cleared to prevent incorrect unit interpretation.');});
  root.querySelector('[data-action="recalculate"]')?.addEventListener('click',()=>{
   update();
   // A keyboard or switch-control user must remain next to the exact field
@@ -1555,7 +1633,7 @@ if(root){
     savedJson:lastStoredJson
    };
   }
-  project=structuredClone(sampleProject);sample=true;conv='1/4';convUnit='yd';
+  project=structuredClone(sampleProject);sample=true;conv='1/4';convUnit='yd';clearBulkDrafts();
   undoResetButton.disabled=false;
   if(storageReadable){
    try{
@@ -1571,7 +1649,7 @@ if(root){
   const previous=resetSnapshot;
   if(!previous)return;
   clearResetSnapshot();
-  project=structuredClone(previous.project);sample=previous.sample;
+  project=structuredClone(previous.project);sample=previous.sample;clearBulkDrafts();
   conv=previous.conv;convUnit=previous.convUnit;
   let conflicted=false;
   try{
@@ -1695,7 +1773,7 @@ if(root){
     note('Import canceled: the project changed while the file was loading. Your newer edits are preserved. Select the JSON file again if you still want to replace this project.',true);
     return;
    }
-   project=imported;persist();renderEditor();update();
+   project=imported;clearBulkDrafts();persist();renderEditor();update();
   }catch(e){note('Could not import project: '+(e instanceof Error?e.message:'Invalid project file'),true);}
   finally{picker.value='';}
  });
