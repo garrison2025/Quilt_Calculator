@@ -593,8 +593,8 @@
  * Use a robust keyboard focus and 36px click target for EVERY cut-list row. */
 .cut-coordinate-link{
  display:inline-flex;align-items:center;justify-content:flex-start;
- min-height:36px;min-width:36px;box-sizing:border-box;
- padding:7px 8px;line-height:1.45;
+ min-height:48px;min-width:48px;box-sizing:border-box;
+ padding:11px 14px;line-height:1.45;
  background:transparent;color:inherit;border:1px solid transparent;
  border-radius:6px;font:inherit;text-align:left;cursor:pointer
 }
