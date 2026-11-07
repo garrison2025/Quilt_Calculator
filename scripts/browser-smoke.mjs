@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
-import {spawn} from 'node:child_process';
+import {spawn,execFileSync} from 'node:child_process';
 import {chromium} from 'playwright';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
@@ -2465,6 +2465,71 @@ try{
     fullSheetMeta.pageRules&&fullSheetMeta.warning&&
     fullSheetMeta.fingerprint?.includes(expectedFingerprint),
     'Real exported offline HTML must contain all 2,000 cuts in 30 physically independent rolls, safe source fingerprint and print CSS: '+JSON.stringify(fullSheetMeta));
+  // Actual Chromium PDF output verification, NOT just inspecting the HTML:
+  // render the exact downloaded file in a network-off context, paginate on
+  // physical US Letter landscape pages, extract actual searchable PDF text,
+  // and reconcile EVERY printed cut label against the matching source CSV.
+  // Note: digital PDF QA cannot verify a physical printer's scale or paper.
+  const printCtx=await browser.newContext({viewport:{width:1200,height:820},offline:true});
+  const printSheet=await printCtx.newPage();
+  const offlineRequests=[];
+  printSheet.on('request',request=>offlineRequests.push(request.url()));
+  await printSheet.setContent(fullPrintHtml,{waitUntil:'load',timeout:30000});
+  const paperSize=await printSheet.evaluate(()=>{
+    const style=[...document.querySelectorAll('style')].map(el=>el.textContent||'').join('\n');
+    return {
+      printedRows:document.querySelectorAll('main tbody tr[data-cut-number]').length,
+      rollCount:document.querySelectorAll('main section.roll').length,
+      pageRule:style.includes('@page{size:letter landscape'),
+      headerRepeat:style.includes('thead{display:table-header-group'),
+      noBreakInsideRows:style.includes('tr{break-inside:avoid')
+    };
+  });
+  check(paperSize.printedRows===2000&&paperSize.rollCount===30&&paperSize.pageRule &&
+        paperSize.headerRepeat&&paperSize.noBreakInsideRows&&offlineRequests.length===0,
+    'Offline opened HTML must contain all 2,000 original cuts, be network-free and have explicit table/paper print rules: '+JSON.stringify({paperSize,offlineRequests}));
+  const actualPdfPath='artifacts/qa/COMPLETE-2000-physical-cuts-letter-landscape.pdf';
+  await printSheet.pdf({path:actualPdfPath,preferCSSPageSize:true,printBackground:true});
+  await printCtx.close();
+  const pdfInfo=execFileSync('pdfinfo',[actualPdfPath],{encoding:'utf8'});
+  const pdfText=execFileSync('pdftotext',['-layout','-enc','UTF-8',actualPdfPath,'-'],{
+    encoding:'utf8',maxBuffer:10*1024*1024
+  });
+  const pageCount=Number(pdfInfo.match(/^Pages:\s+(\d+)/m)?.[1]);
+  check(pageCount>25&&pageCount<180&&/^Page size:\s+792 x 612 pts \(letter\)/m.test(pdfInfo),
+    'The REAL Chromium PDF must paginate 2,000 cuts over multiple LETTER LANDSCAPE pages: '+pdfInfo.slice(0,1200));
+  const pdfPages=pdfText.split('\f').filter(text=>text.trim().length>0);
+  check(pdfPages.length===pageCount,
+    'The extracted PDF pages must equal pdfinfo reported page count; no blank/empty PDF pages.');
+  const printedPieces=new Set();
+  const duplicatePieces=[];
+  for(const hit of pdfText.matchAll(/\bSquare\s+(\d+)\s+(\d+)\b/g)){
+    const key=hit[1]+':'+hit[2];
+    if(printedPieces.has(key))duplicatePieces.push(key);
+    printedPieces.add(key);
+  }
+  check(printedPieces.size===2000&&duplicatePieces.length===0 &&
+    pdfText.includes('Source Project V2: '+expectedFingerprint),
+    'PDF text extraction must recover all 2,000 UNIQUE printed piece names, no duplicates, and the actual source project fingerprint: '+
+      JSON.stringify({extracted:printedPieces.size,duplicatePieces:duplicatePieces.slice(0,5)}));
+  for(let i=0;i<30;i++){
+    const expectedCount=i===0?181:i===29?83:62;
+    check(pdfText.includes('Roll '+(i+1)+': Fabric fabric:stress-'+i),
+      'The actual paginated PDF lost the physical roll heading '+(i+1));
+    for(let j=1;j<=expectedCount;j++)
+      check(printedPieces.has(i+':'+j),
+        'The actual PDF lost physical roll '+i+' cut '+j+' although it exists in the downloaded CSV.');
+  }
+  const pagesWithCuts=pdfPages.filter(text=>/\bSquare\s+\d+\s+\d+\b/.test(text));
+  const missingHeaders=pagesWithCuts.flatMap((text,index)=>
+    /Piece\s+label/.test(text)&&/Roll\s+X/.test(text)?[]:[index+1]);
+  check(missingHeaders.length===0&&pagesWithCuts.length>25,
+    'Each printed page containing cuts must repeat the table header (avoid unlabeled coordinate columns): '+JSON.stringify({pageCount,missingHeaders}));
+  execFileSync('pdftoppm',['-f','2','-l','2','-scale-to','1400','-png','-singlefile',
+    actualPdfPath,'artifacts/qa/complete-cut-sheets-middle-page'],{timeout:30000,stdio:'pipe'});
+  console.log('PASS REAL Chromium PDF pagination: '+pageCount+
+    ' US Letter landscape pages; all 2,000 distinct cuts/30 rolls; repeatable headers; exact fingerprint; offline HTML; middle-page PNG evidence.');
+
   const untouchedProject=await keyboard.evaluate(()=>JSON.parse(localStorage.getItem('quilt-studio-v2')));
   check(untouchedProject.fabrics.length===30&&untouchedProject.fabrics[0].pieces[0].count===181,
     'Downloading a complete print workbook must not alter the saved project or piece quantities.');
