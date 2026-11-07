@@ -836,3 +836,16 @@
   font-weight:800!important;border-top:1.5pt solid #222;
   margin-top:14pt!important;padding-top:7pt!important;break-inside:avoid}
 }
+
+/* A real multi-color quilt needs quick, distinct roll/group duplication.
+   Keep both actions discoverable and comfortably tappable at 320px/400% zoom. */
+.dynamic-head{flex-wrap:wrap;align-items:flex-start;row-gap:8px}
+.dynamic-head>strong{min-width:0;flex:1 1 125px;overflow-wrap:anywhere}
+.dynamic-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:7px;flex:0 1 auto}
+.dynamic-actions button{min-height:44px;min-width:44px;max-width:100%;padding:9px 12px;line-height:1.35;white-space:normal}
+.dynamic-actions [data-remove-sku],.dynamic-actions [data-remove-cut]{border:1px solid #dbb9b0;border-radius:8px;color:#9a4235;background:#fff7f4;font-size:11px;font-weight:800}
+@media(max-width:390px){.dynamic-actions{width:100%;justify-content:flex-start}}
+@media screen and (prefers-color-scheme:dark){
+ .dynamic-actions [data-remove-sku],.dynamic-actions [data-remove-cut]{background:#3c2825;border-color:#85534d;color:#ffb1a6}
+}
+@media print{.dynamic-actions{display:none!important}}
