@@ -2790,6 +2790,36 @@ try{
   let crossStored=await cross.evaluate(()=>JSON.parse(localStorage.getItem('quilt-studio-v2')));
   check(crossStored.quilt.finishedWidth===72&&crossStored.quilt.finishedHeight===84,
     'P21 current backing dimensions must enter the shared native-inch project.');
+  const crossBackingWof=cross.getByLabel('Usable fabric WOF (in)',{exact:true});
+  await crossBackingWof.fill('108');
+  await crossBackingWof.press('Tab');
+  await hydrated(cross,'/fabric-yardage-calculator/');
+  check(await cross.getByLabel('Usable fabric WOF (in)',{exact:true}).inputValue()==='43',
+   'Backing width must not overwrite rectangle fabric width.');
+  check((await cross.locator('[data-width-comparison]').innerText()).includes('0.875 yd'),
+   '20 unrotated 5 by 10 inch pieces need 7/8 yard of 43 inch fabric.');
+  const crossYardShrinkage=cross.getByLabel('Prewash length shrinkage (%)',{exact:true});
+  await crossYardShrinkage.fill('20');
+  await crossYardShrinkage.press('Tab');
+  check((await cross.locator('[data-width-comparison]').innerText()).includes('1.125 yd'),
+   'Rectangle fabric must use its own shrinkage.');
+  await hydrated(cross,'/quilt-sashing-calculator/');
+  const crossSashWof=cross.getByLabel('Usable WOF (in)',{exact:true});
+  check(await crossSashWof.inputValue()==='43','Sashing must retain its own fabric width.');
+  await crossSashWof.fill('35');
+  await crossSashWof.press('Tab');
+  await hydrated(cross,'/quilt-backing-calculator/');
+  check(await crossBackingWof.inputValue()==='108','Sashing width must not affect backing width.');
+  check(await cross.getByLabel('Prewash length shrinkage (%)',{exact:true}).inputValue()==='0',
+   'Rectangle shrinkage must not affect backing shrinkage.');
+  await crossBackingWof.fill('43');
+  await crossBackingWof.press('Tab');
+  await hydrated(cross,'/fabric-yardage-calculator/');
+  await crossYardShrinkage.fill('0');
+  await crossYardShrinkage.press('Tab');
+  await hydrated(cross,'/quilt-sashing-calculator/');
+  await crossSashWof.fill('43');
+  await crossSashWof.press('Tab');
   await hydrated(cross,'/quilt-binding-calculator/');
   check((await cross.getByLabel('Quilt width (in)',{exact:true}).inputValue())==='72',
     'P21 binding must restore backing width rather than revert to sample.');
