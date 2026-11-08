@@ -61,3 +61,26 @@ No calculator formula, cut-layout algorithm, purchase amount, project schema, ro
 - Exact US-localized Google SERP Top-10 exports and competitor domain-level organic keyword exports are not available in this audit.
 - Google rankings, indexed query coverage, impressions, clicks and CTR are unknown because GSC remains deferred.
 - No new claim is made about AdSense, revenue, or actual user Core Web Vitals.
+
+
+## Queen-size quilt-top intent — 2026-11-08
+
+The original operational keyword snapshot contains `how much fabric for a queen size quilt` at **110 US searches/month, KD 2**, mapped to `/quilt-fabric-calculator/`. This is an existing active query, not a newly researched volume or ranking claim.
+
+Public result samples show why a single generic yardage answer would be misleading:
+- StitchTested (updated 2026-10-16) explicitly separates backing/binding/batting from the quilt top, and says the top depends on the pattern; its worked top example uses a 90 × 100 in layout of 10-in squares.
+- QuiltCalcs publishes a queen example at 90 × 95 in and a mixed-piece top assumption.
+- QuiltLab's calculator derives fabric for square patchwork from finished size, square size, fabric count and usable width, and labels the top as separate from backing, binding and borders.
+- The Craft Mat likewise separates top yardage from backing, binding and border totals.
+
+The site now adds one **engine-derived, explicitly defined** 90 × 90 in two-colour checkerboard top: 12 × 12 finished 7½-in squares; 144 total pieces; 72 cut 8 × 8 in squares per SKU (¼-in seam allowance on every edge); 43 in usable WOF per SKU; 5 pieces across; 15 rows; 120 in cut run per SKU; 0% length shrinkage; upward ⅛-yd purchase rounding. The calculator engine returns **3⅜ yd per SKU and 6¾ yd total for the quilt top only**.
+
+This is not presented as a universal queen-size dimension or yardage standard. It excludes backing, batting, borders, binding, prewash shrinkage and automatic motif-repeat matching. The FAQ says that a real purchase must use the user's actual pattern cut list. A two-row table displays each SKU separately, so different fabrics are not incorrectly combined into one physical roll.
+
+Public references checked:
+- `https://stitchtested.com/how-much-fabric-for-a-quilt/`
+- `https://quiltcalcs.com/fabric-yardage-calculator/`
+- `https://www.quiltlab.co/quilting-calculators/fabric-yardage`
+- `https://thecraftmat.com/quilting/quilt-calculator/`
+
+No new route, generic size chart, unsupported calculation, or change to the 218-row original keyword source is introduced.
