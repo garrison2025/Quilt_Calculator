@@ -20,6 +20,10 @@ import {plannerSampleReference as liveExample} from '../data/seo-reference';
   <svg class="hero-thread" viewBox="0 0 580 280" preserveAspectRatio="none" aria-hidden="true"><path d="M-12 185 Q 75 95, 154 156 T 321 144 T 598 70" pathLength="100" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="1.2 1.2" stroke-linecap="round"/></svg>
   <span class="hero-fabric-seal" aria-hidden="true">MADE<br/>TO<br/>MEASURE</span><div class="mini-bottom"><b>Make room for the joy.</b><span>✳ Made to measure</span></div></div>
 </section>
+<section class="content-block home-workspace-section" style="margin-top:22px">
+ <div class="editorial-head"><span class="eyebrow-with-line">— START RIGHT HERE</span><h2>Your complete quilt cutting plan, in one place.</h2><p>Try the live {liveExample.centerWidthIn} × {liveExample.centerHeightIn} inch CENTER-size example with a {liveExample.borderPerSideIn}-inch finished border on each edge, producing a {liveExample.finalWidthIn} × {liveExample.finalHeightIn} inch outside quilt. The calculator verifies rectangular cutting geometry against entered fabric widths; real-paper scale and physical fabric cuts still require manual checks.</p></div>
+ <Calculator tool="hub" sample={byId('hub').sample}/>
+</section>
 <section class="content-block" data-geo-home-guide aria-label="How quilt fabric calculations work">
  <div class="editorial-head"><span class="eyebrow-with-line">— QUICK GUIDANCE</span><h2>How much fabric does a quilt need?</h2>
  <p><strong>There is no universal yardage for a quilt size.</strong> The answer depends on your finished quilt dimensions, pattern pieces, borders, seam allowances, fabric widths and permitted grain directions. Backing, binding and each quilt-top fabric must be calculated separately.</p></div>
@@ -43,10 +47,6 @@ import {plannerSampleReference as liveExample} from '../data/seo-reference';
   </tbody></table>
  </div>
  <p>See <a href="/about/#sources">reference sources and calculation limits</a>. These examples are not physical sewing certification.</p>
-</section>
-<section class="content-block home-workspace-section" style="margin-top:22px">
- <div class="editorial-head"><span class="eyebrow-with-line">— START RIGHT HERE</span><h2>Your complete quilt cutting plan, in one place.</h2><p>Try the live {liveExample.centerWidthIn} × {liveExample.centerHeightIn} inch CENTER-size example with a {liveExample.borderPerSideIn}-inch finished border on each edge, producing a {liveExample.finalWidthIn} × {liveExample.finalHeightIn} inch outside quilt. The calculator verifies rectangular cutting geometry against entered fabric widths; real-paper scale and physical fabric cuts still require manual checks.</p></div>
- <Calculator tool="hub" sample={byId('hub').sample}/>
 </section>
 <section class="content-block tool-choice" data-tool-choice>
  <div class="editorial-head"><span class="eyebrow-with-line">— FIND YOUR CALCULATOR</span><h2>What would you like to calculate?</h2><p>Choose by the actual fabric-cutting problem. Every question leads to one calculator, not a duplicate keyword page.</p></div>
