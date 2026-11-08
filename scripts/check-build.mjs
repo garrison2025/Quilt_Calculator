@@ -419,6 +419,10 @@ for(let i=1;i<lines.length;i++){
  }else if(keyword==='quilting calculator app'){
   if(status!=='DEPRIORITIZE_NATIVE_APP_INTENT')throw Error('Browser-only site must not treat App Store search intent as active');
   deprioritizedCount++;
+ }else if(keyword==='border fabrics for quilting'){
+  if(status!=='DEPRIORITIZE_PRODUCT_INTENT'||path!=='/quilt-border-calculator/')
+   throw Error('Retail fabric-shopping intent must not count as an active border-calculator query');
+  deprioritizedCount++;
  }else if(!path){
   if(status!=='HOLD_UNVALIDATED_METHOD')throw Error('HOLD keyword must remain unindexed');
   holdCount++;
@@ -427,9 +431,26 @@ for(let i=1;i<lines.length;i++){
   activeCount++;
  }
 }
-if(activeCount!==199||deprioritizedCount!==2||brandCount!==1||holdCount!==16)
+if(activeCount!==198||deprioritizedCount!==3||brandCount!==1||holdCount!==16)
  throw Error('Operational keyword decision counts are inconsistent.');
-console.log('PASS: 199 active mapped intent terms, 2 public-evidence deprioritized intents (US exact SERP still unverified), 1 other-brand exclusion, 16 original HOLD; source 218 unchanged.');
+console.log('PASS: 198 active nonbrand intents, 3 deprioritized intents (price/length, native-app and retail-product intent), 1 other-brand exclusion, 16 original HOLD; source 218 unchanged.');
+
+// Search-intent copy must describe the real supported methods, not imply
+// pattern-repeat, bias, mitered, packaged-batting or no-cornerstone features.
+const copyChecks=[
+ ['fabric-yards-to-inches/',['How big is a yard of fabric? 36 inches long, width varies.','One linear yard is 36 inches long; fabric width varies.']],
+ ['quilt-binding-calculator/',['Straight-grain quilt binding calculator: strips and yardage.']],
+ ['quilt-border-calculator/',['Quilt border calculator: butted layers and yardage.']],
+ ['fabric-yardage-calculator/',['Fabric yardage calculator for repeated rectangular cuts.','Does this account for fabric pattern repeats?']],
+ ['quilt-fabric-calculator/',['Does it match fabric pattern repeats automatically?']],
+ ['quilt-batting-calculator/',['Are standard batting packages assumed?','it does not compare packaged sizes']],
+ ['quilt-sashing-calculator/',['Can I calculate sashing without cornerstones?','cornerstone at every internal intersection']]
+];
+for(const [slug,needles] of copyChecks){
+ const html=fs.readFileSync('dist/'+slug+'index.html','utf8');
+ for(const needle of needles)if(!html.includes(needle))
+  throw Error('Search-intent copy/feature boundary missing on '+slug+': '+needle);
+}
 // The live bordered planner's sample must match the cut engine, not advertise
 // 5 yards from a separate unbordered example.
 const hubHtml=fs.readFileSync('dist/calculators/index.html','utf8');
