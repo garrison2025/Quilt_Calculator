@@ -100,3 +100,19 @@ jobs:
           }
           console.log('PASS approved-domain offline SEO build and research noindex; Cloudflare live settings were not changed.');
           NODE
+
+  # Continuous, read-only audit against the already deployed official domain:
+  # verify the actual HTTP X-Robots-Tag on pages.dev (HTML meta alone cannot
+  # establish this), canonical, sitemap, and QA/HOLD isolation.
+  live-seo-host-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify owner domain and Pages mirror robots, canonicals, sitemap
+        run: node scripts/check-live-hosts.mjs --production=https://quiltcutplanner.com
