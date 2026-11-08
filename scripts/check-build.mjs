@@ -456,7 +456,7 @@ for(const [slug,needles] of copyChecks){
 const queenHtml=fs.readFileSync('dist/quilt-fabric-calculator/index.html','utf8');
 const queenTable=queenHtml.split('data-engine-reference="queen-fabric"')[1]?.split('</table>')[0]||'';
 if(!queenTable.includes('72 squares')||!queenTable.includes('3⅜ yd')||
-   !queenTable.includes('Total quilt-top fabric (two SKUs)')||!queenHtml.includes('6¾ yd')||
+   !queenTable.includes('Total quilt-top fabric (two SKUs)')||!queenHtml.includes('6 ¾ yd')||
    (queenTable.match(/<tr>/g)||[]).length!==4)
  throw Error('Engine-derived queen-size quilt-top fabric table is missing or incomplete.');
 if(!queenHtml.includes('This is one explicitly defined')||
