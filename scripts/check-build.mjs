@@ -532,7 +532,7 @@ for(const slug of slugs.filter(Boolean)){
  if((html.match(/class="intent-guide-section"/g)||[]).length<2)throw Error('Insufficient unique guide sections: '+slug);
 }
 const conversion=fs.readFileSync('dist/fabric-yards-to-inches/index.html','utf8');
-for(const key of ['How big is a yard of fabric?', '1/3', '2/3', '1 1/2','Can square inches be converted to fabric yards?', '1,548 square inches']){
+for(const key of ['How big is one yard of fabric?', '1/3', '2/3', '1 1/2','Can I convert square inches directly to fabric yards?', '1,548 square inches']){
  if(!conversion.includes(key))throw Error('Conversion page misses verified user intent '+key);
 }
 console.log('PASS: 218 source keyword records, 202 mapped to 9 unique tool intents, 16 HOLD, 107 conversion terms consolidated without thin pages.');
