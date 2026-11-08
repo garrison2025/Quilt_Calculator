@@ -673,7 +673,7 @@ for(const slug of [...slugs,...trustSlugs]){
  }
  if(slugs.includes(slug)){
   const app=metadata.find(x=>x['@type']==='WebApplication');
-  if(!app?.author||app.author.name!=='Quilt Cut Planner'||app.author['@type']!=='Organization')
+  if(app?.author?.['@id']!==site+'/#publisher')
    throw Error('Free app publisher attribution missing: '+slug);
  }
 }
@@ -681,3 +681,39 @@ if(!fs.readFileSync('dist/about/index.html','utf8').includes('data-geo-sources')
    !fs.readFileSync('dist/about/index.html','utf8').includes('data-geo-editorial')||
    !fs.readFileSync('dist/privacy/index.html','utf8').includes('id="usage-terms"'))
  throw Error('About sources/attribution or responsible usage missing');
+
+
+// Second GEO pass: indexed pages expose a project-level byline, natural
+// question headings and task-specific source references.
+const homepageGeo=fs.readFileSync('dist/index.html','utf8');
+if(!homepageGeo.includes('data-page-attribution')||
+   !homepageGeo.includes('data-geo-citations="hub"')||
+   !homepageGeo.includes('How does the complete quilt cutting planner work?')||
+   !homepageGeo.includes('Which independent references explain this method?'))
+ throw Error('Homepage GEO attribution, citations or question headings are missing');
+for(let i=1;i<slugs.length;i++){
+ const slug=slugs[i],html=fs.readFileSync('dist/'+slug+'/index.html','utf8'),toolId=ids[i-1];
+ if(!html.includes('data-page-attribution')||
+    !html.includes('data-geo-citations="'+toolId+'"')||
+    !html.includes('Which independent references explain this method?'))
+  throw Error('Tool page missing visible authorship or relevant external references: '+slug);
+ const questions=[...html.matchAll(/<h[23][^>]*>([\s\S]*?)<\/h[23]>/g)].filter(m=>m[1].includes('?'));
+ if(questions.length<3)throw Error('Tool page needs at least three natural question-style headings: '+slug);
+}
+for(const slug of [...slugs,...trustSlugs]){
+ const html=fs.readFileSync('dist/'+(slug?slug+'/':'')+'index.html','utf8');
+ const schemas=[...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].map(m=>JSON.parse(m[1]));
+ if(production){
+  const webpage=schemas.find(x=>x['@type']==='WebPage');
+  const org=schemas.find(x=>x['@type']==='Organization');
+  if(!webpage?.author?.['@id']||webpage.author['@id']!==site+'/#publisher'||
+     !webpage.dateModified||!org?.sameAs?.includes('https://github.com/garrison2025/Quilt_Calculator'))
+   throw Error('Project author/date/entity identity not connected on page: '+slug);
+  if(slugs.includes(slug)){
+   const app=schemas.find(x=>x['@type']==='WebApplication');
+   if(app?.author?.['@id']!==site+'/#publisher')
+    throw Error('Calculator application author does not resolve to project publisher: '+slug);
+   if(!webpage.citation?.length)throw Error('Calculator WebPage has no matching source citations: '+slug);
+  }
+ }
+}
