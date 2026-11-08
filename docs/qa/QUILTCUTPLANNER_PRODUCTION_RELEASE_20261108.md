@@ -1,46 +1,37 @@
-# Quilt Cut Planner — approved domain and controlled SEO release (2026-11-08)
+# Quilt Cut Planner — owner-approved production domain release (2026-11-08)
 
-## Owner-provided facts (do not claim separately verified)
-- Purchased primary domain: `quiltcutplanner.com`.
-- Public contact mailbox: `contact@quiltcutplanner.com`. Mail delivery and inbox setup still require a real sent/received test.
-- Domain attached to Cloudflare by the owner. The actual webpage is publicly accessible at `https://quiltcutplanner.com/`.
+## Owner inputs and policy
+- Owned main domain: **https://quiltcutplanner.com** (attached to existing Cloudflare Pages project).
+- Public contact: **contact@quiltcutplanner.com** (mail forwarding DNS seen; real inbox receipt/sending not independently proven).
+- On 2026-11-08 owner **explicitly requested removing the manual indexing environment-variable gate**. The official domain may be made indexable by publishing source code from main.
+- Current accepted scope: 9 calculator intents + homepage = **10 indexed sitemap URLs**. Lab/QA, unverified bias/diagonal/miter/rag/square methods remain nonindexable or unpublished. Physical print and fabric checks are not certified.
+- One static Cloudflare Pages production build is served on both the custom domain and `quilt-calculator-566.pages.dev`: do not rely on differing static HTML for SEO. The latter MUST send `X-Robots-Tag: noindex` even when the HTML says `index`.
 
-## Checked publicly on 2026-11-08
-- `https://quiltcutplanner.com/` served the Quilt Studio website, source meta commit `a337c7f7f65c057b249433326240480559abca0e`.
-- The same Git revision was visible at `https://quilt-calculator-566.pages.dev/`.
-- The custom domain still returned HTML robots `noindex,follow` (not publicly indexable).
-- Production `/sitemap.xml` was not present (404).
-- OG/Twitter social preview image used a `pages.dev` origin: update comes only with an approved-domain, production-indexable build.
-- `https://www.quiltcutplanner.com/` was not verified as a functional redirect/host. Configure optional www-to-apex 301/308 redirect in Cloudflare after confirming its TLS and DNS.
-- These facts are a point-in-time external read, not a proof of a completed indexing launch or email deliverability.
+## Automatic build rules — no manual variables
+- Cloudflare Pages injects `CF_PAGES=1`, `CF_PAGES_BRANCH=<branch>` automatically.
+- **Only** `CF_PAGES=1` with `CF_PAGES_BRANCH=main` generates `index,follow,max-image-preview:large`, exact canonical `https://quiltcutplanner.com/<path>`, first-party OG image links, ten-URL production sitemap and sitemap declaration in robots.txt.
+- Cloudflare PR/branch previews, localhost, generic CI, and local builds retain `noindex,follow`, omit canonical and production sitemap.
+- Independently of build mode, `/lab/*` and `/qa/*` are explicitly `noindex` with `public/_headers` plus HTML; the preview hostname and per-branch aliases are protected by hostname-specific noindex headers.
+- The obsolete `PUBLIC_INDEXABLE` and `PUBLIC_SITE_URL` settings do **not** control this release. There is no need to configure them in Cloudflare.
+- Note: Cloudflare Pages might expose the same physical `sitemap.xml` file at the pages.dev hostname. This does not make preview URLs indexable if `X-Robots-Tag: noindex` is present and the only `<loc>` entries point to `https://quiltcutplanner.com`.
 
-## Already accepted software scope
-Nine approved calculator intents plus home/Project Planner. No new calculator routes, keyword claims, bias yield estimates, unverified sewing methods, or real physical fabric claims are authorized by this domain purchase.
+## Verification gates (after Github main is deployed)
+1. Ensure the Cloudflare Pages project `quilt-calculator` builds and deploys **main** from GitHub (Production branch). No manual Cloudflare env work is required.
+2. Verify `https://quiltcutplanner.com/` serves the new exact main `<meta name="quilt-build-commit">` and its HTML robots tag is `index,follow,max-image-preview:large`; production response header MUST NOT include `noindex`. Check all 10 approved URLs.
+3. Each of the 10 routes must have one exact absolute canonical URL on `https://quiltcutplanner.com/` (never pages.dev).
+4. Verify `https://quiltcutplanner.com/sitemap.xml` HTTP 200 with exactly the ten approved production URLs; `https://quiltcutplanner.com/robots.txt` references it.
+5. Verify `https://quilt-calculator-566.pages.dev/` and all approved preview copies return HTTP `X-Robots-Tag: noindex`, matching production's Git SHA and with no accidental alternative canonical destination.
+6. Verify `/lab/*` and `/qa/*` on **both** domains remain noindex, and HOLD keyword URLs are 404.
+7. Run read-only release audit with Node 22+: `node scripts/check-live-hosts.mjs --production=https://quiltcutplanner.com`. It must PASS after the deploy. It checks each source SHA, index meta, canonical, HTTP headers, sitemap, lab/QA and HOLD.
+8. If www is desired, add `www.quiltcutplanner.com` DNS/TLS and an actual permanent 301/308 redirect **to the apex**, not a second indexable website. At the time of initial check, www DNS was not found.
+9. Separately test that `contact@quiltcutplanner.com` **receives** a sent message and that outbound replies work. MX SPF records are not sufficient proof of deliverability.
+10. Verify domain ownership in Google Search Console and submit `https://quiltcutplanner.com/sitemap.xml`. Indexing is determined by Google, not by a successful software deploy. AdSense requires separate publisher configuration and accurate privacy/consent work.
 
-## Mandatory production release steps (owner Cloudflare account)
-1. Workers & Pages → select the *existing* Pages project that serves `quilt-calculator-566.pages.dev` → Custom domains. Verify `quiltcutplanner.com` is attached and Active and HTTPS serves the correct project.
-2. Settings → Variables and Secrets / Environment variables → **Production** build environment (not Preview), set `PUBLIC_SITE_URL` = `https://quiltcutplanner.com` and `PUBLIC_INDEXABLE` = `1`. They are public build-time settings, not secrets.
-3. Trigger a **new production deployment from main**, rather than assuming changing an environment variable rewrites existing static HTML. Verify the source SHA after deployment.
-4. Run `node scripts/check-live-hosts.mjs --production=https://quiltcutplanner.com` in a network-enabled Node 22+ environment. This is a *read-only gate*, not an indexing or DNS setter. It requires all ten approved pages on production to have correct absolute canonicals and indexable robots, and the same-source pages.dev copies to have HTTP `X-Robots-Tag: noindex`.
-5. Verify `https://quiltcutplanner.com/sitemap.xml` has exactly ten production URLs; `robots.txt` must reference it; all experimental `/lab/` and `/qa/` URLs remain noindex and excluded from sitemap; unsupported tool pages return 404.
-6. Because a single Pages project can expose the same static files on both hostnames, the sitemap may return 200 on pages.dev after enabling the production build. This is not a false-negative release failure provided **all <loc> URLs are https://quiltcutplanner.com/** and the pages.dev sitemap has an HTTP noindex header. The live host checker enforces this behavior. A 404 on preview is also allowed.
-7. Set `www.quiltcutplanner.com` to redirect permanently to `https://quiltcutplanner.com` (not the reverse) if the www hostname is added. Ensure certificate/DNS and an actual 301/308 test; do not assume www is configured.
-8. Verify the publicly visible `mailto:contact@quiltcutplanner.com` link. Separately send and receive a real test message to verify the mailbox and MX/SPF/DKIM/DMARC setup; the website alone cannot prove email delivery.
-9. Add the domain to Google Search Console, complete actual domain ownership verification and submit `https://quiltcutplanner.com/sitemap.xml`. Record actual indexing/coverage results rather than calling this step complete based on successful submission.
-10. If/when adding AdSense: use the actual account's approved publisher ID and ads.txt guidance, revise privacy/consent disclosures for deployed scripts and relevant visitor geographies, and verify non-obstructive ad placement. Do not invent publisher IDs or enable ad scripts prematurely.
+## Evidence and statuses
+- Prior to this no-env code release, the registered custom domain was live but HTML carried `noindex` and sitemap was 404.
+- The PR CI runs both a **no-env, noindex** build with full quality/browser tests and a **simulated official Cloudflare main** build with index/canonical/sitemap validation.
+- Each live external observation requires timestamped confirmation; merging code alone is not proof that Cloudflare published it.
+- If post-release audit fails, correct code/configuration; do not falsely report launch PASS. If an unsafe production noindex/preview-isolation issue arises, revert the SEO release PR and redeploy main to return to noindex.
 
-## Release statuses
-| Task | Status on 2026-11-08 |
-|---|---|
-| User-owned domain and contact email identified | OWNER_CONFIRMED |
-| HTTPS custom apex loads live site | LIVE_OBSERVED |
-| Production indexable HTML / canonical / sitemap | NOT_YET_DEPLOYED |
-| Preview noindex isolation after production release | REQUIRES_LIVE_GATE |
-| www redirects | NOT_VERIFIED |
-| Mail sending and receiving | NOT_VERIFIED |
-| GSC / AdSense account verification | NOT_CONFIGURED |
-| Physical fabric / printer / accessibility manual signoff | OUTSIDE_ACCEPTED_SOFTWARE_SCOPE |
-| Bias and other unverified special algorithms | HOLD |
-
-## Safe rollback
-If any production gate fails, reset Production `PUBLIC_INDEXABLE` to `0`, redeploy, and recheck noindex on both hosts. Do not mark release PASS until the failed condition is fixed and verified.
+## Site architecture note
+A single static bundle is served at the production custom host **and** its pages.dev host. The exact same meta robots tag may appear in both. That is safe only because Cloudflare Pages sends the HTTP `X-Robots-Tag: noindex` header on the preview host; Cloudflare explicitly documents this policy in its Pages `_headers` and preview-deployment docs. Verify this on the real hosts after the release.

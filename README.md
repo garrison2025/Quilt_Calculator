@@ -2,11 +2,11 @@
 
 Free US-English quilting tools built with Astro static pages and a browser-based TypeScript cutting engine. No account, database, paid API or required cloud back end.
 
-## Approved production domain (2026-11-08; launch remains gated)
+## Approved production domain — automatic main-branch SEO release (2026-11-08)
 
 - The owner purchased **https://quiltcutplanner.com/** and bound it to Cloudflare; the live website is reachable at that hostname. Contact address supplied by the owner: **contact@quiltcutplanner.com** (mail deliverability not verified by website checks).
-- Public hostname is **still noindex** until Cloudflare Pages production build variables are explicitly set and the live dual-host test passes. A domain being bound does **not** imply Google indexing or AdSense readiness.
-- Repository safeguards now permit indexable build output ONLY for the exact approved origin `https://quiltcutplanner.com`; the default/no-env build remains noindex. See [release checklist](docs/qa/QUILTCUTPLANNER_PRODUCTION_RELEASE_20261108.md).
+- Owner chose **code-controlled publication**, so no manual Cloudflare `PUBLIC_INDEXABLE`/`PUBLIC_SITE_URL` variables are needed. When Cloudflare Pages builds `main`, the built-in `CF_PAGES=1` and `CF_PAGES_BRANCH=main` switch the ten approved URLs to indexable markup, exact owned-domain canonical and production sitemap. Local/CI and preview-branch builds stay `noindex`. Actual indexing eligibility is only confirmed after a successful live dual-host check; Google indexing/ranking remains unguaranteed.
+- Production SEO output is hardcoded to the owner-approved origin `https://quiltcutplanner.com` and requires Cloudflare's actual `main` build identity. See [release checklist](docs/qa/QUILTCUTPLANNER_PRODUCTION_RELEASE_20261108.md).
 - Cloudflare Pages is a shared static deployment: the production sitemap may be served on the `pages.dev` hostname too. This is safe only with a preview-host `X-Robots-Tag: noindex` header and sitemap entries containing **only the owned production domain**. The live host checker enforces these conditions; no fake preview 404 expectation.
 
 ## Project acceptance / current deployment

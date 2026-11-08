@@ -1,7 +1,8 @@
 import fs from 'node:fs';
-const approved=process.env.PUBLIC_INDEXABLE==='1';
-const site=process.env.PUBLIC_SITE_URL||'';
-const okay=approved&&site==='https://quiltcutplanner.com';
+// Cloudflare supplies these built-in variables automatically. No manual
+// production SEO toggle is needed; PR previews and CI remain nonindexable.
+const site='https://quiltcutplanner.com';
+const okay=process.env.CF_PAGES==='1'&&process.env.CF_PAGES_BRANCH==='main';
 const file='dist/sitemap.xml';
 if(!okay){
  if(fs.existsSync(file))fs.unlinkSync(file);

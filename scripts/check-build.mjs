@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 const slugs=['','calculators','quilt-backing-calculator','quilt-binding-calculator','quilt-border-calculator','fabric-yardage-calculator','quilt-fabric-calculator','fabric-yards-to-inches','quilt-batting-calculator','quilt-sashing-calculator'];
-const site=process.env.PUBLIC_SITE_URL||'';
+const site='https://quiltcutplanner.com';
 const githubSha=process.env.GITHUB_SHA?.toLowerCase();
 const copySummarySource=fs.readFileSync('src/lib/quilt/copy-summary.ts','utf8');
 for(const guard of ['buildCalculatorCopySummary','NOT A PURCHASE ORDER',
@@ -11,7 +11,7 @@ for(const guard of ['buildCalculatorCopySummary','NOT A PURCHASE ORDER',
 }
 
 if(githubSha && !/^[0-9a-f]{40}$/.test(githubSha))throw Error('Invalid GITHUB_SHA used for provenance verification.');
-const production=process.env.PUBLIC_INDEXABLE==='1'&&site==='https://quiltcutplanner.com';
+const production=process.env.CF_PAGES==='1'&&process.env.CF_PAGES_BRANCH==='main';
 for(const slug of slugs){
  const file='dist/'+(slug?slug+'/':'')+'index.html';
  if(!fs.existsSync(file))throw Error('Missing route '+file);
