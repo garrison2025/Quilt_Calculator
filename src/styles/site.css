@@ -961,3 +961,24 @@
  .quilt-ui-v3 .sku-plan .single-roll-export{width:calc(100% - 24px);max-width:calc(100% - 24px);margin:10px 12px 2px}
 }
 @media print{.quilt-ui-v3 .sku-plan .single-roll-export{display:none!important}}
+
+
+/* GEO citations are source attribution, not endorsements or validation claims. */
+.geo-citations{margin:22px 0 8px;padding:18px 20px;border:1px solid #d9e2d9;border-radius:14px;background:#f8faf7;min-width:0}
+.geo-citations h3{margin:0 0 12px;color:#294d39;font-size:15px;line-height:1.45}
+.geo-citations ul{margin:0;padding-left:19px;display:grid;gap:12px}
+.geo-citations li{padding-left:3px;min-width:0;line-height:1.55}
+.geo-citations li>a{font-size:12px;font-weight:800;color:#285d43;text-decoration:underline;text-underline-offset:3px;overflow-wrap:anywhere}
+.geo-citations li>p{margin:4px 0 0;color:#596b5d;font-size:11px;line-height:1.65}
+.geo-citation-note{margin:13px 0 0;padding-top:11px;border-top:1px solid #dfe7df;color:#617064;font-size:10px;line-height:1.65}
+.geo-citation-note a{color:#285d43;font-weight:750;text-decoration:underline;text-underline-offset:3px}
+.page-attribution{box-sizing:border-box;max-width:1120px;margin:0 auto;padding:14px 24px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 18px;border-top:1px solid #e1e5dc;color:#647064;font-size:11px;line-height:1.6}
+.page-attribution a{color:#315f45;font-weight:750;text-decoration:underline;text-underline-offset:3px}
+@media(max-width:560px){.geo-citations{padding:15px 14px}.page-attribution{padding:12px 18px;display:grid;gap:3px}}
+@media(prefers-color-scheme:dark){
+ .geo-citations{background:#1c2a20;border-color:#405847}
+ .geo-citations h3,.geo-citations li>a,.geo-citation-note a,.page-attribution a{color:#c5e4cd}
+ .geo-citations li>p,.geo-citation-note,.page-attribution{color:#bac9bb}
+ .geo-citation-note{border-top-color:#405847}
+ .page-attribution{border-top-color:#405847}
+}

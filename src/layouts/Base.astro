@@ -3,6 +3,7 @@ import '../styles/site.css';
 import '../styles/ui-motion.css';
 import '../styles/contrast-fix.css';
 import { routes, type ToolRoute } from '../data/routes';
+import {geoSources} from '../data/geo-sources';
 interface Props {route?:ToolRoute;home?:boolean;title?:string;description?:string;noIndex?:boolean}
 const {route,home=false,title,description,noIndex=false}=Astro.props;
 const pageTitle=title||route?.title||'Quilt Cut Planner';
@@ -40,6 +41,8 @@ const buildCommit=(process.env.CF_PAGES_COMMIT_SHA||process.env.GITHUB_SHA||'').
 const auditCommit=/^[0-9a-f]{40}$/.test(buildCommit)?buildCommit:undefined;
 // Documentation and schema review date. Update only when the public content changes.
 const documentationDate='2026-11-08';
+const pageSources=route?geoSources[route.id]:(home?geoSources.hub:[]);
+const publisherId=candidate+'/#publisher';
 ---
 <!doctype html>
 <html lang="en">
@@ -62,11 +65,11 @@ const documentationDate='2026-11-08';
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content={socialImage}/>
 </>}
-{!noIndex && (route || home) && <script type="application/ld+json" set:html={JSON.stringify({'@context':'https://schema.org','@type':'WebApplication',name:(route?.h1||'Quilt Cut Planner').replace(/\.$/,''),description:pageDescription,applicationCategory:'UtilitiesApplication',operatingSystem:'Any modern browser',inLanguage:'en-US',isAccessibleForFree:true,offers:{'@type':'Offer',price:0,priceCurrency:'USD'},image:socialImage,author:{'@type':'Organization',name:'Quilt Cut Planner',url:candidate+'/'},...(canonical?{'@id':canonical+'#app',url:canonical,dateModified:documentationDate}:{})})}/>}
+{!noIndex && (route || home) && <script type="application/ld+json" set:html={JSON.stringify({'@context':'https://schema.org','@type':'WebApplication',name:(route?.h1||'Quilt Cut Planner').replace(/\.$/,''),description:pageDescription,applicationCategory:'UtilitiesApplication',operatingSystem:'Any modern browser',inLanguage:'en-US',isAccessibleForFree:true,offers:{'@type':'Offer',price:0,priceCurrency:'USD'},image:socialImage,author:{'@id':publisherId},...(canonical?{'@id':canonical+'#app',url:canonical,dateModified:documentationDate}:{})})}/>}
 {approved && home && <script type="application/ld+json" set:html={JSON.stringify({'@context':'https://schema.org','@type':'WebSite',name:'Quilt Cut Planner',alternateName:'quiltcutplanner.com',url:candidate+'/','@id':candidate+'/#website',publisher:{'@id':candidate+'/#publisher'}})}/>}
 {approved && route && <script type="application/ld+json" set:html={JSON.stringify({'@context':'https://schema.org','@type':'BreadcrumbList',itemListElement:breadcrumbItems.map((item,index)=>({'@type':'ListItem',position:index+1,...item}))})}/>}
-{approved && <script type="application/ld+json" set:html={JSON.stringify({'@context':'https://schema.org','@type':'WebPage','@id':canonical+'#webpage',url:canonical,name:pageTitle,description:pageDescription,inLanguage:'en-US',dateModified:documentationDate,isPartOf:{'@id':candidate+'/#website'},publisher:{'@id':candidate+'/#publisher'},...(route||home?{mainEntity:{'@id':canonical+'#app'}}:{})})}/>}
-{approved && home && <script type="application/ld+json" set:html={JSON.stringify({'@context':'https://schema.org','@type':'Organization','@id':candidate+'/#publisher',name:'Quilt Cut Planner',url:candidate+'/',description:'The independent website publishing free browser-based quilt fabric and cutting calculators.'})}/>}
+{approved && <script type="application/ld+json" set:html={JSON.stringify({'@context':'https://schema.org','@type':'WebPage','@id':canonical+'#webpage',url:canonical,name:pageTitle,description:pageDescription,inLanguage:'en-US',dateModified:documentationDate,author:{'@id':publisherId},isPartOf:{'@id':candidate+'/#website'},publisher:{'@id':publisherId},...(pageSources.length?{citation:pageSources.map(source=>({'@type':'CreativeWork',name:source.title,url:source.url,author:{'@type':'Organization',name:source.publisher}}))}:{}),...(route||home?{mainEntity:{'@id':canonical+'#app'}}:{})})}/>}
+{approved && <script type="application/ld+json" set:html={JSON.stringify({'@context':'https://schema.org','@type':'Organization','@id':publisherId,name:'Quilt Cut Planner',url:candidate+'/',description:'The independent project publishing and maintaining free browser-based quilt fabric and cutting calculators.',sameAs:['https://github.com/garrison2025/Quilt_Calculator']})}/>}
 </head>
 <body class="quilt-ui-v3">
 <a class="skip-link" href="#main">Skip to main content</a>
@@ -77,6 +80,7 @@ const documentationDate='2026-11-08';
 <details class="mobile-tools"><summary>Tools <span aria-hidden="true">⌄</span></summary><nav aria-label="Mobile calculators">{routes.map(r=><a href={'/'+r.slug+'/'}>{r.nav}</a>)}</nav></details>
 </div></header>
 <main id="main"><slot/></main>
+{!noIndex&&<div class="page-attribution" data-page-attribution><span>Calculation method &amp; code: <a href="/about/#editorial">Quilt Cut Planner project</a>.</span><span>Documentation updated <time datetime={documentationDate}>November 8, 2026</time>.</span></div>}
 {route && <aside class="print-scale-audit" aria-label="Physical print size verification before cutting" data-print-scale-audit>
  <h2>PRINT SCALE CHECK · MEASURE BEFORE CUTTING</h2>
  <p>Print at <strong>100% / Actual size</strong>. Disable “Fit to page”, “Shrink oversized pages” and browser scaling. Check both marks using a real ruler. If either measurement is inaccurate, correct printer settings and reprint.</p>

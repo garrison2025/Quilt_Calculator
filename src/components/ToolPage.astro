@@ -36,7 +36,7 @@ const toolImageAlt:Record<string,string>={
 <section class="seo-direct-answer" aria-label="Quick yard to inch answers" data-seo-direct-answer>
   <div class="seo-direct-answer-text">
     <span class="eyebrow-with-line">— QUICK ANSWER</span>
-    <h2>One linear yard is 36 inches long; fabric width varies.</h2>
+    <h2>How many inches are in one yard of fabric?</h2>
     <p><strong>One linear yard of fabric is exactly 36 inches (91.44 centimeters) long.</strong> The width is not fixed: measure the usable width on your own fabric bolt.</p>
     <p>A quarter yard is <strong>9 inches</strong>, a half yard is <strong>18 inches</strong>, one and a half yards is <strong>54 inches</strong>, and four yards is <strong>144 inches</strong>. These are lengths, not fixed fabric areas or retailer prices.</p>
     <p><strong>Reverse conversion works here too:</strong> 9 inches = ¼ yard, 18 inches = ½ yard, and 22.86 centimeters = 9 inches = ¼ yard. Choose Yards, Inches, or Centimeters as the input unit above the value field. Changing the unit preserves the same length rather than reinterpreting the number. Decimal outputs are rounded for readability; the internal calculation retains its numerical precision.</p>
@@ -48,7 +48,7 @@ const toolImageAlt:Record<string,string>={
 <QuickAnswer tool={route.id}/>
 {route.id==='hub'&&
 <section class="content-block" data-seo-size-examples>
- <h2>Pick a familiar quilt size, then adjust it for your pattern</h2>
+ <h2>Which quilt size should I start with?</h2>
  <p>Baby/crib, throw, twin, queen and king are <strong>illustrative finished OUTSIDE quilt sizes, not standardized dimensions</strong>. The quick examples in the planner fill in overall quilt measurements; existing borders and color-by-color fabric cut lists are not recreated. Check your pattern, batting and backing requirements before buying.</p>
 </section>}
 {route.id==='backing'&&
@@ -59,22 +59,22 @@ const toolImageAlt:Record<string,string>={
 </section>}
 {route.id==='binding'&&
 <section class="content-block" data-seo-bias-area-bound>
- <h2>Bias binding is a separate cutting method</h2>
+ <h2>Can I use this calculator for bias binding?</h2>
  <p>This calculator covers straight-grain, full-width-of-fabric strips only. Bias binding uses 45° cuts and a different geometry; its fabric yield and purchase quantity are not calculated here. Do not use this page’s yardage or cut list for bias tape or curved-edge binding; this page does not provide an approved purchasing plan for bias binding. The separate noindex <a href="/lab/individual-bias-strips/">individual 45° strip</a>, <a href="/lab/continuous-bias-tube/">continuous-bias tube topology</a> and <a href="/lab/continuous-bias-planner/">continuous-bias planning</a> labs are research only; none provides a validated purchase quantity.</p>
 </section>}
 {route.id==='sashing'&&
 <section class="content-block" data-seo-block-grid-handoff>
- <h2>From finished blocks and sashing to your quilt size</h2>
+ <h2>How do finished blocks and sashing determine quilt size?</h2>
  <p>Center width = columns × finished block width + (columns − 1) × finished sashing width. Center height = rows × finished block height + (rows − 1) × finished sashing width. For a 4-row × 5-column grid of 10-inch blocks with 2-inch internal sashing, the quilt center is <strong>58 × 46 inches</strong>, before any outside borders.</p>
  <p>Use the button in the calculator to pass these center measurements into your shared Project Planner. Outer borders are added afterwards. That action does not create any fabric color/SKU cutting list or confirm a sewing layout.</p>
- <h2>Reverse quilt block size calculator: start with the center you want</h2>
+ <h2>How does the Reverse quilt block size calculator find dimensions from a target center?</h2>
  <p>For straight-set blocks with <strong>internal sashing only</strong>, the reverse formula is: finished block width = (target center width − (columns − 1) × finished sashing width) ÷ columns; finished block height = (target center height − (rows − 1) × finished sashing width) ÷ rows. For example, a <strong>60 × 80 inch center</strong> using 5 columns, 4 rows and 2-inch internal sashing requires finished rectangular blocks of <strong>10.4 × 18.5 inches</strong>. Check whether these sizes suit your actual pattern.</p>
  <p>This reverse result describes <strong>FINISHED block dimensions</strong>, not fabric cutting dimensions. Quilt borders are separate; adding an existing 3-inch finished border on every side makes that 60 × 80 inch center a 66 × 86 inch outside quilt. The calculator does not infer angled/on-point blocks, exterior sashing frames or colored fabric-cut lists. If the internal strips consume the entire target, the calculator refuses the request.</p>
 </section>}
-<section class="content-block"><div class="editorial-head"><span class="eyebrow-with-line">— UNDER THE STITCHES</span><h2>Clear math. Better cuts.</h2><p>Understand the calculation before cutting into fabric.</p></div>
+<section class="content-block"><div class="editorial-head"><span class="eyebrow-with-line">— UNDER THE STITCHES</span><h2>How does this calculator turn measurements into fabric cuts?</h2><p>Understand the calculation before cutting into fabric.</p></div>
 <div class="story-grid"><article class="story-panel"><span class="story-number">01 / FORMULA</span><h3>How it works</h3><p>{route.formula}</p></article><article class="story-panel"><span class="story-number">02 / METHOD</span><h3>From measurements to fabric</h3><p>{route.method}</p></article><article class="story-panel disclaimer-panel"><span class="story-number">03 / IMPORTANT</span><h3>What it does not assume</h3><p>{route.caution}</p></article></div>
 </section>
-<section class="sample-block"><div><span class="eyebrow-with-line">— THE WORKED EXAMPLE</span><h2>Start with something familiar.</h2><p>{route.sample}</p></div><span class="sample-icon" aria-hidden="true">✳</span></section>
+<section class="sample-block"><div><span class="eyebrow-with-line">— THE WORKED EXAMPLE</span><h2>What does this worked example show?</h2><p>{route.sample}</p></div><span class="sample-icon" aria-hidden="true">✳</span></section>
 <IntentGuide tool={route.id}/>
 <section class="content-block" data-geo-provenance>
  <h2>How to verify these calculations</h2>
@@ -82,6 +82,6 @@ const toolImageAlt:Record<string,string>={
  <p>Our <a href="/about/#sources">measurement references</a> distinguish standard unit definitions and independent quilting guidance from the assumptions used by this tool. The calculator's live results depend on your entered dimensions and materials.</p>
 </section>
 <p class="methodology-link">Want to check how these estimates are calculated or report a problem? Read our <a href="/about/#methods">cutting and purchase methodology</a>, with limitations and source-code references.</p>
-<section class="faq-block"><div><span class="eyebrow-with-line">— COMMON QUESTIONS</span><h2>A little clarity goes a long way.</h2></div><div class="faq-list">{route.faqs.map(([q,a])=><details><summary>{q}<span aria-hidden="true">+</span></summary><p>{a}</p></details>)}</div></section>
-<section class="related-block"><span class="eyebrow-with-line">— KEEP MAKING</span><h2>More for your next step.</h2><div class="related-grid">{related.map(r=><a href={'/'+r.slug+'/'} class="related-card"><span class="related-ornament">✳</span><span>{r.nav}</span><strong>{r.h1}</strong><small>Open calculator ↗</small></a>)}</div></section>
+<section class="faq-block"><div><span class="eyebrow-with-line">— COMMON QUESTIONS</span><h2>What questions should I check before cutting fabric?</h2></div><div class="faq-list">{route.faqs.map(([q,a])=><details><summary>{q}<span aria-hidden="true">+</span></summary><p>{a}</p></details>)}</div></section>
+<section class="related-block"><span class="eyebrow-with-line">— KEEP MAKING</span><h2>Which calculator should I use next?</h2><div class="related-grid">{related.map(r=><a href={'/'+r.slug+'/'} class="related-card"><span class="related-ornament">✳</span><span>{r.nav}</span><strong>{r.h1}</strong><small>Open calculator ↗</small></a>)}</div></section>
 </div>

@@ -163,6 +163,8 @@ try{
   aboutHtml.includes('not physical sewing certification'),
   'Published About methods page must accurately identify source and physical limitations.');
  const {html:homeHtml}=await get('/');
+ assertThat(homeHtml.includes('data-page-attribution')&&homeHtml.includes('data-geo-citations="hub"'),
+  'Homepage must show project attribution and independent quilting references.');
  for(const id of ['hub','backing','binding','borders','yardage','fabric','inches','batting','sashing'])
   assertThat(homeHtml.includes('data-task="'+id+'"'),'Missing public task-first calculator navigation '+id);
  for(const path of routes){
@@ -173,6 +175,12 @@ try{
   assertThat(app?.offers?.price===0&&app?.isAccessibleForFree===true&&
     app?.inLanguage==='en-US'&&!app?.aggregateRating&&!app?.review,
    'Public software markup should advertise free service truthfully, with no fake reviews: '+path);
+   const webpage=scripts.find(x=>x['@type']==='WebPage');
+   assertThat(webpage?.author?.['@id']===PROD+'/#publisher'&&webpage?.dateModified==='2026-11-08'&&
+    webpage?.citation?.length>0,
+    'Public WebPage must expose project author, true modification date and source citations: '+path);
+   assertThat(html.includes('data-page-attribution')&&html.includes('data-geo-citations='),
+    'Public page must show a visible project byline and task-specific sources: '+path);
  }
  console.log('PASS pages.dev header noindex, official 12-URL sitemap, indexable trust pages and truthful application schema.');
 

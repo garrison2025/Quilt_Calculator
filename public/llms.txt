@@ -26,3 +26,10 @@ Source and automated tests: https://github.com/garrison2025/Quilt_Calculator
 - Research/QA routes are intentionally excluded from public search indexing and this curated index.
 
 This file is an optional human- and machine-readable guide; it is not a substitute for HTML, the official sitemap, or Google indexing.
+
+
+## Authorship and independent references
+- Project maintainer and publisher: Quilt Cut Planner. This is a project-level attribution, not a claim of an individually certified quilting expert.
+- Public technical source: https://github.com/garrison2025/Quilt_Calculator
+- Each calculator page links to independent quilting or measurement background relevant to its task. Those sources do not certify the site's formula outputs.
+- Documentation update date shown in page metadata: 2026-11-08. This is not claimed as the site's original publication date.

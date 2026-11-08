@@ -4,6 +4,7 @@ import Calculator from '../components/Calculator.astro';
 import {byId} from '../data/routes';
 import {calculatorTasks} from '../data/calculator-tasks';
 import {plannerSampleReference as liveExample} from '../data/seo-reference';
+import GeoSourceList from '../components/GeoSourceList.astro';
 ---
 <Base home title="Quilt Cut Planner — Fabric Yardage & Cutting Plans" description="Plan quilt fabric and cutting layouts with free backing, binding, yardage and border calculators. Get feasible cut plans and printable shopping lists.">
 <div class="page-shell">
@@ -20,8 +21,9 @@ import {plannerSampleReference as liveExample} from '../data/seo-reference';
   <svg class="hero-thread" viewBox="0 0 580 280" preserveAspectRatio="none" aria-hidden="true"><path d="M-12 185 Q 75 95, 154 156 T 321 144 T 598 70" pathLength="100" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="1.2 1.2" stroke-linecap="round"/></svg>
   <span class="hero-fabric-seal" aria-hidden="true">MADE<br/>TO<br/>MEASURE</span><div class="mini-bottom"><b>Make room for the joy.</b><span>✳ Made to measure</span></div></div>
 </section>
+<GeoSourceList tool="hub"/>
 <section class="content-block home-workspace-section" style="margin-top:22px">
- <div class="editorial-head"><span class="eyebrow-with-line">— START RIGHT HERE</span><h2>Your complete quilt cutting plan, in one place.</h2><p>Try the live {liveExample.centerWidthIn} × {liveExample.centerHeightIn} inch CENTER-size example with a {liveExample.borderPerSideIn}-inch finished border on each edge, producing a {liveExample.finalWidthIn} × {liveExample.finalHeightIn} inch outside quilt. The calculator verifies rectangular cutting geometry against entered fabric widths; real-paper scale and physical fabric cuts still require manual checks.</p></div>
+ <div class="editorial-head"><span class="eyebrow-with-line">— START RIGHT HERE</span><h2>How does the complete quilt cutting planner work?</h2><p>Try the live {liveExample.centerWidthIn} × {liveExample.centerHeightIn} inch CENTER-size example with a {liveExample.borderPerSideIn}-inch finished border on each edge, producing a {liveExample.finalWidthIn} × {liveExample.finalHeightIn} inch outside quilt. The calculator verifies rectangular cutting geometry against entered fabric widths; real-paper scale and physical fabric cuts still require manual checks.</p></div>
  <Calculator tool="hub" sample={byId('hub').sample}/>
 </section>
 <section class="content-block" data-geo-home-guide aria-label="How quilt fabric calculations work">
@@ -62,6 +64,6 @@ import {plannerSampleReference as liveExample} from '../data/seo-reference';
  })}
  </nav>
 </section>
-<section class="sample-block"><div><span class="eyebrow-with-line">— WHY WE MADE THIS</span><h2>Calculations that respect the fabric.</h2><p>A square-inch area estimate can hide impossible cuts. Quilt Cut Planner checks usable width, grain direction and actual rectangular placement before giving you a purchase quantity. Where sewing geometry is unverified, the tool tells you clearly instead of guessing.</p><a href="/calculators/">View all planning tools ↗</a></div><span class="sample-icon" aria-hidden="true">✳</span></section>
+<section class="sample-block"><div><span class="eyebrow-with-line">— WHY WE MADE THIS</span><h2>Why does fabric geometry matter more than area alone?</h2><p>A square-inch area estimate can hide impossible cuts. Quilt Cut Planner checks usable width, grain direction and actual rectangular placement before giving you a purchase quantity. Where sewing geometry is unverified, the tool tells you clearly instead of guessing.</p><a href="/calculators/">View all planning tools ↗</a></div><span class="sample-icon" aria-hidden="true">✳</span></section>
 </div>
 </Base>
