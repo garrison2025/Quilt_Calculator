@@ -60,9 +60,9 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-  # A reserved .example host tests how the site WILL build with indexing
-  # enabled; it does not publish a real domain or turn the Pages preview on.
-  # Keep this in a separate job so browser QA still tests the noindex build.
+  # The owner-approved .com domain is checked in an OFFLINE production build.
+  # This does not configure Cloudflare, publish a sitemap, or switch the live site.
+  # Keep this separate so browser QA still tests the default noindex build.
   production-seo-dry-run:
     runs-on: ubuntu-latest
     permissions:
@@ -75,10 +75,10 @@ jobs:
           cache: npm
       - name: Install pinned dependencies
         run: npm ci --no-audit --no-fund
-      - name: Build and statically validate a RESERVED hypothetical production host
+      - name: Build and statically validate the approved production origin offline
         env:
           PUBLIC_INDEXABLE: '1'
-          PUBLIC_SITE_URL: 'https://quilt.example'
+          PUBLIC_SITE_URL: 'https://quiltcutplanner.com'
         run: |
           npm run build
           node scripts/check-build.mjs
@@ -87,7 +87,7 @@ jobs:
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
           import assert from 'node:assert/strict';
-          const site='https://quilt.example';
+          const site='https://quiltcutplanner.com';
           const paths=['/','/calculators/','/quilt-backing-calculator/','/quilt-binding-calculator/','/quilt-border-calculator/','/fabric-yardage-calculator/','/quilt-fabric-calculator/','/fabric-yards-to-inches/','/quilt-batting-calculator/','/quilt-sashing-calculator/'];
           for(const path of paths){
             const html=fs.readFileSync('dist'+path+'index.html','utf8');
@@ -98,5 +98,5 @@ jobs:
             const html=fs.readFileSync('dist'+path+'index.html','utf8');
             assert.ok(html.includes('noindex,follow')&&!html.includes('rel="canonical"'), 'QA lab leaked index eligibility: '+path);
           }
-          console.log('PASS hypothetical production index/canonical and research noindex; no real domain was deployed.');
+          console.log('PASS approved-domain offline SEO build and research noindex; Cloudflare live settings were not changed.');
           NODE
