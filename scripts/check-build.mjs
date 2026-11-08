@@ -442,7 +442,7 @@ const copyChecks=[
  ['quilt-binding-calculator/',['Straight-grain quilt binding calculator: strips and yardage.','How much straight-grain binding fabric does a 68 × 86 in twin-size example need?','Twin-size example (illustrative, not a universal standard)','⅝ yd']],
  ['quilt-border-calculator/',['Quilt border calculator: butted layers and yardage.']],
  ['fabric-yardage-calculator/',['Fabric yardage calculator for repeated rectangular cuts.','Does this account for fabric pattern repeats?']],
- ['quilt-fabric-calculator/',['Does it match fabric pattern repeats automatically?']],
+ ['quilt-fabric-calculator/',['Does it match fabric pattern repeats automatically?','How much fabric do I need for a queen-size quilt?','There is no universal yardage','6¾ yd total','3⅜ yd of each colour']],
  ['quilt-batting-calculator/',['Are standard batting packages assumed?','it does not compare packaged sizes']],
  ['quilt-sashing-calculator/',['Can I calculate sashing without cornerstones?','cornerstone at every internal intersection']]
 ];
