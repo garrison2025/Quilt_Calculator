@@ -1,6 +1,15 @@
 # Quilt Studio — verified release status
 
-## Current governing decision: SOFTWARE ACCEPTANCE PASS (2026-11-06)
+## Current production SEO state (2026-11-08)
+
+- **Owned production origin:** `https://quiltcutplanner.com`. The official Cloudflare Pages main build serves 12 approved indexable URLs (home, nine calculator/planner routes, About and Privacy), with exact owned-domain canonicals and a 12-URL sitemap.
+- **Preview isolation:** `quilt-calculator-566.pages.dev` serves the same static HTML build but was independently verified to return HTTP `X-Robots-Tag: noindex`; research and QA routes remain excluded.
+- **Latest verified release:** `55fa4f5951d995196aef62c399aec55e2b0eba88`; production host audit and the full build/browser/mobile quality workflow passed. See [production SEO release evidence](qa/QUILTCUTPLANNER_PRODUCTION_RELEASE_20261108.md) and [the latest content/SERP audit](qa/CONTENT_SERP_AUDIT_20261108.md).
+- **Search-intent worklist:** 218 original historical records; 202 historical route assignments; 198 active non-brand intents; 3 deprioritized; 1 other-brand exclusion; 16 unsupported-method HOLD. These are not rankings or traffic.
+- **Explicitly deferred:** Google Search Console access/verification/submission, live US-localized SERP Top-10 exports, fresh Semrush Volume/KD/CPC, real-user field Core Web Vitals, and the `www` DNS/301 convenience alias. No indexed-query, impression, click, CTR, revenue or AdSense claim is made.
+- **Scope safety:** straight-grain binding, butted borders, one-piece roll batting, internal sashing with cornerstones, and the published rectangular-cut methods only. Bias, diagonal backing, mitered/pieced borders, packaged batting selection, and unverified cutting methods remain outside the supported calculator contract.
+
+## Historical software acceptance decision: SOFTWARE ACCEPTANCE PASS (2026-11-06; preview-stage scope)
 
 **ACCEPTED for the nine approved calculators and browser-only planner software at the noindex preview stage.** The owner explicitly accepted successful software engineering validation as this milestone's completion standard, with no prerequisite for real 2×2 fabric cutting, sewing or physical paper calibration. Those experiments remain `MANUAL_NOT_RUN`, not `PASS`, but they are **out of scope for accepted software completion**. No purchased domain, Google indexing, production ads, real SEO rankings or independent physical certification is implied.
 
