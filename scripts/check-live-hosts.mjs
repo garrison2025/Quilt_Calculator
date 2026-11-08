@@ -46,7 +46,7 @@ function canonical(html) {
     .map(t => t.match(/\bhref=["']([^"']*)["']/i)?.[1] || '');
 }
 function stamp(html) { return meta(html, 'quilt-build-commit'); }
-function assertPublicDocument(response, html, origin, path, indexable) {
+function assertPublicDocument(response, html, origin, path, indexable, previewOf = null) {
   assert.equal(response.status, 200, origin + path + ' must return HTTP 200.');
   assert.equal(response.url, origin + path, origin + path + ' unexpectedly redirects.');
   assert.match(html, /<h1(?:\s|>)/i, 'Missing actual H1 at ' + path);
@@ -56,6 +56,17 @@ function assertPublicDocument(response, html, origin, path, indexable) {
     assert.equal(hasNoindex(response), false, 'Production X-Robots-Tag cannot be noindex: ' + path);
     assert.deepEqual(canonical(html), [origin + path], 'Canonical must be a unique absolute production URL: ' + path);
     assert.match(html, /<script\s+type=["']application\/ld\+json["']>/i, 'Missing calculator structured data: ' + path);
+  } else if (previewOf) {
+    // The custom domain and production pages.dev domain serve the SAME Astro
+    // static HTML, including production index meta and its canonical tag.
+    // Cloudflare's host-specific HTTP noindex response header protects the
+    // pages.dev copy; requiring an HTML noindex here is an obsolete assertion.
+    assert.ok(directive.includes('index') && !directive.includes('noindex'),
+      'Mirrored preview should carry the same production HTML meta: ' + path);
+    assert.equal(hasNoindex(response), true,
+      'Production pages.dev mirror requires HTTP X-Robots-Tag noindex: ' + path);
+    assert.deepEqual(canonical(html), [previewOf + path],
+      'Mirrored preview must canonicalize to owned production URL: ' + path);
   } else {
     assert.ok(directive.includes('noindex'), 'Preview/QA HTML must contain noindex: ' + path);
     assert.equal(hasNoindex(response), true, 'Preview/QA requires HTTP X-Robots-Tag noindex: ' + path);
@@ -78,7 +89,7 @@ export async function checkLiveHosts(production) {
     assert.match(sourceSha, /^[0-9a-f]{40}$/i, 'Production must identify its Git commit: ' + path);
     built.add(sourceSha.toLowerCase());
     const preview = await get(PREVIEW, path);
-    assertPublicDocument(preview.response, preview.html, PREVIEW, path, false);
+    assertPublicDocument(preview.response, preview.html, PREVIEW, path, false, production);
     assert.equal(stamp(preview.html).toLowerCase(), sourceSha.toLowerCase(), 'Production/preview versions differ at ' + path);
     console.log('PASS production index + preview noindex: ' + path);
   }
@@ -126,6 +137,13 @@ function selfTest() {
   for (const bad of ['http://quilt-example.com','https://quilt-example.com/path','https://quilt-example.com?x=1','https://quilt-example.com:8443','https://quilt-calculator-566.pages.dev','https://quilt.example','https://localhost','https://user:pass@quilt-example.com']) assert.throws(() => parseProductionOrigin(bad));
   assertPublicDocument(response(origin,'/', 'follow'), html('index,follow','<link rel="canonical" href="'+origin+'/">'), origin, '/', true);
   assertPublicDocument(response(PREVIEW,'/', 'noindex, follow'), html('noindex,follow'), PREVIEW, '/', false);
+  // A main-branch Cloudflare Pages build shares indexable HTML across both
+  // names; pages.dev MUST still be HTTP noindex with production canonical.
+  const mirrored = html('index,follow','<link rel="canonical" href="'+origin+'/">');
+  assertPublicDocument(response(PREVIEW,'/', 'noindex, follow'), mirrored, PREVIEW, '/', false, origin);
+  assert.throws(() => assertPublicDocument(response(PREVIEW,'/', 'follow'), mirrored, PREVIEW, '/', false, origin));
+  assert.throws(() => assertPublicDocument(response(PREVIEW,'/', 'noindex'),
+    html('index,follow','<link rel="canonical" href="https://wrong.example/">'), PREVIEW, '/', false, origin));
   assert.throws(() => assertPublicDocument(response(PREVIEW,'/', 'follow'), html('noindex,follow'), PREVIEW, '/', false));
   assert.throws(() => assertPublicDocument(response(origin,'/', 'follow'), html('index,follow'), origin, '/', true));
   assert.throws(() => assertPublicDocument(response(origin,'/', 'noindex,follow'), html('index,follow','<link rel="canonical" href="'+origin+'/">'), origin, '/', true));
