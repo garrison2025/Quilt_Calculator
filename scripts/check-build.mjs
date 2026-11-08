@@ -474,7 +474,7 @@ for(const slug of ['quilt-backing-calculator','quilt-binding-calculator','quilt-
 }
 // Important static content must be genuinely inspectable without JavaScript.
 const seoTables=[['quilt-backing-calculator','backing',8],
- ['quilt-binding-calculator','binding',6],['fabric-yardage-calculator','yardage',5]];
+ ['quilt-binding-calculator','binding',8],['fabric-yardage-calculator','yardage',5]];
 for(const [slug,id,expectedRows] of seoTables){
  const html=fs.readFileSync('dist/'+slug+'/index.html','utf8');
  const part=html.split('data-engine-reference="'+id+'"')[1]?.split('</table>')[0]||'';
