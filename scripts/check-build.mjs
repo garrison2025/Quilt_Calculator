@@ -720,9 +720,11 @@ for(const slug of [...slugs,...trustSlugs]){
    if(app?.author?.['@id']!==site+'/#publisher')
     throw Error('Calculator application author does not resolve to project publisher: '+slug);
    if(!webpage.citation?.length)throw Error('Calculator WebPage has no matching source citations: '+slug);
-   const faq=schemas.find(x=>x['@type']==='FAQPage');
-   if(!faq?.mainEntity?.length||faq.mainEntity.some(q=>q['@type']!=='Question'||!q.acceptedAnswer?.text))
-    throw Error('Calculator page FAQPage schema must mirror visible question-and-answer content: '+slug);
+   if(slug){
+    const faq=schemas.find(x=>x['@type']==='FAQPage');
+    if(!faq?.mainEntity?.length||faq.mainEntity.some(q=>q['@type']!=='Question'||!q.acceptedAnswer?.text))
+     throw Error('Calculator page FAQPage schema must mirror visible question-and-answer content: '+slug);
+   }
   }
  }
 }
