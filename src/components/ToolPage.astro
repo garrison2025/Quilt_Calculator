@@ -3,6 +3,7 @@ import type {ToolRoute} from '../data/routes';
 import {routes} from '../data/routes';
 import Calculator from './Calculator.astro';
 import IntentGuide from './IntentGuide.astro';
+import QuickAnswer from './QuickAnswer.astro';
 import {guides} from '../data/intent-guides';
 interface Props {route:ToolRoute}
 const {route}=Astro.props;
@@ -44,6 +45,7 @@ const toolImageAlt:Record<string,string>={
   <div class="seo-direct-answer-metric" aria-label="One yard equals 36 inches"><strong>1 yd</strong><span>=</span><strong>36 in</strong><small>Exact linear measure</small></div>
 </section>}
 <Calculator tool={route.id} sample={route.sample}/>
+<QuickAnswer tool={route.id}/>
 {route.id==='hub'&&
 <section class="content-block" data-seo-size-examples>
  <h2>Pick a familiar quilt size, then adjust it for your pattern</h2>
@@ -74,6 +76,11 @@ const toolImageAlt:Record<string,string>={
 </section>
 <section class="sample-block"><div><span class="eyebrow-with-line">— THE WORKED EXAMPLE</span><h2>Start with something familiar.</h2><p>{route.sample}</p></div><span class="sample-icon" aria-hidden="true">✳</span></section>
 <IntentGuide tool={route.id}/>
+<section class="content-block" data-geo-provenance>
+ <h2>How to verify these calculations</h2>
+ <p>The <a href="https://github.com/garrison2025/Quilt_Calculator/blob/main/src/lib/quilt/math.ts" target="_blank" rel="noopener noreferrer">open calculation engine</a> and <a href="https://github.com/garrison2025/Quilt_Calculator/tree/main/tests" target="_blank" rel="noopener noreferrer">automated reference tests</a> document the implemented formulas and edge cases. They are implementation evidence, not a sewing certification or a guarantee of minimum material waste.</p>
+ <p>Our <a href="/about/#sources">measurement references</a> distinguish standard unit definitions and independent quilting guidance from the assumptions used by this tool. The calculator's live results depend on your entered dimensions and materials.</p>
+</section>
 <p class="methodology-link">Want to check how these estimates are calculated or report a problem? Read our <a href="/about/#methods">cutting and purchase methodology</a>, with limitations and source-code references.</p>
 <section class="faq-block"><div><span class="eyebrow-with-line">— COMMON QUESTIONS</span><h2>A little clarity goes a long way.</h2></div><div class="faq-list">{route.faqs.map(([q,a])=><details><summary>{q}<span aria-hidden="true">+</span></summary><p>{a}</p></details>)}</div></section>
 <section class="related-block"><span class="eyebrow-with-line">— KEEP MAKING</span><h2>More for your next step.</h2><div class="related-grid">{related.map(r=><a href={'/'+r.slug+'/'} class="related-card"><span class="related-ornament">✳</span><span>{r.nav}</span><strong>{r.h1}</strong><small>Open calculator ↗</small></a>)}</div></section>

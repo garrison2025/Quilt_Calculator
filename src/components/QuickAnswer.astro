@@ -1,0 +1,67 @@
+---
+import type {ToolId} from '../client/types';
+interface Props {tool:ToolId}
+const {tool}=Astro.props;
+type Entry={question:string;answer:string;checks:[string,string][]};
+const entries:Record<ToolId,Entry>={
+  hub:{
+    question:'How do I calculate all the fabric needed for a quilt?',
+    answer:'Start with the finished outside quilt size, not just the center blocks. Backing, batting, straight-grain binding, butted borders and quilt-top fabric each require a separate material layout. The planner checks dimensions and roll fit, then rounds purchase yardage per material; it never treats all fabrics as one bolt.',
+    checks:[['Quilt size basis','Center dimensions and added borders versus already-finished outside dimensions'],['Separate material widths','Backing and binding can use different usable fabric widths'],['Purchase readiness','Each roll must be physically feasible before its estimate can be used']]
+  },
+  backing:{
+    question:'How much backing fabric does my quilt need?',
+    answer:'Add the required overage to all four edges of the finished quilt. Calculate the number of backing panels that fit the usable fabric width, subtract joining seam take-up and compare permitted seam orientations. Buy the calculated fabric run rounded up to the selected shop increment.',
+    checks:[['Finished outside size','Measure the quilt after all borders, not just its center'],['Usable backing width','Measure the real cuttable width, including a separate wide-back option if needed'],['Overage and seams','Confirm overage per side, join loss and print direction']]
+  },
+  binding:{
+    question:'How many straight-grain binding strips should I cut?',
+    answer:'The required joined binding length is twice the finished quilt width plus twice its height, plus a finishing tail. Divide by the effective length of full-width strips after diagonal joins, round the strip count up and multiply by cut strip width to find the roll run. This method does not apply to bias binding.',
+    checks:[['Finished outside perimeter','Measure the quilt after adding borders'],['Strip geometry','Specify cut width, usable width of fabric and loss per join'],['Finishing length','Allow enough extra length for the actual join and finish method']]
+  },
+  borders:{
+    question:'How much fabric is needed for a butted quilt border?',
+    answer:'For each side-first butted border layer, add twice the finished border width to each quilt dimension. The strip cut width also includes seam allowance on both edges. Calculate two side pieces and two top/bottom pieces at their cut lengths and buy each layer as a separate fabric SKU.',
+    checks:[['Construction method','Only unpieced side-first butted borders are covered'],['Layer dimensions','Each added border changes the starting size of the next layer'],['Fabric and seams','Enter usable fabric width and the seam allowance for each cut']]
+  },
+  yardage:{
+    question:'How do I calculate fabric yardage for repeated cut pieces?',
+    answer:'Use actual rectangular cut dimensions and the number of pieces. Fit them across the measured usable width and count complete rows; calculate fabric run from row length, then round up to the buying increment. Area alone does not prove the cuts will fit a real bolt.',
+    checks:[['Cut piece size','Include seam allowance and any repeat-matching extra before entering dimensions'],['Number of pieces','Enter the full required cut count'],['Grain and rotation','Allow a 90-degree turn only when the pattern and grain permit it']]
+  },
+  fabric:{
+    question:'How do I estimate fabric for a multicolour quilt top?',
+    answer:'Make a separate cutting layout for each fabric colour or SKU. Each list needs actual cut-piece dimensions, quantities, usable fabric width and grain limits. Round purchases separately; you cannot combine two colours into one fictitious fabric roll.',
+    checks:[['Fabric identity','Keep different fabric SKUs and colours separate'],['Actual cutting dimensions','Enter the sizes after seam allowance, not just finished blocks'],['Layout feasibility','Verify piece orientation, physical fit and per-SKU purchase rounding']]
+  },
+  inches:{
+    question:'How many inches are in a yard of fabric?',
+    answer:'One linear yard is exactly 36 inches or 91.44 centimeters long. A half yard is 18 inches, a quarter yard is 9 inches and an eighth yard is 4.5 inches. Fabric width varies by bolt; length conversion alone cannot determine the area or purchase quantity for a cutting pattern.',
+    checks:[['Linear length','1 yard = exactly 36 inches = 91.44 centimeters'],['Fabric width','The actual usable WOF is independent of the length'],['Cutting pattern','Use the yardage calculator when pieces, rotation or waste matter']]
+  },
+  batting:{
+    question:'What batting size fits my finished quilt?',
+    answer:'Add the batting overage to each side of the finished outside quilt to obtain a required single rectangle. Compare both permitted orientations against the usable batting roll width. This tool checks one-piece roll fit; it does not calculate joined batting or select packaged products.',
+    checks:[['Outside quilt size','Include any finished borders before sizing batting'],['Batting allowance','Confirm overage for your quilting technique and machine'],['Roll width','Verify that one continuous rectangle fits a real batting roll']]
+  },
+  sashing:{
+    question:'How many sashing strips and cornerstones will I need?',
+    answer:'For a straight block grid, count strips between adjacent blocks: (columns − 1) × rows in one direction and (rows − 1) × columns in the other. Interior cornerstones total (rows − 1) × (columns − 1). The layout assumes cornerstones at every intersection and excludes outer sashing.',
+    checks:[['Grid','Enter finished block size, rows and columns'],['Internal sashing','Use finished spacing for quilt size and cut sizing with seam allowances'],['Construction','This is not a long-strip, no-cornerstone or outer-frame sashing pattern']]
+  }
+};
+const data=entries[tool];
+---
+<section class="content-block geo-quick-answer" data-static-quick-answer={tool} aria-label="Quick calculator answer">
+  <div class="editorial-head"><span class="eyebrow-with-line">— QUICK ANSWER BEFORE YOU CALCULATE</span>
+    <h2>{data.question}</h2><p>{data.answer}</p>
+  </div>
+  <div class="table-scroll" role="region" tabindex="0" aria-label="Inputs to verify before calculating">
+    <table class="breakdown-table geo-input-table">
+      <caption>Inputs and limits that change this calculator's answer</caption>
+      <thead><tr><th scope="col">Check</th><th scope="col">Why it matters</th></tr></thead>
+      <tbody>{data.checks.map(([label,note])=><tr><th scope="row">{label}</th><td>{note}</td></tr>)}</tbody>
+    </table>
+  </div>
+  <p class="seo-reference-disclaimer">The editable calculator below runs locally in your browser; the explanation and reference tables on this page are readable without JavaScript. Confirm the actual material before buying or cutting.</p>
+</section>
