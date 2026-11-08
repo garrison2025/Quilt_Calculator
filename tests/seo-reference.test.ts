@@ -1,11 +1,44 @@
 import {describe,it,expect} from 'vitest';
-import {backingReference,bindingReference,yardageReference,queenFabricReference,queenFabricTotalYards,formatEighthYards,currentPlannerSample,plannerSampleReference} from '../src/data/seo-reference';
+import {backingReference,bindingReference,borderReference,yardageReference,queenFabricReference,queenFabricTotalYards,formatEighthYards,currentPlannerSample,plannerSampleReference} from '../src/data/seo-reference';
 import {sampleProject} from '../src/lib/quilt/project';
 import {resolveQuiltDimensions} from '../src/lib/quilt/dimensions';
-import {byId} from '../src/data/routes';
-import {calculateBacking,calculateStraightBinding,calculateYardage,calculateQuiltFabric} from '../src/lib/quilt/math';
+import {byId,routes} from '../src/data/routes';
+import {calculateBacking,calculateStraightBinding,calculateBorders,calculateYardage,calculateQuiltFabric} from '../src/lib/quilt/math';
 
 describe('engine-derived SEO reference tables (not physical certification)',()=>{
+ it('keeps butted-border cut lengths and purchases in parity with the real border engine',()=>{
+  expect(borderReference).toHaveLength(5);
+  expect(borderReference.map(x=>[
+   x.startingQuilt,x.borderWidthIn,x.cutWidthIn,x.sideCutLengthIn,
+   x.topCutLengthIn,x.runIn,x.yards,x.finishedQuilt
+  ])).toEqual([
+   ['40 × 50 in',2,2.5,50.5,44.5,95,2.75,'44 × 54 in'],
+   ['60 × 80 in',3,3.5,80.5,66.5,147,4.125,'66 × 86 in'],
+   ['60 × 80 in',3,3.5,80.5,66.5,147,4.125,'66 × 86 in'],
+   ['66 × 86 in',2,2.5,86.5,70.5,157,4.375,'70 × 90 in'],
+   ['90 × 90 in',2,2.5,90.5,94.5,185,5.25,'94 × 94 in']
+  ]);
+  for(const row of borderReference){
+   const result=calculateBorders({
+    widthIn:row.startWidthIn,heightIn:row.startHeightIn,seamIn:.25,
+    layers:[{widthIn:row.borderWidthIn,sku:'reference-layer',label:row.layerLabel,wofIn:row.wofIn,shrinkageLengthPct:0}],
+    step:.125
+   });
+   const layer=result.layers[0];
+   expect(layer.layout.isCutFeasible).toBe(true);
+   expect(layer.layout.cutPieces).toHaveLength(4);
+   expect(layer.cutWidthIn).toBe(row.cutWidthIn);
+   expect(layer.sideCutLengthIn).toBe(row.sideCutLengthIn);
+   expect(layer.topCutLengthIn).toBe(row.topCutLengthIn);
+   expect(layer.layout.exactFabricRunLengthIn).toBe(row.runIn);
+   expect(layer.purchase?.roundedPurchaseYards).toBe(row.yards);
+   expect(layer.finishedWidthIn+' × '+layer.finishedHeightIn+' in').toBe(row.finishedQuilt);
+  }
+ });
+ it('keeps every calculator title distinct and within the 60-character editorial target',()=>{
+  expect(new Set(routes.map(route=>route.title)).size).toBe(routes.length);
+  for(const route of routes) expect(route.title.length).toBeLessThanOrEqual(60);
+ });
  it('keeps backing example purchases in parity with actual feasible cutting layouts',()=>{
   expect(backingReference).toHaveLength(8);
   for(const row of backingReference){
