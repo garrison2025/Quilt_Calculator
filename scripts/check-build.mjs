@@ -11,7 +11,7 @@ for(const guard of ['buildCalculatorCopySummary','NOT A PURCHASE ORDER',
 }
 
 if(githubSha && !/^[0-9a-f]{40}$/.test(githubSha))throw Error('Invalid GITHUB_SHA used for provenance verification.');
-const production=process.env.PUBLIC_INDEXABLE==='1'&&/^https:\/\/[a-z0-9.-]+$/i.test(site)&&!/\.pages\.dev$|localhost$|127\.0\.0\.1$/.test(site.toLowerCase());
+const production=process.env.PUBLIC_INDEXABLE==='1'&&site==='https://quiltcutplanner.com';
 for(const slug of slugs){
  const file='dist/'+(slug?slug+'/':'')+'index.html';
  if(!fs.existsSync(file))throw Error('Missing route '+file);
