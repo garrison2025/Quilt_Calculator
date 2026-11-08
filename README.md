@@ -1,26 +1,23 @@
-# Quilt Studio — Quilt & Fabric Calculators
+# Quilt Cut Planner — Quilt & Fabric Calculators
 
 Free US-English quilting tools built with Astro static pages and a browser-based TypeScript cutting engine. No account, database, paid API or required cloud back end.
 
 ## Approved production domain — automatic main-branch SEO release (2026-11-08)
 
 - The owner purchased **https://quiltcutplanner.com/** and bound it to Cloudflare; the live website is reachable at that hostname. Contact address supplied by the owner: **contact@quiltcutplanner.com** (mail deliverability not verified by website checks).
-- Owner chose **code-controlled publication**, so no manual Cloudflare `PUBLIC_INDEXABLE`/`PUBLIC_SITE_URL` variables are needed. When Cloudflare Pages builds `main`, the built-in `CF_PAGES=1` and `CF_PAGES_BRANCH=main` switch the ten approved URLs to indexable markup, exact owned-domain canonical and production sitemap. Local/CI and preview-branch builds stay `noindex`. Actual indexing eligibility is only confirmed after a successful live dual-host check; Google indexing/ranking remains unguaranteed.
+- Owner chose **code-controlled publication**, so no manual Cloudflare `PUBLIC_INDEXABLE`/`PUBLIC_SITE_URL` variables are needed. When Cloudflare Pages builds `main`, the built-in `CF_PAGES=1` and `CF_PAGES_BRANCH=main` switch the ten approved homepage/tool URLs and two trust pages to indexable markup, exact owned-domain canonical and production sitemap. Local/CI and preview-branch builds stay `noindex`. Actual indexing eligibility is only confirmed after a successful live dual-host check; Google indexing/ranking remains unguaranteed.
 - Production SEO output is hardcoded to the owner-approved origin `https://quiltcutplanner.com` and requires Cloudflare's actual `main` build identity. See [release checklist](docs/qa/QUILTCUTPLANNER_PRODUCTION_RELEASE_20261108.md).
 - Cloudflare Pages is a shared static deployment: the production sitemap may be served on the `pages.dev` hostname too. This is safe only with a preview-host `X-Robots-Tag: noindex` header and sitemap entries containing **only the owned production domain**. The live host checker enforces these conditions; no fake preview 404 expectation.
 
-## Project acceptance / current deployment
+## Current production SEO status (2026-11-08)
 
-**CURRENT DECISION (2026-11-06): SOFTWARE ACCEPTANCE — PASS.** The project owner approved automated engineering verification as the acceptance criterion for the present Quilt Calculator website stage; a physical 2×2 sewn sample and printed-paper ruler signoff are **not required to accept the software**. This acceptance covers the nine approved calculators and browser-only Project Planner as a tested **noindex preview**. Production-domain indexing, real SEO performance, advertising and unverified methods are separate later stages. Physical tests remain truthfully `MANUAL_NOT_RUN` but are no longer blockers for this software milestone. See [the authoritative 2026-11-06 acceptance decision and exact CI evidence](docs/qa/SOFTWARE_ACCEPTANCE_DECISION_20261106.md).
-
-**Software engineering complete for the nine approved calculator intents; automated preview acceptance PASSED (2026-11-05). Physical validation and production release remain PENDING.** This is a development freeze for the accepted preview scope, not a claim that all 47 original production gates are closed.
-
-- [Official acceptance decision and evidence](docs/qa/PREVIEW_ENGINEERING_ACCEPTANCE_20261105.md) — 187/187 unit/property checks, all 10 approved page reflow checks at 320 CSS px, browser import/export, automated accessibility checks and print/preview protection.
-- [Quality CI](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41978590893) and [exact-revision Cloudflare CI](https://github.com/garrison2025/Quilt_Calculator/actions/runs/41978590943) — both PASS for code revision `4b4f290`; later acceptance documentation only does not change the calculator.
-- [Current Cloudflare noindex preview](https://quilt-calculator-566.pages.dev/) — leave `PUBLIC_INDEXABLE=0`/unset and `PUBLIC_SITE_URL` unset until an approved owned domain and separate launch authorization.
-- [Physical printer calibration worksheet](docs/qa/PRINT_SCALE_PHYSICAL_SIGNOFF.md) — real printed measurements **MANUAL_NOT_RUN**; sewn fabric/Square-in-a-Square evidence, screen-reader/human hardware review **NOT_SIGNED_OFF**.
-- AdSense, production sitemap/canonicals and Google Search Console are **NOT_CONFIGURED**. Unproved methods stay HOLD. Reopen development only for a reproducible defect, new specification or user-approved production launch.
-
+- Owned site: **https://quiltcutplanner.com/**, public brand **Quilt Cut Planner**, contact **contact@quiltcutplanner.com** (mailbox send/receive not independently verified).
+- On Cloudflare Pages production `main`, ten approved homepage/calculator URLs **plus** the real `/about/` methods page and `/privacy/` disclosure are indexable, canonicalized to the owned domain and included in a twelve-URL sitemap. The domain's actual Google indexing or ranking is **not** verified.
+- The shared `quilt-calculator-566.pages.dev` production mirror is protected by HTTP `X-Robots-Tag: noindex`. Non-production branch builds have `noindex` HTML. Research `/lab/`, physical `/qa/` and excluded HOLD tools remain restricted.
+- The owner **explicitly deferred Google Search Console** and did not authorize account verification or sitemap submission. Do not mark GSC as connected or submitted. Performance/field Core Web Vitals and search rankings require live evidence separately.
+- **Software acceptance PASSED** on 2026-11-06 for the original nine approved calculators and browser-only planner. This remains separate from print, fabric and assistive-tech real-device checks (not physically signed off). See [software acceptance](docs/qa/SOFTWARE_ACCEPTANCE_DECISION_20261106.md) and [latest site SEO fix report](docs/qa/PRODUCTION_SEO_FIXES_20261108.md).
+- `www.quiltcutplanner.com` currently requires Cloudflare DNS plus a proxied 301 redirect to the apex (account-side). It cannot be made reachable by Astro HTML or a Pages `_redirects` file alone; see the SEO report.
+- AdSense is not installed; do not represent it as configured or earning.
 
 ## Local development (Node.js 22+)
 
@@ -31,28 +28,14 @@ Free US-English quilting tools built with Astro static pages and a browser-based
     node scripts/check-build.mjs
     npm run dev
 
-The build generates static WebP illustration assets and an Astro output in the dist directory.
+The build generates WebP illustrations and Astro output in `dist/`. Local builds deliberately have `noindex` and no production sitemap.
 
-## Deploy a Cloudflare Pages preview
+## Cloudflare Pages production (existing GitHub integration)
 
-Connect this repository in Cloudflare Workers & Pages > Pages > Connect to Git.
-
-- Repository: garrison2025/Quilt_Calculator
-- Framework: Astro
-- Build command: npm run build
-- Output directory: dist
-- Root directory: repository root
-- Node.js: 22+
-
-Keep PUBLIC_INDEXABLE unset or equal to 0. Keep PUBLIC_SITE_URL unset without a user-approved production domain. The default preview is noindex and has no sitemap. The temporary pages.dev URL is not a canonical domain.
-
-## Indexing is release-gated
-
-Only after written custom-domain approval and the full browser, geometry and print QA should you configure:
-- PUBLIC_SITE_URL as the approved HTTPS site origin (without trailing slash)
-- PUBLIC_INDEXABLE equal to 1
-
-Then redeploy. The production build generates canonical URLs and a sitemap containing only the 9 approved tool intents plus the homepage. No Google Search Console success, indexing or AdSense income is implied.
+- Repository: `garrison2025/Quilt_Calculator`; framework **Astro**; build command `npm run build`; output directory `dist`; root is the repository root; Node.js **22+**.
+- Cloudflare's built-in `CF_PAGES=1` and `CF_PAGES_BRANCH=main` identify the allowed production build. **No manually configured PUBLIC_INDEXABLE or PUBLIC_SITE_URL variable is needed**.
+- The production build emits correct index directives, canonical URLs and the twelve-URL sitemap; the Pages mirror must keep the HTTP noindex header. The live GitHub Actions host audit checks the real headers after a new production SHA is deployed.
+- Only the domain owner can configure Cloudflare DNS / www redirect; repo edits cannot do that. GSC remains deferred by the owner.
 
 ## Supported calculators
 
@@ -85,7 +68,7 @@ Backing Calculator offers **Auto (lowest purchased yardage)**, **Vertical**, and
 
 - docs/data/V2_Keyword_Appendix_218.csv — all 218 source-grounded V2 keyword candidates and route decisions.
 - docs/data/V2_SEO_Operational_Keywords_218.csv — derived SEO worklist: 199 active nonbrand mappings, 2 search-intent reviews, 1 other-brand exclusion, 16 original HOLD; historical Semrush source unchanged.
-- docs/qa/SEO_COMPREHENSIVE_AUDIT_20261105.md — 10-route live SEO audit, fixed items, outstanding hostname/indexing and performance launch checks.
+- docs/qa/SEO_COMPREHENSIVE_AUDIT_20261105.md — historical pre-production SEO audit; superseded for current index policy by docs/qa/PRODUCTION_SEO_FIXES_20261108.md.
 - docs/SEO_KEYWORD_ROUTING.md — unique intent ownership and HOLD constraints.
 - docs/schemas/Project_V2.schema.json — JSON project import structure.
 - docs/RELEASE_STATUS.md — documented real QA evidence and missing acceptance work.

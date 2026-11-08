@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 const slugs=['','calculators','quilt-backing-calculator','quilt-binding-calculator','quilt-border-calculator','fabric-yardage-calculator','quilt-fabric-calculator','fabric-yards-to-inches','quilt-batting-calculator','quilt-sashing-calculator'];
+const trustSlugs=['about','privacy'];
 const site='https://quiltcutplanner.com';
 const githubSha=process.env.GITHUB_SHA?.toLowerCase();
 const copySummarySource=fs.readFileSync('src/lib/quilt/copy-summary.ts','utf8');
@@ -229,12 +230,34 @@ for(const fragment of ['BIAS_AREA_LOWER_BOUND_ONLY','purchaseYards?:never','veri
 if(!fs.existsSync('dist/privacy/index.html'))throw Error('Missing privacy page');
 if(!fs.existsSync('dist/about/index.html'))throw Error('Missing publicly accessible source/method/feedback page');
 const aboutHtml=fs.readFileSync('dist/about/index.html','utf8');
-if(!aboutHtml.includes('name="robots" content="noindex,follow"')||
-   aboutHtml.includes('rel="canonical"')||aboutHtml.includes('application/ld+json')||
-   !aboutHtml.includes('https://github.com/garrison2025/Quilt_Calculator/issues')||
+if((production ?
+      !aboutHtml.includes('name="robots" content="index,follow,max-image-preview:large"') ||
+      !aboutHtml.includes('rel="canonical" href="'+site+'/about/"') :
+      !aboutHtml.includes('name="robots" content="noindex,follow"') ||
+      aboutHtml.includes('rel="canonical"')) ||
+   aboutHtml.includes('application/ld+json') ||
+   !aboutHtml.includes('https://github.com/garrison2025/Quilt_Calculator/issues') ||
    !aboutHtml.includes('not physical sewing certification'))
- throw Error('About page must be transparent, non-indexed and accurately link to real issue reporting.');
+ throw Error('About method page must be indexable only on production, truthfully explain limitations and never claim to be a WebApplication.');
 const homeHtml=fs.readFileSync('dist/index.html','utf8');
+if(!homeHtml.includes('Plan your quilt fabric.') ||
+   !homeHtml.includes('Cut with confidence.') ||
+   !homeHtml.includes('<title>Quilt Cut Planner — Fabric Yardage &amp; Cutting Plans</title>') &&
+   !homeHtml.includes('<title>Quilt Cut Planner — Fabric Yardage & Cutting Plans</title>'))
+ throw Error('Home must clearly explain its quilt fabric planning intent without cannibalizing the calculator hub.');
+if(!homeHtml.includes('property="og:site_name" content="Quilt Cut Planner"'))
+ throw Error('Owner-domain brand identity is missing from homepage metadata.');
+if(production && !homeHtml.includes('"@type":"WebSite"'))
+ throw Error('Approved production homepage must identify its site name in WebSite JSON-LD.');
+if(!production && homeHtml.includes('"@type":"WebSite"'))
+ throw Error('Local/preview build must not emit indexable site-name JSON-LD.');
+for(const slug of slugs) {
+ const html=fs.readFileSync('dist/'+(slug?slug+'/':'')+'index.html','utf8');
+ if(!html.includes('property="og:site_name" content="Quilt Cut Planner"'))
+  throw Error('Tool has inconsistent site identity: '+slug);
+ if(!html.includes(' | Quilt Cut Planner</title>') && slug)
+  throw Error('Tool title has wrong brand suffix: '+slug);
+}
 const taskIds=['hub','backing','binding','borders','yardage','fabric','inches','batting','sashing'];
 for(const id of taskIds){
  if(!homeHtml.includes('data-task="'+id+'"'))throw Error('Missing one unique task-first calculator link: '+id);
@@ -287,15 +310,28 @@ if(!fabricQaHtml.includes('href="/qa/2x2-measurement-sheet/"')||
    !fabricQaHtml.includes('data-physical-grid-worksheet-link'))
  throw Error('Physical QA tool must link directly to the printable blank human record.');
 const privacy=fs.readFileSync('dist/privacy/index.html','utf8');
-if(production && !privacy.includes('href="'+site+'/privacy/"'))throw Error('Privacy canonical must not point to undefined.');
+for(const slug of trustSlugs) {
+ const html=fs.readFileSync('dist/'+slug+'/index.html','utf8');
+ const expected=production?'index,follow,max-image-preview:large':'noindex,follow';
+ if(!html.includes('name="robots" content="'+expected+'"'))
+  throw Error('Trust page has unexpected robots directive: '+slug);
+ if(production && !html.includes('rel="canonical" href="'+site+'/'+slug+'/"'))
+  throw Error('Trust page needs unique absolute production canonical: '+slug);
+ if(!production && html.includes('rel="canonical"'))
+  throw Error('Preview trust page must not emit canonical: '+slug);
+ if(html.includes('application/ld+json'))
+  throw Error('About/Privacy must not be misrepresented as WebApplication: '+slug);
+ if(!html.includes('property="og:site_name" content="Quilt Cut Planner"'))
+  throw Error('Trust page site identity mismatch: '+slug);
+}
 if(!fs.existsSync('dist/404.html'))throw Error('Missing Cloudflare Pages 404.html: unknown URLs would silently fall back to homepage.');
 const page404=fs.readFileSync('dist/404.html','utf8');
 if(!page404.includes('noindex,follow')||page404.includes('rel="canonical"'))throw Error('404 route must be noindex with no canonical.');
 if(production){
  const sitemap=fs.readFileSync('dist/sitemap.xml','utf8');
- if((sitemap.match(/<url>/g)||[]).length!==slugs.length)throw Error('Production sitemap does not match approved routes.');
+ if((sitemap.match(/<url>/g)||[]).length!==slugs.length+trustSlugs.length)throw Error('Production sitemap does not match calculator and trust routes.');
  if(sitemap.includes('square-in-square')||sitemap.includes('square-in-a-square'))throw Error('Square trial must not appear in sitemap.');
- for(const slug of slugs)if(!sitemap.includes(site+'/'+(slug?slug+'/':'')))throw Error('Missing sitemap URL '+slug);
+ for(const slug of [...slugs,...trustSlugs])if(!sitemap.includes(site+'/'+(slug?slug+'/':'')))throw Error('Missing sitemap URL '+slug);
 }else if(fs.existsSync('dist/sitemap.xml'))throw Error('Preview build must not emit sitemap.');
 
 /** Original V2 keyword mapping is planning evidence, not a claim of organic ranking.
@@ -439,7 +475,7 @@ for(const slug of [...slugs,'about','privacy','qa/print-calibration','qa/fabric-
   if(!internalRoutes.has(href))throw Error('Broken internal page link '+href+' from '+slug);
  }
 }
-console.log('PASS: 19 uniquely titled static pages including noindex About, print-scale, fabric QA, blank 2×2 record and four bias research labs, one H1 each, internal link destinations verified.');
+console.log('PASS: 19 uniquely titled static pages including About, Privacy, print-scale, fabric QA, blank 2×2 record and four bias research labs, one H1 each, internal link destinations verified.');
 
 // Feature enhancements must deepen approved existing SEO routes; never
 // create three isolated thin keyword pages or make the preview indexable.
@@ -498,7 +534,7 @@ console.log('PASS: all 9 unique tool H1 headings state their respective primary 
 
 
 
-console.log('PASS: '+slugs.length+' approved routes, SEO metadata, '+(production?'production canonical/sitemap':'preview noindex')+', original preview images and HOLD exclusions.');
+console.log('PASS: '+slugs.length+' core routes plus two trust pages, SEO metadata, '+(production?'production canonical/sitemap':'preview noindex')+', original preview images and HOLD exclusions.');
 
 // Cloudflare Pages _headers permits absolute https host rules, but only ONE
 // "*" wildcard per rule. Stage aliases use :version, not * in the host.

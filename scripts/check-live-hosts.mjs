@@ -1,5 +1,5 @@
 /**
- * Read-only, release-blocking audit for a real Quilt Studio production host.
+ * Read-only, release-blocking audit for the real Quilt Cut Planner production host.
  * Run only after the owner has approved a custom domain and deployed an
  * explicitly indexable build. No deploy, DNS change, or indexing is performed.
  *
@@ -14,6 +14,8 @@ const approvedPaths = [
   '/quilt-border-calculator/', '/fabric-yardage-calculator/', '/quilt-fabric-calculator/',
   '/fabric-yards-to-inches/', '/quilt-batting-calculator/', '/quilt-sashing-calculator/'
 ];
+const supportPaths = ['/about/', '/privacy/'];
+const indexedPaths = [...approvedPaths, ...supportPaths];
 const holdPaths = [
   '/lab/square-in-square/', '/lab/individual-bias-strips/',
   '/lab/continuous-bias-tube/', '/lab/continuous-bias-planner/',
@@ -46,7 +48,7 @@ function canonical(html) {
     .map(t => t.match(/\bhref=["']([^"']*)["']/i)?.[1] || '');
 }
 function stamp(html) { return meta(html, 'quilt-build-commit'); }
-function assertPublicDocument(response, html, origin, path, indexable, previewOf = null) {
+function assertPublicDocument(response, html, origin, path, indexable, previewOf = null, requiresApp = true) {
   assert.equal(response.status, 200, origin + path + ' must return HTTP 200.');
   assert.equal(response.url, origin + path, origin + path + ' unexpectedly redirects.');
   assert.match(html, /<h1(?:\s|>)/i, 'Missing actual H1 at ' + path);
@@ -55,7 +57,11 @@ function assertPublicDocument(response, html, origin, path, indexable, previewOf
     assert.ok(directive.includes('index') && !directive.includes('noindex'), 'Production HTML cannot be noindex: ' + path);
     assert.equal(hasNoindex(response), false, 'Production X-Robots-Tag cannot be noindex: ' + path);
     assert.deepEqual(canonical(html), [origin + path], 'Canonical must be a unique absolute production URL: ' + path);
-    assert.match(html, /<script\s+type=["']application\/ld\+json["']>/i, 'Missing calculator structured data: ' + path);
+    if (requiresApp)
+      assert.match(html, /<script\s+type=["']application\/ld\+json["']>/i, 'Missing calculator structured data: ' + path);
+    else
+      assert.doesNotMatch(html, /<script\s+type=["']application\/ld\+json["']>/i,
+        'About and Privacy must not be misrepresented as calculator apps: ' + path);
   } else if (previewOf) {
     // The custom domain and production pages.dev domain serve the SAME Astro
     // static HTML, including production index meta and its canonical tag.
@@ -82,9 +88,10 @@ async function get(origin, path) {
 }
 export async function checkLiveHosts(production) {
   const built = new Set();
-  for (const path of approvedPaths) {
+  for (const path of indexedPaths) {
+    const supportPage = supportPaths.includes(path);
     const live = await get(production, path);
-    assertPublicDocument(live.response, live.html, production, path, true);
+    assertPublicDocument(live.response, live.html, production, path, true, null, !supportPage);
     const sourceSha = stamp(live.html);
     assert.match(sourceSha, /^[0-9a-f]{40}$/i, 'Production must identify its Git commit: ' + path);
     built.add(sourceSha.toLowerCase());
@@ -105,7 +112,7 @@ export async function checkLiveHosts(production) {
   const sitemap = await get(production, '/sitemap.xml');
   assert.equal(sitemap.response.status, 200, 'Production sitemap must exist.');
   const locs = [...sitemap.html.matchAll(/<loc>([^<]+)<\/loc>/g)].map(x => x[1]);
-  assert.deepEqual(locs, approvedPaths.map(path => production + path), 'Sitemap must contain exactly the 10 approved paths, in order.');
+  assert.deepEqual(locs, indexedPaths.map(path => production + path), 'Sitemap must contain the ten calculators/home plus About and Privacy, in order.');
   // Cloudflare Pages serves the SAME static build at custom and pages.dev hosts.
   // After production activation sitemap.xml may therefore be reachable on the
   // preview hostname. That is acceptable only when its URL list points solely
@@ -136,6 +143,9 @@ function selfTest() {
   assert.equal(parseProductionOrigin(origin), origin);
   for (const bad of ['http://quilt-example.com','https://quilt-example.com/path','https://quilt-example.com?x=1','https://quilt-example.com:8443','https://quilt-calculator-566.pages.dev','https://quilt.example','https://localhost','https://user:pass@quilt-example.com']) assert.throws(() => parseProductionOrigin(bad));
   assertPublicDocument(response(origin,'/', 'follow'), html('index,follow','<link rel="canonical" href="'+origin+'/">'), origin, '/', true);
+  const trustHtml=html('index,follow','<link rel="canonical" href="'+origin+'/about/">').replace('<script type="application/ld+json">{}</script>','');
+  assertPublicDocument(response(origin,'/about/', 'follow'), trustHtml, origin, '/about/', true, null, false);
+  assert.throws(() => assertPublicDocument(response(origin,'/about/', 'follow'), trustHtml, origin, '/about/', true, null, true));
   assertPublicDocument(response(PREVIEW,'/', 'noindex, follow'), html('noindex,follow'), PREVIEW, '/', false);
   // A main-branch Cloudflare Pages build shares indexable HTML across both
   // names; pages.dev MUST still be HTTP noindex with production canonical.

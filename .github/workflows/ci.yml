@@ -88,7 +88,7 @@ jobs:
           import fs from 'node:fs';
           import assert from 'node:assert/strict';
           const site='https://quiltcutplanner.com';
-          const paths=['/','/calculators/','/quilt-backing-calculator/','/quilt-binding-calculator/','/quilt-border-calculator/','/fabric-yardage-calculator/','/quilt-fabric-calculator/','/fabric-yards-to-inches/','/quilt-batting-calculator/','/quilt-sashing-calculator/'];
+          const paths=['/','/calculators/','/quilt-backing-calculator/','/quilt-binding-calculator/','/quilt-border-calculator/','/fabric-yardage-calculator/','/quilt-fabric-calculator/','/fabric-yards-to-inches/','/quilt-batting-calculator/','/quilt-sashing-calculator/','/about/','/privacy/'];
           for(const path of paths){
             const html=fs.readFileSync('dist'+path+'index.html','utf8');
             assert.ok(html.includes('name="robots" content="index,follow,max-image-preview:large"'), 'Production robots missing: '+path);
@@ -105,8 +105,11 @@ jobs:
   # verify the actual HTTP X-Robots-Tag on pages.dev (HTML meta alone cannot
   # establish this), canonical, sitemap, and QA/HOLD isolation.
   live-seo-host-audit:
+    # A pull request changes the expected indexable pages before Cloudflare
+    # production does. Audit the live release only after main is deployed.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 6
+    timeout-minutes: 8
     permissions:
       contents: read
     steps:
@@ -114,5 +117,27 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Wait for matching Cloudflare Pages main deployment
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          node --input-type=module <<'NODE'
+          const expected=process.env.EXPECTED_SHA;
+          let last='unknown';
+          for(let attempt=1;attempt<=24;attempt++){
+            try {
+              const response=await fetch('https://quiltcutplanner.com/',{
+                cache:'no-store',headers:{'Cache-Control':'no-cache'},
+                signal:AbortSignal.timeout(15000)
+              });
+              const html=await response.text();
+              last=html.match(/name="quilt-build-commit" content="([a-f0-9]{40})"/i)?.[1]||'missing';
+              if(last===expected){console.log('Cloudflare deployed '+expected);process.exit(0);}
+              console.log('Deployment not yet matching, attempt '+attempt+', current '+last);
+            }catch(error){console.log('Deployment check attempt '+attempt+': '+String(error));}
+            if(attempt<24)await new Promise(resolve=>setTimeout(resolve,10000));
+          }
+          throw Error('Cloudflare production commit not current. Expected '+expected+', saw '+last);
+          NODE
       - name: Verify owner domain and Pages mirror robots, canonicals, sitemap
         run: node scripts/check-live-hosts.mjs --production=https://quiltcutplanner.com
