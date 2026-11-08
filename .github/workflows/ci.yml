@@ -60,9 +60,9 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-  # The owner-approved .com domain is checked in an OFFLINE production build.
-  # This does not configure Cloudflare, publish a sitemap, or switch the live site.
-  # Keep this separate so browser QA still tests the default noindex build.
+  # Simulate Cloudflare's automatic main-branch build variables offline.
+  # No user-defined SEO environment variables are required. The separate
+  # default quality job still verifies all preview/local builds are noindex.
   production-seo-dry-run:
     runs-on: ubuntu-latest
     permissions:
@@ -75,10 +75,10 @@ jobs:
           cache: npm
       - name: Install pinned dependencies
         run: npm ci --no-audit --no-fund
-      - name: Build and statically validate the approved production origin offline
+      - name: Build and statically validate the approved main-branch production origin offline
         env:
-          PUBLIC_INDEXABLE: '1'
-          PUBLIC_SITE_URL: 'https://quiltcutplanner.com'
+          CF_PAGES: '1'
+          CF_PAGES_BRANCH: main
         run: |
           npm run build
           node scripts/check-build.mjs
