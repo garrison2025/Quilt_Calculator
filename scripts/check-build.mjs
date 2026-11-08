@@ -53,6 +53,34 @@ for(const slug of slugs){
     app.aggregateRating||app.review)
   throw Error('Untruthful or malformed WebApplication JSON-LD on '+slug);
  if(!production&&app.url)throw Error('No preview-site URL can become a canonical app identifier: '+slug);
+ if(slug) {
+  const expectedUrls=slug==='calculators'
+   ? [site+'/',site+'/calculators/']
+   : [site+'/',site+'/calculators/',site+'/'+slug+'/'];
+  const expectedNames=slug==='calculators'
+   ? ['Home','All calculators']
+   : ['Home','All calculators',undefined];
+  if(!html.includes('class="seo-breadcrumb"')||!html.includes('aria-label="Breadcrumb"'))
+   throw Error('Calculator must have visible navigable breadcrumb: '+slug);
+  if(!html.includes('href="/"') || (slug!=='calculators'&&!html.includes('href="/calculators/"')))
+   throw Error('Missing real ancestor href in visible breadcrumb: '+slug);
+  const breadcrumb=json.find(x=>x?.['@type']==='BreadcrumbList');
+  if(production) {
+   if(!breadcrumb||!Array.isArray(breadcrumb.itemListElement)||
+      breadcrumb.itemListElement.length!==expectedUrls.length)
+    throw Error('Wrong BreadcrumbList depth for tool: '+slug);
+   const items=breadcrumb.itemListElement;
+   for(let i=0;i<items.length;i++){
+    const item=items[i];
+    if(item['@type']!=='ListItem'||item.position!==i+1||item.item!==expectedUrls[i])
+     throw Error('BreadcrumbList URL/position not aligned to visible navigation: '+slug);
+    if(expectedNames[i]&&item.name!==expectedNames[i])
+     throw Error('BreadcrumbList ancestor name mismatch: '+slug);
+   }
+  }else if(breadcrumb){
+   throw Error('Non-production preview must not advertise an indexable BreadcrumbList: '+slug);
+  }
+ }
 }
 for(const slug of ['diagonal-quilt-backing-calculator','rag-quilt-calculator','quilt-block-calculator','square-in-a-square-calculator','fabric-width-yardage-converter']){
  if(fs.existsSync('dist/'+slug+'/index.html'))throw Error('HOLD route published: '+slug);
@@ -239,6 +267,15 @@ if((production ?
    !aboutHtml.includes('https://github.com/garrison2025/Quilt_Calculator/issues') ||
    !aboutHtml.includes('not physical sewing certification'))
  throw Error('About method page must be indexable only on production, truthfully explain limitations and never claim to be a WebApplication.');
+// Public support email must remain available to non-JS clients even when
+// Cloudflare's zone-wide Email Address Obfuscation is enabled. Cloudflare
+// recognizes source HTML comments around each selectively exempted address.
+for(const trustPath of ['','about/']){
+ const html=fs.readFileSync('dist/'+trustPath+'index.html','utf8');
+ if(!html.includes('<!--email_off-->')||!html.includes('<!--/email_off-->')||
+    !html.includes('href="mailto:contact@quiltcutplanner.com"'))
+  throw Error('Public support email selectively exempting Cloudflare obfuscation is missing from '+(trustPath||'homepage'));
+}
 const homeHtml=fs.readFileSync('dist/index.html','utf8');
 if(!homeHtml.includes('Plan your quilt fabric.') ||
    !homeHtml.includes('Cut with confidence.') ||
