@@ -120,7 +120,7 @@ export const guides:Record<ToolId,Guide>={
   title:'How do I convert fabric yards to inches and fractions?',
   lead:'A yard is a unit of length, not a universal size of cloth. One linear yard is exactly 36 inches or 91.44 centimeters along the bolt; its usable width depends on the fabric you buy.',
   sections:[
-   {heading:'How big is one yard of fabric?',paragraphs:[
+   {heading:'How big is a yard of fabric?',paragraphs:[
     'One yard of fabric measures 36 inches in the direction the bolt unwinds. If you have 43 inches of usable WOF, one linear yard is a 36 × 43 inch rectangle. Two yards have 72 inches of length, while the width remains 43 inches. Your particular bolt may be narrower or wider.',
     'A half yard is 18 inches long; a quarter yard is 9 inches long; a third of a yard is 12 inches long. A yard and a half is 54 inches long. “How much is one yard of fabric?” can also mean price, which varies by seller and material; length conversion alone cannot quote a price.'
    ]},
