@@ -451,6 +451,19 @@ for(const [slug,needles] of copyChecks){
  for(const needle of needles)if(!html.includes(needle))
   throw Error('Search-intent copy/feature boundary missing on '+slug+': '+needle);
 }
+// The queen-size fabric reference is a defined two-SKU pattern, not a universal
+// quilt-size yardage promise. Its static rows and totals must match the engine.
+const queenHtml=fs.readFileSync('dist/quilt-fabric-calculator/index.html','utf8');
+const queenTable=queenHtml.split('data-engine-reference="queen-fabric"')[1]?.split('</table>')[0]||'';
+if(!queenTable.includes('72 squares')||!queenTable.includes('3⅜ yd')||
+   !queenTable.includes('Total quilt-top fabric (two SKUs)')||!queenHtml.includes('6¾ yd')||
+   (queenTable.match(/<tr>/g)||[]).length!==4)
+ throw Error('Engine-derived queen-size quilt-top fabric table is missing or incomplete.');
+if(!queenHtml.includes('This is one explicitly defined')||
+   !queenHtml.includes('not a universal queen-size yardage standard')||
+   !queenHtml.includes('not backing, batting, borders or binding'))
+ throw Error('Queen-size fabric example must disclose pattern and material-scope limitations.');
+
 // The live bordered planner's sample must match the cut engine, not advertise
 // 5 yards from a separate unbordered example.
 const hubHtml=fs.readFileSync('dist/calculators/index.html','utf8');
