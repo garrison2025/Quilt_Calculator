@@ -103,7 +103,7 @@ export async function checkLiveHosts(production) {
   if (previewMap.response.status === 200) {
     assert.equal(hasNoindex(previewMap.response), true,
       'Preview sitemap must receive HTTP X-Robots-Tag noindex.');
-    const previewLocs = [...previewMap.html.matchAll(/<loc>([^<]+)<\\/loc>/g)].map(x => x[1]);
+    const previewLocs = [...previewMap.html.matchAll(new RegExp('<loc>([^<]+)</loc>', 'g'))].map(x => x[1]);
     assert.deepEqual(previewLocs, locs, 'Preview-host sitemap must refer only to production URLs.');
   } else {
     assert.equal(previewMap.response.status, 404, 'Unexpected preview sitemap status.');
