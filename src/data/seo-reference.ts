@@ -1,4 +1,4 @@
-import {calculateBacking, calculateStraightBinding, calculateYardage, calculateQuiltFabric, selectBackingOption} from '../lib/quilt/math';
+import {calculateBacking, calculateStraightBinding, calculateYardage, calculateQuiltFabric, calculateBorders, selectBackingOption} from '../lib/quilt/math';
 import {sampleProject, calculateProjectBinding} from '../lib/quilt/project';
 import {resolveQuiltDimensions} from '../lib/quilt/dimensions';
 
@@ -93,6 +93,58 @@ export const queenFabricReference=queenFabricScenario.map(x=>{
   runIn:x.layout.exactFabricRunLengthIn,yards:x.purchase.roundedPurchaseYards};
 });
 export const queenFabricTotalYards=queenFabricReference.reduce((sum,x)=>sum+x.yards,0);
+
+/** Engine-derived butted-border examples. Each layer is a separate fabric SKU.
+ * Assumptions: 1/4-in seam allowance, 43-in usable WOF per layer, 0% length
+ * shrinkage and upward 1/8-yd purchasing. These are feasible software layouts,
+ * not physical cutting certification or universal quilt-size standards.
+ */
+const borderScenarios: {
+ label:string; widthIn:number; heightIn:number;
+ layers:{widthIn:number;sku:string;label:string;wofIn:number;shrinkageLengthPct:number}[];
+}[] = [
+ {label:'40 × 50 in center · one 2-in border',widthIn:40,heightIn:50,
+  layers:[{widthIn:2,sku:'border-40x50-single',label:'Single 2-in layer',wofIn:43,shrinkageLengthPct:0}]},
+ {label:'60 × 80 in center · one 3-in border',widthIn:60,heightIn:80,
+  layers:[{widthIn:3,sku:'border-60x80-single',label:'Single 3-in layer',wofIn:43,shrinkageLengthPct:0}]},
+ {label:'60 × 80 in center · two border layers',widthIn:60,heightIn:80,
+  layers:[
+   {widthIn:3,sku:'border-60x80-outer',label:'Outer 3-in layer',wofIn:43,shrinkageLengthPct:0},
+   {widthIn:2,sku:'border-60x80-inner',label:'Inner 2-in layer',wofIn:43,shrinkageLengthPct:0}
+  ]},
+ {label:'90 × 90 in center · one 2-in border',widthIn:90,heightIn:90,
+  layers:[{widthIn:2,sku:'border-90x90-single',label:'Single 2-in layer',wofIn:43,shrinkageLengthPct:0}]}
+];
+export const borderReference=borderScenarios.flatMap(scenario=>{
+ const result=calculateBorders({
+  widthIn:scenario.widthIn,heightIn:scenario.heightIn,seamIn:.25,
+  layers:scenario.layers,step:.125
+ });
+ let startWidthIn=scenario.widthIn,startHeightIn=scenario.heightIn;
+ return result.layers.map(layer=>{
+  if(!layer.layout.isCutFeasible||!layer.purchase)
+   throw Error('Border reference unexpectedly infeasible: '+scenario.label+' / '+layer.label);
+  const source=scenario.layers[layer.layer-1];
+  const row={
+   scenario:scenario.label,
+   startWidthIn,startHeightIn,
+   startingQuilt:startWidthIn+' × '+startHeightIn+' in',
+   layerLabel:layer.label,
+   borderWidthIn:source.widthIn,
+   cutWidthIn:layer.cutWidthIn,
+   sideCutLengthIn:layer.sideCutLengthIn,
+   topCutLengthIn:layer.topCutLengthIn,
+   wofIn:source.wofIn,
+   runIn:layer.layout.exactFabricRunLengthIn,
+   yards:layer.purchase.roundedPurchaseYards,
+   finishedQuilt:layer.finishedWidthIn+' × '+layer.finishedHeightIn+' in',
+   pieces:layer.layout.cutPieces.length
+  };
+  startWidthIn=layer.finishedWidthIn;
+  startHeightIn=layer.finishedHeightIn;
+  return row;
+ });
+});
 const glyphs=['','⅛','¼','⅜','½','⅝','¾','⅞'];
 export function formatEighthYards(yards:number):string{
  if(!Number.isFinite(yards)||yards<0||Math.abs(yards*8-Math.round(yards*8))>1e-8)
