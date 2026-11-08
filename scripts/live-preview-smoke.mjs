@@ -154,8 +154,9 @@ try{
     'Public pages.dev trust page requires HTTP noindex: '+path);
   assertThat(html.includes('name="robots" content="index,follow,max-image-preview:large"') &&
     html.includes('rel="canonical" href="'+PROD+path+'"') &&
-    !html.includes('application/ld+json'),
-    'Real About/Privacy must canonicalize to production without falsely claiming WebApplication schema: '+path);
+    html.includes('"@type":"WebPage"') &&
+    !html.includes('"@type":"WebApplication"'),
+    'Real About/Privacy must canonicalize to production and expose WebPage, not WebApplication, schema: '+path);
  }
  const {html:aboutHtml}=await currentRoute('/about/');
  assertThat(aboutHtml.includes('https://github.com/garrison2025/Quilt_Calculator/issues') &&
