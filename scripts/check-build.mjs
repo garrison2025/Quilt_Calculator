@@ -240,6 +240,24 @@ if((production ?
    !aboutHtml.includes('not physical sewing certification'))
  throw Error('About method page must be indexable only on production, truthfully explain limitations and never claim to be a WebApplication.');
 const homeHtml=fs.readFileSync('dist/index.html','utf8');
+if(!homeHtml.includes('Plan your quilt fabric.') ||
+   !homeHtml.includes('Cut with confidence.') ||
+   !homeHtml.includes('<title>Quilt Cut Planner — Fabric Yardage &amp; Cutting Plans</title>') &&
+   !homeHtml.includes('<title>Quilt Cut Planner — Fabric Yardage & Cutting Plans</title>'))
+ throw Error('Home must clearly explain its quilt fabric planning intent without cannibalizing the calculator hub.');
+if(!homeHtml.includes('property="og:site_name" content="Quilt Cut Planner"'))
+ throw Error('Owner-domain brand identity is missing from homepage metadata.');
+if(production && !homeHtml.includes('"@type":"WebSite"'))
+ throw Error('Approved production homepage must identify its site name in WebSite JSON-LD.');
+if(!production && homeHtml.includes('"@type":"WebSite"'))
+ throw Error('Local/preview build must not emit indexable site-name JSON-LD.');
+for(const slug of slugs) {
+ const html=fs.readFileSync('dist/'+(slug?slug+'/':'')+'index.html','utf8');
+ if(!html.includes('property="og:site_name" content="Quilt Cut Planner"'))
+  throw Error('Tool has inconsistent site identity: '+slug);
+ if(!html.includes(' | Quilt Cut Planner</title>') && slug)
+  throw Error('Tool title has wrong brand suffix: '+slug);
+}
 const taskIds=['hub','backing','binding','borders','yardage','fabric','inches','batting','sashing'];
 for(const id of taskIds){
  if(!homeHtml.includes('data-task="'+id+'"'))throw Error('Missing one unique task-first calculator link: '+id);
@@ -457,7 +475,7 @@ for(const slug of [...slugs,'about','privacy','qa/print-calibration','qa/fabric-
   if(!internalRoutes.has(href))throw Error('Broken internal page link '+href+' from '+slug);
  }
 }
-console.log('PASS: 19 uniquely titled static pages including noindex About, print-scale, fabric QA, blank 2×2 record and four bias research labs, one H1 each, internal link destinations verified.');
+console.log('PASS: 19 uniquely titled static pages including About, Privacy, print-scale, fabric QA, blank 2×2 record and four bias research labs, one H1 each, internal link destinations verified.');
 
 // Feature enhancements must deepen approved existing SEO routes; never
 // create three isolated thin keyword pages or make the preview indexable.
@@ -516,7 +534,7 @@ console.log('PASS: all 9 unique tool H1 headings state their respective primary 
 
 
 
-console.log('PASS: '+slugs.length+' approved routes, SEO metadata, '+(production?'production canonical/sitemap':'preview noindex')+', original preview images and HOLD exclusions.');
+console.log('PASS: '+slugs.length+' core routes plus two trust pages, SEO metadata, '+(production?'production canonical/sitemap':'preview noindex')+', original preview images and HOLD exclusions.');
 
 // Cloudflare Pages _headers permits absolute https host rules, but only ONE
 // "*" wildcard per rule. Stage aliases use :version, not * in the host.
