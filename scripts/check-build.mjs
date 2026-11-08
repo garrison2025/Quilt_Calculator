@@ -447,7 +447,7 @@ console.log('PASS: 198 active nonbrand intents, 3 deprioritized intents (price/l
 // Search-intent copy must describe the real supported methods, not imply
 // pattern-repeat, bias, mitered, packaged-batting or no-cornerstone features.
 const copyChecks=[
- ['fabric-yards-to-inches/',['How big is a yard of fabric? Fabric yards to inches, explained.','One linear yard is 36 inches long; fabric width varies.','alt="Fabric yard conversion chart showing common yard fractions and their lengths in inches."','property="og:image:alt" content="Fabric yard conversion chart showing common yard fractions and their lengths in inches."']],
+ ['fabric-yards-to-inches/',['How big is a yard of fabric? Fabric yards to inches, explained.','One linear yard is 36 inches long; fabric width varies.','alt="Fabric yard conversion chart showing common yard fractions and their lengths in inches"','property="og:image:alt" content="Fabric yard conversion chart showing common yard fractions and their lengths in inches."']],
  ['quilt-binding-calculator/',['Straight-grain quilt binding calculator: strips and yardage.','How much straight-grain binding fabric does a 68 × 86 in twin-size example need?','Twin-size example (illustrative, not a universal standard)','⅝ yd']],
  ['quilt-border-calculator/',['Quilt border calculator: butted layers and yardage.']],
  ['fabric-yardage-calculator/',['Fabric yardage calculator for repeated rectangular cuts.','Does this account for fabric pattern repeats?']],
