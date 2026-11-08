@@ -46,3 +46,12 @@ Priority content now includes engine-calculated tables for backing (eight cases)
 - Cloudflare email obfuscation was observed rewriting the public support `mailto:` href to a `/cdn-cgi/l/email-protection` URL for non-JavaScript clients; the owner-approved contact email is selectively exempted using Cloudflare's supported `<!--email_off-->` comments. It remains a publicly disclosed address; this is not a claim of actual email delivery.
 - Original 218 keyword source and 199 active mappings remain unchanged, with no extra thin SEO URLs or inferred ranking/traffic.
 - GSC setup, verification and sitemap submission are expressly deferred by the owner.
+
+
+## 2026-11-08 content-intent refinement
+
+- `border fabrics for quilting` (historical 590 / KD 8) is now `DEPRIORITIZE_PRODUCT_INTENT` in the derived operational CSV because the public search sample is retail/product oriented, not a calculator task. Original keyword data, source TARGET label and historical route attribution remain unchanged.
+- The current derived worklist is **198 active non-brand**, **3 deprioritized**, **1 other-brand exclusion**, and **16 method HOLD** across 218 original records / 202 historical route assignments.
+- Public competitor checks prompted copy-only scope clarification: straight-grain binding, butted borders, one-piece roll batting, cornerstone-based internal sashing, and rectangular yardage without automatic pattern-repeat matching. Existing calculators and formulas are unchanged.
+- The yards-to-inches page now leads with the primary source query `how big is a yard of fabric` and a direct 36-inch answer, still on the same single URL.
+- See [the 2026-11-08 content/SERP audit](qa/CONTENT_SERP_AUDIT_20261108.md) for sources and evidence boundaries. No fresh Volume/KD/CPC, exact US Top-10, GSC, ranking or traffic claims are made.
