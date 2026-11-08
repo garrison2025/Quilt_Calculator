@@ -635,3 +635,49 @@ for(const routePattern of ['/lab/*','/qa/*']){
   throw Error('Research/physical QA paths must keep host-independent noindex: '+routePattern);
 }
 console.log('PASS Cloudflare main and branch preview noindex response-header rules.');
+
+
+// Evidence-based GEO improvements: static content is readable even when the
+// interactive calculator has not hydrated. Do not interpret this as SSR of the
+// user-specific calculator result.
+const llmsText=fs.readFileSync('dist/llms.txt','utf8');
+for(const page of ['calculators','quilt-backing-calculator','quilt-binding-calculator','quilt-border-calculator','fabric-yardage-calculator','quilt-fabric-calculator','fabric-yards-to-inches','quilt-batting-calculator','quilt-sashing-calculator','about','privacy']){
+ if(!llmsText.includes('https://quiltcutplanner.com/'+page+'/'))
+  throw Error('llms.txt missing an approved public page: '+page);
+}
+if(llmsText.includes('/lab/')||llmsText.includes('/qa/'))throw Error('llms.txt must not advertise research/QA URLs');
+const homeHtml=fs.readFileSync('dist/index.html','utf8');
+if(!homeHtml.includes('data-geo-home-guide')||
+   !homeHtml.includes('<table class="breakdown-table"')||
+   !homeHtml.includes('How much fabric does a quilt need?'))
+ throw Error('Homepage lost JavaScript-independent answers and decision table');
+const ids=['hub','backing','binding','borders','yardage','fabric','inches','batting','sashing'];
+for(let i=1;i<slugs.length;i++){
+ const html=fs.readFileSync('dist/'+slugs[i]+'/index.html','utf8');
+ if(!html.includes('data-static-quick-answer="'+ids[i-1]+'"')||
+    !html.includes('geo-input-table')||!html.includes('data-geo-provenance'))
+  throw Error('Calculator lacks initial HTML answer, table or verifiable source links: '+slugs[i]);
+}
+for(const slug of [...slugs,...trustSlugs]){
+ const html=fs.readFileSync('dist/'+(slug?slug+'/':'')+'index.html','utf8');
+ const metadata=[...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)]
+  .map(m=>JSON.parse(m[1]));
+ const page=metadata.find(x=>x['@type']==='WebPage');
+ if(production){
+  if(!page||page.dateModified!=='2026-11-08'||
+     page.url!==site+'/'+(slug?slug+'/':'')||
+     page.publisher?.['@id']!==site+'/#publisher')
+   throw Error('Production WebPage provenance missing/mismatched: '+slug);
+ }else if(page){
+  throw Error('Nonproduction preview cannot claim an indexable WebPage: '+slug);
+ }
+ if(slugs.includes(slug)){
+  const app=metadata.find(x=>x['@type']==='WebApplication');
+  if(!app?.author||app.author.name!=='Quilt Cut Planner'||app.author['@type']!=='Organization')
+   throw Error('Free app publisher attribution missing: '+slug);
+ }
+}
+if(!fs.readFileSync('dist/about/index.html','utf8').includes('data-geo-sources')||
+   !fs.readFileSync('dist/about/index.html','utf8').includes('data-geo-editorial')||
+   !fs.readFileSync('dist/privacy/index.html','utf8').includes('id="usage-terms"'))
+ throw Error('About sources/attribution or responsible usage missing');

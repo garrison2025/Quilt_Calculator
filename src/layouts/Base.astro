@@ -38,6 +38,8 @@ const socialAlt=route?.id==='inches'?'Fabric yard conversion chart showing commo
 // This is not a user identifier and does not bypass the preview noindex gate.
 const buildCommit=(process.env.CF_PAGES_COMMIT_SHA||process.env.GITHUB_SHA||'').toLowerCase();
 const auditCommit=/^[0-9a-f]{40}$/.test(buildCommit)?buildCommit:undefined;
+// Documentation and schema review date. Update only when the public content changes.
+const documentationDate='2026-11-08';
 ---
 <!doctype html>
 <html lang="en">
@@ -60,9 +62,11 @@ const auditCommit=/^[0-9a-f]{40}$/.test(buildCommit)?buildCommit:undefined;
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content={socialImage}/>
 </>}
-{!noIndex && (route || home) && <script type="application/ld+json" set:html={JSON.stringify({'@context':'https://schema.org','@type':'WebApplication',name:(route?.h1||'Quilt Cut Planner').replace(/\.$/,''),description:pageDescription,applicationCategory:'UtilitiesApplication',operatingSystem:'Any modern browser',inLanguage:'en-US',isAccessibleForFree:true,offers:{'@type':'Offer',price:0,priceCurrency:'USD'},image:socialImage,...(canonical?{url:canonical}:{})})}/>}
-{approved && home && <script type="application/ld+json" set:html={JSON.stringify({'@context':'https://schema.org','@type':'WebSite',name:'Quilt Cut Planner',alternateName:'quiltcutplanner.com',url:candidate+'/'})}/>}
+{!noIndex && (route || home) && <script type="application/ld+json" set:html={JSON.stringify({'@context':'https://schema.org','@type':'WebApplication',name:(route?.h1||'Quilt Cut Planner').replace(/\.$/,''),description:pageDescription,applicationCategory:'UtilitiesApplication',operatingSystem:'Any modern browser',inLanguage:'en-US',isAccessibleForFree:true,offers:{'@type':'Offer',price:0,priceCurrency:'USD'},image:socialImage,author:{'@type':'Organization',name:'Quilt Cut Planner',url:candidate+'/'},...(canonical?{'@id':canonical+'#app',url:canonical,dateModified:documentationDate}:{})})}/>}
+{approved && home && <script type="application/ld+json" set:html={JSON.stringify({'@context':'https://schema.org','@type':'WebSite',name:'Quilt Cut Planner',alternateName:'quiltcutplanner.com',url:candidate+'/','@id':candidate+'/#website',publisher:{'@id':candidate+'/#publisher'}})}/>}
 {approved && route && <script type="application/ld+json" set:html={JSON.stringify({'@context':'https://schema.org','@type':'BreadcrumbList',itemListElement:breadcrumbItems.map((item,index)=>({'@type':'ListItem',position:index+1,...item}))})}/>}
+{approved && <script type="application/ld+json" set:html={JSON.stringify({'@context':'https://schema.org','@type':'WebPage','@id':canonical+'#webpage',url:canonical,name:pageTitle,description:pageDescription,inLanguage:'en-US',dateModified:documentationDate,isPartOf:{'@id':candidate+'/#website'},publisher:{'@id':candidate+'/#publisher'},...(route||home?{mainEntity:{'@id':canonical+'#app'}}:{})})}/>}
+{approved && home && <script type="application/ld+json" set:html={JSON.stringify({'@context':'https://schema.org','@type':'Organization','@id':candidate+'/#publisher',name:'Quilt Cut Planner',url:candidate+'/',description:'The independent website publishing free browser-based quilt fabric and cutting calculators.'})}/>}
 </head>
 <body class="quilt-ui-v3">
 <a class="skip-link" href="#main">Skip to main content</a>
@@ -88,5 +92,5 @@ const auditCommit=/^[0-9a-f]{40}$/.test(buildCommit)?buildCommit:undefined;
 <div><a href="/" class="footer-mark">Quilt Cut Planner ✳</a><p>Thoughtful tools for confident cutting. No account or subscription required.</p></div>
 <div class="footer-links"><strong>Calculators</strong>{routes.map(r=><a href={'/'+r.slug+'/'}>{r.nav}</a>)}</div>
 <div class="footer-links"><strong>Good to know</strong><span>US English • inches by default</span><span>Measurements stay in your browser</span><span>Plans are not 1:1 sewing patterns</span><span>Check fabric specifications before cutting</span><a href="/about/">About, methods &amp; feedback</a><!--email_off--><a href="mailto:contact@quiltcutplanner.com">contact@quiltcutplanner.com</a><!--/email_off--><a href="/privacy/">Privacy &amp; local data</a><a href="/qa/print-calibration/">Print scale calibration (QA)</a></div>
-</div><div class="footer-bottom"><span>© 2026 Quilt Cut Planner.</span><span>Made for real fabric, not guesswork.</span></div></footer>
+</div><div class="footer-bottom"><span>© 2026 Quilt Cut Planner · Documentation updated November 8, 2026.</span><span>Made for real fabric, not guesswork.</span></div></footer>
 </body></html>

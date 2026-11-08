@@ -1,0 +1,28 @@
+# Quilt Cut Planner
+
+> Free browser-based quilting fabric and rectangular-cut planning calculators. Results depend on real material dimensions and stated construction assumptions; software tests are not physical sewing certification.
+
+Official website: https://quiltcutplanner.com/
+Methodology and external references: https://quiltcutplanner.com/about/
+Privacy and usage limitations: https://quiltcutplanner.com/privacy/
+Source and automated tests: https://github.com/garrison2025/Quilt_Calculator
+
+## Public calculators
+- [Full quilt project planner](https://quiltcutplanner.com/calculators/): separate backing, batting, straight-grain binding, butted borders and fabric cut plans.
+- [Quilt backing calculator](https://quiltcutplanner.com/quilt-backing-calculator/): rectangular panels, overage, seam take-up and yardage.
+- [Straight-grain quilt binding calculator](https://quiltcutplanner.com/quilt-binding-calculator/): full-width strips, joined length and purchase yardage. Does not calculate bias binding.
+- [Butted quilt border calculator](https://quiltcutplanner.com/quilt-border-calculator/): side-first layers; no mitered or pieced borders.
+- [Fabric yardage calculator](https://quiltcutplanner.com/fabric-yardage-calculator/): repeat rectangle placement and real width-of-fabric constraints.
+- [Quilt fabric calculator](https://quiltcutplanner.com/quilt-fabric-calculator/): multi-SKU quilt-top cut lists and layouts.
+- [Fabric yards to inches](https://quiltcutplanner.com/fabric-yards-to-inches/): exact length conversion; 1 yard = 36 inches = 91.44 centimeters.
+- [Quilt batting calculator](https://quiltcutplanner.com/quilt-batting-calculator/): one-piece fit from a batting roll, without joins.
+- [Quilt sashing calculator](https://quiltcutplanner.com/quilt-sashing-calculator/): internal strips and cornerstones in a straight grid.
+
+## Important limits
+- Use actual usable width of fabric after trimming selvedges; measure cuts and seam allowances rather than assuming default retail bolt widths.
+- Bias binding, diagonal backing, mitered/pieced borders, batting joins and experimental methods are not supported as certified purchase plans.
+- The interactive calculators run in the browser; the pages' explanations, formulae and reference examples are published in initial HTML.
+- No named sewing expert, institutional affiliation, customer testimonials, physical certification or live store prices are claimed.
+- Research/QA routes are intentionally excluded from public search indexing and this curated index.
+
+This file is an optional human- and machine-readable guide; it is not a substitute for HTML, the official sitemap, or Google indexing.
