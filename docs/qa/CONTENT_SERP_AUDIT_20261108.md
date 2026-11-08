@@ -93,3 +93,11 @@ No new route, generic size chart, unsupported calculation, or change to the 218-
 - Mobile Lighthouse now covers **all 12 indexable URLs**, not just three samples. All 12 scored **100 Performance and 100 SEO**, with no weighted SEO audit failures. Lab LCP ranged **903–1,663 ms**, CLS was **0.000** on all 12, and TBT was **0–1 ms**. This is simulated mobile lab data; it is not field CrUX, field INP or real-user CWV.
 - Evidence: [production build and host verification](https://github.com/garrison2025/Quilt_Calculator/actions/runs/42459354647), [exact Cloudflare public interaction smoke](https://github.com/garrison2025/Quilt_Calculator/actions/runs/42459354691), [12-URL mobile Lighthouse lab and artifact](https://github.com/garrison2025/Quilt_Calculator/actions/runs/42459354705).
 - Remaining evidence gaps are unchanged: Google Search Console property verification/submission and live query/impression/click/CTR/position data; exact US-localized SERP exports; fresh Semrush Volume/KD/CPC; field CWV; and the optional `www` DNS/redirect alias. No organic ranking or revenue claim is made.
+
+
+## Post-audit GEO release verification — 2026-11-08
+- PR #58 adds direct answer-first passages to the homepage and all nine calculator pages, natural question headings, and FAQPage schema derived only from the same visible FAQ content.
+- Visible publisher attribution, per-tool independent background references and matching WebPage citation entries from the earlier GEO pass are included in the deployed main build. Sources are not presented as formula certification or endorsements.
+- Exact production SHA bfdf39d50ddca2b1c79727074ef81b6aec31c661 passed production dry run, full browser/print/mobile/WebKit quality tests, live custom-domain + Pages mirror audit, and the exact-commit public Cloudflare interaction smoke.
+- All 12 production-mode pages scored 100 Performance / 100 SEO in simulated mobile Lighthouse. Lab LCP 903–1,663 ms, CLS 0.000 and TBT 0–48 ms; no field CWV claim.
+- Search outcomes remain unknown: no GSC property verification/submission or indexed-query, impression, click, CTR or position data. Historical Semrush figures in the 218-row source are not refreshed by this release. FAQ schema does not guarantee FAQ rich results or AI citations.

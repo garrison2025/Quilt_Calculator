@@ -35,3 +35,11 @@
 
 ## Site architecture note
 A single static bundle is served at the production custom host **and** its pages.dev host. The exact same meta robots tag may appear in both. That is safe only because Cloudflare Pages sends the HTTP `X-Robots-Tag: noindex` header on the preview host; Cloudflare explicitly documents this policy in its Pages `_headers` and preview-deployment docs. Verify this on the real hosts after the release.
+
+
+## Exact production deployment verification — 2026-11-08
+- Deployed commit: bfdf39d50ddca2b1c79727074ef81b6aec31c661 on main.
+- The post-merge workflow waited until https://quiltcutplanner.com/ exposed the exact expected quilt-build-commit value, then passed the read-only dual-host audit: [CI run 42467960108](https://github.com/garrison2025/Quilt_Calculator/actions/runs/42467960108).
+- All 12 approved routes passed production indexability + exact canonical checks on the custom domain and HTTP X-Robots-Tag noindex on the Pages mirror. Research/physical worksheets remained nonindexed on both hosts; sitemap, robots and HOLD exclusions passed.
+- The independent public Cloudflare interaction workflow passed the exact same SHA and exercised the deployed site, including review, import, stale-tab, export, print and recovery protections: [run 42467960127](https://github.com/garrison2025/Quilt_Calculator/actions/runs/42467960127).
+- The earlier conditional checklist above is now verified for this commit, except for separately listed account/physical/manual items such as GSC, email deliverability, optional www redirect and actual paper/fabric measurements.
