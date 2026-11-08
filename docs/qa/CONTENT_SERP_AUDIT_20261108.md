@@ -84,3 +84,12 @@ Public references checked:
 - `https://thecraftmat.com/quilting/quilt-calculator/`
 
 No new route, generic size chart, unsupported calculation, or change to the 218-row original keyword source is introduced.
+
+
+## Production release and 12-URL mobile lab — 2026-11-08
+
+- PR #53 was merged as `d5e88f90f31b31f3fd3c47c18aae2d5ba2d3f65a`. The exact-commit Cloudflare Pages public interaction smoke passed, and the production host audit verified all 12 approved URLs as indexable on the owned domain while the Pages mirror remained HTTP `noindex`; QA/research routes remain excluded from the sitemap.
+- Full type/math/build/static SEO/Chromium interaction/download/print/WebKit/iPhone touch and Android Chrome checks passed in the quality workflow.
+- Mobile Lighthouse now covers **all 12 indexable URLs**, not just three samples. All 12 scored **100 Performance and 100 SEO**, with no weighted SEO audit failures. Lab LCP ranged **903–1,663 ms**, CLS was **0.000** on all 12, and TBT was **0–1 ms**. This is simulated mobile lab data; it is not field CrUX, field INP or real-user CWV.
+- Evidence: [production build and host verification](https://github.com/garrison2025/Quilt_Calculator/actions/runs/42459354647), [exact Cloudflare public interaction smoke](https://github.com/garrison2025/Quilt_Calculator/actions/runs/42459354691), [12-URL mobile Lighthouse lab and artifact](https://github.com/garrison2025/Quilt_Calculator/actions/runs/42459354705).
+- Remaining evidence gaps are unchanged: Google Search Console property verification/submission and live query/impression/click/CTR/position data; exact US-localized SERP exports; fresh Semrush Volume/KD/CPC; field CWV; and the optional `www` DNS/redirect alias. No organic ranking or revenue claim is made.
