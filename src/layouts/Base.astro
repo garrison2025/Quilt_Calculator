@@ -52,7 +52,7 @@ const auditCommit=/^[0-9a-f]{40}$/.test(buildCommit)?buildCommit:undefined;
 <body class="quilt-ui-v3">
 <a class="skip-link" href="#main">Skip to main content</a>
 <header class="site-header"><div class="header-inner">
-<a href="/" class="brand" aria-label="Quilt Cut Planner — home"><span class="brand-icon">✳</span><span>Quilt <span class="brand-em">Cut Planner</span><small>MADE TO MEASURE</small></span></a>
+<a href="/" class="brand"><span class="brand-icon" aria-hidden="true">✳</span><span>Quilt <span class="brand-em">Cut Planner</span><small>MADE TO MEASURE</small></span></a>
 <nav class="desktop-nav" aria-label="Primary navigation">{routes.filter(r=>['hub','backing','binding','borders','yardage'].includes(r.id)).map(r=><a href={'/'+r.slug+'/'} class:list={{active:route?.id===r.id}}>{r.nav}</a>)}</nav>
 <a href="/calculators/" class="header-cta">All tools ↗</a>
 <details class="mobile-tools"><summary>Tools <span aria-hidden="true">⌄</span></summary><nav aria-label="Mobile calculators">{routes.map(r=><a href={'/'+r.slug+'/'}>{r.nav}</a>)}</nav></details>
