@@ -55,3 +55,5 @@ Priority content now includes engine-calculated tables for backing (eight cases)
 - Public competitor checks prompted copy-only scope clarification: straight-grain binding, butted borders, one-piece roll batting, cornerstone-based internal sashing, and rectangular yardage without automatic pattern-repeat matching. Existing calculators and formulas are unchanged.
 - The yards-to-inches page now leads with the primary source query `how big is a yard of fabric` and a direct 36-inch answer, still on the same single URL.
 - See [the 2026-11-08 content/SERP audit](qa/CONTENT_SERP_AUDIT_20261108.md) for sources and evidence boundaries. No fresh Volume/KD/CPC, exact US Top-10, GSC, ranking or traffic claims are made.
+
+- Added an engine-derived 68 × 86 in illustrative twin-size binding reference (8 strips and ⅝ yd under disclosed assumptions) for the existing 70-volume / KD 14 long-tail query; the copy explicitly says this is not a universal twin standard.
