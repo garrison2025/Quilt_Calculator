@@ -46,3 +46,11 @@ The static Astro site uses local WebP assets and no remote Google Fonts dependen
 ## Acceptance
 
 This document is release evidence, not an assertion that every external service has been configured. Only treat this as deployed after a new `main` commit has passed all CI jobs and the actual custom domain has been checked. GSC and www DNS/redirect remain separate owner-side steps.
+
+## 2026-11-08 independent CI audit follow-up
+
+After the application SEO release was deployed, GitHub's separate `Quilt public Cloudflare Pages verification` workflow failed because `scripts/live-preview-smoke.mjs` still **incorrectly required the main-branch Pages mirror HTML** to contain `noindex` and omit canonical/sitemap/metadata, even though Cloudflare serves the same production static HTML on both apex and Pages mirror. The **real** pages.dev `X-Robots-Tag: noindex` is the required protection and was independently verified in the live SEO host audit.
+
+A narrow fix updates this additional live end-to-end browser workflow to validate the real production-mirror model: 10 calculator/home routes with indexable mirrored HTML, owned-domain canonical and real preview HTTP noindex, plus the 12-page production sitemap and indexed About/Privacy on production. The 10 original interactive calculator checks, QA/Lab exclusions and physical-method safety gates remain unchanged. An accidental over-escaped canonical exclusion regex for a research route was also corrected.
+
+The separate mobile Lighthouse workflow previously used a **local preview noindex build** and reported simulated mobile Lighthouse **SEO=63**, even while the **live production site** was indexable. That 63 should **not** be reported as the production domain's SEO score. A revised Lighthouse workflow builds a local **simulated Cloudflare main production snapshot** (`CF_PAGES=1`, `CF_PAGES_BRANCH=main`) and logs individual failing SEO audits. Lab performance measurements are **not** real-user field LCP/INP/CLS and are not live public-host proof. Interpret the rerun only after its actual CI result.
