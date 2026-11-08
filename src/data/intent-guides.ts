@@ -114,7 +114,7 @@ export const guides:Record<ToolId,Guide>={
    {heading:'Export a usable shop and cutting checklist',paragraphs:[
     'The shopping CSV separates rounded buying quantities, the cutting-run length and roll offcuts by SKU. The full cut-list CSV shows every physical rectangle with its coordinates on its own fabric roll. Download Full printable cut sheets (.html) for the entire verified project, or open a roll in the Cutting diagrams section and choose Download only this roll to print a single SKU without reprinting all materials. Both standalone files include every cut for their selected scope and a checkbox for each piece; open locally to print or Save as PDF. The on-page Print plan is only a shorter schematic preview, never a 1:1 cutting template. Full exports require a current and geometrically feasible cut plan; the whole-project Planner additionally requires a manually reviewed quilt-top coverage checklist. User-entered prices are estimates only, not a live retailer quote.'
    ]}
-  ],related:['yardage','hub','inches']
+  ],related:['yardage','backing','batting','binding','border','sashing']
  },
  inches:{
   title:'Fabric yard to inch chart, fractions and actual fabric size',
