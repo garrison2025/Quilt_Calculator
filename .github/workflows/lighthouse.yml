@@ -27,9 +27,14 @@ jobs:
           npm ci --no-audit --no-fund
           npm install --no-save --package-lock=false lighthouse@12 playwright
           npx playwright install --with-deps chromium
-      - name: Build exact source snapshot
-        run: npm run build
-      - name: Run real Chrome Lighthouse lab (simulated mobile)
+      - name: Build exact main-branch PRODUCTION SEO snapshot (offline)
+        env:
+          CF_PAGES: '1'
+          CF_PAGES_BRANCH: main
+        run: |
+          npm run build
+          node scripts/check-build.mjs
+      - name: Run Chrome Lighthouse on indexable PRODUCTION-mode local HTML (simulated mobile)
         timeout-minutes: 7
         shell: bash
         run: |
