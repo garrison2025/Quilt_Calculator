@@ -1,5 +1,5 @@
 import {describe,it,expect} from 'vitest';
-import {backingReference,bindingReference,yardageReference,formatEighthYards,currentPlannerSample,plannerSampleReference} from '../src/data/seo-reference';
+import {backingReference,bindingReference,yardageReference,queenFabricReference,queenFabricTotalYards,formatEighthYards,currentPlannerSample,plannerSampleReference} from '../src/data/seo-reference';
 import {sampleProject} from '../src/lib/quilt/project';
 import {resolveQuiltDimensions} from '../src/lib/quilt/dimensions';
 import {byId} from '../src/data/routes';
