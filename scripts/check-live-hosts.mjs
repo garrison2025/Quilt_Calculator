@@ -95,7 +95,19 @@ export async function checkLiveHosts(production) {
   assert.equal(sitemap.response.status, 200, 'Production sitemap must exist.');
   const locs = [...sitemap.html.matchAll(/<loc>([^<]+)<\/loc>/g)].map(x => x[1]);
   assert.deepEqual(locs, approvedPaths.map(path => production + path), 'Sitemap must contain exactly the 10 approved paths, in order.');
-  assert.equal((await get(PREVIEW, '/sitemap.xml')).response.status, 404, 'Preview sitemap must not exist.');
+  // Cloudflare Pages serves the SAME static build at custom and pages.dev hosts.
+  // After production activation sitemap.xml may therefore be reachable on the
+  // preview hostname. That is acceptable only when its URL list points solely
+  // at the approved production hostname and its response is HTTP noindex.
+  const previewMap = await get(PREVIEW, '/sitemap.xml');
+  if (previewMap.response.status === 200) {
+    assert.equal(hasNoindex(previewMap.response), true,
+      'Preview sitemap must receive HTTP X-Robots-Tag noindex.');
+    const previewLocs = [...previewMap.html.matchAll(/<loc>([^<]+)<\\/loc>/g)].map(x => x[1]);
+    assert.deepEqual(previewLocs, locs, 'Preview-host sitemap must refer only to production URLs.');
+  } else {
+    assert.equal(previewMap.response.status, 404, 'Unexpected preview sitemap status.');
+  }
   const robots = await get(production, '/robots.txt');
   assert.equal(robots.response.status, 200);
   assert.ok(robots.html.includes('Sitemap: ' + production + '/sitemap.xml'), 'Production robots.txt must point to its sitemap.');
@@ -103,7 +115,7 @@ export async function checkLiveHosts(production) {
     const { response } = await get(production, path);
     assert.equal(response.status, 404, 'HOLD routes must not publish thin pages: ' + path);
   }
-  console.log('PASS exact sitemap, no preview sitemap, robots and HOLD exclusions.');
+  console.log('PASS exact production sitemap, preview sitemap isolation, robots and HOLD exclusions.');
   console.log('PASS production release preflight at source ' + [...built][0]);
 }
 function selfTest() {
