@@ -2,7 +2,7 @@
 import type {ToolId} from '../client/types';
 import {guides, fractionRows} from '../data/intent-guides';
 import {byId} from '../data/routes';
-import {backingReference,bindingReference,yardageReference,formatEighthYards} from '../data/seo-reference';
+import {backingReference,bindingReference,yardageReference,queenFabricReference,queenFabricTotalYards,formatEighthYards} from '../data/seo-reference';
 interface Props {tool:ToolId}
 const {tool}=Astro.props;
 const guide=guides[tool];
@@ -17,12 +17,13 @@ const clean=(n:number)=>Number(n.toFixed(4)).toLocaleString('en-US',{maximumFrac
       {item.paragraphs.map(p=><p>{p}</p>)}
     </article>
   )}</div>
-  {(tool==='backing'||tool==='binding'||tool==='yardage')&&
-  <div class="seo-reference" data-engine-reference={tool}>
-    <h3>{tool==='backing'?'Backing yardage: examples at 43-inch and 108-inch fabric widths':tool==='binding'?'Straight-grain binding: strip width and purchase yardage comparison':'Fabric yardage: practical rectangular cutting examples'}</h3>
+  {(tool==='backing'||tool==='binding'||tool==='yardage'||tool==='fabric')&&
+  <div class="seo-reference" data-engine-reference={tool==='fabric'?'queen-fabric':tool}>
+    <h3>{tool==='backing'?'Backing yardage: examples at 43-inch and 108-inch fabric widths':tool==='binding'?'Straight-grain binding: strip width and purchase yardage comparison':tool==='yardage'?'Fabric yardage: practical rectangular cutting examples':'Queen-size quilt top: two independent fabric SKUs'}</h3>
     {tool==='backing'&&<p>Illustrative finished sizes only, not universal size standards. Each calculation assumes <strong>4 in overage per edge</strong>, <strong>1 in take-up per backing join</strong>, both panel orientations permitted, no prewash length shrinkage, and upward <strong>⅛ yd</strong> shop rounding. Measure your own postwash usable WOF and check grain before cutting.</p>}
     {tool==='binding'&&<p>All rows assume <strong>43 in usable WOF</strong>, <strong>12 in finishing tail</strong>, <strong>2.5 in loss per diagonal strip join</strong>, no prewash length shrinkage, and upward <strong>⅛ yd</strong> shop rounding. Only straight-grain strips are represented; bias binding is not supported.</p>}
     {tool==='yardage'&&<p>Dimensions are literal <strong>cut-piece sizes</strong>, not finished patches. Purchases use physical roll placement, <strong>0% length shrinkage</strong> and upward <strong>⅛ yd</strong> rounding. A 90° turn is allowed only when print and grain permit it; alternate usable widths represent separate rolls.</p>}
+    {tool==='fabric'&&<p>This is one explicitly defined <strong>90 × 90 in quilt-top pattern</strong>, not a universal queen-size yardage standard: a 12 × 12 checkerboard of 7½-in finished squares, split evenly across two fabric SKUs. Each square is cut at <strong>8 × 8 in</strong> (¼-in seam allowance on each edge). Assumptions: 43 in usable WOF per SKU, 0% length shrinkage, no motif-repeat matching, and upward <strong>⅛ yd</strong> purchase rounding. The total covers the quilt top only—not backing, batting, borders or binding.</p>}
     <div class="table-scroll" role="region" aria-label="Engine-verified quilt reference examples" tabindex="0">
       <table class="breakdown-table seo-reference-table">
         <caption>Illustrative cutting and purchasing examples computed by this calculator engine</caption>
@@ -37,6 +38,11 @@ const clean=(n:number)=>Number(n.toFixed(4)).toLocaleString('en-US',{maximumFrac
         {tool==='yardage'&&<>
           <thead><tr><th scope="col">Cut pieces</th><th scope="col">Usable WOF</th><th scope="col">90° rotation</th><th scope="col">Per row</th><th scope="col">Rows</th><th scope="col">Cut run</th><th scope="col">Buy</th></tr></thead>
           <tbody>{yardageReference.map(x=><tr><th scope="row">{x.label}</th><td>{x.wofIn} in</td><td>{x.rotation?'Allowed':'Not allowed'}</td><td>{x.across}</td><td>{x.rows}</td><td>{x.runIn} in</td><td><strong>{formatEighthYards(x.yards)}</strong></td></tr>)}</tbody>
+        </>}
+        {tool==='fabric'&&<>
+          <thead><tr><th scope="col">Fabric SKU</th><th scope="col">Cut pieces</th><th scope="col">Cut size</th><th scope="col">Usable WOF</th><th scope="col">Per row</th><th scope="col">Rows</th><th scope="col">Cut run</th><th scope="col">Buy</th></tr></thead>
+          <tbody>{queenFabricReference.map(x=><tr><th scope="row">{x.label}</th><td>{x.pieces} squares</td><td>{x.cutSize}</td><td>{x.wofIn} in</td><td>{x.across}</td><td>{x.rows}</td><td>{x.runIn} in</td><td><strong>{formatEighthYards(x.yards)}</strong></td></tr>)}</tbody>
+          <tfoot><tr><th scope="row" colSpan={7}>Total quilt-top fabric (two SKUs)</th><td><strong>{formatEighthYards(queenFabricTotalYards)}</strong></td></tr></tfoot>
         </>}
       </table>
     </div>
