@@ -45,7 +45,7 @@ Updated operational totals: **218 original records; 202 historical route assignm
 
 ## Copy and FAQ refinements in this release
 
-1. **Yards-to-inches:** title/H1 now lead with `How big is a yard of fabric?`; the quick-answer heading supplies the direct 36-inch answer and distinguishes length from width.
+1. **Yards-to-inches:** title/H1 now lead with `How big is a yard of fabric?` while retaining the existing `fabric yards to inches` primary intent; the quick-answer heading supplies the direct 36-inch answer and distinguishes length from width. The hero and Open Graph image alt now correctly describe the generated fraction-conversion chart instead of calling it a cutting-layout diagram.
 2. **Binding:** title/H1 explicitly say straight-grain, avoiding an implication that bias binding is supported.
 3. **Borders:** title/H1 explicitly say butted, avoiding an implication that mitered corners are supported.
 4. **Fabric Yardage:** H1 says repeated rectangular cuts; FAQ explains pattern-repeat/motif matching is not automatic and points mixed-piece or multi-SKU projects to the separate Quilt Fabric Calculator.
