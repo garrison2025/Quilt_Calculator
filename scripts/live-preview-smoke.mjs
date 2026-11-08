@@ -152,6 +152,8 @@ try{
   assert.equal(stamp(html),sha,'Public trust page must match the main deployed SHA: '+path);
   assertThat(hasNoindexToken(response.headers.get('x-robots-tag')),
     'Public pages.dev trust page requires HTTP noindex: '+path);
+  if(path==='/privacy/')assertThat(html.includes('Privacy &amp; Terms')&&html.includes('id="usage-terms"'),
+   'Privacy and terms page must clearly publish its calculator-use terms.');
   assertThat(html.includes('name="robots" content="index,follow,max-image-preview:large"') &&
     html.includes('rel="canonical" href="'+PROD+path+'"') &&
     html.includes('"@type":"WebPage"') &&
@@ -163,6 +165,9 @@ try{
   aboutHtml.includes('not physical sewing certification'),
   'Published About methods page must accurately identify source and physical limitations.');
  const {html:homeHtml}=await get('/');
+ assertThat(homeHtml.includes('data-answer-first="home"')&&
+  homeHtml.includes('There is no single yardage number for every quilt.'),
+  'Homepage must publish its direct yardage answer in initial HTML.');
  assertThat(homeHtml.includes('data-page-attribution')&&homeHtml.includes('data-geo-citations="hub"'),
   'Homepage must show project attribution and independent quilting references.');
  for(const id of ['hub','backing','binding','borders','yardage','fabric','inches','batting','sashing'])
@@ -181,6 +186,13 @@ try{
     'Public WebPage must expose project author, true modification date and source citations: '+path);
    assertThat(html.includes('data-page-attribution')&&html.includes('data-geo-citations='),
     'Public page must show a visible project byline and task-specific sources: '+path);
+   assertThat(html.includes('data-answer-first='),
+    'Public page must publish a direct answer in initial HTML: '+path);
+   if(path!=='/'){
+    const faq=scripts.find(x=>x['@type']==='FAQPage');
+    assertThat(faq?.mainEntity?.length>0&&faq.mainEntity.every(q=>q.acceptedAnswer?.text),
+     'Public calculator page must expose matching visible FAQ schema: '+path);
+   }
  }
  console.log('PASS pages.dev header noindex, official 12-URL sitemap, indexable trust pages and truthful application schema.');
 

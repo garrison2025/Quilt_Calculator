@@ -693,7 +693,6 @@ if(!homepageGeo.includes('data-answer-first="home"')||
    !homepageGeo.includes('There is no single yardage number for every quilt.')||
    !homepageGeo.includes('data-page-attribution')||
    !homepageGeo.includes('data-geo-citations="hub"')||
-   !homepageGeo.includes('data-geo-citations="hub"')||
    !homepageGeo.includes('How does the complete quilt cutting planner work?')||
    !homepageGeo.includes('Which independent references explain this method?'))
  throw Error('Homepage GEO attribution, citations or question headings are missing');
