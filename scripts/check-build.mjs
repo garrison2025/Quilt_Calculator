@@ -677,7 +677,10 @@ for(const slug of [...slugs,...trustSlugs]){
    throw Error('Free app publisher attribution missing: '+slug);
  }
 }
-if(!fs.readFileSync('dist/about/index.html','utf8').includes('data-geo-sources')||
+if(!fs.readFileSync('dist/privacy/index.html','utf8').includes('Privacy &amp; Terms')||
+   !fs.readFileSync('dist/privacy/index.html','utf8').includes('What are the terms for using these calculators?')||
+   !fs.readFileSync('dist/index.html','utf8').includes('Privacy &amp; Terms')||
+   !fs.readFileSync('dist/about/index.html','utf8').includes('data-geo-sources')||
    !fs.readFileSync('dist/about/index.html','utf8').includes('data-geo-editorial')||
    !fs.readFileSync('dist/privacy/index.html','utf8').includes('id="usage-terms"'))
  throw Error('About sources/attribution or responsible usage missing');
@@ -686,14 +689,17 @@ if(!fs.readFileSync('dist/about/index.html','utf8').includes('data-geo-sources')
 // Second GEO pass: indexed pages expose a project-level byline, natural
 // question headings and task-specific source references.
 const homepageGeo=fs.readFileSync('dist/index.html','utf8');
-if(!homepageGeo.includes('data-page-attribution')||
+if(!homepageGeo.includes('data-answer-first="home"')||
+   !homepageGeo.includes('There is no single yardage number for every quilt.')||
+   !homepageGeo.includes('data-page-attribution')||
    !homepageGeo.includes('data-geo-citations="hub"')||
    !homepageGeo.includes('How does the complete quilt cutting planner work?')||
    !homepageGeo.includes('Which independent references explain this method?'))
  throw Error('Homepage GEO attribution, citations or question headings are missing');
 for(let i=1;i<slugs.length;i++){
  const slug=slugs[i],html=fs.readFileSync('dist/'+slug+'/index.html','utf8'),toolId=ids[i-1];
- if(!html.includes('data-page-attribution')||
+ if(!html.includes('data-answer-first="'+toolId+'"')||
+    !html.includes('data-page-attribution')||
     !html.includes('data-geo-citations="'+toolId+'"')||
     !html.includes('Which independent references explain this method?'))
   throw Error('Tool page missing visible authorship or relevant external references: '+slug);
@@ -714,6 +720,11 @@ for(const slug of [...slugs,...trustSlugs]){
    if(app?.author?.['@id']!==site+'/#publisher')
     throw Error('Calculator application author does not resolve to project publisher: '+slug);
    if(!webpage.citation?.length)throw Error('Calculator WebPage has no matching source citations: '+slug);
+   if(slug){
+    const faq=schemas.find(x=>x['@type']==='FAQPage');
+    if(!faq?.mainEntity?.length||faq.mainEntity.some(q=>q['@type']!=='Question'||!q.acceptedAnswer?.text))
+     throw Error('Calculator page FAQPage schema must mirror visible question-and-answer content: '+slug);
+   }
   }
  }
 }

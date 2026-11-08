@@ -982,3 +982,12 @@
  .geo-citation-note{border-top-color:#405847}
  .page-attribution{border-top-color:#405847}
 }
+
+
+/* Answer-first passages expose the core method in the initial HTML without
+   hiding or delaying the live calculator controls. */
+.answer-first-lead{box-sizing:border-box;max-width:72ch;margin:12px 0 14px;padding:11px 14px;border-left:3px solid #71977a;border-radius:0 10px 10px 0;background:#f1f6f1;color:#344b3a;font-size:13px;line-height:1.7}
+.answer-first-lead strong{color:#244b34;font-weight:850}
+.page-intro--tool .answer-first-lead{margin:10px 0 12px}
+@media(max-width:560px){.answer-first-lead{padding:10px 12px;font-size:12px;line-height:1.65}}
+@media(prefers-color-scheme:dark){.answer-first-lead{background:#1d2a20;border-left-color:#7da98a;color:#d2e1d4}.answer-first-lead strong{color:#e0f0e3}}
