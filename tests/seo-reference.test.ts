@@ -20,7 +20,9 @@ describe('engine-derived SEO reference tables (not physical certification)',()=>
   }
  });
  it('keeps straight-grain examples independent of bias binding',()=>{
-  expect(bindingReference).toHaveLength(6);
+  expect(bindingReference).toHaveLength(8);
+  const twin=bindingReference.filter(row=>row.quilt==='68 × 86');
+  expect(twin.map(row=>[row.stripWidthIn,row.strips,row.runIn,row.yards])).toEqual([[2.25,8,18,.5],[2.5,8,20,.625]]);
   for(const row of bindingReference){
    const [w,h]=row.quilt.split(' × ').map(Number);
    const result=calculateStraightBinding({widthIn:w,heightIn:h,wofIn:43,stripWidthIn:row.stripWidthIn,

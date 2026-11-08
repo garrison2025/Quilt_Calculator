@@ -48,3 +48,14 @@ Do not create a separate doorway page for each fraction. The 107 related convers
 - These decisions reflect publicly retrieved examples on 2026-11-06, **not** a complete US-localized Google Top-10 SERP export. Evidence URLs and the actual scope of verification: [SERP intent and worked-example audit](qa/SERP_INTENT_AND_EXAMPLE_PARITY_20261106.md). Both can be reconsidered with independently reproduced regional search results.
 - The shared live Project Planner example is 60 × 80 **center** + 3-in border per edge = 66 × 86 **outside**, producing 74 × 94 backing at 4-in overage, and **5¼ yd** for the auto-selected vertical seam using 43-in WOF. The obsolete **5 yd** public HUB sample referred to an unrelated unbordered quilt and has been replaced by an engine-derived sample string. Independent unbordered examples on individual tool pages are now labeled accordingly.
 - **Counts unchanged:** 218 historical records; 202 previously attributed to existing landing pages; 199 active nonbrand; 2 explicitly deprioritized pending regional SERP export; 1 brand exclusion; 16 unsupported-method HOLD. There are still 9 primary tools, not 199 new URLs. Preview stays noindex.
+
+
+## Search-intent refinement — 2026-11-08
+
+- Public search samples identified `border fabrics for quilting` (historical US Volume 590 / KD 8) as fabric-shopping/product-listing intent rather than a calculator task. Its original source row, values, TARGET label and historical route attribution remain unchanged; only the derived operational status is now `DEPRIORITIZE_PRODUCT_INTENT`.
+- Current operational counts: 218 original rows; 202 historical route assignments; **198 active non-brand intents; 3 deprioritized; 1 other-brand exclusion; 16 unsupported-method HOLD**. Do not present these as rankings, current keyword metrics or expected traffic.
+- Public competitor review clarified scope boundaries: straight-grain binding only; butted borders only; batting roll single-piece fit only; sashing with internal cornerstones only; repeated-rectangle yardage without automatic motif-repeat matching; multiple rectangles/SKUs on the separate Quilt Fabric page.
+- Titles/H1/FAQs were refined to match those implemented boundaries and put the high-volume `how big is a yard of fabric` query first on the existing conversion URL. No new URL or algorithm was added.
+- Evidence and limitations: [2026-11-08 content and SERP audit](qa/CONTENT_SERP_AUDIT_20261108.md). This remains a public-web sample, not a US-localized Google Top-10 or fresh Semrush export. GSC remains deferred.
+
+- Added an engine-derived 68 × 86 in illustrative twin-size binding reference (8 strips and ⅝ yd under disclosed assumptions) for the existing 70-volume / KD 14 long-tail query; the copy explicitly says this is not a universal twin standard.

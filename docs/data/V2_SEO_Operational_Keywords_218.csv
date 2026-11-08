@@ -196,7 +196,7 @@
 "3/4 of a yard","50","12","SUPPORT-ONE-PAGE","/fabric-yards-to-inches/","ACTIVE_NONBRAND_INTENT","Page intent mapped to existing approved calculator"
 "5/8 of a yard","50","9","SUPPORT-ONE-PAGE","/fabric-yards-to-inches/","ACTIVE_NONBRAND_INTENT","Page intent mapped to existing approved calculator"
 "5/8 yard to inches","50","19","SUPPORT-ONE-PAGE","/fabric-yards-to-inches/","ACTIVE_NONBRAND_INTENT","Page intent mapped to existing approved calculator"
-"border fabrics for quilting","590","8","TARGET","/quilt-border-calculator/","ACTIVE_NONBRAND_INTENT","Page intent mapped to existing approved calculator"
+"border fabrics for quilting","590","8","TARGET","/quilt-border-calculator/","DEPRIORITIZE_PRODUCT_INTENT","Historical route attribution preserved; public search sample on 2026-11-08 showed retail fabric categories and product listings rather than a calculator task."
 "calculate yardage for quilt","70","15","TARGET","/quilt-fabric-calculator/","ACTIVE_NONBRAND_INTENT","Page intent mapped to existing approved calculator"
 "free fabric calculator","210","6","TARGET","/fabric-yardage-calculator/","ACTIVE_NONBRAND_INTENT","Page intent mapped to existing approved calculator"
 "how big is 2 yards of fabric","260","11","SUPPORT-ONE-PAGE","/fabric-yards-to-inches/","ACTIVE_NONBRAND_INTENT","Page intent mapped to existing approved calculator"

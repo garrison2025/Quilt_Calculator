@@ -17,14 +17,14 @@ const related=guides[route.id].related.map(id=>routes.find(t=>t.id===id)!);
 </nav>
 <div class="page-intro page-intro--tool" data-ui-hero data-tool-intent={route.id}>
 <div class="page-heading"><span class="eyebrow-with-line">— {route.nav.toUpperCase()} / FREE ONLINE TOOL</span><h1>{route.h1}</h1><p>{route.intro}</p><div class="feature-pills"><span>{route.id==='inches'?'✓ Exact conversions':'✓ Feasible layouts'}</span><span>{route.id==='inches'?'✓ Fractions explained':'✓ Live yardage'}</span><span>✓ No sign-up</span></div><div class="hero-actions"><a href="#calculator-workspace" class="hero-main-cta">Start calculating <span aria-hidden="true">↗</span></a><a href="/calculators/" class="hero-sub-cta">View all nine tools</a></div></div>
-<div class="mini-feature mini-feature--crafted"><div class="mini-top"><span>MADE FOR REAL FABRIC</span><span>01 / 03</span></div><img src={'/images/'+route.id+'.webp'} width="640" height="420" alt={route.nav+' example quilt cutting layout illustration'} loading="eager"/>
+<div class="mini-feature mini-feature--crafted"><div class="mini-top"><span>MADE FOR REAL FABRIC</span><span>01 / 03</span></div><img src={'/images/'+route.id+'.webp'} width="640" height="420" alt={route.id==='inches'?'Fabric yard conversion chart showing 1/8, 1/4, 1/2, 3/4 and 1 yard in inches.':route.nav+' example quilt cutting layout illustration'} loading="eager"/>
 <svg class="hero-thread" viewBox="0 0 580 280" preserveAspectRatio="none" aria-hidden="true"><path d="M-12 185 Q 75 95, 154 156 T 321 144 T 598 70" pathLength="100" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="1.2 1.2" stroke-linecap="round"/></svg><div class="mini-bottom"><b>Plan it once.</b><span>Cut it with confidence ✳</span></div></div>
 </div>
 {route.id==='inches'&&
 <section class="seo-direct-answer" aria-label="Quick yard to inch answers" data-seo-direct-answer>
   <div class="seo-direct-answer-text">
     <span class="eyebrow-with-line">— QUICK ANSWER</span>
-    <h2>How big is a yard of fabric?</h2>
+    <h2>One linear yard is 36 inches long; fabric width varies.</h2>
     <p><strong>One linear yard of fabric is exactly 36 inches (91.44 centimeters) long.</strong> The width is not fixed: measure the usable width on your own fabric bolt.</p>
     <p>A quarter yard is <strong>9 inches</strong>, a half yard is <strong>18 inches</strong>, one and a half yards is <strong>54 inches</strong>, and four yards is <strong>144 inches</strong>. These are lengths, not fixed fabric areas or retailer prices.</p>
     <p><strong>Reverse conversion works here too:</strong> 9 inches = ¼ yard, 18 inches = ½ yard, and 22.86 centimeters = 9 inches = ¼ yard. Choose Yards, Inches, or Centimeters as the input unit above the value field. Changing the unit preserves the same length rather than reinterpreting the number. Decimal outputs are rounded for readability; the internal calculation retains its numerical precision.</p>
