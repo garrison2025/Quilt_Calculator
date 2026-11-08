@@ -144,12 +144,12 @@ export async function checkLiveHosts(production) {
 }
 function selfTest() {
   const response = (origin, path, xRobots) => ({status:200,url:origin+path,headers:new Headers({'x-robots-tag':xRobots})});
-  const html = (robots, canonicalTag='') => '<html><head><meta name="robots" content="'+robots+'">'+canonicalTag+'<script type="application/ld+json">{}</script></head><body><h1>Test</h1></body></html>';
+  const html = (robots, canonicalTag='') => '<html><head><meta name="robots" content="'+robots+'">'+canonicalTag+'<script type="application/ld+json">{"@type":"WebApplication"}</script></head><body><h1>Test</h1></body></html>';
   const origin = 'https://quilt-example.com';
   assert.equal(parseProductionOrigin(origin), origin);
   for (const bad of ['http://quilt-example.com','https://quilt-example.com/path','https://quilt-example.com?x=1','https://quilt-example.com:8443','https://quilt-calculator-566.pages.dev','https://quilt.example','https://localhost','https://user:pass@quilt-example.com']) assert.throws(() => parseProductionOrigin(bad));
   assertPublicDocument(response(origin,'/', 'follow'), html('index,follow','<link rel="canonical" href="'+origin+'/">'), origin, '/', true);
-  const trustHtml=html('index,follow','<link rel="canonical" href="'+origin+'/about/">').replace('<script type="application/ld+json">{}</script>','<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage"}</script>');
+  const trustHtml=html('index,follow','<link rel="canonical" href="'+origin+'/about/">').replace('<script type="application/ld+json">{"@type":"WebApplication"}</script>','<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage"}</script>');
   assertPublicDocument(response(origin,'/about/', 'follow'), trustHtml, origin, '/about/', true, null, false);
   assert.throws(() => assertPublicDocument(response(origin,'/about/', 'follow'), trustHtml, origin, '/about/', true, null, true));
   assertPublicDocument(response(PREVIEW,'/', 'noindex, follow'), html('noindex,follow'), PREVIEW, '/', false);
