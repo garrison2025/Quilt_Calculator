@@ -1,4 +1,4 @@
-import {calculateBacking, calculateStraightBinding, calculateYardage, selectBackingOption} from '../lib/quilt/math';
+import {calculateBacking, calculateStraightBinding, calculateYardage, calculateQuiltFabric, selectBackingOption} from '../lib/quilt/math';
 import {sampleProject, calculateProjectBinding} from '../lib/quilt/project';
 import {resolveQuiltDimensions} from '../lib/quilt/dimensions';
 
