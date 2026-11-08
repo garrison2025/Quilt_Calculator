@@ -57,3 +57,5 @@ Priority content now includes engine-calculated tables for backing (eight cases)
 - See [the 2026-11-08 content/SERP audit](qa/CONTENT_SERP_AUDIT_20261108.md) for sources and evidence boundaries. No fresh Volume/KD/CPC, exact US Top-10, GSC, ranking or traffic claims are made.
 
 - Added an engine-derived 68 × 86 in illustrative twin-size binding reference (8 strips and ⅝ yd under disclosed assumptions) for the existing 70-volume / KD 14 long-tail query; the copy explicitly says this is not a universal twin standard.
+
+- Existing long-tail intent `how much fabric for a queen size quilt` (historical US snapshot 110 / KD 2) now has a reproducible 90 × 90 in two-SKU quilt-top example. Each 72-piece 8 × 8 in SKU uses 3⅜ yd at 43 in usable WOF; 6¾ yd total covers the top only. The example is explicitly pattern-specific, not a universal queen-size estimate. See [2026-11-08 content/SERP audit](qa/CONTENT_SERP_AUDIT_20261108.md).

@@ -1,9 +1,9 @@
 import {describe,it,expect} from 'vitest';
-import {backingReference,bindingReference,yardageReference,formatEighthYards,currentPlannerSample,plannerSampleReference} from '../src/data/seo-reference';
+import {backingReference,bindingReference,yardageReference,queenFabricReference,queenFabricTotalYards,formatEighthYards,currentPlannerSample,plannerSampleReference} from '../src/data/seo-reference';
 import {sampleProject} from '../src/lib/quilt/project';
 import {resolveQuiltDimensions} from '../src/lib/quilt/dimensions';
 import {byId} from '../src/data/routes';
-import {calculateBacking,calculateStraightBinding,calculateYardage} from '../src/lib/quilt/math';
+import {calculateBacking,calculateStraightBinding,calculateYardage,calculateQuiltFabric} from '../src/lib/quilt/math';
 
 describe('engine-derived SEO reference tables (not physical certification)',()=>{
  it('keeps backing example purchases in parity with actual feasible cutting layouts',()=>{
@@ -48,6 +48,23 @@ describe('engine-derived SEO reference tables (not physical certification)',()=>
    expect(row.runIn).toBe(result.layout.exactFabricRunLengthIn);
    expect(row.yards).toBe(result.purchase?.roundedPurchaseYards);
   }
+ });
+ it('keeps the queen-size quilt-top example exact and separates both fabric SKUs',()=>{
+  expect(queenFabricReference).toHaveLength(2);
+  expect(queenFabricReference.map(x=>[x.label,x.pieces,x.cutSize,x.wofIn,x.across,x.rows,x.runIn,x.yards])).toEqual([
+   ['Light fabric',72,'8 × 8 in',43,5,15,120,3.375],
+   ['Dark fabric',72,'8 × 8 in',43,5,15,120,3.375]
+  ]);
+  expect(queenFabricTotalYards).toBe(6.75);
+  const independent=calculateQuiltFabric([
+   {id:'queen-light',label:'Light fabric',usableWidth:43,oneWayPrint:false,shrinkageLengthPct:0,
+    pieces:[{widthIn:8,heightIn:8,count:72,label:'Light squares',allowRotate:false}]},
+   {id:'queen-dark',label:'Dark fabric',usableWidth:43,oneWayPrint:false,shrinkageLengthPct:0,
+    pieces:[{widthIn:8,heightIn:8,count:72,label:'Dark squares',allowRotate:false}]}
+  ],.125);
+  expect(independent.map(x=>[x.layout.isCutFeasible,x.layout.cutPieces.length,x.layout.exactFabricRunLengthIn,x.purchase?.roundedPurchaseYards]))
+   .toEqual([[true,72,120,3.375],[true,72,120,3.375]]);
+  expect(formatEighthYards(queenFabricTotalYards)).toBe('6 ¾ yd');
  });
  it('keeps live HUB worked-example yardage aligned with border-inclusive source project',()=>{
   const d=resolveQuiltDimensions(sampleProject),o=sampleProject.options;

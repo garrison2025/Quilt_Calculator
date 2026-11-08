@@ -46,8 +46,27 @@ jobs:
           done
           curl -fsS http://127.0.0.1:4321/quilt-backing-calculator/ >/dev/null
           export CHROME_PATH="$(node -e "console.log(require('playwright').chromium.executablePath())")"
-          for slug in quilt-backing-calculator quilt-binding-calculator fabric-yards-to-inches; do
-            npx lighthouse "http://127.0.0.1:4321/$slug/" \
+          # Audit every indexable URL, not just three representative calculators.
+          routes=(
+            /
+            /calculators/
+            /quilt-backing-calculator/
+            /quilt-binding-calculator/
+            /quilt-border-calculator/
+            /fabric-yardage-calculator/
+            /quilt-fabric-calculator/
+            /fabric-yards-to-inches/
+            /quilt-batting-calculator/
+            /quilt-sashing-calculator/
+            /about/
+            /privacy/
+          )
+          for route in "${routes[@]}"; do
+            slug="${route//\//-}"
+            slug="${slug#-}"
+            slug="${slug%-}"
+            if [ -z "$slug" ]; then slug=home; fi
+            npx lighthouse "http://127.0.0.1:4321$route" \
               --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" \
               --only-categories=performance,seo \
               --form-factor=mobile \
@@ -55,10 +74,7 @@ jobs:
               --output-path="artifacts/lighthouse/$slug.json" \
               --quiet
           done
-          node scripts/report-lighthouse.mjs \
-            artifacts/lighthouse/quilt-backing-calculator.json \
-            artifacts/lighthouse/quilt-binding-calculator.json \
-            artifacts/lighthouse/fabric-yards-to-inches.json
+          node scripts/report-lighthouse.mjs artifacts/lighthouse/*.json
       - name: Archive performance evidence
         if: always()
         uses: actions/upload-artifact@v4

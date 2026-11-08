@@ -1,4 +1,4 @@
-import {calculateBacking, calculateStraightBinding, calculateYardage, selectBackingOption} from '../lib/quilt/math';
+import {calculateBacking, calculateStraightBinding, calculateYardage, calculateQuiltFabric, selectBackingOption} from '../lib/quilt/math';
 import {sampleProject, calculateProjectBinding} from '../lib/quilt/project';
 import {resolveQuiltDimensions} from '../lib/quilt/dimensions';
 
@@ -73,6 +73,26 @@ export const yardageReference=yardageCases.map(c=>{
   across:r.across,rows:r.rows,runIn:r.layout.exactFabricRunLengthIn,
   yards:r.purchase.roundedPurchaseYards};
 });
+/** A deliberately specified 90 × 90 in two-colour checkerboard quilt top.
+ * 12 × 12 finished 7.5-in squares; 8-in cut squares include 1/4-in seam
+ * allowance on every edge. This is an illustrative pattern, not a universal
+ * queen-size standard or a full quilt-materials estimate.
+ */
+const queenFabricScenario=calculateQuiltFabric([
+ {id:'queen-light',label:'Light fabric',usableWidth:43,oneWayPrint:false,shrinkageLengthPct:0,
+  pieces:[{widthIn:8,heightIn:8,count:72,label:'Light squares',allowRotate:false}]},
+ {id:'queen-dark',label:'Dark fabric',usableWidth:43,oneWayPrint:false,shrinkageLengthPct:0,
+  pieces:[{widthIn:8,heightIn:8,count:72,label:'Dark squares',allowRotate:false}]}
+],.125);
+export const queenFabricReference=queenFabricScenario.map(x=>{
+ if(!x.layout.isCutFeasible||!x.purchase)
+  throw Error('Queen-size worked example unexpectedly infeasible: '+x.label);
+ return {label:x.label,pieces:x.layout.cutPieces.length,cutSize:'8 × 8 in',wofIn:43,
+  across:new Set(x.layout.cutPieces.map(p=>p.xIn)).size,
+  rows:new Set(x.layout.cutPieces.map(p=>p.yIn)).size,
+  runIn:x.layout.exactFabricRunLengthIn,yards:x.purchase.roundedPurchaseYards};
+});
+export const queenFabricTotalYards=queenFabricReference.reduce((sum,x)=>sum+x.yards,0);
 const glyphs=['','⅛','¼','⅜','½','⅝','¾','⅞'];
 export function formatEighthYards(yards:number):string{
  if(!Number.isFinite(yards)||yards<0||Math.abs(yards*8-Math.round(yards*8))>1e-8)

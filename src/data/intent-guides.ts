@@ -104,6 +104,9 @@ export const guides:Record<ToolId,Guide>={
     'The sample blue fabric contains twelve 5 × 5 inch cut squares. On 43 inches of usable width, eight squares fit across a row, so two rows take 10 inches along that bolt. The sand fabric has eight 4½ × 8½ inch rectangles; nine could fit across 43 inches, so a single 8½-inch row covers all eight.',
     'Those runs are independent: 10 inches for blue and 8½ inches for sand. They must be rounded to shop purchasing increments separately and cannot be combined into a fictional 18½-inch roll because the colors are different.'
    ]},
+   {heading:'Worked example: a 90 × 90 inch two-colour quilt top',paragraphs:[
+    'There is no single yardage number for every queen quilt: finished dimensions, block pattern, fabric count, borders and cutting geometry all matter. For one reproducible example, use a 12 × 12 checkerboard of 7½-inch finished squares. Cut 144 squares at 8 × 8 inches (¼-inch seam allowance on every edge), split evenly between two separate fabric SKUs. With 43 inches of usable WOF per SKU, five squares fit across and 15 rows are needed: 120 inches of cut run per colour. At 0% length shrinkage and upward ⅛-yard purchase rounding, each colour requires 3⅜ yards, or 6¾ yards for the quilt top. This is only the top for this exact pattern; it excludes backing, batting, borders, binding and motif-repeat matching. The table below is calculated by the same physical layout engine used by the tool.'
+   ]},
    {heading:'One-way prints and prewash shrinkage',paragraphs:[
     'Disable 90° rotation for directional prints, visible fabric grain or motifs that cannot be turned. Only explicitly allowed orientations are considered. Prewash length shrinkage increases the required purchased length before shop-increment rounding.',
     'Use the cut sizes after accounting for seam allowance. If a rectangular piece cannot fit your chosen width in any permitted direction, that SKU displays an impossible-fit warning instead of an unsupported yardage suggestion.'
@@ -111,7 +114,7 @@ export const guides:Record<ToolId,Guide>={
    {heading:'Export a usable shop and cutting checklist',paragraphs:[
     'The shopping CSV separates rounded buying quantities, the cutting-run length and roll offcuts by SKU. The full cut-list CSV shows every physical rectangle with its coordinates on its own fabric roll. Download Full printable cut sheets (.html) for the entire verified project, or open a roll in the Cutting diagrams section and choose Download only this roll to print a single SKU without reprinting all materials. Both standalone files include every cut for their selected scope and a checkbox for each piece; open locally to print or Save as PDF. The on-page Print plan is only a shorter schematic preview, never a 1:1 cutting template. Full exports require a current and geometrically feasible cut plan; the whole-project Planner additionally requires a manually reviewed quilt-top coverage checklist. User-entered prices are estimates only, not a live retailer quote.'
    ]}
-  ],related:['yardage','hub','inches']
+  ],related:['yardage','backing','batting','binding','borders','sashing']
  },
  inches:{
   title:'Fabric yard to inch chart, fractions and actual fabric size',
