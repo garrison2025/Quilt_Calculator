@@ -3,7 +3,7 @@ import {backingReference,bindingReference,yardageReference,queenFabricReference,
 import {sampleProject} from '../src/lib/quilt/project';
 import {resolveQuiltDimensions} from '../src/lib/quilt/dimensions';
 import {byId} from '../src/data/routes';
-import {calculateBacking,calculateStraightBinding,calculateYardage} from '../src/lib/quilt/math';
+import {calculateBacking,calculateStraightBinding,calculateYardage,calculateQuiltFabric} from '../src/lib/quilt/math';
 
 describe('engine-derived SEO reference tables (not physical certification)',()=>{
  it('keeps backing example purchases in parity with actual feasible cutting layouts',()=>{
