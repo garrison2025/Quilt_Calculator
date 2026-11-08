@@ -2,6 +2,13 @@
 
 Free US-English quilting tools built with Astro static pages and a browser-based TypeScript cutting engine. No account, database, paid API or required cloud back end.
 
+## Approved production domain (2026-11-08; launch remains gated)
+
+- The owner purchased **https://quiltcutplanner.com/** and bound it to Cloudflare; the live website is reachable at that hostname. Contact address supplied by the owner: **contact@quiltcutplanner.com** (mail deliverability not verified by website checks).
+- Public hostname is **still noindex** until Cloudflare Pages production build variables are explicitly set and the live dual-host test passes. A domain being bound does **not** imply Google indexing or AdSense readiness.
+- Repository safeguards now permit indexable build output ONLY for the exact approved origin `https://quiltcutplanner.com`; the default/no-env build remains noindex. See [release checklist](docs/qa/QUILTCUTPLANNER_PRODUCTION_RELEASE_20261108.md).
+- Cloudflare Pages is a shared static deployment: the production sitemap may be served on the `pages.dev` hostname too. This is safe only with a preview-host `X-Robots-Tag: noindex` header and sitemap entries containing **only the owned production domain**. The live host checker enforces these conditions; no fake preview 404 expectation.
+
 ## Project acceptance / current deployment
 
 **CURRENT DECISION (2026-11-06): SOFTWARE ACCEPTANCE — PASS.** The project owner approved automated engineering verification as the acceptance criterion for the present Quilt Calculator website stage; a physical 2×2 sewn sample and printed-paper ruler signoff are **not required to accept the software**. This acceptance covers the nine approved calculators and browser-only Project Planner as a tested **noindex preview**. Production-domain indexing, real SEO performance, advertising and unverified methods are separate later stages. Physical tests remain truthfully `MANUAL_NOT_RUN` but are no longer blockers for this software milestone. See [the authoritative 2026-11-06 acceptance decision and exact CI evidence](docs/qa/SOFTWARE_ACCEPTANCE_DECISION_20261106.md).
