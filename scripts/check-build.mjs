@@ -230,10 +230,19 @@ for(const token of ['INDIVIDUAL_45DEG_CROSSWISE_JOIN',
 }
 if(fs.existsSync('dist/square-in-a-square-calculator/index.html'))throw Error('Premature public SQUARE keyword route.');
 const biasHtml=fs.readFileSync('dist/quilt-binding-calculator/index.html','utf8');
-for(const fragment of ['data-seo-bias-area-bound','square-root fabric estimate','loss-free theoretical area equivalents',
- 'straight-grain only']){
+for(const fragment of ['data-seo-bias-area-bound','Bias binding is a separate cutting method','45° cuts',
+ 'straight-grain, full-width-of-fabric strips only','does not provide an approved purchasing plan']){
  if(!biasHtml.toLowerCase().includes(fragment.toLowerCase()))
-  throw Error('Bias area preview must be described as non-purchasing on the existing binding page: '+fragment);
+  throw Error('Binding page must state its straight-grain-only scope without presenting bias yardage: '+fragment);
+}
+if(biasHtml.toLowerCase().includes('square-root fabric estimate')||
+   biasHtml.toLowerCase().includes('loss-free theoretical area equivalents'))
+ throw Error('The indexed straight-grain binding page must not carry the long bias-area theory block.');
+const borderHtml=fs.readFileSync('dist/quilt-border-calculator/index.html','utf8');
+for(const fragment of ['data-engine-reference="borders"','Butted border cut lengths and yardage by layer',
+ 'Outer 3-in layer','Inner 2-in layer','2 ¾ yd','4 ⅛ yd','4 ⅜ yd','5 ¼ yd']){
+ if(!borderHtml.includes(fragment))
+  throw Error('Border page must render its engine-derived layer examples: '+fragment);
 }
 if(!squareLabHtml.includes('data-square-reference-chart')||
   (squareLabHtml.match(/data-square-reference-size="/g)||[]).length!==6||
