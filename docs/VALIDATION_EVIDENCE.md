@@ -1,7 +1,7 @@
 # Quilt Studio — verification evidence and release blockers
 
-> **Acceptance update (2026-11-06): SOFTWARE SCOPE PASS.** See [the owner's stage-specific software acceptance decision](qa/SOFTWARE_ACCEPTANCE_DECISION_20261106.md). Physical printed-paper, sewn fabric, human hardware and original production/advertising/GSC gates remain unverified or unconfigured; they are not prerequisites for accepting the tested nine-calculator software scope. The older verification tables below are chronological records and do not override this decision.
-Last verified: 2026-11-05 · 184/184 tests + local Chromium 41967645708; public exact-SHA Cloudflare pageshow 41967645681; real physical ruler/paper validation remains NOT_RUN.
+> **Current release update (2026-11-08): PRODUCTION SOFTWARE / SEO ENGINEERING PASS.** Exact main SHA bfdf39d50ddca2b1c79727074ef81b6aec31c661 is deployed on the owner-approved domain and passed the current CI and live host checks. This supersedes the older preview-only deployment status, but it does not close physical, field-CWV, GSC, email-deliverability or advertising/account-side gates. The 2026-11-06 scoped software acceptance decision remains historically valid: [decision record](qa/SOFTWARE_ACCEPTANCE_DECISION_20261106.md). See [current release evidence](qa/POST_GEO_RELEASE_ACCEPTANCE_20261108.md).
+Last verified: 2026-11-08 · 400/400 Vitest tests across 38 files; full Chromium browser QA, simulated iPhone WebKit and Android Chrome touch, production SEO dry run, exact-SHA Cloudflare public smoke, dual-host live SEO audit and 12-URL mobile Lighthouse all passed for main SHA bfdf39d50ddca2b1c79727074ef81b6aec31c661. Real physical ruler/paper and fabric checks remain MANUAL_NOT_RUN. See [post-GEO release acceptance](qa/POST_GEO_RELEASE_ACCEPTANCE_20261108.md).
 
 ## What is actually verified
 | Check | Status | Evidence / reproducible action |
