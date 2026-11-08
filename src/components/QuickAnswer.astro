@@ -1,5 +1,6 @@
 ---
 import type {ToolId} from '../client/types';
+import GeoSourceList from './GeoSourceList.astro';
 interface Props {tool:ToolId}
 const {tool}=Astro.props;
 type Entry={question:string;answer:string;checks:[string,string][]};
@@ -64,4 +65,5 @@ const data=entries[tool];
     </table>
   </div>
   <p class="seo-reference-disclaimer">The editable calculator below runs locally in your browser; the explanation and reference tables on this page are readable without JavaScript. Confirm the actual material before buying or cutting.</p>
+  <GeoSourceList tool={tool}/>
 </section>
