@@ -646,10 +646,10 @@ for(const page of ['calculators','quilt-backing-calculator','quilt-binding-calcu
   throw Error('llms.txt missing an approved public page: '+page);
 }
 if(llmsText.includes('/lab/')||llmsText.includes('/qa/'))throw Error('llms.txt must not advertise research/QA URLs');
-const homeHtml=fs.readFileSync('dist/index.html','utf8');
-if(!homeHtml.includes('data-geo-home-guide')||
-   !homeHtml.includes('<table class="breakdown-table"')||
-   !homeHtml.includes('How much fabric does a quilt need?'))
+const geoHomeHtml=fs.readFileSync('dist/index.html','utf8');
+if(!geoHomeHtml.includes('data-geo-home-guide')||
+   !geoHomeHtml.includes('<table class="breakdown-table"')||
+   !geoHomeHtml.includes('How much fabric does a quilt need?'))
  throw Error('Homepage lost JavaScript-independent answers and decision table');
 const ids=['hub','backing','binding','borders','yardage','fabric','inches','batting','sashing'];
 for(let i=1;i<slugs.length;i++){
