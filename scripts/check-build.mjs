@@ -272,7 +272,7 @@ if((production ?
       !aboutHtml.includes('rel="canonical" href="'+site+'/about/"') :
       !aboutHtml.includes('name="robots" content="noindex,follow"') ||
       aboutHtml.includes('rel="canonical"')) ||
-   aboutHtml.includes('application/ld+json') ||
+   aboutHtml.includes('"@type":"WebApplication"') ||
    !aboutHtml.includes('https://github.com/garrison2025/Quilt_Calculator/issues') ||
    !aboutHtml.includes('not physical sewing certification'))
  throw Error('About method page must be indexable only on production, truthfully explain limitations and never claim to be a WebApplication.');
@@ -365,7 +365,7 @@ for(const slug of trustSlugs) {
   throw Error('Trust page needs unique absolute production canonical: '+slug);
  if(!production && html.includes('rel="canonical"'))
   throw Error('Preview trust page must not emit canonical: '+slug);
- if(html.includes('application/ld+json'))
+ if(html.includes('"@type":"WebApplication"'))
   throw Error('About/Privacy must not be misrepresented as WebApplication: '+slug);
  if(!html.includes('property="og:site_name" content="Quilt Cut Planner"'))
   throw Error('Trust page site identity mismatch: '+slug);
