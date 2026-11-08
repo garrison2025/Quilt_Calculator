@@ -7,8 +7,12 @@ interface Props {route?:ToolRoute;home?:boolean;title?:string;description?:strin
 const {route,home=false,title,description,noIndex=false}=Astro.props;
 const pageTitle=title||route?.title||'Quilt Studio';
 const pageDescription=description||route?.meta||'Free quilting cutting calculators.';
-const candidate=import.meta.env.PUBLIC_SITE_URL||'';
-const approved=!noIndex&&import.meta.env.PUBLIC_INDEXABLE==='1'&&candidate==='https://quiltcutplanner.com';
+// Official Cloudflare Pages production builds are tied to main, not to
+// manually configured PUBLIC_* variables. Preview branches and local/CI
+// builds remain noindex; the pages.dev copy is protected by _headers.
+const candidate='https://quiltcutplanner.com';
+const productionBuild=process.env.CF_PAGES==='1'&&process.env.CF_PAGES_BRANCH==='main';
+const approved=!noIndex&&productionBuild;
 const canonical=approved ? candidate+Astro.url.pathname : undefined;
 // Use an existing, publicly reachable image on the same preview/production site;
 // never change noindex or canonical eligibility just to render a social preview.
