@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 const slugs=['','calculators','quilt-backing-calculator','quilt-binding-calculator','quilt-border-calculator','fabric-yardage-calculator','quilt-fabric-calculator','fabric-yards-to-inches','quilt-batting-calculator','quilt-sashing-calculator'];
+const trustSlugs=['about','privacy'];
 const site='https://quiltcutplanner.com';
 const githubSha=process.env.GITHUB_SHA?.toLowerCase();
 const copySummarySource=fs.readFileSync('src/lib/quilt/copy-summary.ts','utf8');
@@ -229,11 +230,15 @@ for(const fragment of ['BIAS_AREA_LOWER_BOUND_ONLY','purchaseYards?:never','veri
 if(!fs.existsSync('dist/privacy/index.html'))throw Error('Missing privacy page');
 if(!fs.existsSync('dist/about/index.html'))throw Error('Missing publicly accessible source/method/feedback page');
 const aboutHtml=fs.readFileSync('dist/about/index.html','utf8');
-if(!aboutHtml.includes('name="robots" content="noindex,follow"')||
-   aboutHtml.includes('rel="canonical"')||aboutHtml.includes('application/ld+json')||
-   !aboutHtml.includes('https://github.com/garrison2025/Quilt_Calculator/issues')||
+if((production ?
+      !aboutHtml.includes('name="robots" content="index,follow,max-image-preview:large"') ||
+      !aboutHtml.includes('rel="canonical" href="'+site+'/about/"') :
+      !aboutHtml.includes('name="robots" content="noindex,follow"') ||
+      aboutHtml.includes('rel="canonical"')) ||
+   aboutHtml.includes('application/ld+json') ||
+   !aboutHtml.includes('https://github.com/garrison2025/Quilt_Calculator/issues') ||
    !aboutHtml.includes('not physical sewing certification'))
- throw Error('About page must be transparent, non-indexed and accurately link to real issue reporting.');
+ throw Error('About method page must be indexable only on production, truthfully explain limitations and never claim to be a WebApplication.');
 const homeHtml=fs.readFileSync('dist/index.html','utf8');
 const taskIds=['hub','backing','binding','borders','yardage','fabric','inches','batting','sashing'];
 for(const id of taskIds){
@@ -287,15 +292,28 @@ if(!fabricQaHtml.includes('href="/qa/2x2-measurement-sheet/"')||
    !fabricQaHtml.includes('data-physical-grid-worksheet-link'))
  throw Error('Physical QA tool must link directly to the printable blank human record.');
 const privacy=fs.readFileSync('dist/privacy/index.html','utf8');
-if(production && !privacy.includes('href="'+site+'/privacy/"'))throw Error('Privacy canonical must not point to undefined.');
+for(const slug of trustSlugs) {
+ const html=fs.readFileSync('dist/'+slug+'/index.html','utf8');
+ const expected=production?'index,follow,max-image-preview:large':'noindex,follow';
+ if(!html.includes('name="robots" content="'+expected+'"'))
+  throw Error('Trust page has unexpected robots directive: '+slug);
+ if(production && !html.includes('rel="canonical" href="'+site+'/'+slug+'/"'))
+  throw Error('Trust page needs unique absolute production canonical: '+slug);
+ if(!production && html.includes('rel="canonical"'))
+  throw Error('Preview trust page must not emit canonical: '+slug);
+ if(html.includes('application/ld+json'))
+  throw Error('About/Privacy must not be misrepresented as WebApplication: '+slug);
+ if(!html.includes('property="og:site_name" content="Quilt Cut Planner"'))
+  throw Error('Trust page site identity mismatch: '+slug);
+}
 if(!fs.existsSync('dist/404.html'))throw Error('Missing Cloudflare Pages 404.html: unknown URLs would silently fall back to homepage.');
 const page404=fs.readFileSync('dist/404.html','utf8');
 if(!page404.includes('noindex,follow')||page404.includes('rel="canonical"'))throw Error('404 route must be noindex with no canonical.');
 if(production){
  const sitemap=fs.readFileSync('dist/sitemap.xml','utf8');
- if((sitemap.match(/<url>/g)||[]).length!==slugs.length)throw Error('Production sitemap does not match approved routes.');
+ if((sitemap.match(/<url>/g)||[]).length!==slugs.length+trustSlugs.length)throw Error('Production sitemap does not match calculator and trust routes.');
  if(sitemap.includes('square-in-square')||sitemap.includes('square-in-a-square'))throw Error('Square trial must not appear in sitemap.');
- for(const slug of slugs)if(!sitemap.includes(site+'/'+(slug?slug+'/':'')))throw Error('Missing sitemap URL '+slug);
+ for(const slug of [...slugs,...trustSlugs])if(!sitemap.includes(site+'/'+(slug?slug+'/':'')))throw Error('Missing sitemap URL '+slug);
 }else if(fs.existsSync('dist/sitemap.xml'))throw Error('Preview build must not emit sitemap.');
 
 /** Original V2 keyword mapping is planning evidence, not a claim of organic ranking.
