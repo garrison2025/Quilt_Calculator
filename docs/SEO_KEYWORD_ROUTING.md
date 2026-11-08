@@ -21,8 +21,8 @@ HOLD: WOF width-equivalence converter, square-in-a-square, diagonal backing, rag
 - Every approved route renders an HTML title, description, H1, independent explanation and a static image.
 - Root / is brand/entry, /calculators/ owns the primary quilt calculator intent.
 - Query parameters never create separate routes; there are no fraction clones.
-- Preview and any pages.dev domain stay noindex.
-- Do not set PUBLIC_INDEXABLE=1 until explicit production domain approval, mathematical gates, browser and physical-print QA.
+- The owned production origin is https://quiltcutplanner.com. Cloudflare Pages main builds automatically emit indexable HTML, canonical links and the approved sitemap; branch previews remain noindex and the main-build pages.dev mirror uses HTTP X-Robots-Tag: noindex. Do **not** ask for obsolete PUBLIC_INDEXABLE/PUBLIC_SITE_URL settings.
+- Physical print/material certification is explicitly outside the accepted browser-only software scope and remains MANUAL_NOT_RUN.
 - No fabricated ratings, reviews, paid products or claimed earnings.
 - Appendix A does not include the original 300 competitor URL rows. These are not invented or represented as already migrated.
 
@@ -31,11 +31,18 @@ HOLD: WOF width-equivalence converter, square-in-a-square, diagonal backing, rag
 
 The original 218-row Semrush source CSV and its historical 202 approved-path mappings remain **unchanged**. A new [218-row operational worklist](data/V2_SEO_Operational_Keywords_218.csv) classifies 199 active non-brand intent mappings, **2 `REVIEW_US_SERP_INTENT`** (`how much is 1 yard` and `quilting calculator app`), **1 `EXCLUDE_OTHER_BRAND`** (`robert kaufman calculator`), and the 16 existing `HOLD_UNVALIDATED_METHOD` terms. Do not equate 202 route assignments with 202 suitable non-brand ranking targets.
 
-Priority content now includes engine-calculated tables for backing (eight cases), straight-grain binding (six cases), and fabric-yardage WOF/rotation (five cases), plus a crawlable one-yard direct answer and 14-row fractions table. Each table clearly states sample cut dimensions and buying assumptions. No new indexed URL, untested sewing method, invented source metric, or new runtime API was introduced. Per-route social previews reuse first-party images. The preview remains noindex; production host separation and performance/field checks still require actual launch evidence.
+Priority content now includes engine-calculated tables for backing (eight cases), straight-grain binding (six cases), and fabric-yardage WOF/rotation (five cases), plus a crawlable one-yard direct answer and 14-row fractions table. Each table clearly states sample cut dimensions and buying assumptions. No new indexed URL, untested sewing method, invented source metric, or new runtime API was introduced. Per-route social previews reuse first-party images. The original preview had noindex. Production host separation was later verified against the actual HTTP response headers on both deployed hosts; real-user field CWV and organic rankings remain unverified.
 
 ## Updated operational decisions — 2026-11-06
 
 - The two previously unresolved terms have been **conservatively deprioritized** using public-result examples rather than pretending to have an exact US-localized Top-10 Google SERP export: `how much is 1 yard` → `DEPRIORITIZE_AMBIGUOUS_LENGTH_PRICE` (price/linear-length ambiguity); `quilting calculator app` → `DEPRIORITIZE_NATIVE_APP_INTENT` (App Store / Google Play intent, while this site is a browser tool).
 - They remain in the original provenance-preserving worklist, mapped historically to their preexisting URL, **but neither is an active SEO target**. Only `199` non-brand intent mappings are active. No other-brand, bias-binding, unverified square or WOF term is moved to active.
 - Live, default bordered quilt-planner purchase text is now **engine-derived**, instead of duplicating an unrelated standalone 60 × 80 unbordered cutting example. This removes a source of confusion and allows static CI to check visible amounts against the actual V2 demo.
-- Evidence and limits: [2026-11-06 public search-intent and example reconciliation](qa/SERP_INTENT_AND_EXAMPLE_PARITY_20261106.md). Full US-specific SERP export, live field Core Web Vitals and GSC ranking remain unverified. Official production domain not yet purchased; pages.dev remains noindex, without canonical or sitemap.
+- Evidence and limits: [2026-11-06 public search-intent and example reconciliation](qa/SERP_INTENT_AND_EXAMPLE_PARITY_20261106.md). Full US-specific SERP export, live field Core Web Vitals and GSC ranking remain unverified. The owner subsequently purchased quiltcutplanner.com. The current production build includes canonical, a 12-URL sitemap (10 home/calculator URLs plus About and Privacy), and pages.dev HTTP noindex. This 2026-11-06 historical SERP statement does not describe current production state.
+
+## 2026-11-08 second-pass navigation and contact SEO
+
+- All nine calculator/directory URLs expose visible semantic breadcrumb navigation and a matching on-production `BreadcrumbList`. The full user journey for a leaf tool is `Home → All calculators → Specific tool`; the `/calculators/` directory has `Home → All calculators`. The root homepage has `WebSite` metadata and does not require a self-referential breadcrumb.
+- Cloudflare email obfuscation was observed rewriting the public support `mailto:` href to a `/cdn-cgi/l/email-protection` URL for non-JavaScript clients; the owner-approved contact email is selectively exempted using Cloudflare's supported `<!--email_off-->` comments. It remains a publicly disclosed address; this is not a claim of actual email delivery.
+- Original 218 keyword source and 199 active mappings remain unchanged, with no extra thin SEO URLs or inferred ranking/traffic.
+- GSC setup, verification and sitemap submission are expressly deferred by the owner.
