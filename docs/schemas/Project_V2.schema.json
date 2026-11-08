@@ -172,6 +172,16 @@
           "minimum": 0,
           "maximum": 2000
         },
+        "usableWof": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 100000
+        },
+        "lengthShrinkage": {
+          "type": "number",
+          "minimum": 0,
+          "exclusiveMaximum": 100
+        },
         "alternateWof": {
           "type": "number",
           "exclusiveMinimum": 0,
@@ -197,6 +207,11 @@
     "sashing": {
       "type": "object",
       "properties": {
+        "usableWof": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 100000
+        },
         "rows": {
           "type": "integer",
           "minimum": 1,

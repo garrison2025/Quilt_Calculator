@@ -56,9 +56,9 @@ const groups: Record<ToolId, {title:string;fields:Field[]}[]> = {
   {title:'Buying',fields:[{label:'Purchase step (yd)',path:'options.step',kind:'number'}]}
  ],
  yardage:[
-  {title:'Fabric pieces',fields:[{label:'Piece cut width',path:'yardage.pieceWidth',kind:'length'},{label:'Piece cut height',path:'yardage.pieceHeight',kind:'length'},{label:'Piece quantity',path:'yardage.count',kind:'whole'},{label:'Usable fabric WOF',path:'options.usableWof',kind:'length'}]},
+  {title:'Fabric pieces',fields:[{label:'Piece cut width',path:'yardage.pieceWidth',kind:'length'},{label:'Piece cut height',path:'yardage.pieceHeight',kind:'length'},{label:'Piece quantity',path:'yardage.count',kind:'whole'},{label:'Usable fabric WOF',path:'yardage.usableWof',kind:'length'}]},
   {title:'Compare a second fabric width',fields:[{label:'Alternate usable WOF',path:'yardage.alternateWof',kind:'length',note:'Optional comparison scenario; current WOF alone determines your cut-list and shopping purchase.'}]},
-  {title:'Fabric constraints',fields:[{label:'Allow 90° grain rotation',path:'yardage.allowRotate',kind:'check',note:'Applies to this rectangle fabric only, not batting or backing.'},{label:'One-way / directional print',path:'yardage.oneWayPrint',kind:'check',note:'Disables 90° rotation even when Allow rotation is checked.'},{label:'Prewash length shrinkage (%)',path:'options.lengthShrinkage',kind:'pct'},{label:'Purchase step (yd)',path:'options.step',kind:'number'}]}
+  {title:'Fabric constraints',fields:[{label:'Allow 90° grain rotation',path:'yardage.allowRotate',kind:'check',note:'Applies to this rectangle fabric only, not batting or backing.'},{label:'One-way / directional print',path:'yardage.oneWayPrint',kind:'check',note:'Disables 90° rotation even when Allow rotation is checked.'},{label:'Prewash length shrinkage (%)',path:'yardage.lengthShrinkage',kind:'pct'},{label:'Purchase step (yd)',path:'options.step',kind:'number'}]}
  ],
  fabric:[
   {title:'Quilt top (shared)',fields:fieldsBase},
@@ -71,7 +71,7 @@ const groups: Record<ToolId, {title:string;fields:Field[]}[]> = {
  ],
  sashing:[
   {title:'Block grid',fields:[{label:'Rows',path:'sashing.rows',kind:'whole'},{label:'Columns',path:'sashing.columns',kind:'whole'},{label:'Finished block width',path:'sashing.blockWidth',kind:'length'},{label:'Finished block height',path:'sashing.blockHeight',kind:'length'}]},
-  {title:'Joining settings',fields:[{label:'Finished sashing width',path:'sashing.width',kind:'length'},{label:'Seam allowance per side',path:'options.seam',kind:'length'},{label:'Usable WOF',path:'options.usableWof',kind:'length'},{label:'Purchase step (yd)',path:'options.step',kind:'number'}]}
+  {title:'Joining settings',fields:[{label:'Finished sashing width',path:'sashing.width',kind:'length'},{label:'Seam allowance per side',path:'options.seam',kind:'length'},{label:'Usable WOF',path:'sashing.usableWof',kind:'length'},{label:'Purchase step (yd)',path:'options.step',kind:'number'}]}
  ]
 };
 function get(obj:unknown,path:string):unknown{return path.split('.').reduce<unknown>((value,key)=>value && typeof value==='object' ? (value as Record<string,unknown>)[key] : undefined,obj);}
@@ -683,7 +683,7 @@ if(root){
   }
   // WOF must already reflect any planned prewash. Compensating purchasing
   // length alone cannot guarantee the cut still fits the fabric width.
-  const widthField=['options.usableWof','options.bindingUsableWof','yardage.alternateWof','usableWidth','wofIn'].includes(field.path);
+  const widthField=['options.usableWof','options.bindingUsableWof','yardage.usableWof','yardage.alternateWof','sashing.usableWof','usableWidth','wofIn'].includes(field.path);
   const wofHint='Use the actual usable WOF AFTER planned prewash and removing selvedges. Length shrinkage % adjusts bolt length only; this calculator cannot infer fabric width shrinkage.';
   const fieldNote=widthField?(field.note?field.note+' '+wofHint:wofHint):field.note;
   if(fieldNote){
@@ -732,7 +732,7 @@ if(root){
   const frag=node('div');frag.appendChild(node('h3','group-title',title));
   const grp=node('div','field-group');
   for(const f of fields){
-   const current=f.path==='yardage.alternateWof'?(get(source,f.path)??project.options.usableWof):f.path==='yardage.allowRotate'?(get(source,f.path)??project.options.allowRotate):get(source,f.path);grp.appendChild(inputField(f,current,v=>{if(onChange)onChange(f,v);else set(project,f.path,v);}));
+   const current=f.path==='yardage.alternateWof'?(get(source,f.path)??project.yardage.usableWof):f.path==='yardage.allowRotate'?(get(source,f.path)??project.options.allowRotate):get(source,f.path);grp.appendChild(inputField(f,current,v=>{if(onChange)onChange(f,v);else set(project,f.path,v);}));
   }frag.appendChild(grp);return frag;
  }
  // When a dynamic input collection is replaced, the clicked control is
@@ -1184,7 +1184,7 @@ if(root){
     const plan=calculateSashing({
      rows:s.rows,columns:s.columns,blockWidthIn:r.finishedBlockWidthIn,
      blockHeightIn:r.finishedBlockHeightIn,finishedSashIn:s.width,
-     seamIn:project.options.seam,wofIn:project.options.usableWof,step:project.options.step
+     seamIn:project.options.seam,wofIn:project.sashing.usableWof??project.options.usableWof,step:project.options.step
     });
     if(!plan.layout.isCutFeasible)
      throw Error(plan.layout.error||'The proposed sashing cuts do not fit current usable WOF.');
@@ -1466,11 +1466,12 @@ if(root){
     renderBiasAreaReference(resultRoot,b.requiredLengthIn,o.stripWidth,b.layout.usableWofIn,o.oneWayPrint);
     warning(resultRoot,'Shopping, strips and exports on this page are STRAIGHT-GRAIN ONLY. The optional TRUE-BIAS panel is an area-only lower bound, not safe bias purchase yardage.');layout=b.layout;materialCuts=[{material:'Straight-grain binding',sku:'binding',layout:b.layout}];plan=b;
    }else if(tool==='yardage'){
-    const y=p.yardage;
+    const y=p.yardage,wof=y.usableWof??o.usableWof;
     const comparison=compareYardageWidths({
       pieceWidthIn:y.pieceWidth,pieceHeightIn:y.pieceHeight,count:y.count,
-      wofIn:o.usableWof,allowRotate:y.allowRotate??o.allowRotate,oneWayPrint:y.oneWayPrint??false,...buyArgs
-    },y.alternateWof??o.usableWof);
+      wofIn:wof,allowRotate:y.allowRotate??o.allowRotate,oneWayPrint:y.oneWayPrint??false,
+      step:o.step,shrinkageLengthPct:y.lengthShrinkage??o.lengthShrinkage
+    },y.alternateWof??wof);
     const r=comparison.current,alternative=comparison.alternate;
     if(y.oneWayPrint && (y.allowRotate??o.allowRotate))warning(resultRoot,'One-way print is selected: 90° rotation is disabled on both fabric widths to preserve print direction.');
     if(!r.purchase){warning(resultRoot,r.layout.error||'FIT_IMPOSSIBLE',true);}
@@ -1499,7 +1500,7 @@ if(root){
     else warning(resultRoot,b.message,true);
     layout=b.layout;materialCuts=[{material:'One-piece batting',sku:'batting',layout:b.layout}];plan=b;
    }else if(tool==='sashing'){
-    const s=p.sashing,r=calculateSashing({rows:s.rows,columns:s.columns,blockWidthIn:s.blockWidth,blockHeightIn:s.blockHeight,finishedSashIn:s.width,seamIn:o.seam,wofIn:o.usableWof,step:o.step});
+    const s=p.sashing,r=calculateSashing({rows:s.rows,columns:s.columns,blockWidthIn:s.blockWidth,blockHeightIn:s.blockHeight,finishedSashIn:s.width,seamIn:o.seam,wofIn:s.usableWof??o.usableWof,step:o.step});
     if(r.purchase)purchasesTitle(resultRoot,r.purchase,'SASHING FABRIC');else warning(resultRoot,r.layout.error||'FIT_IMPOSSIBLE',true);
     stats(resultRoot,[['Vertical strips',String(r.vertical)],['Horizontal strips',String(r.horizontal)],['Cornerstones',String(r.cornerstones)],['Finished grid',num(r.finishedWidthIn)+' × '+num(r.finishedHeightIn)+' in']]);
     renderReverseBlockSize(resultRoot);
