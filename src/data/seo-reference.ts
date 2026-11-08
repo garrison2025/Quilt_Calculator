@@ -36,8 +36,7 @@ export const backingReference=[
  {label:'Baby-sized example',width:36,height:45},
  {label:'Throw-sized example',width:50,height:60},
  {label:'Twin-sized example',width:68,height:86},
- {label:'Queen-sized example',width:90,height:90},
- {label:'Twin-size example (illustrative, not a universal standard)',width:68,height:86}
+ {label:'Queen-sized example',width:90,height:90}
 ].flatMap(c=>[43,108].map(wofIn=>{
  const r=calculateBacking({widthIn:c.width,heightIn:c.height,overageIn:4,
   wofIn,joinTakeupIn:1,oneWayPrint:false,...common});
@@ -50,7 +49,8 @@ export const backingReference=[
 export const bindingReference=[
  {label:'Throw-sized example',width:50,height:60},
  {label:'60 × 80 example',width:60,height:80},
- {label:'Queen-sized example',width:90,height:90}
+ {label:'Queen-sized example',width:90,height:90},
+ {label:'Twin-size example (illustrative, not a universal standard)',width:68,height:86}
 ].flatMap(c=>[2.25,2.5].map(stripWidthIn=>{
  const r=calculateStraightBinding({widthIn:c.width,heightIn:c.height,wofIn:43,
   stripWidthIn,tailAllowanceIn:12,joinLossIn:2.5,...common});
