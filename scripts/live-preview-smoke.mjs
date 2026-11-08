@@ -4,6 +4,7 @@ import {chromium} from 'playwright';
 
 const BASE=(process.env.QUILT_PREVIEW_URL||'https://quilt-calculator-566.pages.dev').replace(/\/+$/,'');
 const sha=(process.env.GITHUB_SHA||'').toLowerCase();
+const PROD='https://quiltcutplanner.com';
 if(!/^[0-9a-f]{40}$/.test(sha))throw Error('Expected a full GITHUB_SHA for independently verifiable public Pages testing.');
 const assertThat=(v,message)=>assert.ok(v,message);
 const hasNoindexToken=(header)=>typeof header==='string'&&
@@ -24,6 +25,8 @@ const routes=[
  '/quilt-border-calculator/', '/fabric-yardage-calculator/', '/quilt-fabric-calculator/',
  '/fabric-yards-to-inches/', '/quilt-batting-calculator/', '/quilt-sashing-calculator/'
 ];
+const trustRoutes=['/about/','/privacy/'];
+const sitemapRoutes=[...routes,...trustRoutes];
 const stamp=html=>html.match(/<meta\b[^>]*name="quilt-build-commit"[^>]*content="([0-9a-f]{40})"/i)?.[1]?.toLowerCase();
 async function get(path){
  const response=await fetch(BASE+path,{redirect:'follow',cache:'no-store',signal:AbortSignal.timeout(20000),headers:{'Cache-Control':'no-cache'}});
@@ -76,16 +79,25 @@ try{
   const {response,html}=await currentRoute(path);
   assertThat(hasNoindexToken(response.headers.get('x-robots-tag')),
     'Cloudflare preview must apply an X-Robots-Tag noindex header even if future public HTML is indexable: '+path);
-  assertThat(html.includes('name="robots" content="noindex,follow"'),'Live preview must be noindex: '+path);
-  assertThat(!/<link\b[^>]*rel="canonical"/i.test(html),'Preview cannot publish a canonical '+path);
+  // Cloudflare serves the same indexable HTML at both hostnames; preview
+  // isolation is enforced by the HTTP noindex header checked above.
+  assertThat(html.includes('name="robots" content="index,follow,max-image-preview:large"'),
+    'Mirrored production HTML must be indexable before HTTP noindex applies: '+path);
+  assertThat(html.includes('rel="canonical" href="'+PROD+path+'"'),
+    'Mirrored Pages HTML must point to the official production canonical: '+path);
   assertThat(/<h1[\s>]/.test(html),'No unique H1 on public page: '+path);
  }
- console.log('PASS all ten deployed HTML routes, exact build SHA, noindex, no premature canonicals.');
+ console.log('PASS all ten calculator/home HTML routes, exact main SHA, pages.dev HTTP noindex and official canonical.');
  const {response:robots,html:robotsText}=await get('/robots.txt');
  assert.equal(robots.status,200);
  assertThat(robotsText.includes('User-agent:')&&robotsText.includes('Allow: /'),'Preview robots file not readable.');
- const {response:sitemap}=await get('/sitemap.xml');
- assert.equal(sitemap.status,404,'No production sitemap should be emitted on preview.');
+ const {response:sitemap,html:sitemapXml}=await get('/sitemap.xml');
+ assert.equal(sitemap.status,200,'Shared main build should expose its production-only sitemap file.');
+ assertThat(hasNoindexToken(sitemap.headers.get('x-robots-tag')),
+  'Pages mirror sitemap itself must carry HTTP X-Robots-Tag noindex.');
+ const locs=[...sitemapXml.matchAll(/<loc>([^<]+)<\/loc>/g)].map(m=>m[1]);
+ assert.deepEqual(locs,sitemapRoutes.map(path=>PROD+path),
+  'Mirrored sitemap must contain only the 12 official production URLs.');
  const {response:qa,html:qaHtml}=await currentRoute('/qa/print-calibration/');
  assert.equal(qa.status,200,'Public preview must serve its physical print-calibration worksheet.');
  assert.equal(stamp(qaHtml),sha,'Public physical QA worksheet must identify the exact Cloudflare commit.');
@@ -134,13 +146,21 @@ try{
   physicalStatic.includes('data-bias-physical-export'),
   'Public physical lab must show unmeasured real fabric, not fabricated evidence.');
  console.log('PASS three real Cloudflare bias research routes, exact main SHA, noindex and blank physical record.');
- const {response:aboutResponse,html:aboutHtml}=await currentRoute('/about/');
- assert.equal(aboutResponse.status,200,'Live About and source-method page must be accessible.');
- assert.equal(stamp(aboutHtml),sha,'Live About page must match exactly deployed code.');
- assertThat(aboutHtml.includes('name="robots" content="noindex,follow"')&&!aboutHtml.includes('rel="canonical"')&&
-    !aboutHtml.includes('application/ld+json')&&
-    aboutHtml.includes('https://github.com/garrison2025/Quilt_Calculator/issues'),
-  'Public source and contact policy must be transparent and not a premature SEO route.');
+ for(const path of trustRoutes){
+  const {response,html}=await currentRoute(path);
+  assert.equal(response.status,200,'Public trust page must return HTTP 200: '+path);
+  assert.equal(stamp(html),sha,'Public trust page must match the main deployed SHA: '+path);
+  assertThat(hasNoindexToken(response.headers.get('x-robots-tag')),
+    'Public pages.dev trust page requires HTTP noindex: '+path);
+  assertThat(html.includes('name="robots" content="index,follow,max-image-preview:large"') &&
+    html.includes('rel="canonical" href="'+PROD+path+'"') &&
+    !html.includes('application/ld+json'),
+    'Real About/Privacy must canonicalize to production without falsely claiming WebApplication schema: '+path);
+ }
+ const {html:aboutHtml}=await currentRoute('/about/');
+ assertThat(aboutHtml.includes('https://github.com/garrison2025/Quilt_Calculator/issues') &&
+  aboutHtml.includes('not physical sewing certification'),
+  'Published About methods page must accurately identify source and physical limitations.');
  const {html:homeHtml}=await get('/');
  for(const id of ['hub','backing','binding','borders','yardage','fabric','inches','batting','sashing'])
   assertThat(homeHtml.includes('data-task="'+id+'"'),'Missing public task-first calculator navigation '+id);
@@ -153,7 +173,7 @@ try{
     app?.inLanguage==='en-US'&&!app?.aggregateRating&&!app?.review,
    'Public software markup should advertise free service truthfully, with no fake reviews: '+path);
  }
- console.log('PASS robots, suppressed sitemap, task directory, honest About page and truthful free-app schema.');
+ console.log('PASS pages.dev header noindex, official 12-URL sitemap, indexable trust pages and truthful application schema.');
 
  browser=await chromium.launch({headless:true});
  const context=await browser.newContext({viewport:{width:1280,height:850},acceptDownloads:true});
@@ -420,5 +440,5 @@ try{
   'Public physical print worksheet 100mm or six-inch CSS reference has incorrect dimensions.');
  await page.emulateMedia({media:'screen'});
  console.log('PASS public noindex physical-scale QA sheet and nominal CSS reference lengths; real ruler MANUAL_NOT_RUN.');
- console.log('LIVE DEPLOYMENT SMOKE PASS — '+sha+' · '+BASE+' · 10 routes · SEO gates · actual Chromium interactions.');
+ console.log('LIVE DEPLOYMENT SMOKE PASS — '+sha+' · '+BASE+' · 10 calculator/home routes + 2 trust pages · HTTP noindex mirror · actual Chromium interactions.');
 }finally{if(browser)await browser.close();}
