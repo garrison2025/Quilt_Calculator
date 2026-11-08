@@ -230,7 +230,7 @@ for(const token of ['INDIVIDUAL_45DEG_CROSSWISE_JOIN',
 }
 if(fs.existsSync('dist/square-in-a-square-calculator/index.html'))throw Error('Premature public SQUARE keyword route.');
 const biasHtml=fs.readFileSync('dist/quilt-binding-calculator/index.html','utf8');
-for(const fragment of ['data-seo-bias-area-bound','Bias binding is a separate cutting method','45° cuts',
+for(const fragment of ['data-seo-bias-area-bound','Can I use this calculator for bias binding?','45° cuts',
  'straight-grain, full-width-of-fabric strips only','does not provide an approved purchasing plan']){
  if(!biasHtml.toLowerCase().includes(fragment.toLowerCase()))
   throw Error('Binding page must state its straight-grain-only scope without presenting bias yardage: '+fragment);
@@ -447,7 +447,7 @@ console.log('PASS: 198 active nonbrand intents, 3 deprioritized intents (price/l
 // Search-intent copy must describe the real supported methods, not imply
 // pattern-repeat, bias, mitered, packaged-batting or no-cornerstone features.
 const copyChecks=[
- ['fabric-yards-to-inches/',['How big is a yard of fabric? Fabric yards to inches, explained.','One linear yard is 36 inches long; fabric width varies.','alt="Fabric yard conversion chart showing common yard fractions and their lengths in inches"','property="og:image:alt" content="Fabric yard conversion chart showing common yard fractions and their lengths in inches."']],
+ ['fabric-yards-to-inches/',['How big is a yard of fabric? Fabric yards to inches, explained.','How many inches are in one yard of fabric?','alt="Fabric yard conversion chart showing common yard fractions and their lengths in inches"','property="og:image:alt" content="Fabric yard conversion chart showing common yard fractions and their lengths in inches."']],
  ['quilt-binding-calculator/',['Straight-grain quilt binding calculator: strips and yardage.','How much straight-grain binding fabric does a 68 × 86 in twin-size example need?','Twin-size example (illustrative, not a universal standard)','⅝ yd']],
  ['quilt-border-calculator/',['Quilt border calculator: butted layers and yardage.']],
  ['fabric-yardage-calculator/',['Fabric yardage calculator for repeated rectangular cuts.','Does this account for fabric pattern repeats?']],
