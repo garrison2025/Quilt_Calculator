@@ -57,3 +57,5 @@ Do not create a separate doorway page for each fraction. The 107 related convers
 - Public competitor review clarified scope boundaries: straight-grain binding only; butted borders only; batting roll single-piece fit only; sashing with internal cornerstones only; repeated-rectangle yardage without automatic motif-repeat matching; multiple rectangles/SKUs on the separate Quilt Fabric page.
 - Titles/H1/FAQs were refined to match those implemented boundaries and put the high-volume `how big is a yard of fabric` query first on the existing conversion URL. No new URL or algorithm was added.
 - Evidence and limitations: [2026-11-08 content and SERP audit](qa/CONTENT_SERP_AUDIT_20261108.md). This remains a public-web sample, not a US-localized Google Top-10 or fresh Semrush export. GSC remains deferred.
+
+- Added an engine-derived 68 × 86 in illustrative twin-size binding reference (8 strips and ⅝ yd under disclosed assumptions) for the existing 70-volume / KD 14 long-tail query; the copy explicitly says this is not a universal twin standard.
