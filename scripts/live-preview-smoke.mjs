@@ -121,7 +121,7 @@ try{
   assertThat(response.status===200&&stamp(html)===sha,
    'Unverified research lab does not match exactly deployed main commit: '+path);
   assertThat(html.includes('name="robots" content="noindex,follow"') &&
-    !/<link\\b[^>]*rel="canonical"/i.test(html) &&
+    !/<link\b[^>]*rel="canonical"/i.test(html) &&
     !html.includes('application/ld+json') &&
     html.includes(marker),
     'Unverified continuous-bias research must remain noindexed with correct real DOM: '+path);
