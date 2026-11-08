@@ -7,6 +7,17 @@ import {guides} from '../data/intent-guides';
 interface Props {route:ToolRoute}
 const {route}=Astro.props;
 const related=guides[route.id].related.map(id=>routes.find(t=>t.id===id)!);
+const toolImageAlt:Record<string,string>={
+ hub:'Quilt project planner illustration showing a fabric cutting workspace',
+ backing:'Quilt backing calculator illustration showing fabric panels for a quilt back',
+ binding:'Straight-grain quilt binding calculator illustration showing full-width binding strips',
+ borders:'Butted quilt border calculator illustration showing side-first and top-and-bottom border pieces',
+ yardage:'Fabric yardage calculator illustration showing repeated rectangular cuts on a fabric roll',
+ fabric:'Quilt fabric calculator illustration showing separate color-specific fabric cut layouts',
+ inches:'Fabric yard conversion chart showing common yard fractions and their lengths in inches',
+ batting:'Quilt batting calculator illustration showing a single-piece fit against roll width',
+ sashing:'Quilt sashing calculator illustration showing a block grid with internal sashing and cornerstones'
+};
 ---
 <div class="page-shell">
 <nav class="seo-breadcrumb" aria-label="Breadcrumb">
@@ -17,7 +28,7 @@ const related=guides[route.id].related.map(id=>routes.find(t=>t.id===id)!);
 </nav>
 <div class="page-intro page-intro--tool" data-ui-hero data-tool-intent={route.id}>
 <div class="page-heading"><span class="eyebrow-with-line">— {route.nav.toUpperCase()} / FREE ONLINE TOOL</span><h1>{route.h1}</h1><p>{route.intro}</p><div class="feature-pills"><span>{route.id==='inches'?'✓ Exact conversions':'✓ Feasible layouts'}</span><span>{route.id==='inches'?'✓ Fractions explained':'✓ Live yardage'}</span><span>✓ No sign-up</span></div><div class="hero-actions"><a href="#calculator-workspace" class="hero-main-cta">Start calculating <span aria-hidden="true">↗</span></a><a href="/calculators/" class="hero-sub-cta">View all nine tools</a></div></div>
-<div class="mini-feature mini-feature--crafted"><div class="mini-top"><span>MADE FOR REAL FABRIC</span><span>01 / 03</span></div><img src={'/images/'+route.id+'.webp'} width="640" height="420" alt={route.id==='inches'?'Fabric yard conversion chart showing 1/8, 1/4, 1/2, 3/4 and 1 yard in inches.':route.nav+' example quilt cutting layout illustration'} loading="eager"/>
+<div class="mini-feature mini-feature--crafted"><div class="mini-top"><span>MADE FOR REAL FABRIC</span><span>01 / 03</span></div><img src={'/images/'+route.id+'.webp'} width="640" height="420" alt={toolImageAlt[route.id] || route.nav+' calculator illustration'} loading="eager"/>
 <svg class="hero-thread" viewBox="0 0 580 280" preserveAspectRatio="none" aria-hidden="true"><path d="M-12 185 Q 75 95, 154 156 T 321 144 T 598 70" pathLength="100" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="1.2 1.2" stroke-linecap="round"/></svg><div class="mini-bottom"><b>Plan it once.</b><span>Cut it with confidence ✳</span></div></div>
 </div>
 {route.id==='inches'&&
@@ -46,9 +57,8 @@ const related=guides[route.id].related.map(id=>routes.find(t=>t.id===id)!);
 </section>}
 {route.id==='binding'&&
 <section class="content-block" data-seo-bias-area-bound>
- <h2>Bias binding: why a square-root fabric estimate is only a lower bound</h2>
- <p>True bias strips are cut around 45° to the straight grain, not across full WOF like the straight-grain binding on this page. For a requested usable strip length <strong>L</strong> and full cut strip width <strong>S</strong>, area conservation gives <strong>ideal square side = √(L × S)</strong>. With a 292-inch strip and a 2½-inch full cut width, that is √730 ≈ <strong>27.0185 inches</strong>; the next ⅛-inch ruler increment is 27⅛ inches. These numbers are <strong>loss-free theoretical area equivalents, NOT adequate cutting-square dimensions or fabric buying yardage</strong>.</p>
- <p>A real 45° continuous-tube construction has seam joins, corner trim, helical cutting offsets and material losses; it must demonstrate the actual usable strip length and that the source square fits your measured fabric width before giving a purchase plan. The optional panel in this calculator only shows the theoretical lower bound. <strong>All shopping quantities and downloadable cuts on this page remain straight-grain only.</strong> Separately, our <a href="/lab/individual-bias-strips/">noindex individual 45° bias geometry lab</a> proves the inscribed full-width strip lengths from a source square and explicitly models <em>crosswise</em> end joins, not the continuous tube. Its computations are not an approved purchasing method. The <a href="/lab/continuous-bias-tube/">continuous-bias tube 2D geometry lab</a> checks the one-strip offset, both seams and ideal unfolded strip, but not measured fabric yield. Its separate <a href="/lab/continuous-bias-planner/">noindex mathematical planning prototype</a> can reverse-calculate a model square and demonstrate width and hypothetical bolt-run scenarios; neither lab provides safe purchasing quantities. <a href="https://quiltschenectady.org/Patterns/BordersNBindings.pdf" target="_blank" rel="noopener noreferrer">Independent published square-root area reference</a>.</p>
+ <h2>Bias binding is a separate cutting method</h2>
+ <p>This calculator covers straight-grain, full-width-of-fabric strips only. Bias binding uses 45° cuts and a different geometry; its fabric yield and purchase quantity are not calculated here. Do not use this page’s yardage or cut list for bias tape or curved-edge binding; this page does not provide an approved purchasing plan for bias binding. The separate noindex <a href="/lab/individual-bias-strips/">individual 45° strip</a>, <a href="/lab/continuous-bias-tube/">continuous-bias tube topology</a> and <a href="/lab/continuous-bias-planner/">continuous-bias planning</a> labs are research only; none provides a validated purchase quantity.</p>
 </section>}
 {route.id==='sashing'&&
 <section class="content-block" data-seo-block-grid-handoff>

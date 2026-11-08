@@ -25,7 +25,15 @@ const breadcrumbItems=route
 // never change noindex or canonical eligibility just to render a social preview.
 const mediaOrigin=approved?candidate.replace(/\/$/,''):'https://quilt-calculator-566.pages.dev';
 const socialImage=mediaOrigin+'/images/'+(route?.id||'hub')+'.webp';
-const socialAlt=route?.id==='inches'?'Fabric yard conversion chart showing 1/8, 1/4, 1/2, 3/4 and 1 yard in inches.':(route?.nav||'Quilt Cut Planner')+' example fabric cutting diagram illustration';
+const socialAlt=route?.id==='inches'?'Fabric yard conversion chart showing common yard fractions and their lengths in inches.'
+ :route?.id==='backing'?'Quilt backing calculator illustration showing fabric panels for a quilt back'
+ :route?.id==='binding'?'Straight-grain quilt binding calculator illustration showing full-width binding strips'
+ :route?.id==='borders'?'Butted quilt border calculator illustration showing side-first and top-and-bottom border pieces'
+ :route?.id==='yardage'?'Fabric yardage calculator illustration showing repeated rectangular cuts on a fabric roll'
+ :route?.id==='fabric'?'Quilt fabric calculator illustration showing separate color-specific fabric cut layouts'
+ :route?.id==='batting'?'Quilt batting calculator illustration showing a single-piece fit against roll width'
+ :route?.id==='sashing'?'Quilt sashing calculator illustration showing a block grid with internal sashing and cornerstones'
+ :(route?.nav||'Quilt Cut Planner')+' calculator illustration';
 // Public build provenance; Cloudflare supplies its actual git commit SHA.
 // This is not a user identifier and does not bypass the preview noindex gate.
 const buildCommit=(process.env.CF_PAGES_COMMIT_SHA||process.env.GITHUB_SHA||'').toLowerCase();
