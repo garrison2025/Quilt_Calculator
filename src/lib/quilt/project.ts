@@ -1,16 +1,16 @@
 import { MAX_PIECES, calculateStraightBinding, hashProject, type FabricSku, type BorderLayer } from './math';
 export type Project = { schemaVersion: 2; units: 'in' | 'cm'; quilt: { finishedWidth: number; finishedHeight: number; sizeBasis?: 'before-borders' | 'includes-borders'; topCutsReviewed?: boolean; topCutsReviewFingerprint?: string };
   options: { overage: number; usableWof: number; battingWof: number; joinTakeup: number; stripWidth: number; tailAllowance: number; stripJoinLoss: number; step: number; lengthShrinkage: number; bindingUsableWof?: number; bindingLengthShrinkage?: number; oneWayPrint: boolean; seam: number; battingOverage: number; allowRotate: boolean; backingPricePerYard?: number; battingPricePerYard?: number; bindingPricePerYard?: number; backingDirection?: 'auto' | 'vertical' | 'horizontal' };
-  yardage: { pieceWidth: number; pieceHeight: number; count: number; alternateWof?: number; allowRotate?: boolean; oneWayPrint?: boolean };
-  sashing: { rows: number; columns: number; blockWidth: number; blockHeight: number; width: number };
+  yardage: { pieceWidth: number; pieceHeight: number; count: number; usableWof?: number; lengthShrinkage?: number; alternateWof?: number; allowRotate?: boolean; oneWayPrint?: boolean };
+  sashing: { rows: number; columns: number; blockWidth: number; blockHeight: number; width: number; usableWof?: number };
   borders: BorderLayer[]; fabrics: FabricSku[] };
 export const sampleProject: Project = {
   schemaVersion: 2, units: 'in', quilt: { finishedWidth: 60, finishedHeight: 80, sizeBasis: 'before-borders', topCutsReviewed: false },
   options: { overage: 4, usableWof: 43, battingWof: 96, joinTakeup: 1, stripWidth: 2.5,
     tailAllowance: 12, stripJoinLoss: 2.5, step: .125, lengthShrinkage: 0, bindingUsableWof: 43, bindingLengthShrinkage: 0, oneWayPrint: false,
     seam: .25, battingOverage: 4, allowRotate: false, backingDirection:'auto' },
-  yardage: { pieceWidth: 5, pieceHeight: 10, count: 20, alternateWof: 50, allowRotate: false, oneWayPrint: false },
-  sashing: { rows: 4, columns: 5, blockWidth: 10, blockHeight: 10, width: 2 },
+  yardage: { pieceWidth: 5, pieceHeight: 10, count: 20, usableWof: 43, lengthShrinkage: 0, alternateWof: 50, allowRotate: false, oneWayPrint: false },
+  sashing: { rows: 4, columns: 5, blockWidth: 10, blockHeight: 10, width: 2, usableWof: 43 },
   borders: [{ sku: 'border-indigo', label: 'Indigo border', widthIn: 3, wofIn: 43, shrinkageLengthPct: 0 }],
   fabrics: [{ id: 'sky-blue', label: 'Sky blue', usableWidth: 43, oneWayPrint: false, shrinkageLengthPct: 0,
     pieces: [{ widthIn: 5, heightIn: 5, count: 12, label: 'Blue squares', allowRotate: false }] },
@@ -101,15 +101,18 @@ export function validateProject(data: unknown): Project {
   throw Error('options.backingDirection must be auto, vertical or horizontal.');
  bool(opts,'oneWayPrint','options');bool(opts,'allowRotate','options');
  const yardage = object(root.yardage, 'yardage');
- onlyKeys(yardage,'yardage',['pieceWidth','pieceHeight','count','alternateWof','allowRotate','oneWayPrint']);
+ onlyKeys(yardage,'yardage',['pieceWidth','pieceHeight','count','usableWof','lengthShrinkage','alternateWof','allowRotate','oneWayPrint']);
  numeric(yardage,'pieceWidth','yardage',0,100000,false,true);
  numeric(yardage,'pieceHeight','yardage',0,100000,false,true);
  numeric(yardage,'count','yardage',0,2000,true);
+ if(yardage.usableWof!==undefined)numeric(yardage,'usableWof','yardage',0,100000,false,true);
+ shrink(yardage,'lengthShrinkage','yardage',true);
  if(yardage.alternateWof!==undefined)numeric(yardage,'alternateWof','yardage',0,100000,false,true);
  if(yardage.allowRotate!==undefined)bool(yardage,'allowRotate','yardage');
  if(yardage.oneWayPrint!==undefined)bool(yardage,'oneWayPrint','yardage');
  const sash = object(root.sashing, 'sashing');
- onlyKeys(sash,'sashing',['rows','columns','blockWidth','blockHeight','width']);
+ onlyKeys(sash,'sashing',['rows','columns','blockWidth','blockHeight','width','usableWof']);
+ if(sash.usableWof!==undefined)numeric(sash,'usableWof','sashing',0,100000,false,true);
  for (const name of ['rows','columns']) numeric(sash,name,'sashing',1,100,true);
  for (const name of ['blockWidth','blockHeight','width']) numeric(sash,name,'sashing',0,100000,false,true);
  const rows=sash.rows as number,columns=sash.columns as number;
@@ -156,12 +159,15 @@ export function validateProject(data: unknown): Project {
  return structuredClone(data as Project);
 }
 
-/** Freeze legacy shared measurements into independent binding fields on load. */
+/** Freeze legacy shared measurements into independent material fields on load. */
 export function loadProject(data:unknown):Project {
  const project=validateProject(data);
  const options=project.options;
  options.bindingUsableWof ??= options.usableWof;
  options.bindingLengthShrinkage ??= options.lengthShrinkage;
+ project.yardage.usableWof ??= options.usableWof;
+ project.yardage.lengthShrinkage ??= options.lengthShrinkage;
+ project.sashing.usableWof ??= options.usableWof;
  return project;
 }
 
