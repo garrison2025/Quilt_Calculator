@@ -9,7 +9,7 @@ import Base from '../layouts/Base.astro';
     <p>Quilt Cut Planner is a free, browser-based set of quilt and fabric cutting calculators. It models explicit dimensions and physical rectangular cuts. It does not replace measuring your own fabric, checking your pattern or reviewing your quilting method.</p>
   </div>
   <section class="content-block" id="methods" aria-labelledby="method-title">
-    <div class="editorial-head"><span class="eyebrow-with-line">— HOW THE NUMBERS WORK</span><h2 id="method-title">Verifiable geometry, not area-only estimates.</h2><p>These are the actual calculation rules used in the open-source implementation. Each calculator page also explains its inputs and a worked example.</p></div>
+    <div class="editorial-head"><span class="eyebrow-with-line">— HOW THE NUMBERS WORK</span><h2 id="method-title">How does the calculator produce a cut plan?</h2><p>These are the actual calculation rules used in the open-source implementation. Each calculator page also explains its inputs and a worked example.</p></div>
     <div class="story-grid">
       <article class="story-panel"><span class="story-number">01 / WIDTH</span><h3>Measure usable width of fabric</h3><p>WOF is the real width available for cutting after removing unusable selvedges. The advertised bolt width may differ. A piece wider than the permitted roll width is rejected rather than assigned an imaginary cutting plan.</p></article>
       <article class="story-panel"><span class="story-number">02 / JOINS</span><h3>Count seam or joining loss</h3><p>Backing calculations count rectangular panels and subtract total seam take-up at each join. Straight-grain binding counts full-width strips and their joined usable length. The join input is a measured assumption, not a universal sewing rule.</p></article>
@@ -17,7 +17,7 @@ import Base from '../layouts/Base.astro';
     </div>
   </section>
   <section class="content-block" id="sources" aria-labelledby="sources-title" data-geo-sources>
-    <div class="editorial-head"><span class="eyebrow-with-line">— SOURCES &amp; REPRODUCIBILITY</span><h2 id="sources-title">Measurement standards and independent background.</h2><p>External sources clarify accepted units and common quilting practices; they do not certify our fabric layout engine or replace the dimensions in your own pattern.</p></div>
+    <div class="editorial-head"><span class="eyebrow-with-line">— SOURCES &amp; REPRODUCIBILITY</span><h2 id="sources-title">Which sources support the measurement guidance?</h2><p>External sources clarify accepted units and common quilting practices; they do not certify our fabric layout engine or replace the dimensions in your own pattern.</p></div>
     <ul>
       <li><a href="https://www.nist.gov/pml/owm/si-units-length" target="_blank" rel="noopener noreferrer">NIST — SI Units: Length</a> defines the international inch as exactly 25.4 mm and uses 36 inches per yard. These are exact linear-length conversions, not a fabric-bolt width or purchasing recommendation.</li>
       <li><a href="https://www.allpeoplequilt.com/how-to-quilt/finishing/plan-your-quilt-back-and-determine-yardage" target="_blank" rel="noopener noreferrer">AllPeopleQuilt — Plan Your Quilt Back and Determine Yardage</a> discusses backing overage, panel direction and joining. Its worked examples use their own assumptions; they are not a validation of our outputs.</li>
@@ -25,12 +25,12 @@ import Base from '../layouts/Base.astro';
     </ul>
   </section>
   <section class="content-block about-constraints" aria-labelledby="limits-title">
-    <div class="editorial-head"><span class="eyebrow-with-line">— SAFETY &amp; LIMITS</span><h2 id="limits-title">What we have not verified.</h2></div>
+    <div class="editorial-head"><span class="eyebrow-with-line">— SAFETY &amp; LIMITS</span><h2 id="limits-title">What have we not physically verified?</h2></div>
     <p>These calculators do <strong>not</strong> provide validated instructions for bias binding, diagonal backing, mitered or pieced borders, one-piece batting joins, or every square-in-a-square construction method. Experimental techniques are kept out of the indexed calculator set.</p>
     <p>Software and browser tests confirm mathematical and data-flow properties, but they are <strong>not physical sewing certification</strong>. Real fabric shrinkage, stretch, directional prints, hardware, defects and seam behavior still require independent checks. Printable cutting plans are schematics—not 1:1 fabric patterns. Before using print dimensions, <a href="/qa/print-calibration/">measure the printed calibration marks with a ruler</a>.</p>
   </section>
   <section class="content-block" aria-labelledby="maintenance-title">
-    <div class="editorial-head"><span class="eyebrow-with-line">— SOURCE &amp; CORRECTIONS</span><h2 id="maintenance-title">Inspect the code or flag a problem.</h2></div>
+    <div class="editorial-head"><span class="eyebrow-with-line">— SOURCE &amp; CORRECTIONS</span><h2 id="maintenance-title">How can I inspect the source or report a problem?</h2></div>
     <p>The <a href="https://github.com/garrison2025/Quilt_Calculator">public source repository</a> contains the cutting-engine implementation, test cases and current acceptance records. No named sewing expert, institution or third-party certification is claimed. Review the method and test evidence for the specific calculator before relying on its results.</p>
     <p>To report a reproducible calculation error, broken link or usability problem, use the project's <a href="https://github.com/garrison2025/Quilt_Calculator/issues">GitHub issue tracker</a>. Include the calculator URL, input measurements, expected result and observed result. Do not post private information or commercially sensitive project files publicly.</p>
     <p>For private feedback or a calculation question, email <!--email_off--><a href="mailto:contact@quiltcutplanner.com">contact@quiltcutplanner.com</a><!--/email_off-->. Please include the affected tool, inputs and observed result, but do not send passwords or sensitive project files.</p>
